@@ -6,9 +6,9 @@
 - Package：`docs/goals/v0/`
 - Status：**实现中（M0 本地完成，M1 进行中）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
 - Current work：
-  - 已合并（本地 main）：core 全部核心逻辑（标识符、schema、canonical / digest、模板、Resolver、发布校验、check、license、JSON Schema 导出、Contribution 合并、Context Diff）；server 的 `authorize()` 与 HTTP 中间件。
-  - 并行 subagent（独立 worktree）：`packages/ccv3`；`packages/assembler`；`apps/server` 数据库 / CAS / 队列；一致性测试集与三运行时运行器；OIDC 与 webhook 校验。
-  - 主会话下一步：server 路由骨架（依赖数据库分支合并后接上）、Better Auth、Registry API。
+  - 已合并（本地 main）：core 全部核心逻辑；`packages/assembler`；`packages/contracts`（HTTP API schema）；`packages/cli`（init / check --fix / build / preview）；`actions/publish`（OIDC 发布 Action，打包产物带漂移检查）；server 的 `authorize()` 与 HTTP 中间件。
+  - 并行 subagent（独立 worktree）：`packages/ccv3`；`apps/server` 数据库 / CAS / 队列；一致性测试集与三运行时运行器；OIDC 与 webhook 校验；`apps/web` 骨架与 Preview / Diff。
+  - 主会话下一步：合并以上分支 → server 路由（Registry API）与 Better Auth。
 - Acceptance：DOD 条目尚未打勾。M0-1 / M0-2 本地检查已通过，但验收要求 CI 运行记录，需等首次推送后才能取得（依赖 B-10）。
 - Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
 - Next useful work：合并 subagent 结果 → Resolver 与一致性测试集（M2-5，需要人工审阅预期输出）→ server 的 Auth / authz / API（M4-2、M4-3、M5）。
@@ -60,3 +60,10 @@
 - Verification：`pnpm lint`、`pnpm typecheck`、`pnpm deps` 通过；`pnpm test` 共 580 个单测通过。覆盖率（`vitest --coverage`）：canonical 97.6% 行 / 93.7% 分支；Resolver 各文件 94–98% 行；merge.ts 100% 行 / 98.4% 分支；authorize.ts 98.9% 行 / 97.9% 分支；publish.ts 98.3% 行。JSON Schema 快照防漂移测试通过。
 - Decisions：D-129（check / Resolver 细化）、D-130（合并 / Diff 细化），均标注“待用户复核”。
 - 尚不能打勾：M1-2 需要 schema 快照的人工审阅；M1-3 / M2-1 / M2-5 需要一致性测试集在三运行时通过并经人工审阅预期输出；M2-2 需要一致性测试集的 publish 用例；M4-3 还缺“每个路由都经过 authorize”的 lint 规则（路由尚未编写）。
+
+### 2026-09-22 Assembler、CLI、Action、contracts
+
+- Work：合并参考 Assembler（subagent，62 个测试，行覆盖 99%）；新增 `packages/contracts`、`packages/cli`、`actions/publish`。
+- Verification：`pnpm test` 共 660+ 个单测通过；CLI 构建后 `node packages/cli/dist/bin.js --help` 可用；`char check --fix` 在临时目录端到端写回 ID 并保持幂等；Action 打包产物在临时目录用 dry-run 运行成功（输出 semantic digest，不调用网络）；`pnpm check:action-dist` 证明提交的 dist 与源码一致。
+- Decisions：D-131（参考 Assembler 取值）、D-132（`char.yaml` v0 书写形式）。
+- 尚不能打勾：M7-3 还缺 `login` / `publish`（依赖 server API）；M7-4 需要 staging 与真实 GitHub App（B-3）。
