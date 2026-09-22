@@ -16,3 +16,4 @@ coverage/
 actions/*/build/
 test-results/
 playwright-report/
+.playwright-mcp/

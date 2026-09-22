@@ -136,7 +136,7 @@ export function TraceTable({ trace, ir }: { trace: AssemblyTrace; ir: ContextIR 
                     ) : null}
                   </td>
                   <td className="py-2 pr-3 font-mono text-xs">{kindOf(e, byId)}</td>
-                  <td className="max-w-[22rem] truncate py-2 pr-3 font-mono text-xs" title={e.id}>
+                  <td className="max-w-[18rem] py-2 pr-3 font-mono text-xs break-all" title={e.id}>
                     {shortId(e.id)}
                   </td>
                   <td className="py-2 pr-3 text-right font-mono text-xs tabular-nums">
@@ -154,8 +154,8 @@ export function TraceTable({ trace, ir }: { trace: AssemblyTrace; ir: ContextIR 
                       {e.decision}
                     </span>
                   </td>
-                  <td className="py-2">
-                    <span className="font-mono text-xs">{e.reason}</span>
+                  <td className="min-w-[9rem] py-2">
+                    <span className="font-mono text-xs break-all">{e.reason}</span>
                     <span className="block text-xs text-muted-foreground">
                       {describeReason(e.reason)}
                     </span>
