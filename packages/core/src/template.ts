@@ -7,7 +7,9 @@
  *   {{param:<name>}}    param 的值
  *   {{late:<key>}}      只出现在 Context IR 中：由 Assembler 在 Session 开始时替换
  *
- * 字面量 `{{` 写成 `{{{{`。单独出现的 `}}` 就是普通文本。
+ * 转义：字面量 `{{` 写成 `{{{{`。连续的 `{` 按 4 个一组还原成字面量 `{{`，剩下的：
+ * 1 个是字面量 `{`；2 个开始一个占位符；3 个是字面量 `{` 加一个占位符。
+ * 这样 `{` 紧挨着占位符（`{{{self}}`）也没有歧义。单独出现的 `}}` 就是普通文本。
  */
 import { CharError } from "./errors.js";
 import { PARAM_NAME_RE, SLOT_NAME_RE } from "./ids.js";
@@ -47,16 +49,22 @@ export function tokenizeTemplate(
     buf = "";
   };
   while (i < text.length) {
-    if (text.startsWith("{{{{", i)) {
-      buf += "{{";
-      i += 4;
-      continue;
-    }
-    if (!text.startsWith("{{", i)) {
+    if (text[i] !== "{") {
       buf += text[i];
       i += 1;
       continue;
     }
+    let run = 0;
+    while (text[i + run] === "{") run += 1;
+    buf += "{{".repeat(Math.floor(run / 4));
+    const rest = run % 4;
+    if (rest === 0 || rest === 1) {
+      if (rest === 1) buf += "{";
+      i += run;
+      continue;
+    }
+    if (rest === 3) buf += "{";
+    i += run - 2;
     const end = text.indexOf("}}", i + 2);
     if (end < 0) {
       issues.push({ code: "template.unclosed", offset: i, detail: "missing '}}'" });
@@ -117,13 +125,18 @@ export function escapeTemplateText(s: string): string {
   return s.replaceAll("{{", "{{{{");
 }
 
+/** 原样插入的模板片段（例如 `{{late:user}}`），不做转义。 */
+export interface RawTemplate {
+  raw: string;
+}
+
 /**
- * 按 token 重新拼出文本。`resolve` 返回替换后的字面量，返回 null 表示保留占位符原样。
- * 输出总是合法的模板（字面量里的 `{{` 会被重新转义）。
+ * 按 token 重新拼出文本。`resolve` 返回替换后的字面量（会被转义）、`{ raw }`（原样插入），
+ * 或 null（保留占位符原样）。输出总是合法的模板。
  */
 export function renderTemplate(
   tokens: readonly TemplateToken[],
-  resolve: (tok: Exclude<TemplateToken, { t: "text" }>) => string | null,
+  resolve: (tok: Exclude<TemplateToken, { t: "text" }>) => string | RawTemplate | null,
 ): string {
   let out = "";
   for (const tok of tokens) {
@@ -132,7 +145,9 @@ export function renderTemplate(
       continue;
     }
     const v = resolve(tok);
-    out += v === null ? placeholderText(tok) : escapeTemplateText(v);
+    if (v === null) out += placeholderText(tok);
+    else if (typeof v === "string") out += escapeTemplateText(v);
+    else out += v.raw;
   }
   return out;
 }
