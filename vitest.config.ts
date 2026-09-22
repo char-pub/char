@@ -10,6 +10,7 @@ export default defineConfig({
     projects: [
       // 各 app 与一致性测试集自带的 project 配置（integration、conformance-* 等）
       "apps/*/vitest.config.ts",
+      "apps/*/vitest.unit.config.ts",
       "spec/conformance/vitest.*.config.ts",
       {
         extends: true,
@@ -22,6 +23,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
+      // server 的覆盖率由 `pnpm test:integration` 单独统计（它需要真实的数据库与存储）。
       include: ["packages/*/src/**/*.ts"],
       exclude: ["**/*.test.ts", "**/index.ts"],
       reporter: ["text-summary", "json-summary", "html"],

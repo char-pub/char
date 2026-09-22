@@ -14,6 +14,8 @@
     "packages/*/test/**/*.ts",
     "apps/server/src/**/*.test.ts",
     "apps/server/test/**/*.ts",
+    "apps/server/*.config.ts",
+    "apps/server/vitest.shared.ts",
     "vitest.config.ts"
   ]
 }

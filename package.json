@@ -11,13 +11,14 @@
     "format": "biome check --write .",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
     "deps": "depcruise packages apps --config .dependency-cruiser.cjs",
-    "test": "vitest run --project unit",
-    "test:unit": "vitest run --project unit --coverage",
+    "test": "vitest run --project unit --project server-unit",
+    "test:unit": "vitest run --project unit --project server-unit --coverage",
+    "test:integration": "vitest run --project integration --project server-unit --coverage --coverage.include=apps/server/src/** --coverage.exclude=apps/server/src/db/schema/** --coverage.reportsDirectory=coverage/server",
     "build": "pnpm -r --if-present build",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
-    "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm build && pnpm secrets",
+    "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm test:integration && pnpm build && pnpm secrets",
     "prepare": "lefthook install || true"
   },
   "devDependencies": {
