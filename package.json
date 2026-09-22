@@ -9,16 +9,17 @@
   "scripts": {
     "lint": "biome check .",
     "format": "biome check --write .",
-    "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
+    "typecheck": "tsc -b && tsc -p tsconfig.tests.json && tsc -p apps/web/tsconfig.node.json",
     "deps": "depcruise packages apps --config .dependency-cruiser.cjs",
-    "test": "vitest run --project unit",
+    "test": "vitest run --project unit --project web",
     "test:unit": "vitest run --project unit --coverage",
+    "test:web": "vitest run --project web",
     "build": "pnpm -r --if-present build",
     "schema:export": "tsx --conditions=@char-pub/source packages/core/scripts/export-json-schema.ts",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
-    "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm build && pnpm secrets",
+    "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm test:web && pnpm build && pnpm secrets",
     "prepare": "lefthook install || true"
   },
   "devDependencies": {

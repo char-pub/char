@@ -10,3 +10,5 @@ coverage/
 .turbo/
 *.tsbuildinfo
 .claude/worktrees/
+test-results/
+playwright-report/

@@ -1,0 +1,176 @@
+@import "tailwindcss";
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/*
+ * 视觉方向：图书馆目录卡片。纸张般的暖色底、墨色文字、朱砂色印章作为唯一强调色，
+ * 细线分隔代替阴影。深色模式是“墨色纸”，强调色保持同一色相。
+ * 衬线字体用于标题（Fraunces），正文用 Instrument Sans，标识符与数字用 IBM Plex Mono。
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 0.25rem;
+
+  --paper: oklch(0.965 0.012 85);
+  --paper-deep: oklch(0.93 0.018 82);
+  --ink: oklch(0.22 0.012 60);
+  --ink-soft: oklch(0.42 0.015 60);
+  --rule: oklch(0.82 0.02 80);
+  --seal: oklch(0.55 0.17 32);
+  --seal-soft: oklch(0.92 0.045 40);
+  --moss: oklch(0.5 0.08 150);
+  --moss-soft: oklch(0.93 0.035 150);
+  --amber: oklch(0.62 0.13 70);
+  --amber-soft: oklch(0.94 0.05 85);
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: oklch(0.985 0.008 85);
+  --card-foreground: var(--ink);
+  --popover: oklch(0.985 0.008 85);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--paper-deep);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-deep);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--seal-soft);
+  --accent-foreground: oklch(0.4 0.14 32);
+  --destructive: var(--seal);
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--seal);
+}
+
+.dark {
+  --paper: oklch(0.19 0.01 60);
+  --paper-deep: oklch(0.24 0.012 60);
+  --ink: oklch(0.93 0.015 85);
+  --ink-soft: oklch(0.72 0.02 80);
+  --rule: oklch(0.34 0.015 60);
+  --seal: oklch(0.7 0.15 35);
+  --seal-soft: oklch(0.3 0.06 32);
+  --moss: oklch(0.74 0.1 150);
+  --moss-soft: oklch(0.28 0.04 150);
+  --amber: oklch(0.8 0.12 80);
+  --amber-soft: oklch(0.3 0.05 80);
+
+  --card: oklch(0.215 0.011 60);
+  --popover: oklch(0.215 0.011 60);
+  --accent-foreground: oklch(0.85 0.09 40);
+}
+
+@theme inline {
+  --font-display: "Fraunces Variable", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Instrument Sans Variable", "Helvetica Neue", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-seal: var(--seal);
+  --color-seal-soft: var(--seal-soft);
+  --color-moss: var(--moss);
+  --color-moss-soft: var(--moss-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-rule: var(--rule);
+
+  --radius-sm: calc(var(--radius) - 1px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    /* 细横线纸纹：只用 CSS 渐变，不引入图片资源。 */
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 31px,
+      color-mix(in oklch, var(--rule) 28%, transparent) 31px,
+      color-mix(in oklch, var(--rule) 28%, transparent) 32px
+    );
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+    font-optical-sizing: auto;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-seal;
+  }
+}
+
+@layer components {
+  /* 目录卡片：纸面 + 左侧打孔线。 */
+  .catalog-card {
+    @apply relative rounded-md border bg-card;
+    box-shadow: 0 1px 0 var(--rule);
+  }
+  .catalog-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0.75rem;
+    width: 1px;
+    background: color-mix(in oklch, var(--seal) 35%, transparent);
+  }
+  .stamp {
+    @apply inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[0.7rem] uppercase tracking-wider;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: reveal 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .reveal-2 {
+    animation-delay: 80ms;
+  }
+  .reveal-3 {
+    animation-delay: 160ms;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
