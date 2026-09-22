@@ -472,7 +472,8 @@ describe("round trip: import → canonical → IR → export", () => {
     expect(loss.policy_fields).toEqual([
       {
         ref: "@importer/mira",
-        fields: ["system_prompt", "post_history_instructions"],
+        // Resolver 把字段名排序，保证 IR 与输入顺序无关。
+        fields: ["post_history_instructions", "system_prompt"],
         restored: false,
       },
     ]);
