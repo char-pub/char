@@ -638,3 +638,17 @@ canonical-model §14 原文写 `fragment_digests: sorted[(id, digest)]`。但 Co
 ### D-128 GitHub 数字 ID 在 JSON 中用十进制字符串 — Accepted
 
 GitHub 的 `repository_id`、`repository_owner_id` 等在 OIDC claim 中本来就是字符串，数值可能超过 JSON 安全整数范围。Canonical JSON、IR 与 API 中统一用十进制字符串（`"123456"`），数据库中用 `bigint`。这落实了 DOR F-1 对 spec 类型的修正。
+
+### D-129 `char check` 与 Resolver 的规范细化 — Accepted（实现取值，待用户复核）
+
+实现时对规范中没有写明的细节做了如下取值。它们在 IR 冻结前都可以修改，修改时同步更新一致性用例。
+
+1. **`{{self}}` 的范围**：模板文本和 binding 中的 `{{self}}` 只能出现在 character / persona 类型的 Creation 里，其他类型报错。override 替换进来的内容在**被引用** Creation 的语境中渲染，所以替换 Lorebook 条目的文本里不能写 `{{self}}`。
+2. **`force: true`**：只能出现在 Scenario 中。对 `default` 依赖的 replace / remove 不需要 force；对 `intrinsic` 依赖中 world / character 类 fragment 的 replace / remove 必须在 Scenario 内并带 force，结果标记 AU。
+3. **根实例的 slot**：直接发布 Relationship 这类模板时没有 edge 可以绑定，它的 slot 全部作为 late slot 出现在 IR 中。非根实例上未绑定的必需 slot 报错；可选 slot 变成 late slot，只在被内容使用时才变成必需。
+4. **early binding 的目标必须在依赖图中**：`bind: { a: "@x/y" }` 要求 `@x/y` 也被某条 edge 引用并 pin 住，这样它的内容和版本是锁定的，否则报 `resolve.binding_not_in_graph`。
+5. **locale 变体的 `activation_keys`** 并入 keyword 激活的关键词列表，这样用任何语言聊天都能触发。
+6. **IR 中的 asset**：闭包中每个实例的所有 asset（包括 presentation）都进入 `IR.assets`，因为头像、封面需要展示；只有 `role: context` 的 asset 可以被 fragment 引用。
+7. **scene visibility 不写 scene 时**，IR 中记为 `instance:<instance-key>`，表示“只在这个引用实例的场景中”。
+8. **License 兼容性（近似判断，不是法律意见）**：依赖 NC 而自身允许商用 → warn；修改了 ND 依赖 → fail；依赖 All-Rights-Reserved 且不是同一权利人 → fail；修改了 SA 依赖但用了不同许可 → warn；不认识的 `LicenseRef-*` → warn。OR 表达式取对使用者最有利的一项，AND 取最严格的一项。
+9. **模板转义**：连续的 `{` 按 4 个一组还原为字面量 `{{`，剩余 1 个是字面量 `{`，2 个开始占位符，3 个是字面量 `{` 加占位符。这样 `{{{self}}` 之类相邻写法也没有歧义。
