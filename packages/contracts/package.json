@@ -1,0 +1,25 @@
+{
+  "name": "@char-pub/contracts",
+  "version": "0.0.0",
+  "description": "HTTP API request/response schemas for char.pub (shared by server, web, CLI and the publish Action)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@char-pub/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@char-pub/core": "workspace:*",
+    "zod": "catalog:"
+  }
+}
