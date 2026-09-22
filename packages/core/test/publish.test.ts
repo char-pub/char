@@ -295,3 +295,122 @@ describe("publish checks: one counter-example per rule", () => {
     expect(codes(input({ creation: c }))).toContain("check.unknown_placeholder");
   });
 });
+
+describe("publish checks: more paths", () => {
+  it("assertPublishable throws the first error with the full report, and returns on success", async () => {
+    const { assertPublishable } = await import("../src/publish.js");
+    expect(assertPublishable(input()).ok).toBe(true);
+    try {
+      assertPublishable(input(withRegistry({ existingLabels: { "1.0.0": D("f") } })));
+      expect.unreachable();
+    } catch (e) {
+      expect((e as { code: string }).code).toBe("publish.label_taken");
+      expect((e as { data: { issues: unknown[] } }).data.issues).toHaveLength(1);
+    }
+  });
+
+  it("reports a dependency that is not valid canonical data", () => {
+    const broken = { release: tid("rel", 9), visibility: "public" as const, creation: { nope: 1 } };
+    const r = checkPublish(input({ dependencies: [broken] }));
+    expect(r.issues.map((i) => i.code)).toEqual(["schema.invalid"]);
+  });
+
+  it("rejects blocked content anywhere in the dependency closure", () => {
+    const w = dep(2, world);
+    const c = level0Character({
+      references: [
+        { id: "lives-in", use: "@cyberpunk/night-city", mode: "intrinsic", pin: pinOf(w) },
+      ],
+    });
+    const wf = canonicalizeCreation(world).creation.fragments[0]?.digest ?? "";
+    const r = checkPublish(
+      input({ creation: c, dependencies: [w], ...withRegistry({ blockedDigests: new Set([wf]) }) }),
+    );
+    expect(r.issues.map((i) => [i.code, i.subject])).toEqual([
+      ["publish.blocked_content", "@cyberpunk/night-city#world"],
+    ]);
+  });
+
+  it("fails when an override modifies a no-derivatives dependency", () => {
+    const nd = dep(2, { ...world, meta: { ...world.meta, license: "CC-BY-ND-4.0" } });
+    const edge = (override: unknown[]) =>
+      level0Character({
+        references: [
+          {
+            id: "lives-in",
+            use: "@cyberpunk/night-city",
+            mode: "default",
+            pin: pinOf(nd),
+            override: override as Loose,
+          },
+        ],
+      });
+    const replaced = checkPublish(
+      input({
+        creation: edge([
+          { op: "replace", target: "world", content: { type: "text", text: "changed" } },
+        ]),
+        dependencies: [nd],
+      }),
+    );
+    expect(replaced.license_check).toBe("fail");
+    expect(replaced.issues.map((i) => i.code)).toContain("license.dependency_no_derivatives");
+    // patch 只改激活方式等元数据，不算改编内容。
+    const patched = checkPublish(
+      input({
+        creation: edge([{ op: "patch", target: "world", set: { importance: "pinned" } }]),
+        dependencies: [nd],
+      }),
+    );
+    expect(patched.ok).toBe(true);
+  });
+
+  it("checks independent asset licenses and skips linked assets for readiness", () => {
+    const c = level0Character({
+      assets: [
+        {
+          slot: "avatar",
+          role: "presentation",
+          variants: [
+            {
+              id: "default",
+              media_type: "image/webp",
+              blob: { digest: D("a"), size: 1, availability: "mirrored" },
+              license: "LicenseRef-All-Rights-Reserved",
+            },
+            {
+              id: "alt",
+              media_type: "image/webp",
+              blob: {
+                digest: D("e"),
+                size: 1,
+                availability: "linked",
+                locator: { provider: "http", url: "https://example.com/a.webp" },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    // 作者本人的保留权利 asset 可以发布；linked asset 不需要 ready。
+    expect(checkPublish(input({ creation: c })).ok).toBe(true);
+    const other = { ...c, ref: "@someone/alice" };
+    expect(codes(input({ creation: other }))).toContain("license.not_redistributable");
+  });
+
+  it("warns (but passes) on local check warnings", () => {
+    const c = level0Character({
+      fragments: [
+        {
+          id: "description",
+          stable: true,
+          kind: "character",
+          content: { type: "text", text: "hi" },
+        },
+        { id: "lore", stable: false, kind: "knowledge", content: { type: "text", text: "x" } },
+      ],
+    });
+    const r = checkPublish(input({ creation: c }));
+    expect(r.ok).toBe(true);
+  });
+});
