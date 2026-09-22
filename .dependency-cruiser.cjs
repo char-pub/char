@@ -22,7 +22,8 @@ module.exports = {
           "npm-no-pkg",
           "npm-unknown",
         ],
-        pathNot: "node_modules/(zod|canonicalize|@noble/hashes)/",
+        pathNot:
+          "node_modules/(zod|canonicalize|@noble/hashes|spdx-expression-parse|spdx-license-ids|spdx-exceptions)/",
       },
     },
     {

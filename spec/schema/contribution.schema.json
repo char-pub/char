@@ -1,0 +1,1217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v0-draft/contribution.schema.json",
+  "title": "char.pub Contribution",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+    },
+    "target": {
+      "type": "string",
+      "pattern": "^cr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+    },
+    "base": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "semantic_digest": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "revision",
+        "semantic_digest"
+      ],
+      "additionalProperties": false
+    },
+    "author": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^usr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        {
+          "$ref": "#/$defs/GuestAuthor"
+        }
+      ]
+    },
+    "agent": {
+      "type": "boolean"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "accepted",
+        "rejected",
+        "withdrawn"
+      ]
+    },
+    "transport": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "native"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "github-pr"
+            },
+            "repository_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,19}$"
+            },
+            "number": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type",
+            "repository_id",
+            "number"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "changes": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Change"
+      }
+    },
+    "rights_ack": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "inbound_equals_outbound": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "inbound_equals_outbound"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "explicit_grant": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "explicit_grant"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "target",
+    "base",
+    "author",
+    "title",
+    "status",
+    "transport",
+    "changes",
+    "rights_ack"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "GuestAuthor": {
+      "type": "object",
+      "properties": {
+        "guest_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "guest_id",
+        "display_name"
+      ],
+      "additionalProperties": false
+    },
+    "Change": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "const": "fragment"
+            },
+            "op": {
+              "type": "string",
+              "enum": [
+                "add",
+                "modify",
+                "remove"
+              ]
+            },
+            "id": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "base_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "after": {
+              "$ref": "#/$defs/Fragment"
+            }
+          },
+          "required": [
+            "on",
+            "op",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "const": "edge"
+            },
+            "op": {
+              "type": "string",
+              "enum": [
+                "add",
+                "modify",
+                "remove"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            "base_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "after": {
+              "$ref": "#/$defs/ReferenceEdge"
+            }
+          },
+          "required": [
+            "on",
+            "op",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "const": "asset"
+            },
+            "op": {
+              "type": "string",
+              "enum": [
+                "add",
+                "modify",
+                "remove"
+              ]
+            },
+            "slot": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            "variant": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            "base_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "after": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/AssetSlot"
+                },
+                {
+                  "$ref": "#/$defs/AssetVariant"
+                }
+              ]
+            }
+          },
+          "required": [
+            "on",
+            "op",
+            "slot"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "const": "metadata"
+            },
+            "field": {
+              "type": "string",
+              "enum": [
+                "display_name",
+                "summary",
+                "meta.default_locale",
+                "meta.tags",
+                "meta.rating",
+                "meta.content_warnings",
+                "meta.rights",
+                "meta.license",
+                "meta.recommended_presets",
+                "meta.contribution_policy"
+              ]
+            },
+            "op": {
+              "type": "string",
+              "enum": [
+                "set",
+                "unset"
+              ]
+            },
+            "base_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "after": {
+              "$ref": "#/$defs/JSONValue"
+            },
+            "sensitive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "on",
+            "field",
+            "op",
+            "sensitive"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "FragmentId": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}$"
+    },
+    "Fragment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/FragmentId"
+        },
+        "stable": {
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/FragmentKind"
+        },
+        "content": {
+          "$ref": "#/$defs/FragmentContent"
+        },
+        "locale": {
+          "$ref": "#/$defs/LocaleMap"
+        },
+        "activation": {
+          "$ref": "#/$defs/Activation"
+        },
+        "visibility": {
+          "$ref": "#/$defs/Visibility"
+        },
+        "importance": {
+          "type": "string",
+          "enum": [
+            "pinned",
+            "normal",
+            "opportunistic"
+          ]
+        },
+        "placement_hint": {
+          "$ref": "#/$defs/FragmentKind"
+        },
+        "asset_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#asset\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)?$"
+          }
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "id",
+        "stable",
+        "kind",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "FragmentKind": {
+      "type": "string",
+      "enum": [
+        "character",
+        "persona",
+        "relationship",
+        "world",
+        "scenario",
+        "knowledge",
+        "style",
+        "examples",
+        "instruction"
+      ]
+    },
+    "FragmentContent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "text": {
+              "type": "string"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "markdown",
+                "plain"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "dialogue"
+            },
+            "turns": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "speaker": {
+                    "$ref": "#/$defs/SpeakerRef"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "speaker",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "type",
+            "turns"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "media"
+            },
+            "asset": {
+              "type": "string",
+              "pattern": "^#asset\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)?$"
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "asset"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "structured"
+            },
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "data": {
+              "$ref": "#/$defs/JSONValue"
+            }
+          },
+          "required": [
+            "type",
+            "schema",
+            "data"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SpeakerRef": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "{{self}}"
+        },
+        {
+          "type": "string",
+          "const": "{{user}}"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\{\\{slot:[a-z][a-z0-9_]{0,31}\\}\\}$"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\{\\{cast:[a-z][a-z0-9_-]{0,31}\\}\\}$"
+        },
+        {
+          "$ref": "#/$defs/UnversionedRef"
+        }
+      ]
+    },
+    "UnversionedRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "JSONValue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        }
+      ]
+    },
+    "LocaleMap": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/Locale"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "$ref": "#/$defs/FragmentContent"
+          },
+          "activation_keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "Locale": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+    },
+    "Activation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "always"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "keyword"
+            },
+            "keys": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "secondary": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "logic": {
+              "type": "string",
+              "enum": [
+                "any",
+                "all"
+              ]
+            },
+            "case_sensitive": {
+              "type": "boolean"
+            },
+            "whole_word": {
+              "type": "boolean"
+            },
+            "scan_depth": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          "required": [
+            "mode",
+            "keys"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "semantic"
+            },
+            "hint": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "manual"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Visibility": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "const": "shared"
+            }
+          },
+          "required": [
+            "scope"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "const": "private"
+            },
+            "to": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SpeakerRef"
+              }
+            }
+          },
+          "required": [
+            "scope",
+            "to"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "const": "scene"
+            },
+            "scene": {
+              "$ref": "#/$defs/FragmentId"
+            }
+          },
+          "required": [
+            "scope"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ReferenceEdge": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "rel": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "use": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CreationRef"
+            },
+            {
+              "type": "string",
+              "pattern": "^#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}$"
+            }
+          ]
+        },
+        "pin": {
+          "$ref": "#/$defs/ReleasePin"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "intrinsic",
+            "default"
+          ]
+        },
+        "bind": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Binding"
+          }
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "select": {
+          "$ref": "#/$defs/Selector"
+        },
+        "override": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FragmentOverride"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "use",
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "CreationRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?(?:@[0-9A-Za-z.+-]{1,64})?$"
+    },
+    "ReleasePin": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "follow": {
+              "type": "string",
+              "const": "latest"
+            }
+          },
+          "required": [
+            "follow"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            },
+            "semantic_digest": {
+              "$ref": "#/$defs/Digest"
+            }
+          },
+          "required": [
+            "release",
+            "semantic_digest"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Binding": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "{{self}}"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\{\\{cast:[a-z][a-z0-9_-]{0,31}\\}\\}$"
+        },
+        {
+          "$ref": "#/$defs/CreationRef"
+        },
+        {
+          "type": "string",
+          "pattern": "^#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "late": {
+              "type": "string",
+              "enum": [
+                "persona",
+                "character"
+              ]
+            },
+            "hint": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "late"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Selector": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "include": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3})(?:\\/\\*)?$|^\\*$"
+              }
+            }
+          },
+          "required": [
+            "include"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "exclude": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3})(?:\\/\\*)?$|^\\*$"
+              }
+            }
+          },
+          "required": [
+            "exclude"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "FragmentOverride": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "replace"
+            },
+            "target": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "content": {
+              "$ref": "#/$defs/FragmentContent"
+            },
+            "force": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "op",
+            "target",
+            "content"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "remove"
+            },
+            "target": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "force": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "op",
+            "target"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "patch"
+            },
+            "target": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "set": {
+              "type": "object",
+              "properties": {
+                "activation": {
+                  "$ref": "#/$defs/Activation"
+                },
+                "visibility": {
+                  "$ref": "#/$defs/Visibility"
+                },
+                "importance": {
+                  "type": "string",
+                  "enum": [
+                    "pinned",
+                    "normal",
+                    "opportunistic"
+                  ]
+                },
+                "placement_hint": {
+                  "$ref": "#/$defs/FragmentKind"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "op",
+            "target",
+            "set"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "add"
+            },
+            "fragment": {
+              "$ref": "#/$defs/Fragment"
+            }
+          },
+          "required": [
+            "op",
+            "fragment"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AssetSlot": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "presentation",
+            "context"
+          ]
+        },
+        "variants": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AssetVariant"
+          }
+        }
+      },
+      "required": [
+        "slot",
+        "role",
+        "variants"
+      ],
+      "additionalProperties": false
+    },
+    "AssetVariant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "blob": {
+          "$ref": "#/$defs/BlobRef"
+        },
+        "media_type": {
+          "type": "string",
+          "pattern": "^[a-z]+\\/[a-z0-9.+-]+$"
+        },
+        "alt": {
+          "$ref": "#/$defs/LocalizedText"
+        },
+        "license": {
+          "$ref": "#/$defs/SpdxExpression"
+        },
+        "rating": {
+          "$ref": "#/$defs/Rating"
+        }
+      },
+      "required": [
+        "id",
+        "blob",
+        "media_type"
+      ],
+      "additionalProperties": false
+    },
+    "BlobRef": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "mirrored",
+            "linked"
+          ]
+        }
+      },
+      "required": [
+        "digest",
+        "size",
+        "availability"
+      ],
+      "additionalProperties": false
+    },
+    "SourceLocator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "github"
+            },
+            "repository_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,19}$"
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "provider",
+            "repository_id",
+            "commit",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "http"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "provider",
+            "url"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "LocalizedText": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Locale"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ]
+    },
+    "SpdxExpression": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9.+\\-() :]+$"
+    },
+    "Rating": {
+      "type": "string",
+      "enum": [
+        "general",
+        "teen",
+        "mature",
+        "explicit"
+      ]
+    }
+  }
+}

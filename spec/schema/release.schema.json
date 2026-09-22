@@ -1,0 +1,608 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v0-draft/release.schema.json",
+  "title": "char.pub Release",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+    },
+    "creation": {
+      "type": "string",
+      "pattern": "^cr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+    },
+    "label": {
+      "type": "string",
+      "pattern": "^[0-9A-Za-z.+-]{1,64}$"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "yanked",
+        "tombstoned"
+      ]
+    },
+    "status_reason": {
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/SourceRecord"
+    },
+    "source_digest": {
+      "$ref": "#/$defs/Digest"
+    },
+    "semantic_digest": {
+      "$ref": "#/$defs/Digest"
+    },
+    "attribution": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "#/$defs/UnversionedRef"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/AttributionAuthor"
+            }
+          }
+        },
+        "required": [
+          "ref",
+          "authors"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "contributors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "#/$defs/UnversionedRef"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^usr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              },
+              {
+                "$ref": "#/$defs/GuestAuthor"
+              }
+            ]
+          },
+          "contribution": {
+            "type": "string",
+            "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+          }
+        },
+        "required": [
+          "ref",
+          "author"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "lock": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LockEntry"
+      }
+    },
+    "snapshot": {
+      "$ref": "#/$defs/BlobRef"
+    },
+    "context_ir": {
+      "$ref": "#/$defs/BlobRef"
+    },
+    "availability": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "linked"
+      ]
+    },
+    "effective_rating": {
+      "$ref": "#/$defs/Rating"
+    },
+    "license_check": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+    },
+    "published_by": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^usr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "oidc": {
+              "$ref": "#/$defs/GitHubOIDCClaims"
+            }
+          },
+          "required": [
+            "oidc"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "creation",
+    "label",
+    "visibility",
+    "status",
+    "source",
+    "source_digest",
+    "semantic_digest",
+    "attribution",
+    "contributors",
+    "provenance",
+    "lock",
+    "snapshot",
+    "availability",
+    "effective_rating",
+    "license_check",
+    "created_at",
+    "published_by"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "SourceRecord": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "native"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            }
+          },
+          "required": [
+            "provider",
+            "revision"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "github"
+            },
+            "repository_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,19}$"
+            },
+            "repository_owner_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,19}$"
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "provider",
+            "repository_id",
+            "repository_owner_id",
+            "commit",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "import"
+            },
+            "format": {
+              "type": "string",
+              "minLength": 1
+            },
+            "upload": {
+              "$ref": "#/$defs/BlobRef"
+            }
+          },
+          "required": [
+            "provider",
+            "format",
+            "upload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "http"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "fetched_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            }
+          },
+          "required": [
+            "provider",
+            "url",
+            "fetched_at"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "BlobRef": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "mirrored",
+            "linked"
+          ]
+        }
+      },
+      "required": [
+        "digest",
+        "size",
+        "availability"
+      ],
+      "additionalProperties": false
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "SourceLocator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "github"
+            },
+            "repository_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,19}$"
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "provider",
+            "repository_id",
+            "commit",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "http"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "provider",
+            "url"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "UnversionedRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "AttributionAuthor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "user": {
+          "type": "string",
+          "pattern": "^usr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "guest_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "contribution": {
+          "type": "string",
+          "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "GuestAuthor": {
+      "type": "object",
+      "properties": {
+        "guest_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "guest_id",
+        "display_name"
+      ],
+      "additionalProperties": false
+    },
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "derived_from": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "release": {
+                "type": "string",
+                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              },
+              "relation": {
+                "type": "string",
+                "enum": [
+                  "fork",
+                  "remix",
+                  "import"
+                ]
+              }
+            },
+            "required": [
+              "release",
+              "relation"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "imported_from": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "omitted_policy_fields": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "format",
+            "source_digest"
+          ],
+          "additionalProperties": false
+        },
+        "au": {
+          "type": "boolean"
+        },
+        "contributors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^usr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                  },
+                  {
+                    "$ref": "#/$defs/GuestAuthor"
+                  }
+                ]
+              },
+              "contribution": {
+                "type": "string",
+                "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              }
+            },
+            "required": [
+              "author"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "authored_by_agent": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LockEntry": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/UnversionedRef"
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "semantic_digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          }
+        }
+      },
+      "required": [
+        "ref",
+        "release",
+        "semantic_digest",
+        "via"
+      ],
+      "additionalProperties": false
+    },
+    "Rating": {
+      "type": "string",
+      "enum": [
+        "general",
+        "teen",
+        "mature",
+        "explicit"
+      ]
+    },
+    "GitHubOIDCClaims": {
+      "type": "object",
+      "properties": {
+        "repository_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "repository_owner_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workflow_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "job_workflow_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "run_attempt": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "actor_id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,19}$"
+        },
+        "event_name": {
+          "type": "string",
+          "enum": [
+            "push",
+            "workflow_dispatch",
+            "release"
+          ]
+        },
+        "jti": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "repository_id",
+        "repository_owner_id",
+        "sha",
+        "ref",
+        "workflow_ref",
+        "job_workflow_ref",
+        "run_id",
+        "run_attempt",
+        "actor_id",
+        "event_name",
+        "jti"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
