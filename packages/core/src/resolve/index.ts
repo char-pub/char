@@ -95,9 +95,9 @@ export function resolve(input: ResolveInput): ResolveOutput {
     .sort(([a], [b]) => compareStrings(a, b))
     .map(([id, u]) => buildAsset(id, u.inst, u.slot, u.variant, input.publicAssetBaseUrl));
 
-  const participants = buildParticipants(env, rootCreation);
   const bootstrap = buildBootstrap(graph.root, env, usage);
   const late_slots = buildLateSlots(env, usage);
+  const participants = buildParticipants(env, rootCreation, new Set(late_slots.map((s) => s.key)));
   const meta = buildMeta(graph, fragments, assets, env, au);
 
   const diagnostics = sortDiagnostics(
@@ -214,12 +214,18 @@ function buildAsset(
   return out;
 }
 
+/**
+ * IR 中的参与者。由 late slot 决定的参与者只在对应的 late slot 出现在 IR 中时才保留：
+ * 可选且没有被任何内容使用的 slot 不进入 IR，它的参与者也不应该出现。
+ */
 function buildParticipants(
   env: ReturnType<typeof buildEnvironment>,
   root: CanonicalCreation,
+  lateSlotKeys: ReadonlySet<string>,
 ): Participant[] {
   const out: Participant[] = [];
   for (const p of env.participants.values()) {
+    if (p.late !== undefined && !lateSlotKeys.has(p.late)) continue;
     const item: Participant = { key: p.key, display_name: p.display_name, kind: p.kind };
     if (p.ref !== undefined) item.ref = p.ref;
     if (p.role !== undefined) item.role = p.role;
