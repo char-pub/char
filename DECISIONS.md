@@ -676,3 +676,15 @@ GitHub 的 `repository_id`、`repository_owner_id` 等在 OIDC claim 中本来�
 8. **运行时能力**：`system_role: false` 时 system 内容改用 user 角色；`multiple_system_messages: false` 时合并成一条。
 9. **默认文案**：narrator 模式下 private 内容的标注、示例对话 / memory 小节标题默认是英文，可通过参数替换。
 10. **tokenizer**：不认识的 tokenizer 名退回估算，Trace 标注 `estimated: true`。
+
+### D-132 `char.yaml` 的 v0 书写形式 — Accepted（O-5 的临时取值，IR 冻结后再定稿）
+
+CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的形式：**`char.yaml` 就是 Canonical Creation 的 YAML 表示**，外加少量书写便利。这样不需要第二套 schema，`char check` 与 Registry 用同一套校验。
+
+1. 文件内容解析为 YAML（只允许 JSON 兼容的子集：禁用自定义 tag、锚点合并键之外的别名展开设上限，防止“billion laughs”），然后按 Canonical Creation 校验。
+2. 书写便利（由 CLI 在 canonicalize 之前展开，不进入 canonical 形式）：
+   - 文本字段可以写 `./path.md`：以 `./` 开头、以 `.md` / `.txt` 结尾的字符串，读取同目录下的文件内容（路径不能跳出项目根目录）。
+   - fragment 可以省略 `stable`，默认 `true`；省略 `id` 时由 `char check --fix` 生成稳定 ID 并写回文件。
+   - `id`（内部 Creation ID）可以省略，由 Registry 在首次发布时分配；本地构建使用基于 ref 的确定性占位 ID。
+3. 一个仓库可以有多个 Creation：`char.yaml` 可以放在任意子目录，CLI 用 `--path` 指定。
+4. `char build` 的输出与 Registry 用同一个 Resolver，因此本地构建的 IR 与 Registry 生成的 IR 字节一致（占位 ID 除外）。
