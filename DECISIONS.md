@@ -661,3 +661,18 @@ GitHub 的 `repository_id`、`repository_owner_id` 等在 OIDC claim 中本来�
 4. **有冲突就不产出结果**：一个 Contribution 只要有一个冲突，合并结果为空，不能生成新 Revision；各变更的状态照常返回，供 UI 标注。给不存在的 slot 添加 variant 视为冲突。
 5. **Diff 的 lock_changes**：IR 只有 lock 的 digest，所以由调用方传入两边的 lock（含 label）；不传时按 `graph.nodes` 的 Release ID 比较，显示 Release ID。
 6. **token_delta**：`always` 统计 always 激活或 pinned 的 fragment；`potential` 统计全部 fragment（关键词全部命中、semantic 与 manual 都启用时的上界）。只按 default locale 计算。
+
+### D-131 参考 Assembler 的实现取值 — Accepted（实现取值，待用户复核）
+
+参考 Assembler 只需满足 Assembler 契约的语义要求，以下是它在规范没有写明处的取值。第三方 Runtime 可以做不同选择。
+
+1. **locale 回退**：每个 fragment 在 Trace 中只有一条记录；纳入但内容回退到 default locale 时 reason 为 `locale-fallback`。locale 按 BCP 47 lookup 匹配，不区分大小写。
+2. **semantic 激活**：参考实现不做语义检索。Session 显式启用时按 manual 纳入（reason `manual`）；否则跳过，reason 为 `semantic`，与 `inactive` 区分。
+3. **keyword 默认值**：扫描最近 2 条消息（与 SillyTavern World Info 默认值一致），logic 默认 any，默认不区分大小写，默认不要求整词。整词边界是 Unicode 字母、数字或下划线，因此中日文开启整词匹配后通常匹配不到。
+4. **预算**：对话历史与 Session Overlay（绑定对象描述、memory、state、当前 variant）先从预算中扣除，它们总是纳入。
+5. **late binding 检查**：绑定对象类型不在 accepts 中时报 `assemble.late_slot_kind_mismatch`；文本引用了未绑定的 optional slot 也报错，保证输出不残留占位符。
+6. **scene 可见性**：只在 `session.scene` 匹配时纳入，不匹配时 reason 为 `visibility`。Session 因此多一个 `scene` 字段。
+7. **图片**：只有 `role: context` 的资源作为附件交给模型；presentation 资源即使被引用也按 `unsupported-media` 处理。
+8. **运行时能力**：`system_role: false` 时 system 内容改用 user 角色；`multiple_system_messages: false` 时合并成一条。
+9. **默认文案**：narrator 模式下 private 内容的标注、示例对话 / memory 小节标题默认是英文，可通过参数替换。
+10. **tokenizer**：不认识的 tokenizer 名退回估算，Trace 标注 `estimated: true`。
