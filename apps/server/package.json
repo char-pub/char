@@ -1,0 +1,29 @@
+{
+  "name": "@char-pub/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/s3-request-presigner": "catalog:",
+    "@char-pub/core": "workspace:*",
+    "@hono/node-server": "catalog:",
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:",
+    "pg": "catalog:",
+    "pg-boss": "catalog:",
+    "pino": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@testcontainers/minio": "catalog:",
+    "@testcontainers/postgresql": "catalog:",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
+    "testcontainers": "catalog:"
+  }
+}

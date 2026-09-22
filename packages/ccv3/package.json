@@ -1,7 +1,7 @@
 {
-  "name": "@char-pub/core",
+  "name": "@char-pub/ccv3",
   "version": "0.0.0",
-  "description": "char.pub Canonical Model, canonicalization, digest, Resolver and Context IR (isomorphic, deterministic)",
+  "description": "CCv3 / PNG / CHARX import and export for char.pub Canonical Model, with Import and Loss Reports",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -19,11 +19,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@noble/hashes": "catalog:",
-    "canonicalize": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "uuidv7": "catalog:"
+    "@char-pub/core": "workspace:*",
+    "fflate": "catalog:"
   }
 }

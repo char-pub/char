@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "biome check .",
     "format": "biome check --write .",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
     "deps": "depcruise packages apps --config .dependency-cruiser.cjs",
     "test": "vitest run --project unit",
     "test:unit": "vitest run --project unit --coverage",

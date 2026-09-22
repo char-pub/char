@@ -1,7 +1,7 @@
 {
-  "name": "@char-pub/core",
+  "name": "@char-pub/assembler",
   "version": "0.0.0",
-  "description": "char.pub Canonical Model, canonicalization, digest, Resolver and Context IR (isomorphic, deterministic)",
+  "description": "Reference Context IR Assembler with Assembly Trace and token estimation",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -19,11 +19,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@noble/hashes": "catalog:",
-    "canonicalize": "catalog:",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "uuidv7": "catalog:"
+    "@char-pub/core": "workspace:*",
+    "gpt-tokenizer": "catalog:",
+    "tokenx": "catalog:"
   }
 }

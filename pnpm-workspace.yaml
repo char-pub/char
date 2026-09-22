@@ -5,6 +5,22 @@ packages:
 # 供应链防护：新发布的版本至少等 3 天再安装（单位：分钟）
 minimumReleaseAge: 4320
 catalog:
+  "@aws-sdk/client-s3": ^3.0.0
+  "@aws-sdk/s3-request-presigner": ^3.0.0
+  "@hono/node-server": ^2.0.0
+  "@testcontainers/minio": ^12.0.0
+  "@testcontainers/postgresql": ^12.0.0
+  "@types/pg": ^8.0.0
+  drizzle-kit: ^0.31.0
+  drizzle-orm: ^0.45.0
+  fflate: ^0.8.0
+  gpt-tokenizer: ^4.0.0
+  hono: ^4.0.0
+  pg: ^8.0.0
+  pg-boss: ~12.33.0
+  pino: ^10.0.0
+  testcontainers: ^12.0.0
+  tokenx: ^2.0.0
   "@biomejs/biome": 2.5.14
   "@types/node": ^24.0.0
   "@vitest/browser-playwright": 4.1.11
@@ -22,7 +38,10 @@ catalog:
   zod: 4.6.5
 # 只允许列出的依赖执行 install 脚本
 allowBuilds:
+  cpu-features: set this to true or false
   esbuild: true
   lefthook: true
+  protobufjs: set this to true or false
   sharp: true
+  ssh2: set this to true or false
   workerd: true
