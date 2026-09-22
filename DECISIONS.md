@@ -624,3 +624,17 @@ char.pub 的 Railway project 建在 `Hushed Chat` workspace 下（用户确认�
 ### D-125 本地开发统一使用 pnpm — Accepted
 
 2026-09-22 用户要求：本地开发一律使用 pnpm（依赖安装、脚本运行、workspace 管理），CI 同样使用 pnpm。版本由根 `package.json#packageManager` 锁定，仓库只提交 `pnpm-lock.yaml`，不提交 `package-lock.json` / `yarn.lock`。
+
+### D-126 semantic_digest 中的 fragment 列表保留声明顺序 — Accepted（规范修正，待用户复核）
+
+canonical-model §14 原文写 `fragment_digests: sorted[(id, digest)]`。但 Context IR 规定“同一 Creation 内保持 canonical 中的 fragment 顺序”，Build Cache 的 key 又是 `semantic_digest + lock_digest + …`。如果排序，只调换 fragment 顺序会得到相同的 semantic_digest，却生成不同的 IR，缓存会返回错误结果。
+
+实现取值：manifest 中的 `fragment_digests` 是按**声明顺序**排列的 `[id, digest]` 列表。调换 fragment 顺序会改变 semantic_digest（它确实改变了 IR）。fragment ID 在 Creation 内唯一，所以列表仍然没有歧义。spec 已同步修改；一致性用例按此编写。
+
+### D-127 内部 ID 的外部编码使用 TypeID — Accepted
+
+内部 ID 的载荷是 UUIDv7（数据库列类型 `uuid`），API 与 Canonical JSON 中使用 TypeID 编码：`<prefix>_<26 位 Crockford base32>`，例如 `cr_01h455vb4pex5vsknk084sn02q`。前缀：`ns`、`cr`、`rel`、`rev`、`usr`、`ctb`、`upl`。TypeID 是公开规范（jetify-com/typeid），有成熟的多语言实现；core 只校验格式，ID 由调用方生成后传入。
+
+### D-128 GitHub 数字 ID 在 JSON 中用十进制字符串 — Accepted
+
+GitHub 的 `repository_id`、`repository_owner_id` 等在 OIDC claim 中本来就是字符串，数值可能超过 JSON 安全整数范围。Canonical JSON、IR 与 API 中统一用十进制字符串（`"123456"`），数据库中用 `bigint`。这落实了 DOR F-1 对 spec 类型的修正。

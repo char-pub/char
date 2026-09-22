@@ -493,8 +493,8 @@ interface LockEntry {
 
 type SourceRecord =
   | { provider: "native"; revision: RevisionId }
-  | { provider: "github"; repository_id: number; repository_owner_id: number;
-      commit: string; path: string }                           // D-071
+  | { provider: "github"; repository_id: DecimalId; repository_owner_id: DecimalId;
+      commit: string; path: string }                           // D-071；DecimalId 为十进制字符串（D-128）
   | { provider: "import"; format: string; upload: BlobRef }
   | { provider: "http"; url: string; fetched_at: Timestamp }
 ```
@@ -525,7 +525,7 @@ interface Contribution {
   title: string
   description?: string
   status: "open" | "accepted" | "rejected" | "withdrawn"
-  transport: { type: "native" } | { type: "github-pr"; repository_id: number; number: number }
+  transport: { type: "native" } | { type: "github-pr"; repository_id: DecimalId; number: number }
   changes: Change[]
   rights_ack: { inbound_equals_outbound: true } | { explicit_grant: true }  // D-064
 }
@@ -576,7 +576,7 @@ v0-draft 方案（待冻结）：
 2. 对象序列化为 JSON，按 RFC 8785（JCS）规范化。
 3. 省略值等于默认值的字段（如 `importance: "normal"`），保证“写与不写默认值”digest 相同。
 4. `fragment.digest = sha256(JCS(fragment 去掉 digest 字段))`。
-5. `semantic_digest = sha256(JCS({ creation 去掉 fragments 内容, fragment_digests: sorted[(id, digest)] }))`。
+5. `semantic_digest = sha256(JCS({ creation 去掉 fragments, fragment_digests: [[id, digest], …] }))`，`fragment_digests` 保留 fragment 的声明顺序（顺序影响 Context IR，D-126）。
 6. 所有 digest 编码为 `sha256:<hex>`。
 
 ---

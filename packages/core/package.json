@@ -21,5 +21,8 @@
     "@noble/hashes": "catalog:",
     "canonicalize": "catalog:",
     "zod": "catalog:"
+  },
+  "devDependencies": {
+    "uuidv7": "catalog:"
   }
 }

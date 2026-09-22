@@ -15,6 +15,7 @@
   - 仓库 public，密钥不进 git。
   - 优先采用成熟方案，不重复造轮子。
   - 本地开发统一使用 pnpm（安装、脚本、workspace），不生成 `package-lock.json`（D-125）。
+  - 代码注释和 llmdoc 要自包含：直接写清规则和原因，不堆砌“§x.y”“D-xxx”这类章节或决策编号（过程文档如 PROGRESS / DECISIONS / commit 不受限）。
   - 单次写入的代码不超过 2000 行，大文件分多次追加。
   - 开始工作前先 `pwd`，文件工具只使用真实的绝对路径。
   - 做大范围探索、规划或文档工作之前，先加载 `llmdoc` skill。

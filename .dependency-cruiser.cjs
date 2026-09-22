@@ -1,4 +1,4 @@
-/** 依赖边界规则（architecture §2.1），CI 强制。 */
+/** 包之间的依赖边界，CI 强制执行。core 必须保持零 IO、可在任意 JS 运行时中运行。 */
 module.exports = {
   forbidden: [
     {

@@ -31,7 +31,7 @@
               "level": "error",
               "options": {
                 "deniedGlobals": {
-                  "fetch": "core 不能做 IO（architecture §2.1）",
+                  "fetch": "core 不能做网络 IO",
                   "Date": "core 不能读取时钟，时间通过参数注入",
                   "process": "core 不能依赖 Node 运行时",
                   "crypto": "core 使用 @noble/hashes，保持同步且三端一致"

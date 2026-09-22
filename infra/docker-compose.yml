@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: charpub_owner
       POSTGRES_PASSWORD: charpub_owner_local
       POSTGRES_DB: charpub
-      # locale 不能是 C，否则 pg_trgm 会丢掉 CJK 字符（architecture §5.3）
+      # locale 不能是 C，否则 pg_trgm 会丢掉 CJK 字符，中文 / 日文搜索会失效
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     ports:
       - "127.0.0.1:54329:5432"

@@ -191,6 +191,9 @@ catalogs:
     typescript:
       specifier: 6.0.3
       version: 6.0.3
+    uuidv7:
+      specifier: 1.2.1
+      version: 1.2.1
     vitest:
       specifier: 4.1.11
       version: 4.1.11
@@ -238,6 +241,10 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.6.5
+    devDependencies:
+      uuidv7:
+        specifier: 'catalog:'
+        version: 1.2.1
 
 packages:
 
@@ -924,6 +931,10 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
+  uuidv7@1.2.1:
+    resolution: {integrity: sha512-4kPkK3/XTQW9Hbm4CaqfICn+kY9LJtDVEOfgsRRra/+n2Ofg4NqzRFceAkxvQ/Ud/6BpHOPzj8cirqM7TzTN5Q==}
+    hasBin: true
+
   vite@8.3.0:
     resolution: {integrity: sha512-lhZBVvEHefgE+HQZC9O7EBJgCU/nVzFNl7vkS4RE0APtWLP02/8QVIkQtzBxPquh7lq5/78NHipTj7ODQ6XuyQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1571,6 +1582,8 @@ snapshots:
   typescript@6.0.3: {}
 
   undici-types@7.18.2: {}
+
+  uuidv7@1.2.1: {}
 
   vite@8.3.0(@types/node@24.13.6):
     dependencies:
