@@ -19,3 +19,4 @@ playwright-report/
 .playwright-mcp/
 # 一致性测试集中等待人工审阅的实现输出，不提交
 spec/conformance/cases/*/draft/
+spec/conformance/REVIEW.md

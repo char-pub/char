@@ -21,6 +21,8 @@
     "conformance:bundle": "tsx --conditions=@char-pub/source spec/conformance/scripts/bundle.ts",
     "conformance:draft": "tsx --conditions=@char-pub/source spec/conformance/scripts/draft.ts",
     "conformance:accept": "tsx --conditions=@char-pub/source spec/conformance/scripts/accept.ts",
+    "conformance:precheck": "tsx --conditions=@char-pub/source spec/conformance/scripts/precheck.ts",
+    "conformance:review": "tsx --conditions=@char-pub/source spec/conformance/scripts/review.ts",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
