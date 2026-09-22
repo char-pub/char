@@ -1,0 +1,9 @@
+# 本地 git hooks（`pnpm install` 时自动安装）。CI 会再跑一遍同样的检查。
+pre-commit:
+  parallel: true
+  jobs:
+    - name: gitleaks
+      run: gitleaks git --pre-commit --staged --redact --no-banner
+    - name: biome
+      glob: "*.{js,ts,tsx,jsx,json,jsonc,css}"
+      run: pnpm exec biome check --no-errors-on-unmatched {staged_files}

@@ -1,0 +1,28 @@
+packages:
+  - packages/*
+  - apps/*
+
+# 供应链防护：新发布的版本至少等 3 天再安装（单位：分钟）
+minimumReleaseAge: 4320
+catalog:
+  "@biomejs/biome": 2.5.14
+  "@types/node": ^24.0.0
+  "@vitest/browser-playwright": 4.1.11
+  "@vitest/coverage-v8": 4.1.11
+  "@cloudflare/vitest-pool-workers": 0.22.0
+  canonicalize: 5.1.0
+  "@noble/hashes": 2.4.0
+  dependency-cruiser: ^18.0.0
+  fast-check: 4.10.2
+  lefthook: 2.1.14
+  playwright: 1.63.0
+  typescript: 6.0.3
+  uuidv7: 1.2.1
+  vitest: 4.1.11
+  zod: 4.6.5
+# 只允许列出的依赖执行 install 脚本
+allowBuilds:
+  esbuild: true
+  lefthook: true
+  sharp: true
+  workerd: true

@@ -1,0 +1,13 @@
+# 默认所有者
+*                         @Disdjj
+
+# 安全关键路径（authz / OIDC / webhook / canonical / merge / upload）需要显式审阅
+/packages/core/src/canonical*   @Disdjj
+/packages/core/src/digest*      @Disdjj
+/packages/core/src/merge*       @Disdjj
+/apps/server/src/authz/         @Disdjj
+/apps/server/src/oidc/          @Disdjj
+/apps/server/src/webhook/       @Disdjj
+/apps/server/src/upload/        @Disdjj
+/.github/                       @Disdjj
+/spec/                          @Disdjj

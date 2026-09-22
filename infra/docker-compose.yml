@@ -1,0 +1,57 @@
+# 本地开发环境：Postgres 16 + MinIO（S3 兼容）。
+# 这里的口令只用于本机开发，线上值在 Railway / Cloudflare 中配置。
+name: charpub
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_USER: charpub_owner
+      POSTGRES_PASSWORD: charpub_owner_local
+      POSTGRES_DB: charpub
+      # locale 不能是 C，否则 pg_trgm 会丢掉 CJK 字符（architecture §5.3）
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U charpub_owner -d charpub"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: charpub_local
+      MINIO_ROOT_PASSWORD: charpub_local_secret
+    ports:
+      - "127.0.0.1:59000:9000"
+      - "127.0.0.1:59001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 charpub_local charpub_local_secret &&
+      for b in public private uploads evidence; do mc mb --ignore-existing local/charpub-local-$$b; done &&
+      mc anonymous set download local/charpub-local-public &&
+      mc ilm rule add --expire-days 1 local/charpub-local-uploads || true
+      "
+
+volumes:
+  pgdata:
+  miniodata:

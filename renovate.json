@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "pin",
+  "lockFileMaintenance": { "enabled": true, "schedule": ["before 6am on monday"] },
+  "packageRules": [
+    {
+      "description": "Vitest 与 Cloudflare workers 测试插件需一起升级",
+      "groupName": "vitest",
+      "matchPackageNames": ["vitest", "@vitest/**", "@cloudflare/vitest-pool-workers"]
+    },
+    {
+      "description": "pg-boss 锁定 minor（DOR 技术选型）",
+      "matchPackageNames": ["pg-boss"],
+      "matchUpdateTypes": ["minor", "major"],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@char-pub/core",
+  "version": "0.0.0",
+  "description": "char.pub Canonical Model, canonicalization, digest, Resolver and Context IR (isomorphic, deterministic)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@noble/hashes": "catalog:",
+    "canonicalize": "catalog:",
+    "zod": "catalog:"
+  }
+}

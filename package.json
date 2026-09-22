@@ -1,0 +1,33 @@
+{
+  "name": "char-pub",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc -b",
+    "deps": "depcruise packages apps --config .dependency-cruiser.cjs",
+    "test": "vitest run --project unit",
+    "test:unit": "vitest run --project unit --coverage",
+    "build": "pnpm -r --if-present build",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
+    "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm build && pnpm secrets",
+    "prepare": "lefthook install || true"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "dependency-cruiser": "catalog:",
+    "fast-check": "catalog:",
+    "lefthook": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
