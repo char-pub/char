@@ -14,6 +14,7 @@
     "test": "vitest run --project unit",
     "test:unit": "vitest run --project unit --coverage",
     "build": "pnpm -r --if-present build",
+    "schema:export": "tsx --conditions=@char-pub/source packages/core/scripts/export-json-schema.ts",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
@@ -27,6 +28,7 @@
     "dependency-cruiser": "catalog:",
     "fast-check": "catalog:",
     "lefthook": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

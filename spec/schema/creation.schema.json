@@ -1,0 +1,1302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v0-draft/creation.schema.json",
+  "title": "char.pub Creation (Canonical Model)",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^cr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+    },
+    "ref": {
+      "$ref": "#/$defs/UnversionedRef"
+    },
+    "type": {
+      "$ref": "#/$defs/CreationType"
+    },
+    "display_name": {
+      "$ref": "#/$defs/LocalizedText"
+    },
+    "summary": {
+      "$ref": "#/$defs/LocalizedText"
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AttributionAuthor"
+      }
+    },
+    "slots": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/SlotDecl"
+      }
+    },
+    "params": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,31}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/ParamDecl"
+      }
+    },
+    "fragments": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Fragment"
+      }
+    },
+    "references": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ReferenceEdge"
+      }
+    },
+    "assets": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AssetSlot"
+      }
+    },
+    "bootstrap": {
+      "type": "object",
+      "properties": {
+        "greetings": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Greeting"
+          }
+        }
+      },
+      "required": [
+        "greetings"
+      ],
+      "additionalProperties": false
+    },
+    "cast": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CastMember"
+      }
+    },
+    "meta": {
+      "$ref": "#/$defs/CreationMeta"
+    },
+    "provenance": {
+      "default": {},
+      "$ref": "#/$defs/Provenance"
+    }
+  },
+  "required": [
+    "id",
+    "ref",
+    "type",
+    "display_name",
+    "meta"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "UnversionedRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "CreationType": {
+      "type": "string",
+      "enum": [
+        "character",
+        "world",
+        "lorebook",
+        "relationship",
+        "scenario",
+        "persona",
+        "style",
+        "preset"
+      ]
+    },
+    "LocalizedText": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Locale"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ]
+    },
+    "Locale": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+    },
+    "AttributionAuthor": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "user": {
+          "type": "string",
+          "pattern": "^usr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "guest_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "contribution": {
+          "type": "string",
+          "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "SlotDecl": {
+      "type": "object",
+      "properties": {
+        "accepts": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CreationType"
+            },
+            {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CreationType"
+              }
+            }
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "description": {
+          "$ref": "#/$defs/LocalizedText"
+        }
+      },
+      "required": [
+        "accepts"
+      ],
+      "additionalProperties": false
+    },
+    "ParamDecl": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "default": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "description": {
+          "$ref": "#/$defs/LocalizedText"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "Fragment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/FragmentId"
+        },
+        "stable": {
+          "type": "boolean"
+        },
+        "kind": {
+          "$ref": "#/$defs/FragmentKind"
+        },
+        "content": {
+          "$ref": "#/$defs/FragmentContent"
+        },
+        "locale": {
+          "$ref": "#/$defs/LocaleMap"
+        },
+        "activation": {
+          "$ref": "#/$defs/Activation"
+        },
+        "visibility": {
+          "$ref": "#/$defs/Visibility"
+        },
+        "importance": {
+          "type": "string",
+          "enum": [
+            "pinned",
+            "normal",
+            "opportunistic"
+          ]
+        },
+        "placement_hint": {
+          "$ref": "#/$defs/FragmentKind"
+        },
+        "asset_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#asset\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)?$"
+          }
+        },
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "id",
+        "stable",
+        "kind",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "FragmentId": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}$"
+    },
+    "FragmentKind": {
+      "type": "string",
+      "enum": [
+        "character",
+        "persona",
+        "relationship",
+        "world",
+        "scenario",
+        "knowledge",
+        "style",
+        "examples",
+        "instruction"
+      ]
+    },
+    "FragmentContent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "text": {
+              "type": "string"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "markdown",
+                "plain"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "dialogue"
+            },
+            "turns": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "speaker": {
+                    "$ref": "#/$defs/SpeakerRef"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "speaker",
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "type",
+            "turns"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "media"
+            },
+            "asset": {
+              "type": "string",
+              "pattern": "^#asset\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)?$"
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "asset"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "structured"
+            },
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "data": {
+              "$ref": "#/$defs/JSONValue"
+            }
+          },
+          "required": [
+            "type",
+            "schema",
+            "data"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SpeakerRef": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "{{self}}"
+        },
+        {
+          "type": "string",
+          "const": "{{user}}"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\{\\{slot:[a-z][a-z0-9_]{0,31}\\}\\}$"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\{\\{cast:[a-z][a-z0-9_-]{0,31}\\}\\}$"
+        },
+        {
+          "$ref": "#/$defs/UnversionedRef"
+        }
+      ]
+    },
+    "JSONValue": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JSONValue"
+          }
+        }
+      ]
+    },
+    "LocaleMap": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/Locale"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "$ref": "#/$defs/FragmentContent"
+          },
+          "activation_keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "Activation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "always"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "keyword"
+            },
+            "keys": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "secondary": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "logic": {
+              "type": "string",
+              "enum": [
+                "any",
+                "all"
+              ]
+            },
+            "case_sensitive": {
+              "type": "boolean"
+            },
+            "whole_word": {
+              "type": "boolean"
+            },
+            "scan_depth": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          "required": [
+            "mode",
+            "keys"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "semantic"
+            },
+            "hint": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "const": "manual"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Visibility": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "const": "shared"
+            }
+          },
+          "required": [
+            "scope"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "const": "private"
+            },
+            "to": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SpeakerRef"
+              }
+            }
+          },
+          "required": [
+            "scope",
+            "to"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "const": "scene"
+            },
+            "scene": {
+              "$ref": "#/$defs/FragmentId"
+            }
+          },
+          "required": [
+            "scope"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "ReferenceEdge": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "rel": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$"
+        },
+        "use": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CreationRef"
+            },
+            {
+              "type": "string",
+              "pattern": "^#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}$"
+            }
+          ]
+        },
+        "pin": {
+          "$ref": "#/$defs/ReleasePin"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "intrinsic",
+            "default"
+          ]
+        },
+        "bind": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Binding"
+          }
+        },
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "select": {
+          "$ref": "#/$defs/Selector"
+        },
+        "override": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FragmentOverride"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "use",
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "CreationRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?(?:@[0-9A-Za-z.+-]{1,64})?$"
+    },
+    "ReleasePin": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "follow": {
+              "type": "string",
+              "const": "latest"
+            }
+          },
+          "required": [
+            "follow"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            },
+            "semantic_digest": {
+              "$ref": "#/$defs/Digest"
+            }
+          },
+          "required": [
+            "release",
+            "semantic_digest"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Binding": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "{{self}}"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\{\\{cast:[a-z][a-z0-9_-]{0,31}\\}\\}$"
+        },
+        {
+          "$ref": "#/$defs/CreationRef"
+        },
+        {
+          "type": "string",
+          "pattern": "^#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "late": {
+              "type": "string",
+              "enum": [
+                "persona",
+                "character"
+              ]
+            },
+            "hint": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "late"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Selector": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "include": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3})(?:\\/\\*)?$|^\\*$"
+              }
+            }
+          },
+          "required": [
+            "include"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "exclude": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3})(?:\\/\\*)?$|^\\*$"
+              }
+            }
+          },
+          "required": [
+            "exclude"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "FragmentOverride": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "replace"
+            },
+            "target": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "content": {
+              "$ref": "#/$defs/FragmentContent"
+            },
+            "force": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "op",
+            "target",
+            "content"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "remove"
+            },
+            "target": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "force": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "op",
+            "target"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "patch"
+            },
+            "target": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "set": {
+              "type": "object",
+              "properties": {
+                "activation": {
+                  "$ref": "#/$defs/Activation"
+                },
+                "visibility": {
+                  "$ref": "#/$defs/Visibility"
+                },
+                "importance": {
+                  "type": "string",
+                  "enum": [
+                    "pinned",
+                    "normal",
+                    "opportunistic"
+                  ]
+                },
+                "placement_hint": {
+                  "$ref": "#/$defs/FragmentKind"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "op",
+            "target",
+            "set"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "const": "add"
+            },
+            "fragment": {
+              "$ref": "#/$defs/Fragment"
+            }
+          },
+          "required": [
+            "op",
+            "fragment"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "AssetSlot": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "presentation",
+            "context"
+          ]
+        },
+        "variants": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AssetVariant"
+          }
+        }
+      },
+      "required": [
+        "slot",
+        "role",
+        "variants"
+      ],
+      "additionalProperties": false
+    },
+    "AssetVariant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "blob": {
+          "$ref": "#/$defs/BlobRef"
+        },
+        "media_type": {
+          "type": "string",
+          "pattern": "^[a-z]+\\/[a-z0-9.+-]+$"
+        },
+        "alt": {
+          "$ref": "#/$defs/LocalizedText"
+        },
+        "license": {
+          "$ref": "#/$defs/SpdxExpression"
+        },
+        "rating": {
+          "$ref": "#/$defs/Rating"
+        }
+      },
+      "required": [
+        "id",
+        "blob",
+        "media_type"
+      ],
+      "additionalProperties": false
+    },
+    "BlobRef": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "mirrored",
+            "linked"
+          ]
+        }
+      },
+      "required": [
+        "digest",
+        "size",
+        "availability"
+      ],
+      "additionalProperties": false
+    },
+    "SourceLocator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "github"
+            },
+            "repository_id": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,19}$"
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "provider",
+            "repository_id",
+            "commit",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "const": "http"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "provider",
+            "url"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "SpdxExpression": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9.+\\-() :]+$"
+    },
+    "Rating": {
+      "type": "string",
+      "enum": [
+        "general",
+        "teen",
+        "mature",
+        "explicit"
+      ]
+    },
+    "Greeting": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "text": {
+          "type": "string"
+        },
+        "locale": {
+          "$ref": "#/$defs/LocaleMap"
+        },
+        "scenario_hint": {
+          "$ref": "#/$defs/LocalizedText"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "CastMember": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+        },
+        "who": {
+          "$ref": "#/$defs/Binding"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "lead",
+            "support",
+            "user"
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "who"
+      ],
+      "additionalProperties": false
+    },
+    "CreationMeta": {
+      "type": "object",
+      "properties": {
+        "default_locale": {
+          "$ref": "#/$defs/Locale"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "rating": {
+          "$ref": "#/$defs/Rating"
+        },
+        "content_warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "rights": {
+          "type": "string",
+          "enum": [
+            "original",
+            "fan-work",
+            "licensed"
+          ]
+        },
+        "license": {
+          "$ref": "#/$defs/SpdxExpression"
+        },
+        "recommended_presets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UnversionedRef"
+          }
+        },
+        "contribution_policy": {
+          "type": "string",
+          "enum": [
+            "anyone",
+            "signed-in",
+            "invited",
+            "closed"
+          ]
+        }
+      },
+      "required": [
+        "default_locale",
+        "rating",
+        "rights",
+        "license"
+      ],
+      "additionalProperties": false
+    },
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "derived_from": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "release": {
+                "type": "string",
+                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              },
+              "relation": {
+                "type": "string",
+                "enum": [
+                  "fork",
+                  "remix",
+                  "import"
+                ]
+              }
+            },
+            "required": [
+              "release",
+              "relation"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "imported_from": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "omitted_policy_fields": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "format",
+            "source_digest"
+          ],
+          "additionalProperties": false
+        },
+        "au": {
+          "type": "boolean"
+        },
+        "contributors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^usr_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                  },
+                  {
+                    "$ref": "#/$defs/GuestAuthor"
+                  }
+                ]
+              },
+              "contribution": {
+                "type": "string",
+                "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              }
+            },
+            "required": [
+              "author"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "authored_by_agent": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "GuestAuthor": {
+      "type": "object",
+      "properties": {
+        "guest_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "guest_id",
+        "display_name"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

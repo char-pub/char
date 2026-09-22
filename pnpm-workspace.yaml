@@ -5,6 +5,10 @@ packages:
 # 供应链防护：新发布的版本至少等 3 天再安装（单位：分钟）
 minimumReleaseAge: 4320
 catalog:
+  ajv: ^8.17.0
+  spdx-expression-parse: 5.0.0
+  "@types/spdx-expression-parse": 4.0.0
+  tsx: ^4.23.0
   "@aws-sdk/client-s3": ^3.0.0
   "@aws-sdk/s3-request-presigner": ^3.0.0
   "@hono/node-server": ^2.0.0

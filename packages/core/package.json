@@ -21,9 +21,12 @@
   "dependencies": {
     "@noble/hashes": "catalog:",
     "canonicalize": "catalog:",
+    "spdx-expression-parse": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/spdx-expression-parse": "catalog:",
+    "ajv": "catalog:",
     "uuidv7": "catalog:"
   }
 }
