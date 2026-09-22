@@ -688,3 +688,22 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
    - `id`（内部 Creation ID）可以省略，由 Registry 在首次发布时分配；本地构建使用基于 ref 的确定性占位 ID。
 3. 一个仓库可以有多个 Creation：`char.yaml` 可以放在任意子目录，CLI 用 `--path` 指定。
 4. `char build` 的输出与 Registry 用同一个 Resolver，因此本地构建的 IR 与 Registry 生成的 IR 字节一致（占位 ID 除外）。
+
+### D-133 数据库、队列与审计的实现取值 — Accepted
+
+1. **三个 schema**：`app` 放业务表，`pgboss` 放任务队列，`migrations` 放迁移记录。应用角色对 `migrations` 没有任何权限。
+2. **队列只由迁移创建**：应用角色不能新建或删除 pg-boss 队列（对 `queue`、`version` 表没有 INSERT / DELETE），应用启动时 pg-boss 设为 `migrate: false`。
+3. **任务幂等**：队列使用 exclusive 策略加 `singletonKey` 去重；处理函数用 `runOnce(tx, key, …)` 把幂等记录（`job_effects` 表）和业务效果写在同一事务中，重复投递时直接跳过。重试 5 次、指数退避（5 秒起，最长 600 秒），耗尽后进入 `<queue>.dead`。
+4. **审计哈希链**：用事务级 advisory lock 串行追加；`hash = sha256(JCS({prev_hash, at, actor, action, subject, request_id, ip_hash, before, after}))`，即 prev_hash 放在被哈希的对象里。security 设计文档中的 `prev_hash ‖ JCS(本条)` 写法据此统一。
+5. **R2 兼容**：S3 客户端设 `requestChecksumCalculation / responseChecksumValidation = WHEN_REQUIRED`（R2 不支持 SDK 默认附加的 CRC 校验头），完整性由我们自己的 sha256 保证。签名 PUT 把 Content-Length 与 Content-Type 纳入签名。
+6. **GitHub 数字 ID**：数据库用 `bigint`，服务端代码用 JS `bigint`，JSON 中用十进制字符串（D-128）。webhook payload 里超过安全整数范围的 ID 直接拒绝，不用丢了精度的值匹配。
+7. **auth_user**：迁移直接建 `app.auth_user`（Better Auth user 表加 admin 插件字段），其他表外键指向它；接入 Better Auth 时用字段映射复用。
+8. **测试隔离**：集成测试整轮只起一套容器，迁移做在模板库里，每个测试文件用 `CREATE DATABASE … TEMPLATE` 复制独立的库并行运行。
+
+### D-134 GitHub OIDC 与 webhook 的实现取值 — Accepted
+
+1. **jti** 保留到 exp 之后再加 60 秒；只有全部检查通过后才占用 jti，所以被拒绝的请求不会消耗它。
+2. **publish_refs 模式**：只支持精确匹配与尾部 `/*`，模式必须以 `refs/` 开头。
+3. **可选的 binding 约束**：`require_ref_protected`、`environment`、`job_workflow_ref`（要求官方 reusable workflow）。`source_bindings` 表需要对应的列。
+4. **检查顺序**：先比对 `repository_id` + `repository_owner_id`（不一致报 `binding.mismatch`），再看 binding 是否 frozen（报 `binding.frozen`）。
+5. **webhook**：用 `@octokit/webhooks-methods` 验签（官方包、零依赖、常量时间比较，支持轮换期间新旧 secret 并存）；body 先按严格 UTF-8 解码，保证与原始字节一致。签名缺失或无效返回 401；未订阅的事件在验签通过后返回 2xx 并忽略，避免 GitHub 重试。

@@ -205,7 +205,7 @@
 
 ## 8. 审计
 
-- 每条审计记录包含：`at`、`actor`（user / staff / system / oidc，以及 id）、`action`、`subject`、`request_id`、`ip_hash`、`before`、`after`（只记录字段差异，不含正文）、`prev_hash`、`hash = sha256(prev_hash ‖ JCS(本条记录))`。
+- 每条审计记录包含：`at`、`actor`（user / staff / system / oidc，以及 id）、`action`、`subject`、`request_id`、`ip_hash`、`before`、`after`（只记录字段差异，不含正文）、`prev_hash`、`hash = sha256(JCS({ prev_hash, at, actor, action, subject, request_id, ip_hash, before, after }))`（D-133）。
 - 必须记录的事件：登录失败激增、Token 创建或吊销、发布、yank、tombstone、封禁、角色变更、Namespace 处置、强制评级、kill switch、法律请求的状态变化、审计导出。
 - 写入方式：与业务变更**在同一事务内**写入。应用数据库角色对 `audit_log` 只有 `INSERT` / `SELECT` 权限。
 - 每天由 worker 把链头哈希写入 R2 private 桶的 `ops/audit-anchors/<日期>`（只有几十个字节，成本可以忽略），同时提供一个校验工具，可以检查整条链是否完整。
