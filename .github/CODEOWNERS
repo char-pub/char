@@ -10,4 +10,8 @@
 /apps/server/src/webhook/       @Disdjj
 /apps/server/src/upload/        @Disdjj
 /.github/                       @Disdjj
+/infra/                         @Disdjj
+**/security/**                  @Disdjj
+/apps/server/src/auth/          @Disdjj
+/apps/server/src/admin/         @Disdjj
 /spec/                          @Disdjj
