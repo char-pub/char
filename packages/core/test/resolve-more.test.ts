@@ -401,7 +401,7 @@ describe("resolver edge cases", () => {
     // 能构造的只有“引用同一 Creation 的另一个 Release”，由单版本规则拦下。
     const selfRef = rel(30, { ...bob(), id: tid("cr", 30), ref: "@djj/loop" });
     const loop: Loose = {
-      ...selfRef.creation,
+      ...(selfRef.creation as Loose),
       references: [
         {
           id: "me",
