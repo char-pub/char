@@ -15,14 +15,18 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
-          include: ["packages/*/src/**/*.test.ts", "packages/*/test/**/*.test.ts"],
+          include: [
+            "packages/*/src/**/*.test.ts",
+            "packages/*/test/**/*.test.ts",
+            "apps/*/src/**/*.unit.test.ts",
+          ],
           environment: "node",
         },
       },
     ],
     coverage: {
       provider: "v8",
-      include: ["packages/*/src/**/*.ts"],
+      include: ["packages/*/src/**/*.ts", "apps/server/src/**/*.ts"],
       exclude: ["**/*.test.ts", "**/index.ts"],
       reporter: ["text-summary", "json-summary", "html"],
     },

@@ -24,6 +24,8 @@
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "drizzle-kit": "catalog:",
-    "testcontainers": "catalog:"
+    "fast-check": "catalog:",
+    "testcontainers": "catalog:",
+    "vitest": "catalog:"
   }
 }
