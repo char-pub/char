@@ -362,6 +362,9 @@ importers:
       sharp:
         specifier: 'catalog:'
         version: 0.34.5
+      uuidv7:
+        specifier: 'catalog:'
+        version: 1.2.1
       zod:
         specifier: 'catalog:'
         version: 4.6.5

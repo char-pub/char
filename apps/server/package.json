@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node dist/db/migrate.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
@@ -17,6 +19,7 @@
     "pg-boss": "catalog:",
     "pino": "catalog:",
     "sharp": "catalog:",
+    "uuidv7": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
