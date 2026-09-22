@@ -4,6 +4,7 @@ export * from "./errors.js";
 export * from "./ids.js";
 export * from "./keys.js";
 export * from "./license.js";
+export * from "./publish.js";
 export * from "./resolve/index.js";
 export * from "./schema/creation.js";
 export * from "./schema/ir.js";
