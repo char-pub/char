@@ -6,8 +6,9 @@
 - Package：`docs/goals/v0/`
 - Status：**实现中（M0 本地完成，M1 进行中）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
 - Current work：
-  - 主会话：core Resolver → Context IR（M2-1）与发布校验（M2-2）。
-  - 并行 subagent（各自在独立 worktree，完成后合并）：core check 规则 + JSON Schema 导出（M1-4、M1-2）；Contribution 合并 + Context Diff（M2-4、M2-3）；`packages/ccv3`（M3-1、M3-2）；`packages/assembler`（M3-3、M3-4）；`apps/server` 数据库 / CAS / 队列（M4-1、M4-4、M4-5）。
+  - 已合并（本地 main）：core 全部核心逻辑（标识符、schema、canonical / digest、模板、Resolver、发布校验、check、license、JSON Schema 导出、Contribution 合并、Context Diff）；server 的 `authorize()` 与 HTTP 中间件。
+  - 并行 subagent（独立 worktree）：`packages/ccv3`；`packages/assembler`；`apps/server` 数据库 / CAS / 队列；一致性测试集与三运行时运行器；OIDC 与 webhook 校验。
+  - 主会话下一步：server 路由骨架（依赖数据库分支合并后接上）、Better Auth、Registry API。
 - Acceptance：DOD 条目尚未打勾。M0-1 / M0-2 本地检查已通过，但验收要求 CI 运行记录，需等首次推送后才能取得（依赖 B-10）。
 - Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
 - Next useful work：合并 subagent 结果 → Resolver 与一致性测试集（M2-5，需要人工审阅预期输出）→ server 的 Auth / authz / API（M4-2、M4-3、M5）。
@@ -52,3 +53,10 @@
 - Decisions：D-125（pnpm）、D-126（semantic_digest 中 fragment 列表保留声明顺序，**规范修正，请用户复核**）、D-127（内部 ID 用 TypeID）、D-128（GitHub 数字 ID 用十进制字符串）。
 - 用户指示：代码注释和 llmdoc 要自包含，不堆砌章节 / 决策编号（已写入 LOOP 约束与记忆）。
 - Remaining：M0-1 / M0-2 需要 CI 运行记录；M0-3 需要用户授权修改组织设置；M0-4 需要在干净环境按 README 走一遍。
+
+### 2026-09-22 core 核心逻辑与授权
+
+- Work：Resolver（图加载、绑定环境、渲染、元数据汇总）、发布校验（9 条规则 + 下架黑名单，每条都有反例）、check 规则 / license / JSON Schema（subagent）、Contribution 合并与 Context Diff（subagent）、server 的 `authorize()` 与 HTTP 中间件。
+- Verification：`pnpm lint`、`pnpm typecheck`、`pnpm deps` 通过；`pnpm test` 共 580 个单测通过。覆盖率（`vitest --coverage`）：canonical 97.6% 行 / 93.7% 分支；Resolver 各文件 94–98% 行；merge.ts 100% 行 / 98.4% 分支；authorize.ts 98.9% 行 / 97.9% 分支；publish.ts 98.3% 行。JSON Schema 快照防漂移测试通过。
+- Decisions：D-129（check / Resolver 细化）、D-130（合并 / Diff 细化），均标注“待用户复核”。
+- 尚不能打勾：M1-2 需要 schema 快照的人工审阅；M1-3 / M2-1 / M2-5 需要一致性测试集在三运行时通过并经人工审阅预期输出；M2-2 需要一致性测试集的 publish 用例；M4-3 还缺“每个路由都经过 authorize”的 lint 规则（路由尚未编写）。
