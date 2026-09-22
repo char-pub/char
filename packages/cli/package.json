@@ -1,0 +1,35 @@
+{
+  "name": "@char-pub/cli",
+  "version": "0.0.0",
+  "description": "char — command line tool for char.pub creations: init, check, build, preview, publish",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "char": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "@char-pub/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@char-pub/assembler": "workspace:*",
+    "@char-pub/core": "workspace:*",
+    "commander": "catalog:",
+    "yaml": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

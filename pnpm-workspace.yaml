@@ -5,6 +5,8 @@ packages:
 # 供应链防护：新发布的版本至少等 3 天再安装（单位：分钟）
 minimumReleaseAge: 4320
 catalog:
+  commander: ^14.0.0
+  yaml: ^2.8.0
   ajv: ^8.17.0
   spdx-expression-parse: 5.0.0
   "@types/spdx-expression-parse": 4.0.0
