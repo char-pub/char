@@ -652,3 +652,12 @@ GitHub 的 `repository_id`、`repository_owner_id` 等在 OIDC claim 中本来�
 7. **scene visibility 不写 scene 时**，IR 中记为 `instance:<instance-key>`，表示“只在这个引用实例的场景中”。
 8. **License 兼容性（近似判断，不是法律意见）**：依赖 NC 而自身允许商用 → warn；修改了 ND 依赖 → fail；依赖 All-Rights-Reserved 且不是同一权利人 → fail；修改了 SA 依赖但用了不同许可 → warn；不认识的 `LicenseRef-*` → warn。OR 表达式取对使用者最有利的一项，AND 取最严格的一项。
 9. **模板转义**：连续的 `{` 按 4 个一组还原为字面量 `{{`，剩余 1 个是字面量 `{`，2 个开始占位符，3 个是字面量 `{` 加占位符。这样 `{{{self}}` 之类相邻写法也没有歧义。
+
+### D-130 Contribution 合并与 Context Diff 的细化 — Accepted（实现取值，待用户复核）
+
+1. **拒绝空变更和“设为默认值”的 set**：after 与 base 相同的变更，以及把字段设成默认值的 set（例如 `contribution_policy: signed-in`、空 tags），判为不合法。canonical 形式会省略默认值，这类变更重放时既不等于 base 也不等于 after，会被误判为冲突、破坏幂等性。要清空字段必须用 `unset`。
+2. **敏感范围扩到 asset**：新值里有 variant 单独声明 license 或 rating 的 asset 变更也标记为敏感，必须单独确认。这比规范原文（只列 metadata 的 rating / license / content_warnings）更严格。
+3. **显式授权**：目标 license 表达式中只要出现 `LicenseRef-*`（包括保留所有权利），贡献者就必须显式授权（`rights_ack.explicit_grant`）。
+4. **有冲突就不产出结果**：一个 Contribution 只要有一个冲突，合并结果为空，不能生成新 Revision；各变更的状态照常返回，供 UI 标注。给不存在的 slot 添加 variant 视为冲突。
+5. **Diff 的 lock_changes**：IR 只有 lock 的 digest，所以由调用方传入两边的 lock（含 label）；不传时按 `graph.nodes` 的 Release ID 比较，显示 Release ID。
+6. **token_delta**：`always` 统计 always 激活或 pinned 的 fragment；`potential` 统计全部 fragment（关键词全部命中、semantic 与 manual 都启用时的上界）。只按 default locale 计算。
