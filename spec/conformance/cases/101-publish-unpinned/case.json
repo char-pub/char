@@ -1,0 +1,11 @@
+{
+  "id": "101-publish-unpinned",
+  "title": "Rule 1: every reference must pin an exact release",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-040",
+    "canonical-model §12.1 rule 1"
+  ],
+  "status": "draft"
+}

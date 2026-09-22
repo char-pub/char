@@ -1,0 +1,15 @@
+{
+  "id": "004a-select-override",
+  "title": "select and override: replace, remove, patch and add",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "canonical-model §5.1",
+    "canonical-model §5.2",
+    "canonical-model §5.3",
+    "context-ir §6.2",
+    "context-ir §6.3"
+  ],
+  "status": "draft",
+  "notes": "kang-tao is excluded by select and militech removed by override; both appear in graph.removed. arasaka is replaced, zetatech patched to pinned/always, delivery-route added; origin.overridden_by records each."
+}

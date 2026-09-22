@@ -1,0 +1,12 @@
+{
+  "id": "004b-override-unstable-target",
+  "title": "override of an unstable fragment is rejected",
+  "kind": "resolver",
+  "expect": "error",
+  "spec_refs": [
+    "D-023",
+    "canonical-model §5.2"
+  ],
+  "status": "draft",
+  "notes": "lore/imported has stable: false and cannot be an override target."
+}

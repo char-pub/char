@@ -1,0 +1,11 @@
+{
+  "id": "105-publish-unstable-override",
+  "title": "Rule 5: override targets must be stable fragments",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-023",
+    "canonical-model §12.1 rule 5"
+  ],
+  "status": "draft"
+}

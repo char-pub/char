@@ -1,0 +1,15 @@
+{
+  "id": "001-level0-character",
+  "title": "Level 0 character: name, description, greeting and avatar",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "canonical-model §3.1 Level 0",
+    "context-ir §4",
+    "context-ir §5",
+    "context-ir §7",
+    "context-ir §8"
+  ],
+  "status": "draft",
+  "notes": "Smallest publishable character. {{self}} becomes the display name, {{user}} becomes {{late:user}}, the avatar gets a stable public URL."
+}

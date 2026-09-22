@@ -8,7 +8,7 @@
       "!**/coverage",
       "!**/*.gen.*",
       "!spec/schema",
-      "!spec/conformance/cases/**/expected"
+      "!spec/conformance/cases"
     ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },

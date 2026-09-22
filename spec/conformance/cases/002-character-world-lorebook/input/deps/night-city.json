@@ -1,0 +1,50 @@
+{
+  "release": "rel_01h455vb4pex5vsknk084sn003",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01h455vb4pex5vsknk084sn003",
+    "ref": "@cyberpunk/night-city",
+    "type": "world",
+    "display_name": "Night City",
+    "authors": [
+      {
+        "name": "Night City Collective"
+      }
+    ],
+    "fragments": [
+      {
+        "id": "world",
+        "stable": true,
+        "kind": "world",
+        "content": {
+          "type": "text",
+          "text": "Night City is a megacity on the Pacific coast, run by corporations."
+        }
+      },
+      {
+        "id": "districts/watson",
+        "stable": true,
+        "kind": "knowledge",
+        "content": {
+          "type": "text",
+          "text": "Watson is a crowded district full of night markets."
+        },
+        "activation": {
+          "mode": "keyword",
+          "keys": [
+            "Watson"
+          ]
+        }
+      }
+    ],
+    "meta": {
+      "default_locale": "en",
+      "rights": "original",
+      "rating": "mature",
+      "content_warnings": [
+        "violence"
+      ],
+      "license": "CC-BY-4.0"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "103-publish-public-depends-on-private",
+  "title": "Rule 3: a public release can only depend on public releases",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-043",
+    "canonical-model §12.1 rule 3"
+  ],
+  "status": "draft"
+}

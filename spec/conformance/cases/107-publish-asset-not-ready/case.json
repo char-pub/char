@@ -1,0 +1,12 @@
+{
+  "id": "107-publish-asset-not-ready",
+  "title": "Rule 7: referenced assets must be ready",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-084",
+    "canonical-model §12.1 rule 7"
+  ],
+  "status": "draft",
+  "notes": "The avatar upload is still processing."
+}

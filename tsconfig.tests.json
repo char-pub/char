@@ -15,6 +15,9 @@
     "packages/*/scripts/**/*.ts",
     "apps/server/src/**/*.test.ts",
     "apps/server/test/**/*.ts",
+    "spec/conformance/runner/**/*.ts",
+    "spec/conformance/scripts/**/*.ts",
+    "spec/conformance/vitest.*.config.ts",
     "vitest.config.ts"
   ]
 }

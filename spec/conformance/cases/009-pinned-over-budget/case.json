@@ -1,0 +1,10 @@
+{
+  "id": "009-pinned-over-budget",
+  "title": "Pinned content larger than the budget is an error, never truncated",
+  "kind": "assembler",
+  "spec_refs": [
+    "context-ir §11.2 budget"
+  ],
+  "status": "draft",
+  "notes": "The pinned instruction alone exceeds context_window - reserve_for_output; assembling must fail."
+}

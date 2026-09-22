@@ -1,0 +1,13 @@
+{
+  "id": "010-ccv3-roundtrip",
+  "title": "CCv3 round trip: import, resolve, export with a Loss Report",
+  "kind": "ccv3",
+  "spec_refs": [
+    "D-023",
+    "D-056",
+    "canonical-model §15",
+    "context-ir §14"
+  ],
+  "status": "draft",
+  "notes": "Synthetic card. Expected: lorebook entries become stable: false knowledge fragments; system_prompt and post_history_instructions are recorded by field name only and are not exported back; the Loss Report says so."
+}

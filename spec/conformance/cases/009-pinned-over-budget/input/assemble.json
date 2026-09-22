@@ -1,0 +1,28 @@
+{
+  "profile": {
+    "runtime": {
+      "name": "char-pub-conformance",
+      "version": "0"
+    },
+    "tokenizer": "estimate",
+    "context_window": 512,
+    "reserve_for_output": 128,
+    "mode": "narrator",
+    "capabilities": {
+      "images": false,
+      "system_role": true
+    }
+  },
+  "session": {
+    "bindings": {
+      "user": {
+        "kind": "persona",
+        "display_name": "Sam"
+      }
+    },
+    "history": []
+  },
+  "expect": {
+    "error": "assemble.pinned_over_budget"
+  }
+}

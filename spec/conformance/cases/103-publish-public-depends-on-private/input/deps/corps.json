@@ -1,0 +1,101 @@
+{
+  "release": "rel_01h455vb4pex5vsknk084sn004",
+  "visibility": "private",
+  "creation": {
+    "id": "cr_01h455vb4pex5vsknk084sn004",
+    "ref": "@cyberpunk/corps",
+    "type": "lorebook",
+    "display_name": "Corporations of Night City",
+    "fragments": [
+      {
+        "id": "lore/arasaka",
+        "stable": true,
+        "kind": "knowledge",
+        "content": {
+          "type": "text",
+          "text": "Arasaka is a security megacorp headquartered downtown."
+        },
+        "activation": {
+          "mode": "keyword",
+          "keys": [
+            "Arasaka"
+          ],
+          "secondary": [
+            "Saburo",
+            "tower"
+          ],
+          "logic": "any",
+          "case_sensitive": true,
+          "scan_depth": 4
+        }
+      },
+      {
+        "id": "lore/militech",
+        "stable": true,
+        "kind": "knowledge",
+        "content": {
+          "type": "text",
+          "text": "Militech builds weapons and sells them to everyone."
+        },
+        "activation": {
+          "mode": "keyword",
+          "keys": [
+            "Militech"
+          ]
+        }
+      },
+      {
+        "id": "lore/kang-tao",
+        "stable": true,
+        "kind": "knowledge",
+        "content": {
+          "type": "text",
+          "text": "Kang Tao makes smart guns."
+        },
+        "activation": {
+          "mode": "keyword",
+          "keys": [
+            "Kang Tao"
+          ]
+        },
+        "importance": "opportunistic"
+      },
+      {
+        "id": "lore/zetatech",
+        "stable": true,
+        "kind": "knowledge",
+        "content": {
+          "type": "text",
+          "text": "Zetatech designs cyberware."
+        },
+        "activation": {
+          "mode": "keyword",
+          "keys": [
+            "Zetatech"
+          ]
+        }
+      },
+      {
+        "id": "lore/imported",
+        "stable": false,
+        "kind": "knowledge",
+        "content": {
+          "type": "text",
+          "text": "Biotechnica grows most of the city's food."
+        },
+        "activation": {
+          "mode": "keyword",
+          "keys": [
+            "Biotechnica"
+          ]
+        }
+      }
+    ],
+    "meta": {
+      "default_locale": "en",
+      "rights": "original",
+      "rating": "teen",
+      "license": "CC-BY-SA-4.0"
+    }
+  }
+}
