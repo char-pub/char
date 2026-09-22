@@ -56,10 +56,11 @@ module.exports = {
     doNotFollow: { path: "node_modules" },
     exclude: { path: "(dist|coverage)/" },
     tsPreCompilationDeps: true,
-    tsConfig: { fileName: "tsconfig.base.json" },
+    tsConfig: { fileName: "tsconfig.depcruise.json" },
     enhancedResolveOptions: {
       exportsFields: ["exports"],
       conditionNames: ["import", "types", "default"],
+      extensions: [".ts", ".tsx", ".js", ".mjs", ".cjs", ".json"],
     },
   },
 };

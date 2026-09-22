@@ -14,3 +14,5 @@ coverage/
 # GitHub Action 的打包产物需要提交
 !actions/publish/dist/
 actions/*/build/
+test-results/
+playwright-report/
