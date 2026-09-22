@@ -1,0 +1,4766 @@
+{
+  "format": 1,
+  "cases": [
+    {
+      "dir": "001-level0-character",
+      "meta": {
+        "id": "001-level0-character",
+        "title": "Level 0 character: name, description, greeting and avatar",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "canonical-model §3.1 Level 0",
+          "context-ir §4",
+          "context-ir §5",
+          "context-ir §7",
+          "context-ir §8"
+        ],
+        "status": "draft",
+        "notes": "Smallest publishable character. {{self}} becomes the display name, {{user}} becomes {{late:user}}, the avatar gets a stable public URL."
+      },
+      "input": {
+        "deps": [],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            }
+          }
+        },
+        "options": {
+          "publicAssetBaseUrl": "https://assets.char.pub/cas/sha256"
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "002-character-world-lorebook",
+      "meta": {
+        "id": "002-character-world-lorebook",
+        "title": "Character + intrinsic world + keyword lorebook",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "D-024",
+          "D-027",
+          "canonical-model §4.2",
+          "context-ir §3",
+          "context-ir §6.1",
+          "context-ir §9"
+        ],
+        "status": "draft",
+        "notes": "Fragments are ordered depth-first with edges sorted by id; effective rating is the maximum of the closure (mature from the world); content warnings and licenses are aggregated."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              }
+            }
+          },
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "rel": "knows_about",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:1b3ea7bccf3bf9b2a2c311b45cd1f808e71667b4e0d9f3131bb4ebbef724b531"
+                }
+              },
+              {
+                "id": "lives-in",
+                "rel": "lives_in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:b18e76364d6cf3a8ce52c408f55587d8a0fcab047fe50a941f7d9fba8eff6970"
+                }
+              }
+            ]
+          }
+        },
+        "options": {
+          "publicAssetBaseUrl": "https://assets.char.pub/cas/sha256"
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "003-relationship-early-late",
+      "meta": {
+        "id": "003-relationship-early-late",
+        "title": "Relationship template: early binding of {{self}} and late binding of a persona",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "D-025",
+          "D-026",
+          "canonical-model §6",
+          "context-ir §5"
+        ],
+        "status": "draft",
+        "notes": "slot a is bound early to Alice and rendered as her name; slot b is late and stays as {{late:l:...}} with a required late slot; the param overrides its default."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn005",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn005",
+              "ref": "@commons/childhood-friend",
+              "type": "relationship",
+              "display_name": "Childhood friend",
+              "slots": {
+                "a": {
+                  "accepts": "character"
+                },
+                "b": {
+                  "accepts": [
+                    "character",
+                    "persona"
+                  ]
+                }
+              },
+              "params": {
+                "reunited_after": {
+                  "type": "string",
+                  "default": "several years"
+                }
+              },
+              "fragments": [
+                {
+                  "id": "bond",
+                  "stable": true,
+                  "kind": "relationship",
+                  "content": {
+                    "type": "text",
+                    "text": "{{slot:a}} and {{slot:b}} grew up next door. They met again after {{param:reunited_after}}."
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC0-1.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "friend",
+                "rel": "relationship",
+                "use": "@commons/childhood-friend",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn005",
+                  "semantic_digest": "sha256:87498a3b7b76280fc3511962904d6280f9ad10494f55b04ae02869a46a6d58b9"
+                },
+                "bind": {
+                  "a": "{{self}}",
+                  "b": {
+                    "late": "persona",
+                    "hint": "the user's persona"
+                  }
+                },
+                "params": {
+                  "reunited_after": "10 years"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "004a-select-override",
+      "meta": {
+        "id": "004a-select-override",
+        "title": "select and override: replace, remove, patch and add",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "canonical-model §5.1",
+          "canonical-model §5.2",
+          "canonical-model §5.3",
+          "context-ir §6.2",
+          "context-ir §6.3"
+        ],
+        "status": "draft",
+        "notes": "kang-tao is excluded by select and militech removed by override; both appear in graph.removed. arasaka is replaced, zetatech patched to pinned/always, delivery-route added; origin.overridden_by records each."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:1b3ea7bccf3bf9b2a2c311b45cd1f808e71667b4e0d9f3131bb4ebbef724b531"
+                },
+                "select": {
+                  "exclude": [
+                    "lore/kang-tao"
+                  ]
+                },
+                "override": [
+                  {
+                    "op": "replace",
+                    "target": "lore/arasaka",
+                    "content": {
+                      "type": "text",
+                      "text": "Arasaka owns the tower Alice delivers to every night."
+                    }
+                  },
+                  {
+                    "op": "remove",
+                    "target": "lore/militech"
+                  },
+                  {
+                    "op": "patch",
+                    "target": "lore/zetatech",
+                    "set": {
+                      "importance": "pinned",
+                      "activation": {
+                        "mode": "always"
+                      }
+                    }
+                  },
+                  {
+                    "op": "add",
+                    "fragment": {
+                      "id": "lore/delivery-route",
+                      "stable": true,
+                      "kind": "knowledge",
+                      "content": {
+                        "type": "text",
+                        "text": "The fastest route downtown passes under the Arasaka tower."
+                      },
+                      "activation": {
+                        "mode": "keyword",
+                        "keys": [
+                          "route",
+                          "delivery"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "004b-override-unstable-target",
+      "meta": {
+        "id": "004b-override-unstable-target",
+        "title": "override of an unstable fragment is rejected",
+        "kind": "resolver",
+        "expect": "error",
+        "spec_refs": [
+          "D-023",
+          "canonical-model §5.2"
+        ],
+        "status": "draft",
+        "notes": "lore/imported has stable: false and cannot be an override target."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:1b3ea7bccf3bf9b2a2c311b45cd1f808e71667b4e0d9f3131bb4ebbef724b531"
+                },
+                "override": [
+                  {
+                    "op": "remove",
+                    "target": "lore/imported"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "005-diamond-conflict",
+      "meta": {
+        "id": "005-diamond-conflict",
+        "title": "Diamond dependency with two different releases is rejected",
+        "kind": "resolver",
+        "expect": "error",
+        "spec_refs": [
+          "D-029",
+          "canonical-model §12.1 rule 4"
+        ],
+        "status": "draft",
+        "notes": "Alice pins Night City v1 directly and reaches Night City v2 through the lorebook; the error explains both paths."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              },
+              "references": [
+                {
+                  "id": "setting",
+                  "use": "@cyberpunk/night-city",
+                  "mode": "default",
+                  "pin": {
+                    "release": "rel_01h455vb4pex5vsknk084sn00d",
+                    "semantic_digest": "sha256:b621cc763aa992bbc55a17915f68a980ce1dddc093bbf70d03acaa184b3960b3"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            }
+          },
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn00d",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              },
+              "summary": "Revised edition"
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:8aaf71ce9bb9ba92499feba7e23cd88936bdaa3e394349c869d48d6ba7483912"
+                }
+              },
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:b18e76364d6cf3a8ce52c408f55587d8a0fcab047fe50a941f7d9fba8eff6970"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "006a-yanked-dependency",
+      "meta": {
+        "id": "006a-yanked-dependency",
+        "title": "Yanked dependency publishes with a warning",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-042",
+          "canonical-model §12.1 rule 2",
+          "context-ir §2"
+        ],
+        "status": "draft",
+        "notes": "Yanked is mutable registry state: it does not change the IR, only the Publish Report."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            },
+            "status": "yanked",
+            "status_reason": "Superseded by a corrected edition"
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:b18e76364d6cf3a8ce52c408f55587d8a0fcab047fe50a941f7d9fba8eff6970"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "006b-tombstoned-dependency",
+      "meta": {
+        "id": "006b-tombstoned-dependency",
+        "title": "Tombstoned dependency is an explicit error with the reason",
+        "kind": "resolver",
+        "expect": "error",
+        "spec_refs": [
+          "D-042",
+          "canonical-model §12.1 rule 2"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            },
+            "status": "tombstoned",
+            "status_reason": "Removed after a DMCA notice"
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:b18e76364d6cf3a8ce52c408f55587d8a0fcab047fe50a941f7d9fba8eff6970"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "007-multi-locale",
+      "meta": {
+        "id": "007-multi-locale",
+        "title": "Multiple locales: variants, localized names and available locales",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "D-030",
+          "canonical-model §4.3",
+          "context-ir §3",
+          "context-ir §11.2 locale"
+        ],
+        "status": "draft",
+        "notes": "available_locales is the intersection over all fragments: en and zh-Hans, not ja (the Watson entry has no Japanese text, so an assembler must fall back). {{self}} renders the localized display name inside each variant; locale activation keys join the keyword list."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast."
+                  },
+                  "locale": {
+                    "ja": {
+                      "content": {
+                        "type": "text",
+                        "text": "ナイトシティは太平洋岸の巨大都市だ。"
+                      }
+                    },
+                    "zh-Hans": {
+                      "content": {
+                        "type": "text",
+                        "text": "夜之城是太平洋沿岸的一座巨型城市。"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  },
+                  "locale": {
+                    "zh-Hans": {
+                      "content": {
+                        "type": "text",
+                        "text": "沃森区人口稠密，到处是夜市。"
+                      },
+                      "activation_keys": [
+                        "沃森"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": {
+              "en": "Alice",
+              "ja": "アリス",
+              "zh-Hans": "爱丽丝"
+            },
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier."
+                },
+                "locale": {
+                  "ja": {
+                    "content": {
+                      "type": "text",
+                      "text": "{{self}}は運び屋だ。"
+                    }
+                  },
+                  "zh-Hans": {
+                    "content": {
+                      "type": "text",
+                      "text": "{{self}}是一名快递员。"
+                    }
+                  }
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again.",
+                  "locale": {
+                    "ja": {
+                      "content": {
+                        "type": "text",
+                        "text": "また遅刻ね。"
+                      }
+                    },
+                    "zh-Hans": {
+                      "content": {
+                        "type": "text",
+                        "text": "你又迟到了。"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:d47cd3663a0f378169e71109fcb915c6fb18f81272c5e18371ecf8b1d605004a"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "008-private-visibility",
+      "meta": {
+        "id": "008-private-visibility",
+        "title": "Private visibility in narrator and per-agent modes",
+        "kind": "assembler",
+        "spec_refs": [
+          "D-053",
+          "canonical-model §4.4",
+          "context-ir §11.2 visibility"
+        ],
+        "status": "draft",
+        "notes": "Bob's secret is private to Bob. per-agent, assembling for Alice (self): the secret is skipped with reason visibility. narrator: it is included, annotated that only Bob knows it."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn002",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn002",
+              "ref": "@djj/bob",
+              "type": "character",
+              "display_name": "Bob",
+              "fragments": [
+                {
+                  "id": "description",
+                  "stable": true,
+                  "kind": "character",
+                  "content": {
+                    "type": "text",
+                    "text": "{{self}} is a fixer who knows everyone in Watson."
+                  }
+                },
+                {
+                  "id": "secret",
+                  "stable": true,
+                  "kind": "character",
+                  "content": {
+                    "type": "text",
+                    "text": "{{self}} secretly reports to Arasaka."
+                  },
+                  "visibility": {
+                    "scope": "private",
+                    "to": [
+                      "{{self}}"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC-BY-4.0"
+              }
+            }
+          },
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn006",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn006",
+              "ref": "@commons/rivals",
+              "type": "relationship",
+              "display_name": "Rivals",
+              "slots": {
+                "a": {
+                  "accepts": "character"
+                },
+                "b": {
+                  "accepts": "character"
+                }
+              },
+              "fragments": [
+                {
+                  "id": "rivalry",
+                  "stable": true,
+                  "kind": "relationship",
+                  "content": {
+                    "type": "text",
+                    "text": "{{slot:a}} and {{slot:b}} have competed for every job since school."
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC0-1.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows-bob",
+                "use": "@djj/bob",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn002",
+                  "semantic_digest": "sha256:19c243588c58a36599f5516cf5f3924686e9262b92a0affb00cce303d968017b"
+                }
+              },
+              {
+                "id": "rival",
+                "rel": "relationship",
+                "use": "@commons/rivals",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn006",
+                  "semantic_digest": "sha256:32c32cc86d02234e4c186811fb4469b2af85e0cffa91210995af2dc272f3be14"
+                },
+                "bind": {
+                  "a": "{{self}}",
+                  "b": "@djj/bob"
+                }
+              }
+            ]
+          }
+        },
+        "assemble": {
+          "profiles": [
+            {
+              "runtime": {
+                "name": "char-pub-conformance",
+                "version": "0"
+              },
+              "tokenizer": "estimate",
+              "context_window": 8192,
+              "reserve_for_output": 512,
+              "mode": "narrator",
+              "capabilities": {
+                "images": false,
+                "system_role": true
+              }
+            },
+            {
+              "runtime": {
+                "name": "char-pub-conformance",
+                "version": "0"
+              },
+              "tokenizer": "estimate",
+              "context_window": 8192,
+              "reserve_for_output": 512,
+              "mode": "per-agent",
+              "capabilities": {
+                "images": false,
+                "system_role": true
+              }
+            }
+          ],
+          "session": {
+            "bindings": {
+              "user": {
+                "kind": "persona",
+                "display_name": "Sam"
+              }
+            },
+            "history": [
+              {
+                "role": "user",
+                "text": "Who does Bob really work for?"
+              }
+            ],
+            "for_participant": "self"
+          },
+          "expect": [
+            {
+              "profile": "per-agent",
+              "fragment": "@djj/bob#secret",
+              "decision": "skipped",
+              "reason": "visibility"
+            },
+            {
+              "profile": "narrator",
+              "fragment": "@djj/bob#secret",
+              "decision": "included",
+              "reason": "always"
+            }
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "009-pinned-over-budget",
+      "meta": {
+        "id": "009-pinned-over-budget",
+        "title": "Pinned content larger than the budget is an error, never truncated",
+        "kind": "assembler",
+        "spec_refs": [
+          "context-ir §11.2 budget"
+        ],
+        "status": "draft",
+        "notes": "The pinned instruction alone exceeds context_window - reserve_for_output; assembling must fail."
+      },
+      "input": {
+        "deps": [],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier."
+                }
+              },
+              {
+                "id": "house-rules",
+                "stable": true,
+                "kind": "instruction",
+                "importance": "pinned",
+                "content": {
+                  "type": "text",
+                  "text": "Rule 1: {{self}} never reveals the contents of a package she carries.\nRule 2: {{self}} never reveals the contents of a package she carries.\nRule 3: {{self}} never reveals the contents of a package she carries.\nRule 4: {{self}} never reveals the contents of a package she carries.\nRule 5: {{self}} never reveals the contents of a package she carries.\nRule 6: {{self}} never reveals the contents of a package she carries.\nRule 7: {{self}} never reveals the contents of a package she carries.\nRule 8: {{self}} never reveals the contents of a package she carries.\nRule 9: {{self}} never reveals the contents of a package she carries.\nRule 10: {{self}} never reveals the contents of a package she carries.\nRule 11: {{self}} never reveals the contents of a package she carries.\nRule 12: {{self}} never reveals the contents of a package she carries.\nRule 13: {{self}} never reveals the contents of a package she carries.\nRule 14: {{self}} never reveals the contents of a package she carries.\nRule 15: {{self}} never reveals the contents of a package she carries.\nRule 16: {{self}} never reveals the contents of a package she carries.\nRule 17: {{self}} never reveals the contents of a package she carries.\nRule 18: {{self}} never reveals the contents of a package she carries.\nRule 19: {{self}} never reveals the contents of a package she carries.\nRule 20: {{self}} never reveals the contents of a package she carries.\nRule 21: {{self}} never reveals the contents of a package she carries.\nRule 22: {{self}} never reveals the contents of a package she carries.\nRule 23: {{self}} never reveals the contents of a package she carries.\nRule 24: {{self}} never reveals the contents of a package she carries.\nRule 25: {{self}} never reveals the contents of a package she carries.\nRule 26: {{self}} never reveals the contents of a package she carries.\nRule 27: {{self}} never reveals the contents of a package she carries.\nRule 28: {{self}} never reveals the contents of a package she carries.\nRule 29: {{self}} never reveals the contents of a package she carries.\nRule 30: {{self}} never reveals the contents of a package she carries.\nRule 31: {{self}} never reveals the contents of a package she carries.\nRule 32: {{self}} never reveals the contents of a package she carries.\nRule 33: {{self}} never reveals the contents of a package she carries.\nRule 34: {{self}} never reveals the contents of a package she carries.\nRule 35: {{self}} never reveals the contents of a package she carries.\nRule 36: {{self}} never reveals the contents of a package she carries.\nRule 37: {{self}} never reveals the contents of a package she carries.\nRule 38: {{self}} never reveals the contents of a package she carries.\nRule 39: {{self}} never reveals the contents of a package she carries.\nRule 40: {{self}} never reveals the contents of a package she carries.\nRule 41: {{self}} never reveals the contents of a package she carries.\nRule 42: {{self}} never reveals the contents of a package she carries.\nRule 43: {{self}} never reveals the contents of a package she carries.\nRule 44: {{self}} never reveals the contents of a package she carries.\nRule 45: {{self}} never reveals the contents of a package she carries.\nRule 46: {{self}} never reveals the contents of a package she carries.\nRule 47: {{self}} never reveals the contents of a package she carries.\nRule 48: {{self}} never reveals the contents of a package she carries.\nRule 49: {{self}} never reveals the contents of a package she carries.\nRule 50: {{self}} never reveals the contents of a package she carries.\nRule 51: {{self}} never reveals the contents of a package she carries.\nRule 52: {{self}} never reveals the contents of a package she carries.\nRule 53: {{self}} never reveals the contents of a package she carries.\nRule 54: {{self}} never reveals the contents of a package she carries.\nRule 55: {{self}} never reveals the contents of a package she carries.\nRule 56: {{self}} never reveals the contents of a package she carries.\nRule 57: {{self}} never reveals the contents of a package she carries.\nRule 58: {{self}} never reveals the contents of a package she carries.\nRule 59: {{self}} never reveals the contents of a package she carries.\nRule 60: {{self}} never reveals the contents of a package she carries.\nRule 61: {{self}} never reveals the contents of a package she carries.\nRule 62: {{self}} never reveals the contents of a package she carries.\nRule 63: {{self}} never reveals the contents of a package she carries.\nRule 64: {{self}} never reveals the contents of a package she carries.\nRule 65: {{self}} never reveals the contents of a package she carries.\nRule 66: {{self}} never reveals the contents of a package she carries.\nRule 67: {{self}} never reveals the contents of a package she carries.\nRule 68: {{self}} never reveals the contents of a package she carries.\nRule 69: {{self}} never reveals the contents of a package she carries.\nRule 70: {{self}} never reveals the contents of a package she carries.\nRule 71: {{self}} never reveals the contents of a package she carries.\nRule 72: {{self}} never reveals the contents of a package she carries.\nRule 73: {{self}} never reveals the contents of a package she carries.\nRule 74: {{self}} never reveals the contents of a package she carries.\nRule 75: {{self}} never reveals the contents of a package she carries.\nRule 76: {{self}} never reveals the contents of a package she carries.\nRule 77: {{self}} never reveals the contents of a package she carries.\nRule 78: {{self}} never reveals the contents of a package she carries.\nRule 79: {{self}} never reveals the contents of a package she carries.\nRule 80: {{self}} never reveals the contents of a package she carries.\nRule 81: {{self}} never reveals the contents of a package she carries.\nRule 82: {{self}} never reveals the contents of a package she carries.\nRule 83: {{self}} never reveals the contents of a package she carries.\nRule 84: {{self}} never reveals the contents of a package she carries.\nRule 85: {{self}} never reveals the contents of a package she carries.\nRule 86: {{self}} never reveals the contents of a package she carries.\nRule 87: {{self}} never reveals the contents of a package she carries.\nRule 88: {{self}} never reveals the contents of a package she carries.\nRule 89: {{self}} never reveals the contents of a package she carries.\nRule 90: {{self}} never reveals the contents of a package she carries.\nRule 91: {{self}} never reveals the contents of a package she carries.\nRule 92: {{self}} never reveals the contents of a package she carries.\nRule 93: {{self}} never reveals the contents of a package she carries.\nRule 94: {{self}} never reveals the contents of a package she carries.\nRule 95: {{self}} never reveals the contents of a package she carries.\nRule 96: {{self}} never reveals the contents of a package she carries.\nRule 97: {{self}} never reveals the contents of a package she carries.\nRule 98: {{self}} never reveals the contents of a package she carries.\nRule 99: {{self}} never reveals the contents of a package she carries.\nRule 100: {{self}} never reveals the contents of a package she carries.\nRule 101: {{self}} never reveals the contents of a package she carries.\nRule 102: {{self}} never reveals the contents of a package she carries.\nRule 103: {{self}} never reveals the contents of a package she carries.\nRule 104: {{self}} never reveals the contents of a package she carries.\nRule 105: {{self}} never reveals the contents of a package she carries.\nRule 106: {{self}} never reveals the contents of a package she carries.\nRule 107: {{self}} never reveals the contents of a package she carries.\nRule 108: {{self}} never reveals the contents of a package she carries.\nRule 109: {{self}} never reveals the contents of a package she carries.\nRule 110: {{self}} never reveals the contents of a package she carries.\nRule 111: {{self}} never reveals the contents of a package she carries.\nRule 112: {{self}} never reveals the contents of a package she carries.\nRule 113: {{self}} never reveals the contents of a package she carries.\nRule 114: {{self}} never reveals the contents of a package she carries.\nRule 115: {{self}} never reveals the contents of a package she carries.\nRule 116: {{self}} never reveals the contents of a package she carries.\nRule 117: {{self}} never reveals the contents of a package she carries.\nRule 118: {{self}} never reveals the contents of a package she carries.\nRule 119: {{self}} never reveals the contents of a package she carries.\nRule 120: {{self}} never reveals the contents of a package she carries."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            }
+          }
+        },
+        "assemble": {
+          "profile": {
+            "runtime": {
+              "name": "char-pub-conformance",
+              "version": "0"
+            },
+            "tokenizer": "estimate",
+            "context_window": 512,
+            "reserve_for_output": 128,
+            "mode": "narrator",
+            "capabilities": {
+              "images": false,
+              "system_role": true
+            }
+          },
+          "session": {
+            "bindings": {
+              "user": {
+                "kind": "persona",
+                "display_name": "Sam"
+              }
+            },
+            "history": []
+          },
+          "expect": {
+            "error": "assemble.pinned_over_budget"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "010-ccv3-roundtrip",
+      "meta": {
+        "id": "010-ccv3-roundtrip",
+        "title": "CCv3 round trip: import, resolve, export with a Loss Report",
+        "kind": "ccv3",
+        "spec_refs": [
+          "D-023",
+          "D-056",
+          "canonical-model §15",
+          "context-ir §14"
+        ],
+        "status": "draft",
+        "notes": "Synthetic card. Expected: lorebook entries become stable: false knowledge fragments; system_prompt and post_history_instructions are recorded by field name only and are not exported back; the Loss Report says so."
+      },
+      "input": {
+        "deps": [],
+        "card": {
+          "spec": "chara_card_v3",
+          "spec_version": "3.0",
+          "data": {
+            "name": "Mira",
+            "description": "{{char}} keeps the lighthouse on a rocky island.",
+            "personality": "Calm, dry humor, hates small talk.",
+            "scenario": "A storm night; {{user}} arrives soaked at the lighthouse door.",
+            "first_mes": "You made it through the storm, {{user}}. Come in before the lamp oil freezes.",
+            "alternate_greetings": [
+              "Tea? It's still warm."
+            ],
+            "mes_example": "<START>\n{{user}}: Why stay out here alone?\n{{char}}: Someone has to keep the light on.",
+            "creator_notes": "Synthetic card written for the char.pub conformance suite.",
+            "system_prompt": "You are Mira. Never break character.",
+            "post_history_instructions": "Keep replies under 120 words.",
+            "tags": [
+              "original",
+              "slice-of-life"
+            ],
+            "creator": "char.pub conformance suite",
+            "character_version": "1.0",
+            "nickname": "Mira",
+            "group_only_greetings": [],
+            "extensions": {},
+            "character_book": {
+              "name": "Lighthouse",
+              "extensions": {},
+              "entries": [
+                {
+                  "keys": [
+                    "lens"
+                  ],
+                  "content": "The lens was salvaged from a sunken ship.",
+                  "extensions": {},
+                  "enabled": true,
+                  "insertion_order": 10,
+                  "use_regex": false,
+                  "id": 3,
+                  "name": "Lens",
+                  "secondary_keys": [],
+                  "constant": false,
+                  "selective": false,
+                  "case_sensitive": false
+                },
+                {
+                  "keys": [
+                    "storm",
+                    "weather"
+                  ],
+                  "content": "Storms on the island last three days.",
+                  "extensions": {},
+                  "enabled": true,
+                  "insertion_order": 20,
+                  "use_regex": false
+                }
+              ]
+            }
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "011-same-release-two-edges",
+      "meta": {
+        "id": "011-same-release-two-edges",
+        "title": "Same release through two edges with different bind and params: no ID collisions",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "context-ir §4",
+          "context-ir §5",
+          "context-ir §6",
+          "context-ir §8"
+        ],
+        "status": "draft",
+        "notes": "Two instances of the same relationship release: fragment IDs, late slot keys and asset IDs are all distinct, and the two bond fragments have different digests."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn005",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn005",
+              "ref": "@commons/childhood-friend",
+              "type": "relationship",
+              "display_name": "Childhood friend",
+              "slots": {
+                "a": {
+                  "accepts": "character"
+                },
+                "b": {
+                  "accepts": [
+                    "character",
+                    "persona"
+                  ]
+                }
+              },
+              "params": {
+                "reunited_after": {
+                  "type": "string",
+                  "default": "several years"
+                }
+              },
+              "fragments": [
+                {
+                  "id": "bond",
+                  "stable": true,
+                  "kind": "relationship",
+                  "content": {
+                    "type": "text",
+                    "text": "{{slot:a}} and {{slot:b}} grew up next door. They met again after {{param:reunited_after}}."
+                  },
+                  "asset_refs": [
+                    "#asset/map"
+                  ]
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC0-1.0"
+              },
+              "assets": [
+                {
+                  "slot": "map",
+                  "role": "context",
+                  "variants": [
+                    {
+                      "id": "default",
+                      "media_type": "image/webp",
+                      "blob": {
+                        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                        "size": 4096,
+                        "availability": "mirrored"
+                      },
+                      "alt": "A hand-drawn map of the old neighborhood"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "friend-1",
+                "use": "@commons/childhood-friend",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn005",
+                  "semantic_digest": "sha256:f38e9605c74d27f416b774dbb96b3658825ee97fce2b5091a845e0a690bd9038"
+                },
+                "bind": {
+                  "a": "{{self}}",
+                  "b": {
+                    "late": "persona"
+                  }
+                },
+                "params": {
+                  "reunited_after": "one year"
+                }
+              },
+              {
+                "id": "friend-2",
+                "use": "@commons/childhood-friend",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn005",
+                  "semantic_digest": "sha256:f38e9605c74d27f416b774dbb96b3658825ee97fce2b5091a845e0a690bd9038"
+                },
+                "bind": {
+                  "a": "{{self}}",
+                  "b": {
+                    "late": "character"
+                  }
+                },
+                "params": {
+                  "reunited_after": "a decade"
+                }
+              }
+            ]
+          }
+        },
+        "options": {
+          "publicAssetBaseUrl": "https://assets.char.pub/cas/sha256"
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "012a-required-slot-unbound",
+      "meta": {
+        "id": "012a-required-slot-unbound",
+        "title": "Required slot left unbound on a reference is rejected",
+        "kind": "resolver",
+        "expect": "error",
+        "spec_refs": [
+          "canonical-model §6",
+          "canonical-model §12.1 rule 6"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn005",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn005",
+              "ref": "@commons/childhood-friend",
+              "type": "relationship",
+              "display_name": "Childhood friend",
+              "slots": {
+                "a": {
+                  "accepts": "character"
+                },
+                "b": {
+                  "accepts": [
+                    "character",
+                    "persona"
+                  ]
+                }
+              },
+              "params": {
+                "reunited_after": {
+                  "type": "string",
+                  "default": "several years"
+                }
+              },
+              "fragments": [
+                {
+                  "id": "bond",
+                  "stable": true,
+                  "kind": "relationship",
+                  "content": {
+                    "type": "text",
+                    "text": "{{slot:a}} and {{slot:b}} grew up next door. They met again after {{param:reunited_after}}."
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC0-1.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "friend",
+                "use": "@commons/childhood-friend",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn005",
+                  "semantic_digest": "sha256:87498a3b7b76280fc3511962904d6280f9ad10494f55b04ae02869a46a6d58b9"
+                },
+                "bind": {
+                  "a": "{{self}}"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "012b-late-slots",
+      "meta": {
+        "id": "012b-late-slots",
+        "title": "Late slots: required, implicit {{user}}, and an unused optional slot",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "D-025",
+          "context-ir §5"
+        ],
+        "status": "draft",
+        "notes": "student is a required late slot used by the lessons fragment; {{user}} maps to the implicit user slot; the optional observer slot is never used and does not appear in late_slots."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn007",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn007",
+              "ref": "@commons/mentor",
+              "type": "relationship",
+              "display_name": "Mentor and student",
+              "slots": {
+                "mentor": {
+                  "accepts": "character"
+                },
+                "student": {
+                  "accepts": "persona"
+                },
+                "observer": {
+                  "accepts": "persona",
+                  "required": false
+                }
+              },
+              "fragments": [
+                {
+                  "id": "lessons",
+                  "stable": true,
+                  "kind": "relationship",
+                  "content": {
+                    "type": "text",
+                    "text": "{{slot:mentor}} has been teaching {{slot:student}} the courier routes. {{user}} is always welcome to ride along."
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC0-1.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "mentor",
+                "use": "@commons/mentor",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn007",
+                  "semantic_digest": "sha256:1e04380fe2507bd15160a9cd237ecc9b95904090a77d7b1c0fed0063694e584c"
+                },
+                "bind": {
+                  "mentor": "{{self}}",
+                  "student": {
+                    "late": "persona",
+                    "hint": "a new courier"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "012c-late-binding-session",
+      "meta": {
+        "id": "012c-late-binding-session",
+        "title": "Assembler: missing required late binding fails; {{user}} is bound to the session persona",
+        "kind": "assembler",
+        "spec_refs": [
+          "context-ir §5",
+          "context-ir §11.2 late binding"
+        ],
+        "status": "draft",
+        "notes": "Same graph as 012b. Session 1 binds only the user persona: assembling fails because the required student slot is unbound. Session 2 binds both: no {{late:*}} placeholder survives."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn007",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn007",
+              "ref": "@commons/mentor",
+              "type": "relationship",
+              "display_name": "Mentor and student",
+              "slots": {
+                "mentor": {
+                  "accepts": "character"
+                },
+                "student": {
+                  "accepts": "persona"
+                },
+                "observer": {
+                  "accepts": "persona",
+                  "required": false
+                }
+              },
+              "fragments": [
+                {
+                  "id": "lessons",
+                  "stable": true,
+                  "kind": "relationship",
+                  "content": {
+                    "type": "text",
+                    "text": "{{slot:mentor}} has been teaching {{slot:student}} the courier routes. {{user}} is always welcome to ride along."
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC0-1.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "mentor",
+                "use": "@commons/mentor",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn007",
+                  "semantic_digest": "sha256:1e04380fe2507bd15160a9cd237ecc9b95904090a77d7b1c0fed0063694e584c"
+                },
+                "bind": {
+                  "mentor": "{{self}}",
+                  "student": {
+                    "late": "persona",
+                    "hint": "a new courier"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "assemble": {
+          "profile": {
+            "runtime": {
+              "name": "char-pub-conformance",
+              "version": "0"
+            },
+            "tokenizer": "estimate",
+            "context_window": 8192,
+            "reserve_for_output": 512,
+            "mode": "narrator",
+            "capabilities": {
+              "images": false,
+              "system_role": true
+            }
+          },
+          "sessions": [
+            {
+              "bindings": {
+                "user": {
+                  "kind": "persona",
+                  "display_name": "Sam"
+                }
+              },
+              "history": [],
+              "expect": {
+                "error": "assemble.late_slot_unbound"
+              }
+            },
+            {
+              "bindings": {
+                "user": {
+                  "kind": "persona",
+                  "display_name": "Sam"
+                },
+                "student": {
+                  "kind": "persona",
+                  "display_name": "Kai"
+                }
+              },
+              "history": [],
+              "expect": {
+                "no_placeholders": true
+              }
+            }
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "013a-asset-license-rating",
+      "meta": {
+        "id": "013a-asset-license-rating",
+        "title": "Independent asset license and rating are aggregated into the IR",
+        "kind": "resolver",
+        "expect": "context-ir",
+        "spec_refs": [
+          "D-045",
+          "D-046",
+          "canonical-model §7",
+          "canonical-model §9",
+          "context-ir §3",
+          "context-ir §8"
+        ],
+        "status": "draft",
+        "notes": "Alice is general, but her avatar variant is mature and CC-BY-NC-4.0: effective rating becomes mature and both asset license and rating are listed with their source. A context asset is referenced by a fragment; the world's cover has its own license."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              },
+              "assets": [
+                {
+                  "slot": "cover",
+                  "role": "presentation",
+                  "variants": [
+                    {
+                      "id": "default",
+                      "media_type": "image/webp",
+                      "blob": {
+                        "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                        "size": 8192,
+                        "availability": "mirrored"
+                      },
+                      "license": "CC-BY-SA-4.0"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier. See the sketch of her bike."
+                },
+                "asset_refs": [
+                  "#asset/sketch"
+                ]
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "rating": "mature",
+                    "license": "CC-BY-NC-4.0"
+                  }
+                ]
+              },
+              {
+                "slot": "sketch",
+                "role": "context",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/png",
+                    "blob": {
+                      "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                      "size": 1024,
+                      "availability": "mirrored"
+                    },
+                    "license": "CC0-1.0",
+                    "alt": "A pencil sketch of a cargo bike"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:7de8ddd69aa6616ef10a706a2c6f1b8a0ca4428573282bf588d2678edf554979"
+                }
+              }
+            ]
+          }
+        },
+        "options": {
+          "publicAssetBaseUrl": "https://assets.char.pub/cas/sha256"
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "013b-public-depends-on-private",
+      "meta": {
+        "id": "013b-public-depends-on-private",
+        "title": "Public release with a private release deeper in its closure is rejected",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-043",
+          "D-083",
+          "canonical-model §12.1 rule 3"
+        ],
+        "status": "draft",
+        "notes": "The private release is a transitive dependency (through the public lorebook), not a direct one."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              },
+              "references": [
+                {
+                  "id": "setting",
+                  "use": "@cyberpunk/night-city",
+                  "mode": "default",
+                  "pin": {
+                    "release": "rel_01h455vb4pex5vsknk084sn003",
+                    "semantic_digest": "sha256:b18e76364d6cf3a8ce52c408f55587d8a0fcab047fe50a941f7d9fba8eff6970"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "private",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:049f0de9a06560ae5c1d1b829f29eb4862113c472455e08171864f8637b0f40c"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "101-publish-unpinned",
+      "meta": {
+        "id": "101-publish-unpinned",
+        "title": "Rule 1: every reference must pin an exact release",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-040",
+          "canonical-model §12.1 rule 1"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "follow": "latest"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "102-publish-tombstoned-dependency",
+      "meta": {
+        "id": "102-publish-tombstoned-dependency",
+        "title": "Rule 2: no tombstoned release in the closure",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-042",
+          "canonical-model §12.1 rule 2"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            },
+            "status": "tombstoned",
+            "status_reason": "Removed after a DMCA notice"
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:b18e76364d6cf3a8ce52c408f55587d8a0fcab047fe50a941f7d9fba8eff6970"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "103-publish-public-depends-on-private",
+      "meta": {
+        "id": "103-publish-public-depends-on-private",
+        "title": "Rule 3: a public release can only depend on public releases",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-043",
+          "canonical-model §12.1 rule 3"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "private",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:1b3ea7bccf3bf9b2a2c311b45cd1f808e71667b4e0d9f3131bb4ebbef724b531"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "104-publish-diamond",
+      "meta": {
+        "id": "104-publish-diamond",
+        "title": "Rule 4: one release per creation in the graph",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-029",
+          "canonical-model §12.1 rule 4"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              },
+              "references": [
+                {
+                  "id": "setting",
+                  "use": "@cyberpunk/night-city",
+                  "mode": "default",
+                  "pin": {
+                    "release": "rel_01h455vb4pex5vsknk084sn00d",
+                    "semantic_digest": "sha256:b621cc763aa992bbc55a17915f68a980ce1dddc093bbf70d03acaa184b3960b3"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              }
+            }
+          },
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn00d",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "CC-BY-4.0"
+              },
+              "summary": "Revised edition"
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:8aaf71ce9bb9ba92499feba7e23cd88936bdaa3e394349c869d48d6ba7483912"
+                }
+              },
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:b18e76364d6cf3a8ce52c408f55587d8a0fcab047fe50a941f7d9fba8eff6970"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "105-publish-unstable-override",
+      "meta": {
+        "id": "105-publish-unstable-override",
+        "title": "Rule 5: override targets must be stable fragments",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-023",
+          "canonical-model §12.1 rule 5"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn004",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn004",
+              "ref": "@cyberpunk/corps",
+              "type": "lorebook",
+              "display_name": "Corporations of Night City",
+              "fragments": [
+                {
+                  "id": "lore/arasaka",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Arasaka is a security megacorp headquartered downtown."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Arasaka"
+                    ],
+                    "secondary": [
+                      "Saburo",
+                      "tower"
+                    ],
+                    "logic": "any",
+                    "case_sensitive": true,
+                    "scan_depth": 4
+                  }
+                },
+                {
+                  "id": "lore/militech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Militech builds weapons and sells them to everyone."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Militech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/kang-tao",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Kang Tao makes smart guns."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Kang Tao"
+                    ]
+                  },
+                  "importance": "opportunistic"
+                },
+                {
+                  "id": "lore/zetatech",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Zetatech designs cyberware."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Zetatech"
+                    ]
+                  }
+                },
+                {
+                  "id": "lore/imported",
+                  "stable": false,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Biotechnica grows most of the city's food."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Biotechnica"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "teen",
+                "license": "CC-BY-SA-4.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "knows",
+                "use": "@cyberpunk/corps",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn004",
+                  "semantic_digest": "sha256:1b3ea7bccf3bf9b2a2c311b45cd1f808e71667b4e0d9f3131bb4ebbef724b531"
+                },
+                "override": [
+                  {
+                    "op": "remove",
+                    "target": "lore/imported"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "106-publish-required-slot",
+      "meta": {
+        "id": "106-publish-required-slot",
+        "title": "Rule 6: required slots must be bound or late",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-025",
+          "canonical-model §12.1 rule 6"
+        ],
+        "status": "draft"
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn006",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn006",
+              "ref": "@commons/rivals",
+              "type": "relationship",
+              "display_name": "Rivals",
+              "slots": {
+                "a": {
+                  "accepts": "character"
+                },
+                "b": {
+                  "accepts": "character"
+                }
+              },
+              "fragments": [
+                {
+                  "id": "rivalry",
+                  "stable": true,
+                  "kind": "relationship",
+                  "content": {
+                    "type": "text",
+                    "text": "{{slot:a}} and {{slot:b}} have competed for every job since school."
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "general",
+                "license": "CC0-1.0"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "rival",
+                "use": "@commons/rivals",
+                "mode": "default",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn006",
+                  "semantic_digest": "sha256:32c32cc86d02234e4c186811fb4469b2af85e0cffa91210995af2dc272f3be14"
+                },
+                "bind": {
+                  "a": "{{self}}"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "107-publish-asset-not-ready",
+      "meta": {
+        "id": "107-publish-asset-not-ready",
+        "title": "Rule 7: referenced assets must be ready",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-084",
+          "canonical-model §12.1 rule 7"
+        ],
+        "status": "draft",
+        "notes": "The avatar upload is still processing."
+      },
+      "input": {
+        "deps": [],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            }
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "processing"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "108-publish-license",
+      "meta": {
+        "id": "108-publish-license",
+        "title": "Rule 8: a dependency that reserves all rights cannot be built on by someone else",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-046",
+          "canonical-model §12.1 rule 8"
+        ],
+        "status": "draft",
+        "notes": "Night City is All-Rights-Reserved and belongs to another namespace than the publisher."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn003",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn003",
+              "ref": "@cyberpunk/night-city",
+              "type": "world",
+              "display_name": "Night City",
+              "authors": [
+                {
+                  "name": "Night City Collective"
+                }
+              ],
+              "fragments": [
+                {
+                  "id": "world",
+                  "stable": true,
+                  "kind": "world",
+                  "content": {
+                    "type": "text",
+                    "text": "Night City is a megacity on the Pacific coast, run by corporations."
+                  }
+                },
+                {
+                  "id": "districts/watson",
+                  "stable": true,
+                  "kind": "knowledge",
+                  "content": {
+                    "type": "text",
+                    "text": "Watson is a crowded district full of night markets."
+                  },
+                  "activation": {
+                    "mode": "keyword",
+                    "keys": [
+                      "Watson"
+                    ]
+                  }
+                }
+              ],
+              "meta": {
+                "default_locale": "en",
+                "rights": "original",
+                "rating": "mature",
+                "content_warnings": [
+                  "violence"
+                ],
+                "license": "LicenseRef-All-Rights-Reserved"
+              }
+            }
+          }
+        ],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "references": [
+              {
+                "id": "lives-in",
+                "use": "@cyberpunk/night-city",
+                "mode": "intrinsic",
+                "pin": {
+                  "release": "rel_01h455vb4pex5vsknk084sn003",
+                  "semantic_digest": "sha256:cddc5554d5adfad9d4a7afa523b24a9a66ab5fe569d040fc1d1d67cd1dae8787"
+                }
+              }
+            ]
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {},
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "109-publish-label-taken",
+      "meta": {
+        "id": "109-publish-label-taken",
+        "title": "Rule 9: a label cannot point to different content",
+        "kind": "publish",
+        "expect": "publish",
+        "spec_refs": [
+          "D-044",
+          "canonical-model §12.1 rule 9"
+        ],
+        "status": "draft",
+        "notes": "Label 1.0.0 already points to other content."
+      },
+      "input": {
+        "deps": [],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@djj/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "summary": "A courier who is always a little late.",
+            "authors": [
+              {
+                "name": "DJJ"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "description",
+                "stable": true,
+                "kind": "character",
+                "content": {
+                  "type": "text",
+                  "text": "{{self}} is a courier in Night City. She teases {{user}} about being slow."
+                }
+              }
+            ],
+            "bootstrap": {
+              "greetings": [
+                {
+                  "id": "default",
+                  "text": "Hi, you're late again."
+                }
+              ]
+            },
+            "assets": [
+              {
+                "slot": "avatar",
+                "role": "presentation",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "image/webp",
+                    "blob": {
+                      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "size": 2048,
+                      "availability": "mirrored"
+                    },
+                    "alt": "Alice in a yellow rain jacket"
+                  }
+                ]
+              }
+            ],
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            }
+          }
+        },
+        "registry": {
+          "label": "1.0.0",
+          "existingLabels": {
+            "1.0.0": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          },
+          "assetStatus": {
+            "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+          },
+          "blockedDigests": [],
+          "ownerNamespaces": [
+            "djj"
+          ]
+        }
+      },
+      "expected": {}
+    }
+  ]
+}

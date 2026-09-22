@@ -1,0 +1,46 @@
+{
+  "profile": {
+    "runtime": {
+      "name": "char-pub-conformance",
+      "version": "0"
+    },
+    "tokenizer": "estimate",
+    "context_window": 8192,
+    "reserve_for_output": 512,
+    "mode": "narrator",
+    "capabilities": {
+      "images": false,
+      "system_role": true
+    }
+  },
+  "sessions": [
+    {
+      "bindings": {
+        "user": {
+          "kind": "persona",
+          "display_name": "Sam"
+        }
+      },
+      "history": [],
+      "expect": {
+        "error": "assemble.late_slot_unbound"
+      }
+    },
+    {
+      "bindings": {
+        "user": {
+          "kind": "persona",
+          "display_name": "Sam"
+        },
+        "student": {
+          "kind": "persona",
+          "display_name": "Kai"
+        }
+      },
+      "history": [],
+      "expect": {
+        "no_placeholders": true
+      }
+    }
+  ]
+}

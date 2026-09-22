@@ -1,0 +1,14 @@
+{
+  "id": "011-same-release-two-edges",
+  "title": "Same release through two edges with different bind and params: no ID collisions",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "context-ir §4",
+    "context-ir §5",
+    "context-ir §6",
+    "context-ir §8"
+  ],
+  "status": "draft",
+  "notes": "Two instances of the same relationship release: fragment IDs, late slot keys and asset IDs are all distinct, and the two bond fragments have different digests."
+}

@@ -1,0 +1,11 @@
+{
+  "label": "1.0.0",
+  "existingLabels": {},
+  "assetStatus": {
+    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": "ready"
+  },
+  "blockedDigests": [],
+  "ownerNamespaces": [
+    "djj"
+  ]
+}

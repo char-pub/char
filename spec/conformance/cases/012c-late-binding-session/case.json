@@ -1,0 +1,11 @@
+{
+  "id": "012c-late-binding-session",
+  "title": "Assembler: missing required late binding fails; {{user}} is bound to the session persona",
+  "kind": "assembler",
+  "spec_refs": [
+    "context-ir §5",
+    "context-ir §11.2 late binding"
+  ],
+  "status": "draft",
+  "notes": "Same graph as 012b. Session 1 binds only the user persona: assembling fails because the required student slot is unbound. Session 2 binds both: no {{late:*}} placeholder survives."
+}

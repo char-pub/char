@@ -1,0 +1,13 @@
+{
+  "id": "006a-yanked-dependency",
+  "title": "Yanked dependency publishes with a warning",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-042",
+    "canonical-model §12.1 rule 2",
+    "context-ir §2"
+  ],
+  "status": "draft",
+  "notes": "Yanked is mutable registry state: it does not change the IR, only the Publish Report."
+}

@@ -27,6 +27,8 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install Chromium for the browser conformance run
+        run: pnpm --dir spec/conformance exec playwright install --with-deps chromium
       - name: Install gitleaks
         env:
           GITLEAKS_VERSION: 8.30.1

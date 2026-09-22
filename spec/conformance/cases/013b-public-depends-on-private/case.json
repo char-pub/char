@@ -1,0 +1,13 @@
+{
+  "id": "013b-public-depends-on-private",
+  "title": "Public release with a private release deeper in its closure is rejected",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-043",
+    "D-083",
+    "canonical-model §12.1 rule 3"
+  ],
+  "status": "draft",
+  "notes": "The private release is a transitive dependency (through the public lorebook), not a direct one."
+}

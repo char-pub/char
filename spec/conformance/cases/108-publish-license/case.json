@@ -1,0 +1,12 @@
+{
+  "id": "108-publish-license",
+  "title": "Rule 8: a dependency that reserves all rights cannot be built on by someone else",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-046",
+    "canonical-model §12.1 rule 8"
+  ],
+  "status": "draft",
+  "notes": "Night City is All-Rights-Reserved and belongs to another namespace than the publisher."
+}

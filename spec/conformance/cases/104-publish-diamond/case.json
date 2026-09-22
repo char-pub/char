@@ -1,0 +1,11 @@
+{
+  "id": "104-publish-diamond",
+  "title": "Rule 4: one release per creation in the graph",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-029",
+    "canonical-model §12.1 rule 4"
+  ],
+  "status": "draft"
+}

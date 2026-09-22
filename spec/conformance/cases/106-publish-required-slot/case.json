@@ -1,0 +1,11 @@
+{
+  "id": "106-publish-required-slot",
+  "title": "Rule 6: required slots must be bound or late",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-025",
+    "canonical-model §12.1 rule 6"
+  ],
+  "status": "draft"
+}

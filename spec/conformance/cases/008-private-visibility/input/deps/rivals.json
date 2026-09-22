@@ -1,0 +1,35 @@
+{
+  "release": "rel_01h455vb4pex5vsknk084sn006",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01h455vb4pex5vsknk084sn006",
+    "ref": "@commons/rivals",
+    "type": "relationship",
+    "display_name": "Rivals",
+    "slots": {
+      "a": {
+        "accepts": "character"
+      },
+      "b": {
+        "accepts": "character"
+      }
+    },
+    "fragments": [
+      {
+        "id": "rivalry",
+        "stable": true,
+        "kind": "relationship",
+        "content": {
+          "type": "text",
+          "text": "{{slot:a}} and {{slot:b}} have competed for every job since school."
+        }
+      }
+    ],
+    "meta": {
+      "default_locale": "en",
+      "rights": "original",
+      "rating": "general",
+      "license": "CC0-1.0"
+    }
+  }
+}

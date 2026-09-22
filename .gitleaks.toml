@@ -1,0 +1,14 @@
+# gitleaks 配置：在默认规则的基础上，放行 Context IR 中确定性计算出的哈希字段。
+# 这些值是公开内容的 sha256（引用实例、参与者、late slot 的 key），不是密钥，
+# 但字段名里含 "key"，会被通用规则误判。只按“字段名 + 64 位 hex 值”精确放行。
+title = "char.pub gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Context IR instance / participant / late-slot keys are content hashes"
+regexTarget = "match"
+regexes = [
+  '''^(?:instance_key|key)"\s*:\s*"(?:[pl]:)?[0-9a-f]{64}"$''',
+]
