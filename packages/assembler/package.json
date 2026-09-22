@@ -21,6 +21,7 @@
   "dependencies": {
     "@char-pub/core": "workspace:*",
     "gpt-tokenizer": "catalog:",
-    "tokenx": "catalog:"
+    "tokenx": "catalog:",
+    "zod": "catalog:"
   }
 }
