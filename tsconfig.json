@@ -6,6 +6,7 @@
     { "path": "packages/ccv3" },
     { "path": "packages/assembler" },
     { "path": "packages/cli" },
-    { "path": "apps/server" }
+    { "path": "apps/server" },
+    { "path": "actions/publish" }
   ]
 }

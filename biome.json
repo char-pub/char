@@ -8,6 +8,8 @@
       "!**/coverage",
       "!**/*.gen.*",
       "!spec/schema",
+      "!actions/*/dist",
+      "!actions/*/build",
       "!spec/conformance/cases/**/expected"
     ]
   },

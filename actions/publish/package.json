@@ -1,0 +1,19 @@
+{
+  "name": "@char-pub/publish-action",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b && esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --conditions=@char-pub/source --outfile=dist/index.js --legal-comments=linked --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\""
+  },
+  "dependencies": {
+    "@actions/core": "catalog:",
+    "@char-pub/cli": "workspace:*",
+    "@char-pub/contracts": "workspace:*",
+    "@char-pub/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "esbuild": "catalog:"
+  }
+}

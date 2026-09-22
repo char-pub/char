@@ -1,10 +1,13 @@
 packages:
   - packages/*
   - apps/*
+  - actions/*
 
 # 供应链防护：新发布的版本至少等 3 天再安装（单位：分钟）
 minimumReleaseAge: 4320
 catalog:
+  esbuild: ^0.27.0
+  "@actions/core": ^3.0.0
   commander: ^14.0.0
   yaml: ^2.8.0
   ajv: ^8.17.0

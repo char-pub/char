@@ -10,7 +10,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json",
-    "deps": "depcruise packages apps --config .dependency-cruiser.cjs",
+    "deps": "depcruise packages apps actions --config .dependency-cruiser.cjs",
     "test": "vitest run --project unit",
     "test:unit": "vitest run --project unit --coverage",
     "build": "pnpm -r --if-present build",
@@ -18,8 +18,9 @@
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
-    "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm build && pnpm secrets",
-    "prepare": "lefthook install || true"
+    "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm build && pnpm check:action-dist && pnpm secrets",
+    "prepare": "lefthook install || true",
+    "check:action-dist": "pnpm --filter @char-pub/publish-action build && git diff --exit-code -- actions/publish/dist"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

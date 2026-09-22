@@ -1,0 +1,37 @@
+name: char.pub publish
+description: Check, build and publish a char.pub creation from this repository using GitHub OIDC (no long-lived secrets).
+author: char-pub
+branding:
+  icon: upload-cloud
+  color: purple
+
+inputs:
+  path:
+    description: Path to char.yaml inside the repository.
+    required: false
+    default: char.yaml
+  label:
+    description: Release label, e.g. 1.2.0. Defaults to the tag name when triggered by a tag push.
+    required: false
+  visibility:
+    description: public or private.
+    required: false
+    default: public
+  registry:
+    description: Registry API base URL. Also used as the OIDC audience.
+    required: false
+    default: https://api.char.pub
+  dry-run:
+    description: Only check and build; do not publish.
+    required: false
+    default: "false"
+
+outputs:
+  release:
+    description: The id of the published release.
+  semantic-digest:
+    description: Semantic digest of the creation that was published.
+
+runs:
+  using: node24
+  main: dist/index.js

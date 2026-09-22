@@ -10,3 +10,7 @@ coverage/
 .turbo/
 *.tsbuildinfo
 .claude/worktrees/
+
+# GitHub Action 的打包产物需要提交
+!actions/publish/dist/
+actions/*/build/
