@@ -20,6 +20,10 @@
   },
   "dependencies": {
     "@char-pub/core": "workspace:*",
-    "fflate": "catalog:"
+    "fflate": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "fast-check": "catalog:"
   }
 }
