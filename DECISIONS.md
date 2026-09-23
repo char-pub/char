@@ -774,3 +774,24 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 6. **法律请求**：申请人信息用 AES-256-GCM 在应用层加密（随机 12 字节 nonce），密钥为 `LEGAL_ENCRYPTION_KEY`；列表不返回申请人信息，每次查看详情写一条 `legal.view` 审计。
 7. **死信任务重试**：把原任务数据重新投递到业务队列，再把死信任务标记为完成；普通失败任务用 pg-boss 的 retry。
 8. **admin 列表响应**统一为 `{ items, next_cursor? }`；tombstone 预览中的下游作者以 `@namespace` 表示，不暴露邮箱。
+
+### D-140 GitHub Source 与 OIDC 发布的实现取值 — Accepted
+
+1. **通知**：v0 没有站内通知系统，需要通知作者的事件（仓库转移导致绑定冻结等）写一条 `binding.owner_notified` 审计记录，后续通知系统从审计中补发。
+2. **可见性**：OIDC 主体可以看到它绑定的 Creation，即使该 Creation 还没有 public Release。
+3. **Revision 来源**：由 GitHub 同步或 OIDC 发布产生的 Revision，`author_kind` 为 `source`。
+4. **默认跟踪**：新绑定默认 `tracked_ref = refs/heads/main`，允许发布的 ref 为 `refs/heads/main` 与 `refs/tags/*`。
+5. **状态码**：OIDC token 无效（签名、audience、过期）为 401 `oidc.*`；重放、事件类型不允许、commit 不在允许的 ref 上、绑定不存在或已冻结为 403；源文件内容问题（解析失败、digest 不一致）为 422。
+6. **jti 的消耗时机**：token 与绑定都校验通过之后才写入 `oidc_jti`，避免无效请求占用 jti。
+7. **可选发布约束**（要求 ref 受保护、指定 environment、指定 job workflow）在校验时生效，但 v0 不提供设置它们的 API。
+8. **绑定的对外表示**不包含内部 ID，只有仓库的 GitHub 数字 ID、展示名、路径与 ref 配置。
+
+### D-141 Contribution API 的实现取值 — Accepted
+
+1. **访客提交**：访客需要 `guests.verified_at` 已设置才能提交；访客验证入口（Turnstile + 邮箱）尚未实现，测试中用仅测试环境生效的 `x-test-guest` 头模拟。
+2. **可见性**：非成员看不到没有 public Release 的 Creation，也就不能对它提交 Contribution。
+3. **限流先于校验**：先按账号或访客限流，再按目标 namespace 限流，然后才解析请求体。
+4. **接受规则**：敏感变更必须逐项列出确认，不接受通配符（`contribution.sensitive_wildcard`）；按合并后的许可重新检查 rights_ack；作者草稿在预览之后被修改时返回 409 `draft.version_conflict`；非 open 状态返回 403 `contribution.not_open`。
+5. **接受的结果**：生成一个 `author_kind = contribution` 的 Revision；合并后内容与已有 Revision 完全相同时复用它；贡献者去重后写入 provenance。
+6. **邀请**：`policy = invited` 时由 `contribution_invites` 表决定谁可以提交；作者通过 contribution-settings 与 invites 路由管理。
+7. **Agent Token**：`api_tokens.agent` 为 true 的 Token 提交的 Contribution 一律标记为 agent，请求体里的 `agent: false` 不能覆盖。
