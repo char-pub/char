@@ -719,3 +719,12 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 7. **未知宏**（如 `{{random:…}}`）：导入时转义为字面量并记入报告，导出时原样还原。
 8. **不做网络 IO**：远程 URL 资源不下载，报告中标注未导入；`user_icon` 不导入（属于用户的 persona）。PNG 头像交给上传管线前已去掉 tEXt / EXIF，`system_prompt` 原值不会随图片流出。
 9. **conformance 与 Assembler 的 Resolver 修正**：可选且未被使用的 late slot 不进入 IR 时，它对应的 participant 也不再出现（一致性用例 012b 发现，已修复）。
+
+### D-136 Better Auth 集成的实现取值 — Accepted
+
+1. **不启用 Better Auth 的 admin 插件**：它会在公开 API 上挂出冒充用户、改角色、删除用户等接口，与“公开 api 进程不挂载任何管理功能”相冲突。封禁由服务端的 `banUser` 完成（同一事务内标记封禁、删除全部会话、吊销全部个人 Token、写审计），另用 session 创建钩子阻止已封禁用户建立新会话；封禁到期后自动恢复。这取代了 DOR 中“用 admin 插件管理封禁字段”的写法。
+2. **`__Host-` cookie**：Better Auth 只会自动加 `__Secure-` 前缀，所以关闭自动前缀，把 `__Host-charpub.` 直接写进 cookie 名字（会话 cookie 为 `__Host-charpub.session`），并强制 Secure、HttpOnly、SameSite=Lax、Path=/、无 Domain。
+3. **登录限流**存在独立的 `auth_rate_limit` 表（Better Auth 的格式），与应用自己的 `rate_limits` 分开。客户端 IP 取 `cf-connecting-ip`。
+4. **不启用密码登录**；自动关联账号要求本地邮箱已验证；OAuth token 加密入库；显式开启 Origin 与 CSRF 检查（Better Auth 在测试环境默认跳过）。
+5. **数据最小化**：session 的 ip_address 列保留但不写入。
+6. user id 使用 UUIDv7（`advanced.database.generateId`）。
