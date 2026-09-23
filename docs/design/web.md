@@ -1,6 +1,6 @@
 # char.pub Web 重新设计（v0）
 
-> 状态：已实现，2026-09-23。功能拆分、操作路径、UI 方向和设计稿已确认，第 10 节的实现顺序已全部完成（决策见 DECISIONS D-156，进度见 goals/v0/PROGRESS）。
+> 状态：已实现，2026-09-23。功能拆分、操作路径、UI 方向和设计稿已确认，第 10 节的实现顺序已全部完成（决策见 DECISIONS D-157，进度见 goals/v0/PROGRESS）。
 > 设计稿：[`web.pen`](web.pen)（Pencil）。品牌来源：`vendor/brand-assets`。
 > 相关文档：[架构](architecture.md) · [安全](security.md) · [Admin](admin.md)。
 

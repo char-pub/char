@@ -917,7 +917,13 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 4. **防止误操作**：Railway 定义在 `production` 以外的 environment 中执行时直接报错（有测试覆盖）。以后如果需要预发布环境，必须使用与主站完全独立的凭证。
 5. **验收条目**：DOD 中“在 staging 上”的条目改为“在主站上”；M9-6 改为主站正式对外开放前的最终确认。已勾选的条目不受影响。
 
-### D-156 web 重新设计：信息架构、品牌视觉与配套接口 — Accepted（用户决定，2026-09-23）
+### D-156 OIDC 发布比对 Action 算法下的 digest — Accepted（缺陷修复）
+
+1. **问题**：第一次在主站用真实 GitHub Action 做 OIDC 发布时，一律返回 `publish.source_digest_mismatch`。char.yaml 通常不写内部 Creation ID，Action 在 CI 里用 CLI 由 ref 派生的占位 ID 计算 semantic digest；Registry 重新读取源文件后用真实 ID 计算，两者必然不同。集成测试的“Action 上报值”也借用了 Registry 的计算方式，所以没有发现。
+2. **修复**：Registry 读取源文件时同时按 Action 的算法（不替换 ID）算出 `reported_digest`，只用它与 Action 上报的值比对；存入 Revision 与 Release 的内容仍然使用真实 ID。防护不变：比对的仍是 Registry 自己在 OIDC token 指定的 commit 上读取的内容，Action 上报的值只用于尽早发现不一致。
+3. **回归测试**：用 Action 实际调用的 `buildLocal` 构建同一份源文件，断言它的 digest 等于 `reported_digest`（修复前失败）；集成测试改为按 Action 的方式计算上报值，并分别校验 Release 的 digest 与上报值。
+
+### D-157 web 重新设计：信息架构、品牌视觉与配套接口 — Accepted（用户决定，2026-09-23）
 
 1. **范围**：重组信息架构、换成品牌视觉、统一组件，同时补上服务端已支持但 web 没有入口的功能（yank、作者主页、GitHub 绑定状态、namespace 改名、移动端导航、全局搜索），以及服务端缺的接口（公开举报、贡献拒绝理由、按 @namespace 邀请、搜索按 namespace 过滤）。设计依据是 `docs/design/web.md` 与 `docs/design/web.pen`。
 2. **视觉**：向 `vendor/brand-assets` 对齐，取代 2026-09-23 “配色与字体暂不改动”的要求。浅色为主：Sand 底、Ink 文字，深色用 Night；主操作是橙底配 Ink 文字（橙底白字对比度不够）；危险操作用单独的红色，不再和强调色混用。品牌的三个节点色固定对应作品类型：Character 橙、World 紫、Lorebook 蓝，卡片、徽章、依赖列表、token 占比条都按这个规则着色。字体换成 Plus Jakarta Sans 与 JetBrains Mono，用 `@fontsource` 自托管，因为 CSP 不允许第三方字体。logo、字标与 lockup 直接引用子模块文件，不在仓库里复制。

@@ -1,3 +1,7 @@
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { buildLocal } from "@char-pub/cli";
 import { CharError, canonicalizeCreation } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
 import { loadSourceAtCommit } from "./load-source.js";
@@ -54,6 +58,23 @@ describe("loading a creation from a GitHub commit", () => {
       meta: { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" },
     });
     expect(out.semantic_digest).toBe(local.semantic_digest);
+  });
+
+  it("reports the digest the publish Action computes when char.yaml has no creation id", async () => {
+    // Action 在 CI 里用 CLI 构建，char.yaml 没有写内部 ID 时用由 ref 派生的占位 ID；
+    // Registry 比对时必须用同样的算法，否则每一次 OIDC 发布都会报 digest 不一致。
+    const dir = await mkdtemp(join(tmpdir(), "charpub-action-"));
+    await mkdir(join(dir, "chars/alice"), { recursive: true });
+    await writeFile(join(dir, "chars/alice/char.yaml"), YAML);
+    await writeFile(join(dir, "chars/alice/description.md"), "{{self}} is a courier.\n");
+    const action = await buildLocal(join(dir, "chars/alice/char.yaml"));
+    const gh = new MemoryGitHubSource();
+    gh.put(REPO, SHA, "chars/alice/char.yaml", YAML);
+    gh.put(REPO, SHA, "chars/alice/description.md", "{{self}} is a courier.\n");
+    const out = await loadSourceAtCommit(gh, AT, EXPECTED);
+    expect(out.reported_digest).toBe(action.resolved.ir.root.semantic_digest);
+    // 存入 Revision 的内容使用 Registry 的真实 ID，所以两个 digest 不同。
+    expect(out.semantic_digest).not.toBe(out.reported_digest);
   });
 
   it("a different commit with different content gives a different digest", async () => {

@@ -75,7 +75,7 @@
 - [x] **M7-2** OIDC 发布（security §4.4 的 10 条清单）：校验 iss / aud / 签名 / exp / jti / event_name，commit 必须等于 `sha`；按 `repository_id` + `repository_owner_id` + ref 匹配 binding；未安装 App 时拒绝（D-117）；Registry 在该 commit 重新读取源码并重算 digest。验证：本地 JWKS 表驱动测试，覆盖改名劫持、`pull_request_target`、重放、摘要不一致等反例。覆盖：SC-10、UC-4。
 - [x] **M7-2b** 仓库 transfer 后 binding 冻结（D-118）：冻结期间发布被拒并通知作者；作者确认后可以重新绑定或换用新仓库；全程写审计。验证：集成测试（用录制的 `repository.transferred` payload 和对账场景）。覆盖：SC-10、UC-4。
 - [x] **M7-3** `char` CLI：init / check --fix（生成稳定 ID 并写回）/ build / preview / login（个人 Token）/ publish。验证：CLI 集成测试。覆盖：SC-1。
-- [ ] **M7-4** `char-pub/publish` Action：在主站上用一个真实测试仓库完成一次发布。验证：Action 运行记录 + Registry 查询。前置：DOR B-3。覆盖：UC-4。
+- [x] **M7-4** `char-pub/publish` Action：在主站上用一个真实测试仓库完成一次发布。验证：Action 运行记录 + Registry 查询。前置：DOR B-3。覆盖：UC-4。
 
 ### M8 前端
 

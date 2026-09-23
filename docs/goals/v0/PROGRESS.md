@@ -203,9 +203,16 @@
 - `bootstrap --owner shuaiqijianhao@qq.com` 与 `--system-namespace commons --member shuaiqijianhao@qq.com` 完成。
 - GitHub App 装在 `Disdjj/char-djj`（用户指定的测试仓库，不用 blog），下一步在其中做 M7-4 / E2E-4。
 
+### 2026-09-23 M7-4 与公开 IR 跨域
+
+- 在用户指定的测试仓库 `Disdjj/char-djj` 上完成真实 OIDC 发布：`@djj/char-djj-test@1.0.0`（tag v1.0.0）。首次运行暴露出每次 OIDC 发布都会失败的 digest 比对缺陷，修复合并为 PR #3（D-156）。反例：从不允许的分支发布被拒（`binding.ref_not_allowed`）。勾选 M7-4，见 [evidence/2026-09-23-m7-4-oidc-publish.md](evidence/2026-09-23-m7-4-oidc-publish.md)。
+- Railway 服务重新连接 GitHub 源后才会在合并时自动部署（部署指南已补充）。
+- 用户报告公开 IR 跨域失败：公开下载 302 到 assets 后浏览器 Origin 变为 `null`。public 桶 CORS 改为允许任何来源的只读请求，浏览器中复验通过。
+- 需要第二个账号的 E2E-4 反例（改名劫持、仓库转移冻结）按用户决定之后再测。
+
 ### 2026-09-23 web 重新设计
 
-- 用户确认后按 `docs/design/web.md` 重做 web（D-156）：功能拆分与 11 条操作路径、UI 方向、Pencil 设计稿 `docs/design/web.pen`（23 个画板），然后实现。
+- 用户确认后按 `docs/design/web.md` 重做 web（D-157）：功能拆分与 11 条操作路径、UI 方向、Pencil 设计稿 `docs/design/web.pen`（23 个画板），然后实现。
 - **基础层**：品牌 token（Sand / Night / Ink，橙紫蓝对应三种作品类型），Plus Jakarta Sans 与 JetBrains Mono 自托管，浅色 / 深色 / 跟随系统三态且首屏不闪烁；补齐 shadcn 组件（Select、Dialog、Sheet、Tabs、Toast 等）；顶栏加全局搜索和移动端抽屉，登录改成对话框；统一的空状态、出错、404 / 410、骨架屏与全站只读提示。sonner 在运行时插入的 `<style>` 被 CSP 拦截，改为把样式打包进 CSS。
 - **页面**：首页（真实的最近发布）、探索、作者主页 `/c/$ns`；作品外框加五个标签（Overview、Context preview、Versions 含版本对比、Contributions、Settings），举报与 yank 对话框，成人内容遮挡在会话内对该作品保持显示；新建、导入（评级 / 权利 / 许可必须显式选择）、整页编辑器（搜索式依赖选择器、发布前检查栏）、发布对话框；贡献列表、提交与审阅（敏感变更逐项确认、显示拒绝理由）；我的作品；账户设置（namespace 改名、成人内容、Token）。
 - **服务端**：搜索按 namespace 过滤；公开举报接口；贡献拒绝理由存进 `contributions.decision_reason`（迁移 0011，并从审计日志补回已有的理由）；按 @namespace 邀请贡献者，邀请名单只返回 @namespace。
