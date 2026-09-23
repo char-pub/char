@@ -147,6 +147,62 @@ export const WorkerEnvSchema = z.object({
 });
 export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;
 
+/**
+ * GitHub Source：GitHub App（只读 Metadata 与 Contents）、webhook 验签与 OIDC 发布的 audience。
+ * 四项都没有配置时整个 GitHub 集成关闭（本地开发）；只配置了一部分视为配置错误。
+ */
+export const GitHubEnvSchema = z
+  .object({
+    GITHUB_APP_ID: z
+      .string()
+      .regex(/^[1-9][0-9]*$/)
+      .optional(),
+    /** PEM 格式的 App 私钥。变量里的 `\n` 会被还原成换行，方便写成一行。 */
+    GITHUB_APP_PRIVATE_KEY: nonEmpty.transform((s) => s.replaceAll("\\n", "\n")).optional(),
+    GITHUB_WEBHOOK_SECRET: z.string().min(20).optional(),
+    GITHUB_WEBHOOK_SECRET_PREVIOUS: z.string().min(20).optional(),
+    /** OIDC token 的 audience，与 Action 里的 registry 地址一致，例如 https://api.char.pub。 */
+    OIDC_AUDIENCE: url.optional(),
+  })
+  .refine(
+    (e) => {
+      const set = [
+        e.GITHUB_APP_ID,
+        e.GITHUB_APP_PRIVATE_KEY,
+        e.GITHUB_WEBHOOK_SECRET,
+        e.OIDC_AUDIENCE,
+      ];
+      return set.every((v) => v === undefined) || set.every((v) => v !== undefined);
+    },
+    {
+      message:
+        "set all of GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, GITHUB_WEBHOOK_SECRET and OIDC_AUDIENCE, or none",
+      path: ["GITHUB_APP_ID"],
+    },
+  );
+export type GitHubEnv = z.infer<typeof GitHubEnvSchema>;
+
+export interface GitHubConfig {
+  appId: string;
+  privateKey: string;
+  webhookSecrets: string[];
+  oidcAudience: string;
+}
+
+/** 完整配置了 GitHub 集成时返回配置，否则返回 null。 */
+export function githubConfigFromEnv(env: GitHubEnv): GitHubConfig | null {
+  if (!env.GITHUB_APP_ID || !env.GITHUB_APP_PRIVATE_KEY || !env.GITHUB_WEBHOOK_SECRET) return null;
+  if (!env.OIDC_AUDIENCE) return null;
+  return {
+    appId: env.GITHUB_APP_ID,
+    privateKey: env.GITHUB_APP_PRIVATE_KEY,
+    webhookSecrets: [env.GITHUB_WEBHOOK_SECRET, env.GITHUB_WEBHOOK_SECRET_PREVIOUS].filter(
+      (s): s is string => s !== undefined,
+    ),
+    oidcAudience: env.OIDC_AUDIENCE.replace(/\/+$/, ""),
+  };
+}
+
 /** admin 进程：Cloudflare Access 与员工允许名单。 */
 export const AdminEnvSchema = z.object({
   CF_ACCESS_TEAM_DOMAIN: url,
@@ -169,6 +225,61 @@ export const AdminEnvSchema = z.object({
     .refine((s) => Buffer.from(s, "base64").length === 32, "must be 32 bytes, base64 encoded"),
 });
 export type AdminEnv = z.infer<typeof AdminEnvSchema>;
+
+/**
+ * 访客验证：Turnstile secret、发信的 SMTP 连接与发件人、邮箱 HMAC 密钥。
+ *
+ * 四项全部不配置时访客验证关闭，相关接口返回 503（任何环境都是这样：缺配置等于功能关闭，
+ * 而不是跳过校验）；只配置了一部分视为配置错误。本地开发想走通流程时，可以使用 Cloudflare
+ * 文档中的 Turnstile 测试密钥和任意 SMTP 服务。
+ *
+ * HMAC 密钥单独配置，不从 `BETTER_AUTH_SECRET` 派生：登录密钥会定期轮换，而同一邮箱找回
+ * 同一个访客依赖这把密钥长期不变。
+ */
+export const GuestEnvSchema = z
+  .object({
+    TURNSTILE_SECRET_KEY: nonEmpty.optional(),
+    /** 例如 `smtps://user:password@smtp.example.com:465`。 */
+    SMTP_URL: z.url({ protocol: /^smtps?$/ }).optional(),
+    /** 发件人，例如 `char.pub <no-reply@char.pub>`。 */
+    EMAIL_FROM: nonEmpty.optional(),
+    /** 至少 32 字节，base64 编码。 */
+    GUEST_HMAC_KEY: z
+      .string()
+      .refine((s) => Buffer.from(s, "base64").length >= 32, "must be at least 32 bytes, base64")
+      .optional(),
+  })
+  .refine(
+    (e) => {
+      const set = [e.TURNSTILE_SECRET_KEY, e.SMTP_URL, e.EMAIL_FROM, e.GUEST_HMAC_KEY];
+      return set.every((v) => v === undefined) || set.every((v) => v !== undefined);
+    },
+    {
+      message: "set all of TURNSTILE_SECRET_KEY, SMTP_URL, EMAIL_FROM and GUEST_HMAC_KEY, or none",
+      path: ["TURNSTILE_SECRET_KEY"],
+    },
+  );
+export type GuestEnv = z.infer<typeof GuestEnvSchema>;
+
+export interface GuestConfig {
+  turnstileSecret: string;
+  smtpUrl: string;
+  emailFrom: string;
+  hmacKey: Uint8Array;
+}
+
+/** 完整配置了访客验证时返回配置，否则返回 null。 */
+export function guestConfigFromEnv(env: GuestEnv): GuestConfig | null {
+  if (!env.TURNSTILE_SECRET_KEY || !env.SMTP_URL || !env.EMAIL_FROM || !env.GUEST_HMAC_KEY) {
+    return null;
+  }
+  return {
+    turnstileSecret: env.TURNSTILE_SECRET_KEY,
+    smtpUrl: env.SMTP_URL,
+    emailFrom: env.EMAIL_FROM,
+    hmacKey: new Uint8Array(Buffer.from(env.GUEST_HMAC_KEY, "base64")),
+  };
+}
 
 /** 从环境变量得到已配置的第三方登录。 */
 export function authProvidersFromEnv(env: AuthEnv) {

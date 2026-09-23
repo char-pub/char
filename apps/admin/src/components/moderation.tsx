@@ -1,8 +1,12 @@
 /**
- * 举报队列与内容处置（隐藏 / 恢复、强制评级、代作者 yank）。
+ * 举报队列与内容处置（认领、隐藏 / 恢复、强制评级、代作者 yank、转交）。
  * 举报描述和作品简介都是用户写的，只按纯文本显示。
+ *
+ * 隐藏与强制评级只能作用于 Creation，yank 只能作用于 Release，所以举报的操作按对象类型给出。
+ * 强制评级只能调高：低于当前 effective rating 的选项不可选，后端也会拒绝。
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -28,11 +32,20 @@ const ACTION_LABEL: Record<ReportAction, string> = {
   escalate: "Escalate to T&S / legal",
 };
 
+type QueueAction = ReportAction | "claim";
+
+/** 按举报对象的类型给出可用的处置。 */
+export function actionsFor(subject: Report["subject"]["type"]): ReportAction[] {
+  if (subject === "creation") return ["dismiss", "hide", "force_rating", "escalate"];
+  if (subject === "release") return ["dismiss", "yank", "escalate"];
+  return ["dismiss", "escalate"];
+}
+
 export function ReportsPage() {
   const api = useApi();
   const { can } = useMe();
   const q = useQuery({ queryKey: ["reports"], queryFn: () => api.listReports() });
-  const [acting, setActing] = useState<{ report: Report; action: ReportAction } | null>(null);
+  const [acting, setActing] = useState<{ report: Report; action: QueueAction } | null>(null);
   const sorted = [...(q.data ?? [])].sort(
     (a, b) =>
       SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] ||
@@ -81,18 +94,25 @@ export function ReportsPage() {
               <td>
                 {can("reports.handle") && (r.status === "open" || r.status === "claimed") ? (
                   <div className="flex flex-wrap justify-end gap-1">
-                    {(["dismiss", "hide", "force_rating", "escalate"] as ReportAction[]).map(
-                      (a) => (
-                        <Button
-                          key={a}
-                          size="xs"
-                          variant="outline"
-                          onClick={() => setActing({ report: r, action: a })}
-                        >
-                          {ACTION_LABEL[a]}
-                        </Button>
-                      ),
-                    )}
+                    {r.status === "open" ? (
+                      <Button
+                        size="xs"
+                        variant="secondary"
+                        onClick={() => setActing({ report: r, action: "claim" })}
+                      >
+                        Claim
+                      </Button>
+                    ) : null}
+                    {actionsFor(r.subject.type).map((a) => (
+                      <Button
+                        key={a}
+                        size="xs"
+                        variant="outline"
+                        onClick={() => setActing({ report: r, action: a })}
+                      >
+                        {ACTION_LABEL[a]}
+                      </Button>
+                    ))}
                   </div>
                 ) : null}
               </td>
@@ -112,7 +132,7 @@ function ReportActionDialog({
   onClose,
 }: {
   report: Report;
-  action: ReportAction;
+  action: QueueAction;
   onClose: () => void;
 }) {
   const api = useApi();
@@ -120,23 +140,31 @@ function ReportActionDialog({
   const [rating, setRating] = useState<string>("mature");
   const m = useMutation({
     mutationFn: (input: WithReason) =>
-      api.actOnReport(report.id, {
-        action,
-        ...input,
-        ...(action === "force_rating" ? { rating } : {}),
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
+      action === "claim"
+        ? api.claimReport(report.id, input)
+        : api.actOnReport(report.id, {
+            action,
+            ...input,
+            ...(action === "force_rating" ? { rating } : {}),
+          }),
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ["reports"] }),
+        qc.invalidateQueries({ queryKey: ["creation"] }),
+      ]),
   });
+  const label = action === "claim" ? "Claim report" : ACTION_LABEL[action];
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent>
-        <DialogTitle>{ACTION_LABEL[action]}</DialogTitle>
+        <DialogTitle>{label}</DialogTitle>
         <DialogDescription>
           Report {report.id} about <span className="font-mono">{report.subject.label}</span>.
+          {action === "claim" ? " The report is assigned to you." : null}
         </DialogDescription>
         <ReasonForm
-          submitLabel={ACTION_LABEL[action]}
-          danger={action !== "dismiss" && action !== "escalate"}
+          submitLabel={label}
+          danger={action !== "dismiss" && action !== "escalate" && action !== "claim"}
           onSubmit={async (input) => {
             await m.mutateAsync(input);
             onClose();
@@ -149,7 +177,17 @@ function ReportActionDialog({
   );
 }
 
-function RatingSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+/** 评级选择：低于 `min`（当前 effective rating）的选项不可选。 */
+function RatingSelect({
+  value,
+  onChange,
+  min,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  min?: string;
+}) {
+  const floor = min ? RATINGS.indexOf(min as (typeof RATINGS)[number]) : -1;
   return (
     <label className="flex flex-col gap-1 text-sm">
       Rating (can only be raised; the creation itself is not modified)
@@ -158,14 +196,20 @@ function RatingSelect({ value, onChange }: { value: string; onChange: (v: string
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
-        {RATINGS.map((r) => (
-          <option key={r} value={r}>
-            {r}
+        {RATINGS.map((r, i) => (
+          <option key={r} value={r} disabled={i < floor}>
+            {i < floor ? `${r} (below current)` : r}
           </option>
         ))}
       </select>
     </label>
   );
+}
+
+/** 比当前评级高一级的评级；已经是最高级时保持不变。 */
+function nextRating(current: string): string {
+  const i = RATINGS.indexOf(current as (typeof RATINGS)[number]);
+  return RATINGS[Math.min(RATINGS.length - 1, i + 1)] ?? "mature";
 }
 
 type ContentAction = { kind: "hide" | "unhide" | "rating" } | { kind: "yank"; releaseId: string };
@@ -184,6 +228,7 @@ export function ContentPage() {
   const [acting, setActing] = useState<ContentAction | null>(null);
   const [rating, setRating] = useState("mature");
   const c: CreationAdminView | undefined = q.data;
+  const canTombstone = can("tombstone.policy") || can("tombstone.legal");
 
   async function run(input: WithReason) {
     if (!c || !acting) return;
@@ -231,7 +276,8 @@ export function ContentPage() {
             </h2>
             <span className="font-mono text-xs text-muted-foreground">{c.ref}</span>
             <Tag tone={c.status === "active" ? "ok" : "warn"}>{c.status}</Tag>
-            <Tag>rating {c.rating}</Tag>
+            <Tag>author rating {c.rating}</Tag>
+            <Tag>effective {c.effective_rating}</Tag>
             {c.forced_rating ? <Tag tone="warn">forced {c.forced_rating}</Tag> : null}
           </div>
           <p className="text-sm">
@@ -248,8 +294,22 @@ export function ContentPage() {
               </Button>
             ) : null}
             {can("reports.handle") ? (
-              <Button size="xs" variant="outline" onClick={() => setActing({ kind: "rating" })}>
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => {
+                  setRating(nextRating(c.effective_rating));
+                  setActing({ kind: "rating" });
+                }}
+              >
                 Force rating
+              </Button>
+            ) : null}
+            {canTombstone ? (
+              <Button size="xs" variant="outline" asChild>
+                <Link to="/tombstone" search={{ subject: c.ref }}>
+                  Start tombstone
+                </Link>
               </Button>
             ) : null}
           </div>
@@ -268,7 +328,9 @@ export function ContentPage() {
               {c.releases.map((r) => (
                 <tr key={r.id}>
                   <td className="font-mono text-xs">{r.label}</td>
-                  <td>{r.visibility}</td>
+                  <td>
+                    {r.visibility === "private" ? <Tag tone="warn">private</Tag> : r.visibility}
+                  </td>
                   <td>{r.status}</td>
                   <td className="text-right">
                     {can("releases.yank") && r.status === "active" ? (
@@ -304,7 +366,7 @@ export function ContentPage() {
             </DialogDescription>
             <ReasonForm submitLabel="Confirm" danger={acting.kind !== "unhide"} onSubmit={run}>
               {acting.kind === "rating" ? (
-                <RatingSelect value={rating} onChange={setRating} />
+                <RatingSelect value={rating} onChange={setRating} min={c.effective_rating} />
               ) : null}
             </ReasonForm>
           </DialogContent>

@@ -11,21 +11,21 @@
  * - 同一个 label 已经指向相同内容时直接返回已有的 Release；指向不同内容则 409。
  */
 import { PublishRequestSchema, type PublishResponse } from "@char-pub/contracts";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Hono } from "hono";
-import { appendAudit } from "../../audit/audit.js";
 import { releases, revisions } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
-import { QUEUE_NAMES } from "../../jobs/definitions.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
 import { decodeId, encodeId } from "../../registry/ids.js";
 import { lookupCreation } from "../../registry/lookup.js";
+import {
+  IDEMPOTENCY_KEY_RE,
+  type ReleaseRow,
+  type RequestPublishResult,
+  requestPublish,
+} from "../../registry/publish.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
 import { CREATION_PATH } from "./drafts.js";
-
-const IDEMPOTENCY_KEY_RE = /^[\x21-\x7e]{8,200}$/;
-
-type ReleaseRow = typeof releases.$inferSelect;
 
 function publishState(r: ReleaseRow): PublishResponse["state"] {
   if (r.publishState === "failed") return "failed";
@@ -41,6 +41,56 @@ export function publishResponse(r: ReleaseRow, idempotent: boolean): PublishResp
   const report = r.publishReport as PublishResponse["report"] | null;
   if (report) out.report = report;
   return out;
+}
+
+/** 把发布请求的结果转成 HTTP 响应。原生发布与 OIDC 发布共用。 */
+export function publishResultResponse(
+  c: AppContext,
+  label: string,
+  result: RequestPublishResult,
+): Response {
+  switch (result.kind) {
+    case "created":
+      return c.json(publishResponse(result.row, false), 202);
+    case "same":
+    case "idempotent":
+      return c.json(publishResponse(result.row, true), 200);
+    case "key_reused":
+      return problem(
+        c,
+        422,
+        "request.idempotency_key_reused",
+        "this Idempotency-Key was used for a different publish request",
+      );
+    case "taken":
+      return problem(
+        c,
+        409,
+        "publish.label_taken",
+        `${label} already points to different content; choose a new label`,
+      );
+    case "import_unconfirmed":
+      return problem(
+        c,
+        422,
+        "publish.import_unconfirmed",
+        "confirm the rating, rights and license of the imported card before publishing",
+      );
+  }
+}
+
+/** 读取并校验 `Idempotency-Key`；缺失或格式不对时返回错误响应。 */
+export function idempotencyKeyOf(c: AppContext): string | Response {
+  const key = c.req.header("idempotency-key");
+  if (!key || !IDEMPOTENCY_KEY_RE.test(key)) {
+    return problem(
+      c,
+      400,
+      "request.idempotency_key_required",
+      "publishing requires an Idempotency-Key header (8–200 visible ASCII characters)",
+    );
+  }
+  return key;
 }
 
 async function loadCreation(c: AppContext) {
@@ -63,16 +113,9 @@ export function register(app: Hono<Env>): void {
       return { action: "creation.publish", resource: ctx.resource, loaded: ctx };
     },
     handler: async (c, { body, loaded }) => {
-      const { db, ids, clock, queue } = c.var.services;
-      const key = c.req.header("idempotency-key");
-      if (!key || !IDEMPOTENCY_KEY_RE.test(key)) {
-        return problem(
-          c,
-          400,
-          "request.idempotency_key_required",
-          "publishing requires an Idempotency-Key header (8–200 visible ASCII characters)",
-        );
-      }
+      const { db } = c.var.services;
+      const key = idempotencyKeyOf(c);
+      if (key instanceof Response) return key;
       const creationId = loaded.creation.id;
       const revisionId = decodeId("revision", body.revision);
       const [revision] = revisionId
@@ -84,100 +127,18 @@ export function register(app: Hono<Env>): void {
         : [];
       if (!revision) return problem(c, 404, "revision.not_found");
 
-      const [byKey] = await db
-        .select()
-        .from(releases)
-        .where(and(eq(releases.creationId, creationId), eq(releases.idempotencyKey, key)))
-        .limit(1);
-      if (byKey) {
-        if (byKey.label !== body.label || byKey.revisionId !== revision.id) {
-          return problem(
-            c,
-            422,
-            "request.idempotency_key_reused",
-            "this Idempotency-Key was used for a different publish request",
-          );
-        }
-        return c.json(publishResponse(byKey, true), 200);
-      }
-
-      const now = clock.now();
-      const id = ids.uuid();
-      const result = await db.transaction(async (tx) => {
-        const [taken] = await tx
-          .select()
-          .from(releases)
-          .where(
-            and(
-              eq(releases.creationId, creationId),
-              eq(releases.label, body.label),
-              ne(releases.publishState, "failed"),
-            ),
-          )
-          .limit(1)
-          .for("update");
-        if (taken) {
-          return taken.semanticDigest === revision.semanticDigest
-            ? ({ kind: "same", row: taken } as const)
-            : ({ kind: "taken" } as const);
-        }
-        const [row] = await tx
-          .insert(releases)
-          .values({
-            id,
-            creationId,
-            label: body.label,
-            visibility: body.visibility,
-            status: "active",
-            publishState: "pending",
-            revisionId: revision.id,
-            source: { provider: "native", revision: encodeId("revision", revision.id) },
-            semanticDigest: revision.semanticDigest,
-            publishedBy: encodeId("user", userIdOf(c.var.principal)),
-            idempotencyKey: key,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .onConflictDoNothing()
-          .returning();
-        // 并发请求刚刚占用了同一个 label：按内容是否相同分别处理。
-        if (!row) return { kind: "race" } as const;
-        await queue.enqueue(
-          tx,
-          QUEUE_NAMES.publish,
-          { release_id: id },
-          { singletonKey: `publish:${id}` },
-        );
-        await appendAudit(tx, {
-          at: now,
-          actor: auditActor(c.var.principal),
-          action: "release.publish_requested",
-          subject: `release:${id}`,
-          requestId: requestIdOf(c),
-          after: {
-            creation: creationId,
-            label: body.label,
-            visibility: body.visibility,
-            semantic_digest: revision.semanticDigest,
-          },
-        });
-        return { kind: "created", row } as const;
+      const result = await requestPublish(c.var.services, {
+        creationId,
+        revision,
+        label: body.label,
+        visibility: body.visibility,
+        idempotencyKey: key,
+        source: { provider: "native", revision: encodeId("revision", revision.id) },
+        publishedBy: encodeId("user", userIdOf(c.var.principal)),
+        actor: auditActor(c.var.principal),
+        requestId: requestIdOf(c),
       });
-
-      switch (result.kind) {
-        case "created":
-          return c.json(publishResponse(result.row, false), 202);
-        case "same":
-          return c.json(publishResponse(result.row, true), 200);
-        case "taken":
-        case "race":
-          return problem(
-            c,
-            409,
-            "publish.label_taken",
-            `${body.label} already points to different content; choose a new label`,
-          );
-      }
+      return publishResultResponse(c, body.label, result);
     },
   });
 

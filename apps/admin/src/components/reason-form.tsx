@@ -18,6 +18,8 @@ export interface ReasonFormProps {
   legalRequests?: LegalRequest[];
   /** 额外的确认文字：用户必须勾选才能提交。 */
   confirmText?: string;
+  /** 表单中其他必填项是否已经有效；为 false 时提交按钮保持禁用。 */
+  fieldsReady?: boolean;
   children?: ReactNode;
   onSubmit: (input: WithReason) => Promise<void>;
 }
@@ -31,6 +33,7 @@ export function ReasonForm({
   danger,
   legalRequests,
   confirmText,
+  fieldsReady = true,
   children,
   onSubmit,
 }: ReasonFormProps) {
@@ -42,7 +45,8 @@ export function ReasonForm({
   const reasonId = useId();
   const hintId = useId();
   const legalNeeded = legalRequests !== undefined;
-  const ready = reasonIsValid(reason) && confirmed && (!legalNeeded || legalId !== "") && !busy;
+  const ready =
+    reasonIsValid(reason) && confirmed && fieldsReady && (!legalNeeded || legalId !== "") && !busy;
   const remaining = Math.max(0, MIN_REASON_LENGTH - reason.trim().length);
 
   return (

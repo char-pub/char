@@ -4,10 +4,14 @@
  * 流程：输入对象 → 预览影响范围（受影响的 Release、会失效的对象与 CDN URL、下游作者）→
  * 选择原因代码并填写理由（法律原因必须关联法律请求）→ 执行。影响超过 50 个 Release 时
  * 需要第二名员工确认；只有一名有资格的员工时，发起人要等 24 小时冷静期结束后才能自己确认。
+ *
+ * 待确认的请求（大范围下架、CSAM 锁定账号的解封、移除 owner）集中在 Approvals 页面，
+ * 下架页面也会列出。发起人或有确认资格的员工可以取消请求。
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   type PendingApproval,
   TOMBSTONE_REASONS,
@@ -15,13 +19,22 @@ import {
   type TombstoneReason,
 } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
-import { ErrorNote, Field, PageHeader, Tag, Time } from "./page";
+import { DECIDE_CAPABILITIES } from "@/lib/roles";
+import { Empty, ErrorNote, Field, PageHeader, Restricted, Tag, Time, UserText } from "./page";
 import { ReasonForm } from "./reason-form";
 
-export function TombstonePage({ now }: { now?: () => number } = {}) {
+export function TombstonePage(props: { now?: () => number; initialSubject?: string } = {}) {
+  return (
+    <Restricted any={["tombstone.policy", "tombstone.legal"]}>
+      <TombstoneForm {...props} />
+    </Restricted>
+  );
+}
+
+function TombstoneForm({ now, initialSubject }: { now?: () => number; initialSubject?: string }) {
   const api = useApi();
   const { can } = useMe();
-  const [subject, setSubject] = useState("@fanworks/borrowed-hero#description");
+  const [subject, setSubject] = useState(initialSubject ?? "@fanworks/borrowed-hero#description");
   const [preview, setPreview] = useState<TombstonePreview | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [code, setCode] = useState<TombstoneReason>("legal.dmca");
@@ -91,10 +104,17 @@ export function TombstonePage({ now }: { now?: () => number } = {}) {
               {preview.releases.map((r) => (
                 <li key={r.id}>
                   {r.ref}@{r.label}
+                  {r.via ? <span className="text-muted-foreground"> · {r.via}</span> : null}
                 </li>
               ))}
             </ul>
           </details>
+          {preview.downstream_authors.length > 0 ? (
+            <p className="text-sm">
+              Downstream authors:{" "}
+              <span className="font-mono text-xs">{preview.downstream_authors.join(" ")}</span>
+            </p>
+          ) : null}
           <label className="flex flex-col gap-1 text-sm">
             Public reason code
             <select
@@ -151,26 +171,52 @@ function remaining(until: string, now: number): string {
   return `${h}h ${m}m`;
 }
 
-export function Approvals({ now: fixedNow }: { now?: () => number } = {}) {
+export function ApprovalsPage() {
+  return (
+    <Restricted any={[...DECIDE_CAPABILITIES]}>
+      <div className="space-y-4">
+        <PageHeader
+          title="Approvals"
+          description="Actions with a large impact need a second staff member: large tombstones, unbanning CSAM-locked accounts and removing an owner."
+        />
+        <Approvals showEmpty />
+      </div>
+    </Restricted>
+  );
+}
+
+export function Approvals({
+  now: fixedNow,
+  showEmpty,
+}: {
+  now?: () => number;
+  showEmpty?: boolean;
+} = {}) {
   const api = useApi();
   const { me } = useMe();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["approvals"], queryFn: () => api.listApprovals() });
   const [now, setNow] = useState(() => (fixedNow ?? Date.now)());
+  const [deciding, setDeciding] = useState<{
+    approval: PendingApproval;
+    kind: "confirm" | "cancel";
+  } | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     const t = setInterval(() => setNow((fixedNow ?? Date.now)()), 30_000);
     return () => clearInterval(t);
   }, [fixedNow]);
-  const confirm = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      api.confirmApproval(id, { reason }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["approvals"] }),
-  });
   const items = q.data ?? [];
-  if (items.length === 0) return null;
+  if (q.error) return <ErrorNote error={q.error} />;
+  if (items.length === 0 && !notice) return showEmpty ? <Empty>No pending approvals.</Empty> : null;
   return (
     <section className="space-y-2" aria-label="Pending approvals">
       <h2 className="text-base">Pending four-eyes approvals</h2>
+      {notice ? (
+        <p role="status" className="text-sm">
+          {notice}
+        </p>
+      ) : null}
       {items.map((a: PendingApproval) => {
         const mine = a.initiated_by === me?.email;
         const cooling = new Date(a.cooling_off_until).getTime() > now;
@@ -184,6 +230,9 @@ export function Approvals({ now: fixedNow }: { now?: () => number } = {}) {
                 by {a.initiated_by} at <Time iso={a.initiated_at} />
               </span>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Reason: <UserText text={a.reason} />
+            </p>
             {mine && a.other_eligible_staff > 0 ? (
               <p className="text-sm">Waiting for a second staff member to confirm.</p>
             ) : null}
@@ -195,18 +244,68 @@ export function Approvals({ now: fixedNow }: { now?: () => number } = {}) {
                 owner has been notified.
               </p>
             ) : null}
-            {!blocked ? (
-              <ReasonForm
-                submitLabel="Confirm"
-                danger
-                onSubmit={async ({ reason }) => {
-                  await confirm.mutateAsync({ id: a.id, reason });
-                }}
-              />
+            {mine && a.other_eligible_staff === 0 && !cooling ? (
+              <p className="text-sm">
+                The cooling-off period is over. Confirming your own request is recorded as such in
+                the audit log.
+              </p>
             ) : null}
+            <div className="flex gap-2">
+              {!blocked ? (
+                <Button
+                  size="xs"
+                  variant="destructive"
+                  onClick={() => setDeciding({ approval: a, kind: "confirm" })}
+                >
+                  Confirm
+                </Button>
+              ) : null}
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => setDeciding({ approval: a, kind: "cancel" })}
+              >
+                Cancel request
+              </Button>
+            </div>
           </div>
         );
       })}
+      {deciding ? (
+        <Dialog open onOpenChange={(o) => (!o ? setDeciding(null) : undefined)}>
+          <DialogContent>
+            <DialogTitle>
+              {deciding.kind === "confirm" ? "Confirm" : "Cancel"} {deciding.approval.kind}
+            </DialogTitle>
+            <DialogDescription>
+              <span className="font-mono">{deciding.approval.subject}</span>
+              {deciding.kind === "confirm"
+                ? " — the action is executed as soon as you confirm."
+                : " — the action will not be executed."}
+            </DialogDescription>
+            <ReasonForm
+              submitLabel={deciding.kind === "confirm" ? "Confirm and execute" : "Cancel request"}
+              danger={deciding.kind === "confirm"}
+              onSubmit={async (input) => {
+                const { approval, kind } = deciding;
+                if (kind === "confirm") await api.confirmApproval(approval.id, input);
+                else await api.cancelApproval(approval.id, input);
+                setNotice(
+                  kind === "confirm"
+                    ? `Confirmed ${approval.id}; the action was executed.`
+                    : `Cancelled ${approval.id}.`,
+                );
+                setDeciding(null);
+                await Promise.all([
+                  qc.invalidateQueries({ queryKey: ["approvals"] }),
+                  qc.invalidateQueries({ queryKey: ["users"] }),
+                  qc.invalidateQueries({ queryKey: ["staff"] }),
+                ]);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </section>
   );
 }

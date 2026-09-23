@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   DatabaseEnvSchema,
   EnvError,
+  GitHubEnvSchema,
+  GuestEnvSchema,
+  githubConfigFromEnv,
+  guestConfigFromEnv,
   MigrationEnvSchema,
   parseEnv,
   ServerEnvSchema,
@@ -79,5 +83,68 @@ describe("parseEnv", () => {
         DATABASE_APP_ROLE: "bad role;",
       }),
     ).toThrow(EnvError);
+  });
+});
+
+describe("GitHub integration config", () => {
+  // 不是真正的密钥，只用来检查换行的还原。
+  const full = {
+    GITHUB_APP_ID: "123456",
+    GITHUB_APP_PRIVATE_KEY: "line-1\\nline-2\\nline-3",
+    GITHUB_WEBHOOK_SECRET: "w".repeat(32),
+    OIDC_AUDIENCE: "https://api.char.pub/",
+  };
+
+  it("is off when nothing is configured (local development)", () => {
+    expect(githubConfigFromEnv(parseEnv(GitHubEnvSchema, {}))).toBeNull();
+  });
+
+  it("refuses a partial configuration", () => {
+    expect(() =>
+      parseEnv(GitHubEnvSchema, { GITHUB_APP_ID: "1", GITHUB_WEBHOOK_SECRET: "w".repeat(32) }),
+    ).toThrow(EnvError);
+  });
+
+  it("restores newlines in the private key, trims the audience, and keeps the previous secret", () => {
+    const cfg = githubConfigFromEnv(
+      parseEnv(GitHubEnvSchema, { ...full, GITHUB_WEBHOOK_SECRET_PREVIOUS: "p".repeat(32) }),
+    );
+    expect(cfg?.privateKey).toBe("line-1\nline-2\nline-3");
+    expect(cfg?.oidcAudience).toBe("https://api.char.pub");
+    expect(cfg?.webhookSecrets).toEqual(["w".repeat(32), "p".repeat(32)]);
+  });
+});
+
+describe("guest verification config", () => {
+  // 测试值在运行时生成，不是真正的密钥。
+  const full = () => ({
+    TURNSTILE_SECRET_KEY: "t".repeat(35),
+    SMTP_URL: "smtps://user:pass@smtp.example.test:465",
+    EMAIL_FROM: "char.pub <no-reply@example.test>",
+    GUEST_HMAC_KEY: Buffer.alloc(32, 1).toString("base64"),
+  });
+
+  it("is off when nothing is configured", () => {
+    expect(guestConfigFromEnv(parseEnv(GuestEnvSchema, {}))).toBeNull();
+  });
+
+  it("refuses a partial configuration", () => {
+    const { SMTP_URL: _, ...partial } = full();
+    expect(() => parseEnv(GuestEnvSchema, partial)).toThrow(EnvError);
+  });
+
+  it("requires an smtp(s) URL and a key of at least 32 bytes", () => {
+    expect(() =>
+      parseEnv(GuestEnvSchema, { ...full(), SMTP_URL: "https://mail.example.test" }),
+    ).toThrow(EnvError);
+    expect(() =>
+      parseEnv(GuestEnvSchema, { ...full(), GUEST_HMAC_KEY: Buffer.alloc(16).toString("base64") }),
+    ).toThrow(EnvError);
+  });
+
+  it("decodes the HMAC key", () => {
+    const cfg = guestConfigFromEnv(parseEnv(GuestEnvSchema, full()));
+    expect(cfg?.hmacKey).toEqual(new Uint8Array(32).fill(1));
+    expect(cfg?.smtpUrl).toBe("smtps://user:pass@smtp.example.test:465");
   });
 });

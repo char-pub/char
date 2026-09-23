@@ -4,15 +4,24 @@
  */
 import type { Hono } from "hono";
 import type { Env, Services } from "../api/app.js";
+import { register as contributions } from "../api/routes/contributions.js";
+import { bindingsModule } from "../api/routes/github-bindings.js";
+import { webhookModule } from "../api/routes/github-webhook.js";
+import { oidcPublishModule } from "../api/routes/oidc-publish.js";
 import { register as read } from "../api/routes/read.js";
 import { register as search } from "../api/routes/search.js";
 import { register as uploads } from "../api/routes/uploads.js";
 import { REGISTRY_WRITE_MODULES } from "../api/routes/write.js";
 import { register as yank } from "../api/routes/yank.js";
 import { parseEnv, WorkerEnvSchema } from "../env.js";
+import type { GitHubDeps } from "../github/deps.js";
+import type { GitHubSource } from "../github/source.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
 import { CloudflarePurger, LoggingPurger } from "../ops/cdn.js";
 import { noopScanner } from "../upload/csam.js";
+import { type ExportJob, handleExportJob } from "../worker/export.js";
+import { runGitHubReconcile, runGitHubSync, type SyncJob } from "../worker/github.js";
+import { handleImportJob, type ImportJob } from "../worker/import.js";
 import { registerPublishWorker, requeuePendingPublishes } from "../worker/publish.js";
 import { dispatchTombstoneJob, type TombstoneQueueJob } from "../worker/tombstone-dispatch.js";
 import { registerUploadWorkers } from "../worker/upload.js";
@@ -23,13 +32,31 @@ export const API_MODULES: readonly ((app: Hono<Env>) => void)[] = [
   search,
   yank,
   uploads,
+  contributions,
 ];
+
+/** GitHub 集成的路由模块：只有配置了 GitHub App 时才挂载。 */
+export function githubApiModules(gh: GitHubDeps): ((app: Hono<Env>) => void)[] {
+  return [webhookModule(gh), bindingsModule(gh), oidcPublishModule(gh)];
+}
+
+/** 注册 GitHub 同步与对账任务。对账每 6 小时一次。 */
+export async function startGitHubWorkers(services: Services, source: GitHubSource): Promise<void> {
+  const deps = { db: services.db, source, now: () => services.clock.now() };
+  await services.queue.work<SyncJob>(QUEUE_NAMES.githubSync, async (job) => {
+    await runGitHubSync(deps, job.data);
+  });
+  await services.queue.work(QUEUE_NAMES.githubReconcile, async () => {
+    await runGitHubReconcile(deps);
+  });
+  await services.queue.boss.schedule(QUEUE_NAMES.githubReconcile, "23 */6 * * *");
+}
 
 /** 注册 worker 的任务处理函数。 */
 export async function startWorkers(services: Services): Promise<void> {
   const env = parseEnv(WorkerEnvSchema);
   const now = () => services.clock.now();
-  await registerUploadWorkers(services.queue, {
+  const pipelineDeps = {
     db: services.db,
     cas: services.cas,
     queue: services.queue,
@@ -37,6 +64,11 @@ export async function startWorkers(services: Services): Promise<void> {
     now,
     newId: () => services.ids.uuid(),
     systemActorId: env.SYSTEM_ACTOR_ID,
+  };
+  await registerUploadWorkers(services.queue, pipelineDeps);
+  // 角色卡导入：卡片里的图片与普通上传使用同一套处理与扫描。
+  await services.queue.work<ImportJob>(QUEUE_NAMES.importCcv3, async (job) => {
+    await handleImportJob(pipelineDeps, job.data);
   });
   await registerPublishWorker(services.queue, {
     db: services.db,
@@ -55,6 +87,9 @@ export async function startWorkers(services: Services): Promise<void> {
     );
   });
   await services.queue.boss.schedule(QUEUE_NAMES.publishRequeue, "*/5 * * * *");
+  await services.queue.work<ExportJob>(QUEUE_NAMES.exportBuild, async (job) => {
+    await handleExportJob({ db: services.db, cas: services.cas }, job.data);
+  });
   const cdn =
     env.CF_ZONE_ID && env.CF_PURGE_TOKEN
       ? new CloudflarePurger(env.CF_ZONE_ID, env.CF_PURGE_TOKEN)

@@ -1,20 +1,30 @@
 /**
- * 审计日志：分页浏览、按 subject 过滤、展开查看字段变更、校验哈希链。
+ * 审计日志：分页浏览、按 subject 过滤、展开查看字段变更、校验哈希链、导出为 JSON。
  * 只有 `audit.read_own` 能力的员工只能看到自己的操作，这由后端过滤。
+ * 导出按当前过滤条件逐页读取，最多 `EXPORT_LIMIT` 条。
  */
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, ShieldCheck, ShieldX } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { AuditVerify } from "@/lib/api";
+import type { AuditItem, AuditVerify } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
-import { cn } from "@/lib/utils";
+import { cn, downloadJson } from "@/lib/utils";
 import { JsonDiff } from "./json-diff";
-import { Empty, ErrorNote, Field, PageHeader, Time } from "./page";
+import { Empty, ErrorNote, Field, PageHeader, Restricted, Time } from "./page";
 
 const PAGE = 50;
+const EXPORT_LIMIT = 5000;
 
 export function AuditPage() {
+  return (
+    <Restricted any={["audit.read_own", "audit.read_all"]}>
+      <AuditLog />
+    </Restricted>
+  );
+}
+
+function AuditLog() {
   const api = useApi();
   const { can } = useMe();
   const [subject, setSubject] = useState("");
@@ -33,6 +43,34 @@ export function AuditPage() {
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [verify, setVerify] = useState<AuditVerify | null>(null);
   const [verifyError, setVerifyError] = useState<unknown>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportAll() {
+    setExporting(true);
+    setVerifyError(null);
+    try {
+      const items: AuditItem[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await api.listAudit({
+          limit: 200,
+          ...(applied ? { subject: applied } : {}),
+          ...(cursor ? { before: cursor } : {}),
+        });
+        items.push(...page.items);
+        cursor = page.next_before ?? undefined;
+      } while (cursor && items.length < EXPORT_LIMIT);
+      downloadJson(`audit-${applied ? applied.replace(/[^\w.-]+/g, "_") : "all"}.json`, {
+        exported_at: new Date().toISOString(),
+        filter: applied ? { subject: applied } : {},
+        items: items.slice(0, EXPORT_LIMIT),
+      });
+    } catch (e) {
+      setVerifyError(e);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -41,20 +79,25 @@ export function AuditPage() {
         description="Append-only, hash-chained record of every staff and system action."
         actions={
           can("audit.read_all") ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={async () => {
-                setVerifyError(null);
-                try {
-                  setVerify(await api.verifyAudit());
-                } catch (e) {
-                  setVerifyError(e);
-                }
-              }}
-            >
-              Verify hash chain
-            </Button>
+            <>
+              <Button size="sm" variant="outline" disabled={exporting} onClick={exportAll}>
+                {exporting ? "Exporting…" : "Export JSON"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  setVerifyError(null);
+                  try {
+                    setVerify(await api.verifyAudit());
+                  } catch (e) {
+                    setVerifyError(e);
+                  }
+                }}
+              >
+                Verify hash chain
+              </Button>
+            </>
           ) : null
         }
       />

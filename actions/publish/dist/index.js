@@ -47915,7 +47915,8 @@ var ID_PREFIXES = {
   revision: "rev",
   user: "usr",
   contribution: "ctb",
-  upload: "upl"
+  upload: "upl",
+  import: "imp"
 };
 var ID_RES = Object.fromEntries(
   Object.entries(ID_PREFIXES).map(([k, p]) => [k, new RegExp(`^${p}_${TYPEID_SUFFIX_SRC}$`)])
@@ -50710,7 +50711,9 @@ var CreateTokenRequestSchema = external_exports.strictObject({
   name: external_exports.string().trim().min(1).max(100),
   scopes: external_exports.array(external_exports.enum(TOKEN_SCOPES)).min(1),
   /** 最长一年。 */
-  expires_in_days: external_exports.number().int().min(1).max(365)
+  expires_in_days: external_exports.number().int().min(1).max(365),
+  /** 给 Agent 使用：用它提交的 Contribution 一律标记为 agent。 */
+  agent: external_exports.boolean().optional()
 });
 var CreateTokenResponseSchema = external_exports.strictObject({
   id: external_exports.string(),
@@ -50718,6 +50721,212 @@ var CreateTokenResponseSchema = external_exports.strictObject({
   token: external_exports.string().regex(/^cp_pat_[0-9A-Za-z]{43}$/),
   prefix: external_exports.string(),
   expires_at: external_exports.string()
+});
+var UserSettingsSchema = external_exports.strictObject({
+  /** 是否显示 mature / explicit 内容。开启时必须确认已满 18 岁。 */
+  show_mature: external_exports.boolean(),
+  /** 确认的时间；关闭后为 null。 */
+  mature_confirmed_at: external_exports.string().nullable(),
+  locale: external_exports.string().nullable()
+});
+var MeSchema = external_exports.strictObject({
+  id: external_exports.string(),
+  name: external_exports.string(),
+  image: external_exports.string().nullable(),
+  /** 当前用户的个人 namespace；还没有注册时为 null。 */
+  namespace: NamespaceSlugSchema.nullable(),
+  settings: UserSettingsSchema
+});
+var UpdateSettingsRequestSchema = external_exports.strictObject({
+  show_mature: external_exports.boolean(),
+  /** 开启成人内容时必须为 true：用户自我声明已满 18 岁。 */
+  confirm_adult: external_exports.boolean().optional()
+}).refine((v) => !v.show_mature || v.confirm_adult === true, {
+  message: "turning on mature content requires confirm_adult: true",
+  path: ["confirm_adult"]
+});
+var DependentSchema = external_exports.strictObject({
+  ref: UnversionedRefSchema,
+  type: CreationTypeSchema,
+  display_name: LocalizedTextSchema,
+  release: external_exports.strictObject({ id: external_exports.string(), label: LabelSchema }),
+  mode: external_exports.enum(["intrinsic", "default"]),
+  rel: external_exports.string().optional()
+});
+var PutDraftResponseSchema = external_exports.strictObject({
+  version: external_exports.number().int(),
+  semantic_digest: DigestSchema,
+  warnings: external_exports.array(
+    external_exports.strictObject({
+      code: external_exports.string(),
+      subject: external_exports.string(),
+      severity: external_exports.enum(["error", "warning", "info"]),
+      detail: external_exports.string().optional()
+    })
+  )
+});
+var MyCreationSchema = external_exports.strictObject({
+  ref: UnversionedRefSchema,
+  type: CreationTypeSchema,
+  display_name: LocalizedTextSchema,
+  status: external_exports.enum(["active", "hidden", "suspended"]),
+  latest_release: external_exports.strictObject({
+    label: LabelSchema,
+    visibility: external_exports.enum(["public", "private"]),
+    status: external_exports.enum(["active", "yanked", "tombstoned"])
+  }).nullable(),
+  draft_updated_at: external_exports.string().nullable()
+});
+var MyCreationsResponseSchema = external_exports.strictObject({ items: external_exports.array(MyCreationSchema) });
+var ReleaseDetailSchema = ReleaseSummarySchema.extend({
+  ref: UnversionedRefSchema,
+  creation: external_exports.string(),
+  lock_digest: DigestSchema.nullable(),
+  context_ir_digest: DigestSchema.nullable(),
+  license_check: external_exports.enum(["pass", "warn", "fail"]).nullable(),
+  availability: external_exports.enum(["complete", "linked"]).nullable(),
+  warning: external_exports.string().optional()
+});
+var RightsAckSchema = external_exports.union([
+  external_exports.strictObject({ inbound_equals_outbound: external_exports.literal(true) }),
+  external_exports.strictObject({ explicit_grant: external_exports.literal(true) })
+]);
+var CreateContributionRequestSchema = external_exports.strictObject({
+  title: external_exports.string().trim().min(1).max(200),
+  description: external_exports.string().max(2e4).optional(),
+  base_revision: external_exports.string(),
+  changes: external_exports.array(external_exports.unknown()).min(1).max(200),
+  rights_ack: RightsAckSchema,
+  /** 声明这是 Agent 提交的。Agent Token 提交的一律是 agent，不能改成 false。 */
+  agent: external_exports.boolean().optional()
+});
+var ContributionQuerySchema = PageQuerySchema.extend({
+  status: external_exports.enum(["open", "accepted", "rejected", "withdrawn"]).optional(),
+  agent: external_exports.enum(["true", "false"]).optional()
+});
+var MergePreviewSchema = external_exports.strictObject({
+  key: external_exports.string(),
+  on: external_exports.enum(["fragment", "edge", "asset", "metadata"]),
+  op: external_exports.string(),
+  state: external_exports.enum(["applied", "already_applied", "conflict"]),
+  sensitive: external_exports.boolean(),
+  reason: external_exports.enum(["diverged", "slot_missing"]).optional()
+});
+var ContributionAuthorSchema = external_exports.union([
+  external_exports.strictObject({ user: external_exports.string() }),
+  external_exports.strictObject({ guest_id: external_exports.string(), display_name: external_exports.string() })
+]);
+var ContributionSummarySchema = external_exports.strictObject({
+  id: external_exports.string(),
+  number: external_exports.number().int().positive(),
+  title: external_exports.string(),
+  status: external_exports.enum(["open", "accepted", "rejected", "withdrawn"]),
+  agent: external_exports.boolean(),
+  author: ContributionAuthorSchema,
+  base_revision: external_exports.string(),
+  created_at: external_exports.string(),
+  decided_at: external_exports.string().nullable()
+});
+var ContributionDetailSchema = ContributionSummarySchema.extend({
+  description: external_exports.string().optional(),
+  changes: external_exports.array(external_exports.unknown()),
+  /** 与作者当前草稿合并的预览；只有 open 状态才有。 */
+  preview: external_exports.strictObject({
+    mergeable: external_exports.boolean(),
+    outcomes: external_exports.array(MergePreviewSchema),
+    conflicts: external_exports.array(external_exports.string()),
+    /** 接受前必须逐项确认的敏感变更键。 */
+    sensitive_keys: external_exports.array(external_exports.string()),
+    /** 合并后的内容不合法（例如草稿已被改得与变更不兼容）时的错误码。 */
+    error: external_exports.string().optional()
+  }).nullable(),
+  result_revision: external_exports.string().nullable()
+});
+var AcceptContributionRequestSchema = external_exports.strictObject({
+  /** 逐项列出确认过的敏感变更键；不接受通配符。 */
+  confirm_sensitive: external_exports.array(external_exports.string().min(1).max(300)).max(200).default([])
+});
+var RejectContributionRequestSchema = external_exports.strictObject({
+  reason: external_exports.string().trim().min(1).max(2e3)
+});
+var ContributionSettingsRequestSchema = external_exports.strictObject({
+  policy: external_exports.enum(["anyone", "signed-in", "invited", "closed"])
+});
+var ContributionInviteRequestSchema = external_exports.strictObject({
+  user: external_exports.string()
+});
+var GuestDisplayNameSchema = external_exports.string().trim().min(1).max(64).regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
+var GuestVerificationRequestSchema = external_exports.strictObject({
+  /** 首尾空白会被去掉；大小写不影响识别为同一个访客。 */
+  email: external_exports.string().trim().max(254).pipe(external_exports.email()),
+  display_name: GuestDisplayNameSchema,
+  turnstile_token: external_exports.string().min(1).max(2048)
+});
+var GuestVerificationResponseSchema = external_exports.strictObject({
+  status: external_exports.literal("sent"),
+  /** 链接的有效期（秒）。 */
+  expires_in: external_exports.number().int().positive()
+});
+var GuestConfirmRequestSchema = external_exports.strictObject({
+  token: external_exports.string().min(1).max(128)
+});
+var GuestSchema = external_exports.strictObject({
+  /** 访客 ID，形如 `gst_…`。 */
+  id: external_exports.string(),
+  display_name: external_exports.string(),
+  verified_at: external_exports.string()
+});
+var GuestSessionResponseSchema = external_exports.strictObject({
+  guest: GuestSchema,
+  session_expires_at: external_exports.string()
+});
+var CreateImportRequestSchema = external_exports.strictObject({
+  upload: external_exports.string().min(1).max(64),
+  namespace: NamespaceSlugSchema,
+  name: CreationNameSchema
+});
+var IMPORT_CONFIRMATION_FIELDS = ["meta.rating", "meta.rights", "meta.license"];
+var ImportReportSchema = external_exports.looseObject({
+  container: external_exports.enum(["png", "charx", "json"]),
+  format: external_exports.string(),
+  spec: external_exports.string(),
+  spec_version: external_exports.string().nullable(),
+  source_digest: DigestSchema,
+  mappings: external_exports.array(external_exports.strictObject({ from: external_exports.string(), to: external_exports.string() })),
+  /** 被省略的策略字段（例如 system_prompt）及原值。报告只有发起人能看到。 */
+  omitted_policy_fields: external_exports.array(external_exports.strictObject({ field: external_exports.string(), value: external_exports.string() })),
+  placeholders: external_exports.array(external_exports.looseObject({})),
+  lorebook: external_exports.array(external_exports.looseObject({})),
+  assets: external_exports.array(
+    external_exports.looseObject({
+      type: external_exports.string(),
+      name: external_exports.string(),
+      uri: external_exports.string(),
+      imported: external_exports.boolean(),
+      reason: external_exports.string().optional()
+    })
+  ),
+  dropped: external_exports.array(external_exports.strictObject({ field: external_exports.string(), reason: external_exports.string() })),
+  needs_confirmation: external_exports.array(external_exports.enum(IMPORT_CONFIRMATION_FIELDS)),
+  warnings: external_exports.array(external_exports.strictObject({ code: external_exports.string(), detail: external_exports.string() }))
+});
+var ImportStatusSchema = external_exports.strictObject({
+  import: external_exports.string(),
+  status: external_exports.enum(["pending", "processing", "succeeded", "failed"]),
+  error_code: external_exports.string().optional(),
+  error_detail: external_exports.string().optional(),
+  /** 导入成功后生成的 Creation。 */
+  creation: UnversionedRefSchema.optional(),
+  /** 发布前必须由作者确认的字段；确认后为空数组。 */
+  needs_confirmation: external_exports.array(external_exports.enum(IMPORT_CONFIRMATION_FIELDS)),
+  confirmed_at: external_exports.string().nullable(),
+  report: ImportReportSchema.optional(),
+  created_at: external_exports.string()
+});
+var ConfirmImportRequestSchema = external_exports.strictObject({
+  rating: RatingSchema,
+  rights: external_exports.enum(["original", "fan-work", "licensed"]),
+  license: SpdxExpressionSchema
 });
 
 // src/run.ts

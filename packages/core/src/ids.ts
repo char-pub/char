@@ -105,6 +105,7 @@ export const ID_PREFIXES = {
   user: "usr",
   contribution: "ctb",
   upload: "upl",
+  import: "imp",
 } as const;
 
 export type IdKind = keyof typeof ID_PREFIXES;

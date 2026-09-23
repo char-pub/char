@@ -357,6 +357,52 @@ describe("contribution policy", () => {
   });
 });
 
+describe("guest verification and sessions", () => {
+  const SYS = { type: "system" } as const;
+  const disabledGuest = { ...guest, disabled: true } as Principal;
+
+  it("anyone can ask for verification unless guest access or writes are switched off", () => {
+    for (const p of [anon, guest, alice]) {
+      expect(status(authorize(p, "guest.verify", SYS))).toBe(200);
+    }
+    expect(
+      status(authorize(anon, "guest.verify", SYS, { disabled: new Set(["guest_access"]) })),
+    ).toBe(503);
+    expect(status(authorize(anon, "guest.verify", SYS, { disabled: new Set(["read_only"]) }))).toBe(
+      503,
+    );
+    expect(status(authorize(disabledGuest, "guest.verify", SYS))).toBe(403);
+  });
+
+  it("only a guest can read its own session; a disabled guest cannot", () => {
+    expect(status(authorize(guest, "guest.read_self", SYS))).toBe(200);
+    expect(status(authorize(anon, "guest.read_self", SYS))).toBe(401);
+    expect(status(authorize(alice, "guest.read_self", SYS))).toBe(403);
+    expect(authorize(disabledGuest, "guest.read_self", SYS)).toEqual({
+      allow: false,
+      status: 403,
+      code: "guest.disabled",
+    });
+  });
+
+  it("signing out always works, even for a disabled guest or in read-only mode", () => {
+    for (const p of [anon, guest, disabledGuest, alice]) {
+      expect(
+        status(
+          authorize(p, "guest.sign_out", SYS, { disabled: new Set(["read_only", "guest_access"]) }),
+        ),
+      ).toBe(200);
+    }
+  });
+
+  it("guest actions need the system resource", () => {
+    const r = creation(FOREIGN_NS);
+    expect(status(authorize(guest, "guest.read_self", r))).toBe(403);
+    expect(status(authorize(anon, "guest.verify", r))).toBe(403);
+    expect(status(authorize(anon, "guest.sign_out", r))).toBe(403);
+  });
+});
+
 describe("uploads", () => {
   it("only the uploader sees an upload", () => {
     const u = { type: "upload", id: "upl1", owner_user_id: "u_alice" } as const;
@@ -432,5 +478,56 @@ describe("property: non-members never get write access to any creation", () => {
         },
       ),
     );
+  });
+});
+
+describe("card imports", () => {
+  const imp = (ns: NamespaceContext, over: Partial<Extract<Resource, { type: "import" }>> = {}) =>
+    ({
+      type: "import",
+      id: "imp1",
+      owner_user_id: "u_alice",
+      ns,
+      ...over,
+    }) as const satisfies Resource;
+
+  it("imports only into namespaces the caller is a member of", () => {
+    const into = (ns: NamespaceContext) => ({ type: "namespace", ns }) as const;
+    expect(status(authorize(alice, "import.create", into(OWNER_NS)))).toBe(200);
+    expect(status(authorize(mallory, "import.create", into(FOREIGN_NS)))).toBe(403);
+    expect(status(authorize(anon, "import.create", into(FOREIGN_NS)))).toBe(401);
+    expect(
+      status(authorize(alice, "import.create", into({ ...OWNER_NS, status: "suspended" }))),
+    ).toBe(403);
+  });
+
+  it("the system resource only answers whether the caller may import at all", () => {
+    expect(status(authorize(alice, "import.create", { type: "system" }))).toBe(200);
+    expect(status(authorize(anon, "import.create", { type: "system" }))).toBe(401);
+    expect(status(authorize(guest, "import.create", { type: "system" }))).toBe(403);
+  });
+
+  it("an import is visible only to the person who started it", () => {
+    expect(status(authorize(alice, "import.read", imp(OWNER_NS)))).toBe(200);
+    for (const p of [mallory, anon, guest, oidc]) {
+      expect(status(authorize(p, "import.read", imp(FOREIGN_NS)))).toBe(404);
+      expect(status(authorize(p, "import.confirm", imp(FOREIGN_NS)))).toBe(404);
+    }
+  });
+
+  it("confirming needs membership, a write scope and an editable creation", () => {
+    expect(status(authorize(alice, "import.confirm", imp(OWNER_NS)))).toBe(200);
+    // 发起人已经不是 namespace 成员时不能再修改草稿。
+    expect(status(authorize(alice, "import.confirm", imp(FOREIGN_NS)))).toBe(403);
+    expect(
+      status(authorize(alice, "import.confirm", imp(OWNER_NS, { creation_status: "suspended" }))),
+    ).toBe(403);
+    const readOnlyToken = { ...alice, scopes: ["creations:read"] } as Principal;
+    expect(authorize(readOnlyToken, "import.confirm", imp(OWNER_NS))).toMatchObject({
+      status: 403,
+      code: "token.insufficient_scope",
+    });
+    const readOnly: AuthzContext = { disabled: new Set(["read_only"]) };
+    expect(status(authorize(alice, "import.confirm", imp(OWNER_NS), readOnly))).toBe(503);
   });
 });

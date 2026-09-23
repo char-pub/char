@@ -25,6 +25,8 @@ export type Principal =
       banned: boolean;
       /** 通过个人 Token 认证时的 scope；session 认证时为 undefined（拥有全部 scope）。 */
       scopes?: readonly Scope[];
+      /** 通过标记为 Agent 的个人 Token 认证。 */
+      agent?: boolean;
     }
   | { kind: "guest"; guest_id: string; disabled: boolean }
   /** 通过 GitHub OIDC 换来的短期发布凭证，只能发布它所绑定的 Creation。 */
@@ -83,6 +85,15 @@ export type Resource =
       status: "open" | "accepted" | "rejected" | "withdrawn";
     }
   | { type: "upload"; id: string; owner_user_id: string }
+  | {
+      type: "import";
+      id: string;
+      owner_user_id: string;
+      /** 导入目标所在的 namespace。 */
+      ns: NamespaceContext;
+      /** 导入生成的 Creation 的状态；导入还没有成功时省略。 */
+      creation_status?: "active" | "hidden" | "suspended";
+    }
   | { type: "account"; user_id: string }
   | { type: "system" };
 
@@ -93,6 +104,8 @@ export type Action =
   | "creation.edit"
   | "creation.publish"
   | "creation.update_settings"
+  /** 绑定、解绑 GitHub 仓库，处理冻结的 binding。 */
+  | "creation.manage_source"
   | "release.read"
   | "release.yank"
   | "contribution.submit"
@@ -102,11 +115,20 @@ export type Action =
   | "upload.create"
   | "upload.read"
   | "import.create"
+  | "import.read"
+  /** 确认导入卡片的评级、权利与许可。 */
+  | "import.confirm"
   | "namespace.create"
   | "namespace.rename"
   | "account.read"
   | "account.update_settings"
   | "account.manage_tokens"
+  /** 申请与确认访客邮箱验证。 */
+  | "guest.verify"
+  /** 查看当前访客会话。 */
+  | "guest.read_self"
+  /** 退出访客会话。 */
+  | "guest.sign_out"
   | "search";
 
 export type Decision =
@@ -125,6 +147,7 @@ const REQUIRED_SCOPE: Partial<Record<Action, Scope>> = {
   "creation.create": "creations:write",
   "creation.edit": "creations:write",
   "creation.update_settings": "creations:write",
+  "creation.manage_source": "creations:write",
   "creation.publish": "releases:publish",
   "release.yank": "releases:publish",
   "contribution.submit": "contributions:write",
@@ -132,6 +155,7 @@ const REQUIRED_SCOPE: Partial<Record<Action, Scope>> = {
   "contribution.decide": "creations:write",
   "upload.create": "creations:write",
   "import.create": "creations:write",
+  "import.confirm": "creations:write",
 };
 
 /** 会写数据的动作：全站只读时一律拒绝。 */
@@ -140,16 +164,19 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "creation.edit",
   "creation.publish",
   "creation.update_settings",
+  "creation.manage_source",
   "release.yank",
   "contribution.submit",
   "contribution.decide",
   "contribution.withdraw",
   "upload.create",
   "import.create",
+  "import.confirm",
   "namespace.create",
   "namespace.rename",
   "account.update_settings",
   "account.manage_tokens",
+  "guest.verify",
 ]);
 
 /** 动作对应的 kill switch。 */
@@ -158,6 +185,7 @@ const ACTION_FLAG: Partial<Record<Action, FeatureFlag>> = {
   "contribution.submit": "contributions",
   "upload.create": "uploads",
   "import.create": "uploads",
+  "guest.verify": "guest_access",
 };
 
 export interface AuthzContext {
@@ -191,7 +219,10 @@ export function authorize(
       return deny(403, "token.insufficient_scope");
     }
   }
-  if (principal.kind === "guest" && principal.disabled) return deny(403, "guest.disabled");
+  // 被停用的访客什么都不能做，只能退出（清掉浏览器里的 cookie）。
+  if (principal.kind === "guest" && principal.disabled && action !== "guest.sign_out") {
+    return deny(403, "guest.disabled");
+  }
 
   return decide(principal, action, resource, ctx);
 }
@@ -201,6 +232,8 @@ function canSee(principal: Principal, r: Resource): Decision {
   switch (r.type) {
     case "creation":
       if (isMember(r.ns) && principal.kind === "user") return ALLOW;
+      // OIDC 发布凭证能看到它绑定的 Creation，即使它还没有任何公开的 Release（首次发布）。
+      if (principal.kind === "oidc" && principal.creation_id === r.id) return ALLOW;
       if (r.status !== "active" || r.ns.status !== "active") return deny(404, "not_found");
       return r.has_public_release ? ALLOW : deny(404, "not_found");
     case "release":
@@ -215,6 +248,7 @@ function canSee(principal: Principal, r: Resource): Decision {
       return deny(404, "not_found");
     }
     case "upload":
+    case "import":
       return principal.kind === "user" && principal.user_id === r.owner_user_id
         ? ALLOW
         : deny(404, "not_found");
@@ -287,6 +321,7 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
 
     case "creation.edit":
     case "creation.update_settings":
+    case "creation.manage_source":
       if (r.type !== "creation") return deny(403, "bad_resource");
       if (r.status === "suspended") return deny(403, "creation.suspended");
       return requireMember(p, r.ns);
@@ -340,8 +375,21 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
       return isAuthor(p, r.author) ? ALLOW : deny(403, "forbidden");
 
     case "upload.create":
-    case "import.create":
       return requireUser(p) ?? ALLOW;
+
+    case "import.create":
+      // 对 namespace 判断能否导入到这里；对 system 只判断能否使用导入功能
+      // （请求体不合法、还不知道目标 namespace 时用它，之后必然以 422 结束）。
+      if (r.type === "namespace") return requireMember(p, r.ns);
+      return r.type === "system" ? (requireUser(p) ?? ALLOW) : deny(403, "bad_resource");
+
+    case "import.read":
+      return r.type === "import" ? ALLOW : deny(403, "bad_resource");
+
+    case "import.confirm":
+      if (r.type !== "import") return deny(403, "bad_resource");
+      if (r.creation_status === "suspended") return deny(403, "creation.suspended");
+      return requireMember(p, r.ns);
 
     case "upload.read":
       return r.type === "upload" ? ALLOW : deny(403, "bad_resource");
@@ -359,5 +407,16 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
         return deny(403, "token.not_allowed");
       }
       return requireUser(p) ?? ALLOW;
+
+    // 任何人都可以申请访客验证（Turnstile 与限流在路由里执行）；退出只作用于请求自带的
+    // 访客 cookie，也不需要身份。
+    case "guest.verify":
+    case "guest.sign_out":
+      return r.type === "system" ? ALLOW : deny(403, "bad_resource");
+
+    case "guest.read_self":
+      if (r.type !== "system") return deny(403, "bad_resource");
+      if (p.kind === "guest") return ALLOW;
+      return p.kind === "anonymous" ? deny(401, "auth.required") : deny(403, "forbidden");
   }
 }

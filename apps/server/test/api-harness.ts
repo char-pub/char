@@ -45,11 +45,10 @@ export interface Requester {
   delete(path: string, headers?: Record<string, string>): Promise<Response>;
 }
 
-/** `extraModules`：除写路径外还需要的路由模块（例如搜索），按需加入。 */
 export async function createHarness(
   t: TestDatabase,
   cas: Cas,
-  extraModules: readonly ((app: Hono<Env>) => void)[] = [],
+  opts: { extraModules?: readonly ((app: Hono<Env>) => void)[] } = {},
 ): Promise<ApiHarness> {
   const queue = new JobQueue({ connectionString: t.appUrl, max: 4 });
   queue.boss.on("error", () => {});
@@ -86,7 +85,7 @@ export async function createHarness(
     originSecrets: [],
     allowedOrigins: [ORIGIN],
     sessionPrincipal,
-    modules: [...REGISTRY_WRITE_MODULES, ...extraModules],
+    modules: [...REGISTRY_WRITE_MODULES, ...(opts.extraModules ?? [])],
   });
 
   const requester = (auth: Record<string, string>): Requester => {

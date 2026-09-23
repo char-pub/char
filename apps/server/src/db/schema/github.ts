@@ -4,7 +4,7 @@
  * 绑定一律使用 GitHub 的数字 ID（repository_id / repository_owner_id），仓库名只用于展示。
  * 这样仓库改名后，别人新建的同名仓库无法冒用原绑定发布。
  */
-import { bigint, index, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, jsonb, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { app, createdAt, pk, ts, updatedAt } from "./common.js";
 import { creations } from "./creations.js";
 
@@ -48,6 +48,13 @@ export const sourceBindings = app.table(
     status: bindingStatusEnum("status").notNull().default("active"),
     frozenReason: text("frozen_reason"),
     lastSeenCommit: text("last_seen_commit"),
+    /** 最近一次同步时对 char.yaml 的检查结果（诊断列表），只做提示，不会触发发布。 */
+    lastCheck: jsonb("last_check"),
+    lastCheckedAt: ts("last_checked_at"),
+    /** 可选的发布约束：要求 ref 受保护、要求 job 使用某个 environment 或官方 workflow。 */
+    requireRefProtected: boolean("require_ref_protected").notNull().default(false),
+    environment: text("environment"),
+    jobWorkflowRef: text("job_workflow_ref"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

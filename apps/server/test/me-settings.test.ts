@@ -20,7 +20,7 @@ let fresh: string;
 beforeAll(async () => {
   t = await createTestDatabase();
   const cas = testCas();
-  h = await createHarness(t, cas, [registerSearch]);
+  h = await createHarness(t, cas, { extraModules: [registerSearch] });
   user = await h.createUser("reader");
   fresh = await h.createUser("fresh");
   expect((await h.as(user).post("/v1/namespaces", { slug: "reader" })).status).toBe(201);

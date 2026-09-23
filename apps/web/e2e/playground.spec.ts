@@ -1,12 +1,17 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
+/** 生产构建默认连接的 API；冒烟测试里没有它。 */
+const API = "https://api.char.pub";
+
 test("playground shows the assembly trace for a sample creation", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => {
-    if (m.type() === "error") errors.push(m.text());
+    // 冒烟测试不启动 API：顶栏读取登录状态的请求失败是预期的。
+    if (m.type() === "error" && !m.location().url.startsWith(API)) errors.push(m.text());
   });
+  await page.route(`${API}/**`, (route) => route.abort());
 
   await page.goto("/playground");
   await expect(page.getByRole("heading", { name: "Context playground" })).toBeVisible();
@@ -37,6 +42,7 @@ test("the production CSP from _headers is not violated", async ({ page }) => {
   const csp = /Content-Security-Policy:\s*(.+)/.exec(headers)?.[1]?.trim();
   expect(csp).toBeTruthy();
   await page.route("**/*", async (route) => {
+    if (route.request().url().startsWith(API)) return route.abort();
     const response = await route.fetch();
     const type = response.headers()["content-type"] ?? "";
     if (!type.includes("text/html")) return route.fulfill({ response });

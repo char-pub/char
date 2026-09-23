@@ -43,6 +43,34 @@
       "when": 1790124261636,
       "tag": "0005_admin_moderation",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790125941776,
+      "tag": "0006_github_source",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790126044253,
+      "tag": "0007_contributions",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790126965820,
+      "tag": "0008_guests",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790127541186,
+      "tag": "0009_imports",
+      "breakpoints": true
     }
   ]
 }

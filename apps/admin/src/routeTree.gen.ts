@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApprovalsRouteImport } from './routes/approvals'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as ContentRouteImport } from './routes/content'
 import { Route as CsamRouteImport } from './routes/csam'
@@ -18,12 +19,18 @@ import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as NamespacesRouteImport } from './routes/namespaces'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as TombstoneRouteImport } from './routes/tombstone'
 import { Route as UsersRouteImport } from './routes/users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApprovalsRoute = ApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditRoute = AuditRouteImport.update({
@@ -66,6 +73,11 @@ const ReportsRoute = ReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TombstoneRoute = TombstoneRouteImport.update({
   id: '/tombstone',
   path: '/tombstone',
@@ -79,6 +91,7 @@ const UsersRoute = UsersRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/approvals': typeof ApprovalsRoute
   '/audit': typeof AuditRoute
   '/content': typeof ContentRoute
   '/csam': typeof CsamRoute
@@ -87,11 +100,13 @@ export interface FileRoutesByFullPath {
   '/legal': typeof LegalRoute
   '/namespaces': typeof NamespacesRoute
   '/reports': typeof ReportsRoute
+  '/staff': typeof StaffRoute
   '/tombstone': typeof TombstoneRoute
   '/users': typeof UsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/approvals': typeof ApprovalsRoute
   '/audit': typeof AuditRoute
   '/content': typeof ContentRoute
   '/csam': typeof CsamRoute
@@ -100,12 +115,14 @@ export interface FileRoutesByTo {
   '/legal': typeof LegalRoute
   '/namespaces': typeof NamespacesRoute
   '/reports': typeof ReportsRoute
+  '/staff': typeof StaffRoute
   '/tombstone': typeof TombstoneRoute
   '/users': typeof UsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/approvals': typeof ApprovalsRoute
   '/audit': typeof AuditRoute
   '/content': typeof ContentRoute
   '/csam': typeof CsamRoute
@@ -114,6 +131,7 @@ export interface FileRoutesById {
   '/legal': typeof LegalRoute
   '/namespaces': typeof NamespacesRoute
   '/reports': typeof ReportsRoute
+  '/staff': typeof StaffRoute
   '/tombstone': typeof TombstoneRoute
   '/users': typeof UsersRoute
 }
@@ -121,6 +139,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/approvals'
     | '/audit'
     | '/content'
     | '/csam'
@@ -129,11 +148,13 @@ export interface FileRouteTypes {
     | '/legal'
     | '/namespaces'
     | '/reports'
+    | '/staff'
     | '/tombstone'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/approvals'
     | '/audit'
     | '/content'
     | '/csam'
@@ -142,11 +163,13 @@ export interface FileRouteTypes {
     | '/legal'
     | '/namespaces'
     | '/reports'
+    | '/staff'
     | '/tombstone'
     | '/users'
   id:
     | '__root__'
     | '/'
+    | '/approvals'
     | '/audit'
     | '/content'
     | '/csam'
@@ -155,12 +178,14 @@ export interface FileRouteTypes {
     | '/legal'
     | '/namespaces'
     | '/reports'
+    | '/staff'
     | '/tombstone'
     | '/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApprovalsRoute: typeof ApprovalsRoute
   AuditRoute: typeof AuditRoute
   ContentRoute: typeof ContentRoute
   CsamRoute: typeof CsamRoute
@@ -169,6 +194,7 @@ export interface RootRouteChildren {
   LegalRoute: typeof LegalRoute
   NamespacesRoute: typeof NamespacesRoute
   ReportsRoute: typeof ReportsRoute
+  StaffRoute: typeof StaffRoute
   TombstoneRoute: typeof TombstoneRoute
   UsersRoute: typeof UsersRoute
 }
@@ -180,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/approvals': {
+      id: '/approvals'
+      path: '/approvals'
+      fullPath: '/approvals'
+      preLoaderRoute: typeof ApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit': {
@@ -238,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tombstone': {
       id: '/tombstone'
       path: '/tombstone'
@@ -257,6 +297,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApprovalsRoute: ApprovalsRoute,
   AuditRoute: AuditRoute,
   ContentRoute: ContentRoute,
   CsamRoute: CsamRoute,
@@ -265,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalRoute: LegalRoute,
   NamespacesRoute: NamespacesRoute,
   ReportsRoute: ReportsRoute,
+  StaffRoute: StaffRoute,
   TombstoneRoute: TombstoneRoute,
   UsersRoute: UsersRoute,
 }

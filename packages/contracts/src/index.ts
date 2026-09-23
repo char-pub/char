@@ -16,6 +16,7 @@ import {
   NAME_RE,
   NAMESPACE_RE,
   RatingSchema,
+  SpdxExpressionSchema,
   UnversionedRefSchema,
 } from "@char-pub/core";
 import { z } from "zod";
@@ -235,6 +236,8 @@ export const CreateTokenRequestSchema = z.strictObject({
   scopes: z.array(z.enum(TOKEN_SCOPES)).min(1),
   /** 最长一年。 */
   expires_in_days: z.number().int().min(1).max(365),
+  /** 给 Agent 使用：用它提交的 Contribution 一律标记为 agent。 */
+  agent: z.boolean().optional(),
 });
 
 export const CreateTokenResponseSchema = z.strictObject({
@@ -334,3 +337,204 @@ export const ReleaseDetailSchema = ReleaseSummarySchema.extend({
   warning: z.string().optional(),
 });
 export type ReleaseDetail = z.infer<typeof ReleaseDetailSchema>;
+// Contribution
+// ---------------------------------------------------------------------------
+
+export const RightsAckSchema = z.union([
+  z.strictObject({ inbound_equals_outbound: z.literal(true) }),
+  z.strictObject({ explicit_grant: z.literal(true) }),
+]);
+
+/**
+ * 提交 Contribution。`changes` 的每一项按 Canonical Model 的变更格式由服务端解析；
+ * 变更是否敏感由服务端按字段计算，客户端提交的 `sensitive` 不被采信。
+ */
+export const CreateContributionRequestSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200),
+  description: z.string().max(20000).optional(),
+  base_revision: z.string(),
+  changes: z.array(z.unknown()).min(1).max(200),
+  rights_ack: RightsAckSchema,
+  /** 声明这是 Agent 提交的。Agent Token 提交的一律是 agent，不能改成 false。 */
+  agent: z.boolean().optional(),
+});
+
+export const ContributionQuerySchema = PageQuerySchema.extend({
+  status: z.enum(["open", "accepted", "rejected", "withdrawn"]).optional(),
+  agent: z.enum(["true", "false"]).optional(),
+});
+
+export const MergePreviewSchema = z.strictObject({
+  key: z.string(),
+  on: z.enum(["fragment", "edge", "asset", "metadata"]),
+  op: z.string(),
+  state: z.enum(["applied", "already_applied", "conflict"]),
+  sensitive: z.boolean(),
+  reason: z.enum(["diverged", "slot_missing"]).optional(),
+});
+
+export const ContributionAuthorSchema = z.union([
+  z.strictObject({ user: z.string() }),
+  z.strictObject({ guest_id: z.string(), display_name: z.string() }),
+]);
+
+export const ContributionSummarySchema = z.strictObject({
+  id: z.string(),
+  number: z.number().int().positive(),
+  title: z.string(),
+  status: z.enum(["open", "accepted", "rejected", "withdrawn"]),
+  agent: z.boolean(),
+  author: ContributionAuthorSchema,
+  base_revision: z.string(),
+  created_at: z.string(),
+  decided_at: z.string().nullable(),
+});
+
+export const ContributionDetailSchema = ContributionSummarySchema.extend({
+  description: z.string().optional(),
+  changes: z.array(z.unknown()),
+  /** 与作者当前草稿合并的预览；只有 open 状态才有。 */
+  preview: z
+    .strictObject({
+      mergeable: z.boolean(),
+      outcomes: z.array(MergePreviewSchema),
+      conflicts: z.array(z.string()),
+      /** 接受前必须逐项确认的敏感变更键。 */
+      sensitive_keys: z.array(z.string()),
+      /** 合并后的内容不合法（例如草稿已被改得与变更不兼容）时的错误码。 */
+      error: z.string().optional(),
+    })
+    .nullable(),
+  result_revision: z.string().nullable(),
+});
+
+export const AcceptContributionRequestSchema = z.strictObject({
+  /** 逐项列出确认过的敏感变更键；不接受通配符。 */
+  confirm_sensitive: z.array(z.string().min(1).max(300)).max(200).default([]),
+});
+
+export const RejectContributionRequestSchema = z.strictObject({
+  reason: z.string().trim().min(1).max(2000),
+});
+
+/** 作者设置谁可以提交 Contribution。 */
+export const ContributionSettingsRequestSchema = z.strictObject({
+  policy: z.enum(["anyone", "signed-in", "invited", "closed"]),
+});
+
+/** policy 为 invited 时，邀请或取消邀请一个用户（用户 ID，`usr_…`）。 */
+export const ContributionInviteRequestSchema = z.strictObject({
+  user: z.string(),
+});
+
+// ---------------------------------------------------------------------------
+// 经验证的访客
+// ---------------------------------------------------------------------------
+
+/** 访客的显示名：不能包含控制字符和双向文本控制符（防止把名字伪装成别的样子）。 */
+export const GuestDisplayNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
+
+/**
+ * 申请访客验证：通过 Turnstile 之后，服务端给这个邮箱发一封带一次性链接的邮件。
+ * 无论这个邮箱以前是否验证过，响应都一样。
+ */
+export const GuestVerificationRequestSchema = z.strictObject({
+  /** 首尾空白会被去掉；大小写不影响识别为同一个访客。 */
+  email: z.string().trim().max(254).pipe(z.email()),
+  display_name: GuestDisplayNameSchema,
+  turnstile_token: z.string().min(1).max(2048),
+});
+
+export const GuestVerificationResponseSchema = z.strictObject({
+  status: z.literal("sent"),
+  /** 链接的有效期（秒）。 */
+  expires_in: z.number().int().positive(),
+});
+
+/** 打开邮件里的链接后，前端把 fragment 中的 token 提交上来，换取访客会话 cookie。 */
+export const GuestConfirmRequestSchema = z.strictObject({
+  token: z.string().min(1).max(128),
+});
+
+export const GuestSchema = z.strictObject({
+  /** 访客 ID，形如 `gst_…`。 */
+  id: z.string(),
+  display_name: z.string(),
+  verified_at: z.string(),
+});
+export type Guest = z.infer<typeof GuestSchema>;
+
+export const GuestSessionResponseSchema = z.strictObject({
+  guest: GuestSchema,
+  session_expires_at: z.string(),
+});
+
+// ---------------------------------------------------------------------------
+// 角色卡导入
+// ---------------------------------------------------------------------------
+
+/**
+ * 从一个已完成的上传（purpose 为 import）导入角色卡，生成一个新的 Creation 草稿。
+ * 导入是异步的：返回 202，之后轮询 `GET /v1/imports/:id`。同一个上传重复提交返回同一个导入。
+ */
+export const CreateImportRequestSchema = z.strictObject({
+  upload: z.string().min(1).max(64),
+  namespace: NamespaceSlugSchema,
+  name: CreationNameSchema,
+});
+
+export const IMPORT_CONFIRMATION_FIELDS = ["meta.rating", "meta.rights", "meta.license"] as const;
+
+/** Import Report：原卡片的哪些字段映射到了哪里、哪些被省略或丢弃、哪些需要作者确认。 */
+export const ImportReportSchema = z.looseObject({
+  container: z.enum(["png", "charx", "json"]),
+  format: z.string(),
+  spec: z.string(),
+  spec_version: z.string().nullable(),
+  source_digest: DigestSchema,
+  mappings: z.array(z.strictObject({ from: z.string(), to: z.string() })),
+  /** 被省略的策略字段（例如 system_prompt）及原值。报告只有发起人能看到。 */
+  omitted_policy_fields: z.array(z.strictObject({ field: z.string(), value: z.string() })),
+  placeholders: z.array(z.looseObject({})),
+  lorebook: z.array(z.looseObject({})),
+  assets: z.array(
+    z.looseObject({
+      type: z.string(),
+      name: z.string(),
+      uri: z.string(),
+      imported: z.boolean(),
+      reason: z.string().optional(),
+    }),
+  ),
+  dropped: z.array(z.strictObject({ field: z.string(), reason: z.string() })),
+  needs_confirmation: z.array(z.enum(IMPORT_CONFIRMATION_FIELDS)),
+  warnings: z.array(z.strictObject({ code: z.string(), detail: z.string() })),
+});
+export type ImportReport = z.infer<typeof ImportReportSchema>;
+
+export const ImportStatusSchema = z.strictObject({
+  import: z.string(),
+  status: z.enum(["pending", "processing", "succeeded", "failed"]),
+  error_code: z.string().optional(),
+  error_detail: z.string().optional(),
+  /** 导入成功后生成的 Creation。 */
+  creation: UnversionedRefSchema.optional(),
+  /** 发布前必须由作者确认的字段；确认后为空数组。 */
+  needs_confirmation: z.array(z.enum(IMPORT_CONFIRMATION_FIELDS)),
+  confirmed_at: z.string().nullable(),
+  report: ImportReportSchema.optional(),
+  created_at: z.string(),
+});
+export type ImportStatus = z.infer<typeof ImportStatusSchema>;
+
+/** 作者在导入向导里确认评级、权利与许可。确认之前导入生成的 Creation 不能发布。 */
+export const ConfirmImportRequestSchema = z.strictObject({
+  rating: RatingSchema,
+  rights: z.enum(["original", "fan-work", "licensed"]),
+  license: SpdxExpressionSchema,
+});

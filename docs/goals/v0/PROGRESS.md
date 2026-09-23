@@ -4,14 +4,14 @@
 
 - Goal：按 `DECISIONS.md` 与 `spec/` 从头实现 char.pub v0，包括成熟选型、架构、安全、admin 控制和单元测试（2026-09-22 用户提出）。用户已通过 `/goal` 授权持续执行 LOOP，并允许用 subagent / workflow 加速。
 - Package：`docs/goals/v0/`
-- Status：**实现中（M0 本地完成，M1 进行中）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
+- Status：**实现中（M0～M8 的本地实现大部分完成）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
 - Current work：
-  - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA 骨架；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、OIDC / webhook 校验、GitHub binding 生命周期、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、admin 骨架（Access + 角色 + kill switch + 审计）、单镜像四命令（容器内已验证 migrate / api / worker 启动）；runbooks；部署指南；冒烟测试脚本。
-  - 并行 subagent：Registry 写路径（namespace / 草稿 / 发布 / worker publish / Token）；admin 业务路由；Admin SPA。
-  - 下一步：GitHub App 客户端与同步任务、OIDC 发布路由（依赖写路径）→ Contribution API → web 接 API → 一致性用例人工审阅 → 等用户授权后部署 staging。
+  - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA；Admin SPA（全部接口接入）；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、Registry 写路径与发布 worker、admin 业务路由（四眼、法律请求、员工）、CCv3 导出 worker、bootstrap 命令、GitHub webhook / Source binding / OIDC 发布 / 同步与对账、Contribution API、经验证访客（Turnstile + 邮箱）、CCv3 导入 API 与 worker；单镜像五命令；runbooks；部署指南；冒烟测试脚本。
+  - 并行 subagent：web 接 Registry API（含 `/v1/me` 与全栈 E2E）；Admin SPA 的 Playwright 与权限矩阵测试；服务端遗留项（定期清理、导入死信、admin 停用访客、本地 Mailpit）。
+  - 下一步：web 的导入向导、访客验证页、Contribution 审阅 UI（M8-4）；`pnpm dev` 一键本地环境（M0-4）→ 一致性用例人工审阅 → 等用户授权后部署 staging。
 - Acceptance：DOD 条目尚未打勾。M0-1 / M0-2 本地检查已通过，但验收要求 CI 运行记录，需等首次推送后才能取得（依赖 B-10）。
 - Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
-- Next useful work：合并 subagent 结果 → Resolver 与一致性测试集（M2-5，需要人工审阅预期输出）→ server 的 Auth / authz / API（M4-2、M4-3、M5）。
+- 等待用户：一致性用例审阅与接受；复核 D-126 / D-129 / D-130；决定 D-135 第 1 条（CCv3 导入的默认 rights）；授权 force push、组织设置、staging 资源、OAuth App 与 GitHub App 创建。
 
 ## Evidence and decision history
 
@@ -103,3 +103,21 @@
 - Verification：`pnpm test` 1077 个通过；集成测试 190 个通过（18 个文件）；本地容器端到端见 [evidence/2026-09-22-local-e2e-publish.md](evidence/2026-09-22-local-e2e-publish.md)（CLI 发布 → worker → 匿名下载 IR，内容寻址校验、幂等、409、搜索）。
 - 发现并修复：发布后作品搜不到（发布任务没有写搜索列）；GitHub 内容 API 的路径中 `/` 被编码（模拟 GitHub 的测试发现）；Action 打包产物在 CLI 重构后过期（`check:action-dist` 拦下，已重新构建并用 dry-run 验证）。
 - Decisions：D-138（写路径）。
+
+### 2026-09-22 admin 业务路由、CCv3 导出、bootstrap、GitHub Source、Contribution API
+
+- Work：
+  - 合并 admin 业务路由（subagent：举报、内容、带四眼确认的下架、用户、namespace、CSAM、法律请求、任务、员工）与 Admin SPA 全部接口的接入；mock 规则与服务端对齐（强制评级只能调高、CSAM 锁定的账号不能被重新封禁）。
+  - CCv3 导出 worker：按需从已存储的 IR 生成卡片与 Loss Report，结果按内容缓存，下架后不再提供。
+  - `bootstrap` 命令：创建系统账号、把第一个员工提升为 owner，都写审计，可重复执行；部署指南补充引导步骤。
+  - 合并 GitHub Source（subagent：webhook 入口、binding 路由、OIDC 发布、同步与对账任务）与 Contribution API（subagent：提交、列表、合并预览、接受 / 拒绝 / 撤回、邀请、Agent Token）。两个分支的迁移分别重新编号为 0006、0007（用 drizzle-kit 重新生成，SQL 与原分支一致）。
+- Verification：`pnpm test` 1085 个通过；集成测试 534 个通过（25 个文件）；`pnpm lint` / `pnpm typecheck` / `pnpm deps` 通过。
+- Decisions：D-139（admin 路由）、D-140（GitHub Source 与 OIDC 发布）、D-141（Contribution API）。
+- 尚不能打勾：M7-4 需要真实 GitHub App（B-3）；M8 还缺 Contribution 审阅 UI 与访客验证入口。
+
+### 2026-09-22 经验证访客、CCv3 导入 API
+
+- Work：合并经验证访客（subagent：Turnstile 校验、SMTP 验证邮件、访客会话 cookie，替换测试专用的访客头）与 CCv3 导入（subagent：`POST/GET /v1/imports`、导入确认、import worker，卡片中的图片走普通上传的处理与扫描）。迁移分别为 0008、0009（导入分支用 drizzle-kit 重新生成，SQL 与原分支一致）。
+- 发现并修复：Contribution 合并后 Action 打包产物没有重新生成，`ci:all` 的产物检查失败；已重建，并在 pre-commit 增加产物检查（用一次会改变产物的改动验证能拦截）。新旧产物对同一项目 dry-run 得到相同的 semantic digest。
+- Verification：`pnpm ci:all` 在合并前的 main 上除产物检查外全部通过（单测 1042、web / admin 43、一致性 103 通过 / 81 todo、集成 + server 单测 1015、build），产物修复后单独复跑通过；合并后 `pnpm test` 1118 个通过，集成测试 564 个通过（27 个文件），lint / typecheck / deps / `check:action-dist` 通过。
+- Decisions：D-142（CCv3 导入）、D-143（经验证访客）。

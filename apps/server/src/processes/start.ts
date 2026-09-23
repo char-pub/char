@@ -13,20 +13,30 @@ import { parseLegalKey } from "../admin/routes/legal.js";
 import type { Services } from "../api/app.js";
 import { createApi } from "../api/server.js";
 import { createAuth, sessionPrincipalResolver } from "../auth/better-auth.js";
+import { SmtpEmailSender } from "../auth/email.js";
+import { GUEST_TURNSTILE_ACTION, GuestHasher, type GuestServices } from "../auth/guest.js";
+import { CloudflareTurnstile } from "../auth/turnstile.js";
 import { createDatabase } from "../db/client.js";
 import {
   AdminEnvSchema,
   AuthEnvSchema,
   authProvidersFromEnv,
   EdgeEnvSchema,
+  GitHubEnvSchema,
+  GuestEnvSchema,
+  githubConfigFromEnv,
+  guestConfigFromEnv,
   originSecretsFromEnv,
   parseEnv,
   ServerEnvSchema,
 } from "../env.js";
+import type { GitHubDeps } from "../github/deps.js";
+import { GitHubAppSource } from "../github/source.js";
 import { JobQueue } from "../jobs/queue.js";
+import { githubJwks } from "../oidc/github.js";
 import { FlagCache } from "../ops/flags.js";
 import { Cas, casConfigFromEnv } from "../storage/cas.js";
-import { API_MODULES, startWorkers } from "./modules.js";
+import { API_MODULES, githubApiModules, startGitHubWorkers, startWorkers } from "./modules.js";
 
 export interface Started {
   fetch: (req: Request) => Response | Promise<Response>;
@@ -75,13 +85,15 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       providers: authProvidersFromEnv(authEnv),
       ipAddressHeaders: ["cf-connecting-ip"],
     });
+    const gh = githubFromEnv();
+    const guests = guestsFromEnv(authEnv.AUTH_TRUSTED_ORIGINS);
     const app = createApi({
-      services,
+      services: guests ? { ...services, guests } : services,
       originSecrets: originSecretsFromEnv(edge),
       allowedOrigins: authEnv.AUTH_TRUSTED_ORIGINS,
       sessionPrincipal: sessionPrincipalResolver(auth),
       authHandler: (req) => auth.handler(req),
-      modules: API_MODULES,
+      modules: gh ? [...API_MODULES, ...githubApiModules(gh)] : API_MODULES,
     });
     return { fetch: app.fetch, shutdown };
   }
@@ -106,6 +118,8 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
   }
 
   await startWorkers(services);
+  const gh = githubFromEnv();
+  if (gh) await startGitHubWorkers(services, gh.source);
   return {
     fetch: (req) =>
       new URL(req.url).pathname === "/healthz"
@@ -113,5 +127,44 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
         : new Response("not found", { status: 404 }),
     hostname: "127.0.0.1",
     shutdown,
+  };
+}
+
+/**
+ * 读取 GitHub 集成的配置。没有配置时（本地开发）返回 null：api 不挂载 GitHub 路由，
+ * worker 不注册 GitHub 任务。
+ */
+function githubFromEnv(): GitHubDeps | null {
+  const cfg = githubConfigFromEnv(parseEnv(GitHubEnvSchema));
+  if (!cfg) {
+    process.stdout.write("github integration is not configured; GitHub routes and jobs are off\n");
+    return null;
+  }
+  return {
+    source: new GitHubAppSource({ appId: cfg.appId, privateKey: cfg.privateKey }),
+    webhookSecrets: cfg.webhookSecrets,
+    oidcAudience: cfg.oidcAudience,
+    jwks: githubJwks(),
+  };
+}
+
+/**
+ * 读取访客验证的配置。没有配置时返回 null，访客验证接口返回 503。Turnstile 的 hostname
+ * 允许列表取前端 Origin 白名单中的域名：widget 只会出现在这些页面上。
+ */
+function guestsFromEnv(webOrigins: readonly string[]): GuestServices | null {
+  const cfg = guestConfigFromEnv(parseEnv(GuestEnvSchema));
+  if (!cfg) {
+    process.stdout.write("guest verification is not configured; guest routes return 503\n");
+    return null;
+  }
+  return {
+    turnstile: new CloudflareTurnstile({
+      secret: cfg.turnstileSecret,
+      allowedHostnames: webOrigins.map((o) => new URL(o).hostname),
+      action: GUEST_TURNSTILE_ACTION,
+    }),
+    email: new SmtpEmailSender(cfg.smtpUrl, cfg.emailFrom),
+    hasher: new GuestHasher(cfg.hmacKey),
   };
 }

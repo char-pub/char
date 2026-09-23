@@ -72,6 +72,7 @@ export const blobKindEnum = app.enum("blob_kind", [
   "asset",
   "thumbnail",
   "upload",
+  "report",
 ]);
 export const blobStatusEnum = app.enum("blob_status", ["present", "withheld", "purged"]);
 export const uploadStatusEnum = app.enum("upload_status", [
