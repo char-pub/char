@@ -892,3 +892,10 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 
 1. **Postgres 18**（用户决定，2026-09-22）：staging 的 Railway Postgres 由 `postgres-ssl` 模板创建为 18.6，本地 compose 与 Testcontainers 原来是 16。用户决定全面改用 18：Railway 定义、本地 compose（`postgres:18-bookworm`）、集成测试都使用 18。在 18 上重新运行：集成测试 1292 个（包括中文、日文与一到两字的 CJK 搜索）、全栈 E2E 3 个、`pnpm dev` 冒烟全部通过。本地 compose 使用新卷 `pgdata18`，因为 18 的镜像改变了数据目录位置，旧版本的数据目录不能被直接沿用。
 2. **自定义域名不在 Railway 定义中声明**：Railway 的 Infrastructure as Code 不支持注册自定义域名，定义只固定进程端口（8080）；api 与 admin 的域名在 service 创建后用 `railway domain <域名> --service <name> --port 8080` 添加。
+
+### D-153 `@commons` 种子内容的取值 — Accepted
+
+1. **内容**：12 个 World、12 个 Lorebook（其中 2 个与设定无关、可以通用）和 1 个示例 Character（`@commons/wren-the-harbor-guide`，引用一个 World、一个 Lorebook 与通用天气 Lorebook 中的条目）。全部为原创 CC0-1.0、rating `general`，作者署名 `char.pub commons`，附简体中文的显示名与简介。
+2. **AI 辅助的标记**：每个 Creation 设 `provenance.authored_by_agent: true`。规范中没有自由文本的来源说明字段，“AI 辅助起草、待人工审校”只写在 YAML 注释与 `content/commons/README.md`、`REVIEW.md` 中，不进入 canonical 形式。
+3. **校验**：`pnpm commons:check` 按依赖顺序模拟发布，并对每个 Creation 运行与 Registry 相同的发布校验（不把任何 namespace 视为同一权利人，因此每个 Creation 都必须允许再分发）；另外检查种子内容自己的约束（CC0、general、作者署名、不含链接与邮箱）。单元测试保证草稿始终通过，并保证 `REVIEW.md` 中的 digest 与当前内容一致。
+4. **发布前提**：用户按 `REVIEW.md` 逐条审校（原创性、适龄、措辞）并签名后才发布。发布到保留的 `@commons` namespace 需要一个由员工或系统账号执行的发布途径，目前还没有实现；示例 Character 的 digest 会在依赖被固定到真实 Release 之后改变。
