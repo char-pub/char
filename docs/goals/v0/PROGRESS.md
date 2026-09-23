@@ -4,7 +4,7 @@
 
 - Goal：按 `DECISIONS.md` 与 `spec/` 从头实现 char.pub v0，包括成熟选型、架构、安全、admin 控制和单元测试（2026-09-22 用户提出）。用户已通过 `/goal` 授权持续执行 LOOP，并允许用 subagent / workflow 加速。
 - Package：`docs/goals/v0/`
-- Status：**实现中（M0～M8 的本地实现大部分完成）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
+- Status：**实现中；已推送到 `char-pub/char`，staging 资源已部分创建**。用户授权后 force push 覆盖了远端（原内容备份在本地 ref `refs/backup/char-pub-char-old-prototype`，91b0fec）。
 - Current work：
   - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA；Admin SPA（全部接口接入）；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、Registry 写路径与发布 worker、admin 业务路由（四眼、法律请求、员工）、CCv3 导出 worker、bootstrap 命令、GitHub webhook / Source binding / OIDC 发布 / 同步与对账、Contribution API、经验证访客（Turnstile + 邮箱）、CCv3 导入 API 与 worker；单镜像五命令；runbooks；部署指南；冒烟测试脚本。
   - 并行 subagent：服务端测试缺口（M4-2、M4-3 lint 规则、M4-6、M7-1、M7-2、M7-2b、M9-1）与默认作者；web 的 Contribution 审阅 UI（M8-4）、访客验证页、导入向导改走服务端；admin 后端缺口（锁定上传、namespace 转让、反通知、隔离证据访问、案件与审计导出、强制登出、访客管理页）。
@@ -143,3 +143,11 @@
 - Verification：`pnpm test` 1283 个通过；集成测试 616 个通过（31 个文件）；一致性 103 通过 / 81 todo；全新 clone 的走查与 `pnpm dev:smoke` 6 项全部通过，见 [evidence/2026-09-22-local-dev-walkthrough.md](evidence/2026-09-22-local-dev-walkthrough.md)。
 - Decisions：D-145（清理、导入失败、访客管理、本地邮件）、D-146（继承值不参与默认值省略，**待用户复核**；https URL 校验）。
 - 尚不能打勾：M0-4 需要 CI `dev-env` 的首次运行记录（依赖推送，B-10）。
+
+### 2026-09-22 推送、CI、staging 资源
+
+- 用户决定（D-150）：授权 force push、创建 Railway + R2 staging、种子内容由 AI 辅助撰写后人工审校、导入默认权利保持强制确认；随后决定 Postgres 全面改用 18（D-152）。
+- 推送：`pnpm ci:all` 中除 secrets 外每一步都通过；secrets 检查报出的是 `pnpm dev` 写在 git 忽略目录 `.dev/` 里的本地密钥，已把该目录加入 gitleaks 允许名单并单独复跑通过。推送前发现远端 main 有 4 个当天的新提交（旧原型，npm 工程），向用户确认后才覆盖，原内容已备份。推送 `c601fa2` 后 GitHub 上 `ci`（check + dev-env）、`codeql`、`scorecard` 全部成功（run 35822700874）。
+- Railway：在 `Hushed Chat` 创建 project `char-pub`（6b80b92a-…）与 environment `staging`，按用户看过的 plan（4 项新建，无修改或删除）apply `.railway/railway.ts`。模板创建的 Postgres 是 18.6，用户决定全面改用 18；在 18 上重跑集成测试 1292 个、全栈 E2E 3 个、`pnpm dev` 冒烟全部通过，apply 后再次 plan 显示已同步。创建 `charpub_app` 角色（口令在本机生成、经 stdin 传入，不进 git 与日志），设置了三个进程的 `DATABASE_URL` 以及本地可生成的密钥（会话签名、源站校验、法律加密、系统账号 ID），本地副本保存在仓库之外的 `~/.charpub-secrets/`（权限 0600）。
+- R2：创建 `charpub-staging-{public,private,uploads,evidence}`；uploads 1 天过期；public、private、uploads 的 CORS 按 `infra/r2/` 设置；`r2.dev` 保持关闭。
+- 尚缺（需要用户）：R2 S3 API token（当前 wrangler 登录没有创建 API token 的权限）；Cloudflare zone 写权限（DNS、Transform Rule、WAF）；Access 应用；Turnstile widget（wrangler 有 `challenge-widgets.write`，可以代为创建）；OAuth App；GitHub App；SMTP 服务商。在这些值设置之前，三个进程因缺少 S3 变量而无法启动（启动日志只列出缺少的变量名）。
