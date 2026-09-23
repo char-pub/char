@@ -707,3 +707,24 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 3. **可选的 binding 约束**：`require_ref_protected`、`environment`、`job_workflow_ref`（要求官方 reusable workflow）。`source_bindings` 表需要对应的列。
 4. **检查顺序**：先比对 `repository_id` + `repository_owner_id`（不一致报 `binding.mismatch`），再看 binding 是否 frozen（报 `binding.frozen`）。
 5. **webhook**：用 `@octokit/webhooks-methods` 验签（官方包、零依赖、常量时间比较，支持轮换期间新旧 secret 并存）；body 先按严格 UTF-8 解码，保证与原始字节一致。签名缺失或无效返回 401；未订阅的事件在验签通过后返回 2xx 并忽略，避免 GitHub 重试。
+
+### D-135 CCv3 导入导出的实现取值 — Accepted（第 1 条待用户决定）
+
+1. **导入卡片的默认权利声明（待用户决定）**：导入时 license 默认为 `LicenseRef-All-Rights-Reserved`（最保守）。`rights` 在 schema 中没有“未知”取值，目前临时填 `original`，并把 license / rights / rating 三项列入 Import Report 的 `needs_confirmation`，由导入向导要求用户确认。**未确认前服务端拒绝发布**（发布路由检查 Import Report 的待确认项）。备选方案是在 schema 的 `rights` 中增加 `unknown`，这属于规范变更，需要用户决定。
+2. **`{{self}}` 在导出中的写法**：IR 中 `{{self}}` 已被 Resolver 替换为角色名，所以导出的正文里是名字；只有对话中的说话人会还原成 `{{char}}`。CCv3 的“随角色名变化”效果因此丢失，Loss Report 不单独列出这一项（它不改变含义）。
+3. **semantic / manual 激活**：导出时丢弃并记入 Loss Report（规范允许降级为 always、keyword 或丢弃，丢弃最不会改变作品含义）。
+4. **secondary key 逻辑**：按 SillyTavern 的 `selectiveLogic` 映射，0 → `any`，3 → `all`；1 和 2（NOT 语义）无法表达，secondary 被丢弃并记入报告。
+5. **导入降级**：`use_regex` 与没有 key 的条目改为 manual；`enabled: false` 改为 manual（不丢弃）；`@@activate` → always，`@@dont_activate` → manual。
+6. **多段 `mes_example`**：拆成 `examples/1..n`，编号依赖段落顺序，所以 `stable: false`；只有一段时是稳定的 `examples`。
+7. **未知宏**（如 `{{random:…}}`）：导入时转义为字面量并记入报告，导出时原样还原。
+8. **不做网络 IO**：远程 URL 资源不下载，报告中标注未导入；`user_icon` 不导入（属于用户的 persona）。PNG 头像交给上传管线前已去掉 tEXt / EXIF，`system_prompt` 原值不会随图片流出。
+9. **conformance 与 Assembler 的 Resolver 修正**：可选且未被使用的 late slot 不进入 IR 时，它对应的 participant 也不再出现（一致性用例 012b 发现，已修复）。
+
+### D-136 Better Auth 集成的实现取值 — Accepted
+
+1. **不启用 Better Auth 的 admin 插件**：它会在公开 API 上挂出冒充用户、改角色、删除用户等接口，与“公开 api 进程不挂载任何管理功能”相冲突。封禁由服务端的 `banUser` 完成（同一事务内标记封禁、删除全部会话、吊销全部个人 Token、写审计），另用 session 创建钩子阻止已封禁用户建立新会话；封禁到期后自动恢复。这取代了 DOR 中“用 admin 插件管理封禁字段”的写法。
+2. **`__Host-` cookie**：Better Auth 只会自动加 `__Secure-` 前缀，所以关闭自动前缀，把 `__Host-charpub.` 直接写进 cookie 名字（会话 cookie 为 `__Host-charpub.session`），并强制 Secure、HttpOnly、SameSite=Lax、Path=/、无 Domain。
+3. **登录限流**存在独立的 `auth_rate_limit` 表（Better Auth 的格式），与应用自己的 `rate_limits` 分开。客户端 IP 取 `cf-connecting-ip`。
+4. **不启用密码登录**；自动关联账号要求本地邮箱已验证；OAuth token 加密入库；显式开启 Origin 与 CSRF 检查（Better Auth 在测试环境默认跳过）。
+5. **数据最小化**：session 的 ip_address 列保留但不写入。
+6. user id 使用 UUIDv7（`advanced.database.generateId`）。

@@ -9,6 +9,13 @@ module.exports = {
       to: { dependencyTypes: ["core"] },
     },
     {
+      name: "conformance-runner-no-node-builtins",
+      comment: "一致性运行器要在浏览器和 workerd 中运行，不能依赖 node:* 内置模块",
+      severity: "error",
+      from: { path: "^spec/conformance/runner/(?!.*\\.test\\.ts$)" },
+      to: { dependencyTypes: ["core"] },
+    },
+    {
       name: "core-only-allowed-deps",
       comment: "core 只能依赖经过审阅的纯计算库",
       severity: "error",
@@ -56,10 +63,11 @@ module.exports = {
     doNotFollow: { path: "node_modules" },
     exclude: { path: "(dist|coverage)/" },
     tsPreCompilationDeps: true,
-    tsConfig: { fileName: "tsconfig.base.json" },
+    tsConfig: { fileName: "tsconfig.depcruise.json" },
     enhancedResolveOptions: {
       exportsFields: ["exports"],
       conditionNames: ["import", "types", "default"],
+      extensions: [".ts", ".tsx", ".js", ".mjs", ".cjs", ".json"],
     },
   },
 };

@@ -1,0 +1,11 @@
+{
+  "id": "006b-tombstoned-dependency",
+  "title": "Tombstoned dependency is an explicit error with the reason",
+  "kind": "resolver",
+  "expect": "error",
+  "spec_refs": [
+    "D-042",
+    "canonical-model §12.1 rule 2"
+  ],
+  "status": "draft"
+}

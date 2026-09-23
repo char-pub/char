@@ -11,6 +11,8 @@ Please **do not** open a public issue for security problems.
 
 We aim to acknowledge reports within 3 business days and to provide a remediation plan within 14 days.
 
+We follow a 90-day coordinated disclosure policy: please give us 90 days from your report before publishing details, unless we agree on a different timeline together.
+
 ## Scope
 
 In scope: code in this repository, `*.char.pub` services, the `char-pub/publish` GitHub Action, and published `@char-pub/*` npm packages.

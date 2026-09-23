@@ -1,0 +1,14 @@
+{
+  "id": "007-multi-locale",
+  "title": "Multiple locales: variants, localized names and available locales",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "D-030",
+    "canonical-model §4.3",
+    "context-ir §3",
+    "context-ir §11.2 locale"
+  ],
+  "status": "draft",
+  "notes": "available_locales is the intersection over all fragments: en and zh-Hans, not ja (the Watson entry has no Japanese text, so an assembler must fall back). {{self}} renders the localized display name inside each variant; locale activation keys join the keyword list."
+}

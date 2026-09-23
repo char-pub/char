@@ -1,7 +1,7 @@
 {
   "name": "@char-pub/cli",
   "version": "0.0.0",
-  "description": "char — command line tool for char.pub creations: init, check, build, preview, publish",
+  "description": "char \u2014 command line tool for char.pub creations: init, check, build, preview, publish",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@char-pub/assembler": "workspace:*",
+    "@char-pub/contracts": "workspace:*",
     "@char-pub/core": "workspace:*",
     "commander": "catalog:",
     "yaml": "catalog:"

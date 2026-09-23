@@ -6,9 +6,9 @@
 - Package：`docs/goals/v0/`
 - Status：**实现中（M0 本地完成，M1 进行中）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
 - Current work：
-  - 已合并（本地 main）：core 全部核心逻辑；`packages/assembler`；`packages/contracts`（HTTP API schema）；`packages/cli`（init / check --fix / build / preview）；`actions/publish`（OIDC 发布 Action，打包产物带漂移检查）；server 的 `authorize()` 与 HTTP 中间件。
-  - 并行 subagent（独立 worktree）：`packages/ccv3`；`apps/server` 数据库 / CAS / 队列；一致性测试集与三运行时运行器；OIDC 与 webhook 校验；`apps/web` 骨架与 Preview / Diff。
-  - 主会话下一步：合并以上分支 → server 路由（Registry API）与 Better Auth。
+  - 已合并（本地 main）：core 全部核心逻辑；assembler；contracts；cli；publish Action；web SPA（Playground / Diff / 作品页骨架）；server 的数据库 schema 与迁移、CAS、pg-boss 队列、审计链、集成测试基础设施、`authorize()`、HTTP 中间件、OIDC / webhook 校验、上传图片处理、`CsamScanner`、员工角色矩阵与四眼规则、Cloudflare Access JWT 校验、API 骨架（`route()` 强制授权）；runbooks。
+  - 并行 subagent：`packages/ccv3`；一致性测试集与三运行时运行器；Registry 写路径（namespace / 草稿 / 发布 / worker publish / Token）；Registry 读路径（读取 / 搜索 / yank / tombstone 级联）；Better Auth 集成。
+  - 下一步：合并以上分支 → Contribution API（M6-3）→ 上传 API 与 worker（M6-1、M6-2）→ GitHub 绑定与 OIDC 发布路由（M7-1、M7-2、M7-2b）→ admin 进程与 Admin SPA（M8-5、M9-1）→ web 接 API（M8-1、M8-2、M8-4）。
 - Acceptance：DOD 条目尚未打勾。M0-1 / M0-2 本地检查已通过，但验收要求 CI 运行记录，需等首次推送后才能取得（依赖 B-10）。
 - Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
 - Next useful work：合并 subagent 结果 → Resolver 与一致性测试集（M2-5，需要人工审阅预期输出）→ server 的 Auth / authz / API（M4-2、M4-3、M5）。
@@ -67,3 +67,25 @@
 - Verification：`pnpm test` 共 660+ 个单测通过；CLI 构建后 `node packages/cli/dist/bin.js --help` 可用；`char check --fix` 在临时目录端到端写回 ID 并保持幂等；Action 打包产物在临时目录用 dry-run 运行成功（输出 semantic digest，不调用网络）；`pnpm check:action-dist` 证明提交的 dist 与源码一致。
 - Decisions：D-131（参考 Assembler 取值）、D-132（`char.yaml` v0 书写形式）。
 - 尚不能打勾：M7-3 还缺 `login` / `publish`（依赖 server API）；M7-4 需要 staging 与真实 GitHub App（B-3）。
+
+### 2026-09-22 server 基础合并、web 骨架、runbooks
+
+- Work：合并数据库 / 队列 / CAS（subagent，54 个集成测试）、OIDC / webhook（subagent，OIDC 分支覆盖 98.7%，webhook 97.1%）、web SPA（subagent）；新增上传图片处理（sharp 0.34.5：0.35 还在 3 天冷却期内）、`CsamScanner`、员工角色矩阵、Access JWT 校验、API 骨架、7 份 runbook。
+- Verification：`pnpm test` 922 个通过；`pnpm test:integration` 通过（Testcontainers：Postgres 16 + MinIO）；`pnpm build` 通过，web 产物 `index.html` 只有一个外链 module script；上传处理分支覆盖 96.7%；本地用 `vite preview` + Playwright 查看 Playground，发现 Trace 表 reason 列在 1200px 宽度被截断，已修复并复查截图。
+- Decisions：D-133（数据库 / 队列 / 审计）、D-134（OIDC / webhook）。security 文档的审计哈希公式已与实现统一。
+- 尚不能打勾：M9-5 runbooks 需要用户人工审阅。
+
+### 2026-09-22 一致性测试集、CCv3、admin、GitHub binding
+
+- Work：
+  - 合并一致性测试集基础设施（subagent，27 个用例，Node / Chromium / workerd 三端）与 `packages/ccv3`（subagent，85 个测试）。ccv3 的往返测试改为使用真实 Resolver。
+  - 修复 Resolver bug：可选且未被使用的 late slot 不进入 IR 时，它的 participant 仍然留在 IR 中（一致性用例 012b 起草时发现，已加回归测试）。
+  - 新增一致性预检 `pnpm conformance:precheck`（排序、digest 重算、key 公式、悬空引用、签名 URL）与审阅表生成 `pnpm conformance:review`。
+  - admin 进程骨架（Access JWT + 员工角色 + 操作理由）、kill switch 与审计路由；Postgres 限流与 5 秒开关缓存；GitHub webhook 事件落库、binding 生命周期（转移冻结、重新绑定 / 解绑、对账补偿）、数据库 jti 存储；web 的 wrangler 配置（dry-run 通过）；`infra/DEPLOY.md`。
+- Verification：
+  - `pnpm test` 1015 个单测通过；`pnpm test:conformance` 98 passed / 81 todo（draft 用例只运行不比较）。
+  - `pnpm conformance:precheck`：8 个 IR draft 全部通过；篡改 fragment 文本与 participants 顺序后预检能报出 digest 不符与排序错误。
+  - 集成测试：admin 9 个（包括公开 api 上访问 admin 路由返回 404）、限流与开关 6 个、GitHub binding 11 个，全部通过。
+  - `wrangler deploy --dry-run --env staging`（apps/web）通过，未实际部署。
+- Decisions：D-135（CCv3 取值；**导入卡片的默认 rights 待用户决定**）。
+- 待用户审阅：`pnpm conformance:review` 生成 `spec/conformance/REVIEW.md`；审阅后用 `pnpm conformance:accept <case> --reviewer <name>` 接受。在接受之前 M2-5 不能打勾。

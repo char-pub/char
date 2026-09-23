@@ -18,6 +18,10 @@
     "actions/*/src/**/*.test.ts",
     "apps/server/*.config.ts",
     "apps/server/vitest.shared.ts",
-    "vitest.config.ts"
+    "spec/conformance/runner/**/*.ts",
+    "spec/conformance/scripts/**/*.ts",
+    "spec/conformance/vitest.*.config.ts",
+    "vitest.config.ts",
+    "scripts/**/*.ts"
   ]
 }

@@ -27,6 +27,8 @@ export interface ApiOptions {
   allowedOrigins: readonly string[];
   /** 从 session cookie 解析登录用户；由 Better Auth 集成提供。 */
   sessionPrincipal?: (req: Request) => Promise<Principal | null>;
+  /** Better Auth 的请求处理函数，挂在 `/v1/auth/*`（登录、回调、登出）。 */
+  authHandler?: (req: Request) => Promise<Response>;
   /** 路由模块。 */
   modules: readonly ((app: Hono<Env>) => void)[];
 }
@@ -58,6 +60,9 @@ export function createApi(opts: ApiOptions): Hono<Env> {
   });
 
   app.get("/healthz", (c) => c.json({ ok: true }));
+  // 登录接口由 Better Auth 自己处理授权（它们本身就是建立身份的地方），所以不经过 route()。
+  const authHandler = opts.authHandler;
+  if (authHandler) app.on(["GET", "POST"], "/v1/auth/*", (c) => authHandler(c.req.raw));
   for (const register of opts.modules) register(app);
   app.notFound((c) => problem(c, 404, "not_found"));
   app.onError(errorHandler);

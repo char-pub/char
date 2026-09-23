@@ -1,0 +1,44 @@
+{
+  "release": "rel_01h455vb4pex5vsknk084sn005",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01h455vb4pex5vsknk084sn005",
+    "ref": "@commons/childhood-friend",
+    "type": "relationship",
+    "display_name": "Childhood friend",
+    "slots": {
+      "a": {
+        "accepts": "character"
+      },
+      "b": {
+        "accepts": [
+          "character",
+          "persona"
+        ]
+      }
+    },
+    "params": {
+      "reunited_after": {
+        "type": "string",
+        "default": "several years"
+      }
+    },
+    "fragments": [
+      {
+        "id": "bond",
+        "stable": true,
+        "kind": "relationship",
+        "content": {
+          "type": "text",
+          "text": "{{slot:a}} and {{slot:b}} grew up next door. They met again after {{param:reunited_after}}."
+        }
+      }
+    ],
+    "meta": {
+      "default_locale": "en",
+      "rights": "original",
+      "rating": "general",
+      "license": "CC0-1.0"
+    }
+  }
+}

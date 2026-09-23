@@ -1,0 +1,12 @@
+{
+  "id": "109-publish-label-taken",
+  "title": "Rule 9: a label cannot point to different content",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-044",
+    "canonical-model §12.1 rule 9"
+  ],
+  "status": "draft",
+  "notes": "Label 1.0.0 already points to other content."
+}

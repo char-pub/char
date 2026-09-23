@@ -1,0 +1,16 @@
+{
+  "id": "002-character-world-lorebook",
+  "title": "Character + intrinsic world + keyword lorebook",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "D-024",
+    "D-027",
+    "canonical-model §4.2",
+    "context-ir §3",
+    "context-ir §6.1",
+    "context-ir §9"
+  ],
+  "status": "draft",
+  "notes": "Fragments are ordered depth-first with edges sorted by id; effective rating is the maximum of the closure (mature from the world); content warnings and licenses are aggregated."
+}

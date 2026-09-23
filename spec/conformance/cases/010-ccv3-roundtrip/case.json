@@ -1,0 +1,14 @@
+{
+  "id": "010-ccv3-roundtrip",
+  "title": "CCv3 round trip: import, resolve, export with a Loss Report",
+  "kind": "ccv3",
+  "expect": "loss-report",
+  "spec_refs": [
+    "D-023",
+    "D-056",
+    "canonical-model §15",
+    "context-ir §14"
+  ],
+  "status": "draft",
+  "notes": "Synthetic card: import -> canonicalize -> resolve -> export. Lorebook entries become stable: false knowledge fragments (one had a source id, one did not); system_prompt and post_history_instructions are recorded by field name only, are not exported back (empty in the exported card) and the Loss Report says restored: false."
+}

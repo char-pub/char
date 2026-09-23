@@ -1,0 +1,21 @@
+{
+  "name": "@char-pub/conformance",
+  "version": "0.0.0",
+  "private": true,
+  "description": "char.pub public conformance suite: cases, runner and draft/accept tooling",
+  "license": "CC-BY-4.0",
+  "type": "module",
+  "dependencies": {
+    "@char-pub/assembler": "workspace:*",
+    "@char-pub/ccv3": "workspace:*",
+    "@char-pub/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
+    "tsx": "catalog:",
+    "vitest": "catalog:"
+  }
+}

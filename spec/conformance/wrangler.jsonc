@@ -1,0 +1,9 @@
+{
+  // 只用于在 workerd 中运行一致性测试，不部署。
+  // 没有开启 nodejs_compat：core 必须不依赖 Node API。
+  // 注意：测试运行器自身需要 Node API，vitest-pool-workers 会给运行器 worker 自动加上
+  // nodejs_compat_v2，所以“core 不用 Node API”由 dependency-cruiser 另行保证。
+  // 日期早于 nodejs_compat 默认开启的日期，也不晚于本地 workerd 支持的最新日期。
+  "name": "charpub-conformance",
+  "compatibility_date": "2026-08-01"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "012b-late-slots",
+  "title": "Late slots: required, implicit {{user}}, and an unused optional slot",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "D-025",
+    "context-ir §5"
+  ],
+  "status": "draft",
+  "notes": "student is a required late slot used by the lessons fragment; {{user}} maps to the implicit user slot; the optional observer slot is never used and does not appear in late_slots."
+}
