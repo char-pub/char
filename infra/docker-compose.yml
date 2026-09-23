@@ -1,10 +1,10 @@
-# 本地开发环境：Postgres 16 + MinIO（S3 兼容）+ Mailpit（本地 SMTP，收下所有邮件，不对外投递）。
+# 本地开发环境：Postgres 18 + MinIO（S3 兼容）+ Mailpit（本地 SMTP，收下所有邮件，不对外投递）。
 # 这里的口令只用于本机开发，线上值在 Railway / Cloudflare 中配置。
 name: charpub
 
 services:
   postgres:
-    image: postgres:16-bookworm
+    image: postgres:18-bookworm
     environment:
       POSTGRES_USER: charpub_owner
       POSTGRES_PASSWORD: charpub_owner_local
@@ -14,7 +14,9 @@ services:
     ports:
       - "127.0.0.1:54329:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # Postgres 18 的镜像把数据放在 /var/lib/postgresql/<主版本>/docker 下，卷挂在上一级。
+      # 卷名带主版本号：旧版本的数据目录不能被新版本直接使用，升级时换一个新卷。
+      - pgdata18:/var/lib/postgresql
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U charpub_owner -d charpub"]
@@ -68,5 +70,5 @@ services:
       retries: 30
 
 volumes:
-  pgdata:
+  pgdata18:
   miniodata:

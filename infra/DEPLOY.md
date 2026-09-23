@@ -18,7 +18,7 @@
 
 ## 2. Railway
 
-资源定义在 `.railway/railway.ts`（Railway 的 Infrastructure as Code）：一个 Postgres 16，加上同一个镜像（`apps/server/Dockerfile`）的三个 service。staging 与 production 共用这份定义，差别只在域名和桶名。`scripts/railway-config.test.ts` 检查每个进程拿到的变量与服务端实际读取的一致，且密钥都不以字面值出现。
+资源定义在 `.railway/railway.ts`（Railway 的 Infrastructure as Code）：一个 Postgres 18，加上同一个镜像（`apps/server/Dockerfile`）的三个 service。staging 与 production 共用这份定义，差别只在域名和桶名。`scripts/railway-config.test.ts` 检查每个进程拿到的变量与服务端实际读取的一致，且密钥都不以字面值出现。
 
 - `api`：`node dist/main.js api`；每次部署前执行 `node dist/main.js migrate`（owner 角色），迁移失败则不部署。
 - `admin`：`node dist/main.js admin`。

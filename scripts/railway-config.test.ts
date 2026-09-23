@@ -5,7 +5,7 @@
  */
 import { createRailwayContext, project } from "railway/iac";
 import { describe, expect, it } from "vitest";
-import program from "../.railway/railway.js";
+import program, { PORT, publicHost } from "../.railway/railway.js";
 import {
   AdminEnvSchema,
   AuthEnvSchema,
@@ -60,30 +60,26 @@ async function load(environment: string): Promise<Map<string, Resource>> {
 }
 
 describe.each(["staging", "production"])("railway definition (%s)", (environment) => {
-  it("declares Postgres 16 and the three processes of one image", async () => {
+  it("declares Postgres 18 and the three processes of one image", async () => {
     const r = await load(environment);
     expect([...r.keys()].sort()).toEqual(["admin", "api", "postgres", "worker"]);
-    expect(r.get("postgres")?.image).toMatch(/postgres-ssl:16$/);
+    expect(r.get("postgres")?.image).toMatch(/postgres-ssl:18$/);
     for (const name of ["api", "admin", "worker"] as const) {
       expect(r.get(name)?.deploy?.startCommand).toBe(`node dist/main.js ${name}`);
       expect(r.get(name)?.variables?.RAILWAY_DOCKERFILE_PATH?.value).toBe("apps/server/Dockerfile");
     }
     expect(r.get("api")?.deploy?.preDeployCommand).toEqual(["node dist/main.js migrate"]);
-    expect(r.get("worker")?.networking?.customDomains ?? {}).toEqual({});
   });
 
-  it("routes each public domain to the port the process listens on", async () => {
+  it("listens on the port the custom domains are added with, and declares no domain itself", async () => {
     const r = await load(environment);
-    const prefix = environment === "production" ? "" : "staging-";
-    for (const [name, host] of [
-      ["api", `${prefix}api.char.pub`],
-      ["admin", `${prefix}admin-api.char.pub`],
-    ] as const) {
-      const svc = r.get(name);
-      const port = svc?.variables?.PORT?.value;
-      expect(Object.keys(svc?.networking?.customDomains ?? {})).toEqual([host]);
-      expect(String(svc?.networking?.customDomains?.[host]?.port)).toBe(port);
+    for (const name of ["api", "admin", "worker"] as const) {
+      expect(r.get(name)?.variables?.PORT?.value).toBe(String(PORT));
+      // Railway 不接受在定义里注册自定义域名，域名在 service 创建后用 CLI 添加。
+      expect(r.get(name)?.networking?.customDomains ?? {}).toEqual({});
     }
+    const prod = environment === "production";
+    expect(publicHost("api", prod)).toBe(prod ? "api.char.pub" : "staging-api.char.pub");
   });
 
   it("gives every process exactly the variables it reads, and all required ones", async () => {

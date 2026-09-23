@@ -24,7 +24,7 @@ Requirements: Node ≥ 22.12 (24 LTS recommended), pnpm (version pinned in `pack
 ```sh
 corepack enable        # or install pnpm yourself
 pnpm install
-pnpm infra:up          # Postgres 16 (127.0.0.1:54329) + MinIO (127.0.0.1:59000, console :59001)
+pnpm infra:up          # Postgres 18 (127.0.0.1:54329) + MinIO (127.0.0.1:59000, console :59001)
                        # + Mailpit (SMTP 127.0.0.1:51025, web UI and API http://127.0.0.1:58025)
 pnpm test              # unit tests
 pnpm ci:all            # everything CI runs

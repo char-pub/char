@@ -2,7 +2,7 @@
  * char.pub 在 Railway 上的资源定义。
  *
  * 同一个镜像（apps/server/Dockerfile，构建上下文是仓库根目录）按不同的启动命令跑成三个
- * service，另有一个 Postgres。staging 与 production 两个 environment 共用这份定义，区别只在
+ * service，另有一个 Postgres 18。staging 与 production 两个 environment 共用这份定义，区别只在
  * 域名与桶名。
  *
  * - api：公开 API；每次部署前先用 owner 角色执行数据库迁移，迁移失败则不部署。
@@ -14,26 +14,34 @@
  * 应用的 `DATABASE_URL` 使用非 owner 的 `charpub_app` 角色，也属于手工设置的值；只有迁移用的
  * owner 连接串直接引用 Railway Postgres 提供的变量。
  *
+ * 自定义域名（api、admin-api）不能在这里声明，Railway 要求在 service 创建后用
+ * `railway domain <域名> --service <name> --port 8080` 添加，见 infra/DEPLOY.md。
+ *
  * 用法：`railway link` 选择 project 与 environment 后，`railway config plan` 预览变更，
  * 确认后 `railway config apply`。创建或修改会产生费用、对外可见的资源前需要先征得同意。
  */
 import { database, defineRailway, github, preserve, service } from "railway/iac";
 
 const REPO = "char-pub/char";
-/** 进程监听的端口；域名把流量转到这个端口。 */
-const PORT = 8080;
+/** 进程监听的端口；添加自定义域名时把流量转到这个端口。 */
+export const PORT = 8080;
+
+/** 各环境的公开域名：production 为 `<name>.char.pub`，staging 为 `staging-<name>.char.pub`。 */
+export function publicHost(name: string, production: boolean): string {
+  return production ? `${name}.char.pub` : `staging-${name}.char.pub`;
+}
 
 export default defineRailway((ctx, project) => {
   const prod = ctx.isEnvironment("production");
   const env = prod ? "production" : "staging";
-  const host = (name: string) => (prod ? `${name}.char.pub` : `staging-${name}.char.pub`);
+  const host = (name: string) => publicHost(name, prod);
   const www = prod ? "https://www.char.pub" : "https://staging.char.pub";
   const adminSpa = prod ? "https://admin.char.pub" : "https://staging-admin.char.pub";
   const apiOrigin = `https://${host("api")}`;
 
-  // Railway 官方的 postgres-ssl 镜像。主版本固定为 16，与本地环境和集成测试使用的版本一致。
+  // Railway 官方的 postgres-ssl 镜像。主版本固定为 18，与本地环境和集成测试使用的版本一致。
   const db = database("postgres", "postgres", {
-    image: "ghcr.io/railwayapp-templates/postgres-ssl:16",
+    image: "ghcr.io/railwayapp-templates/postgres-ssl:18",
     output: "DATABASE_URL",
     defaultMountPath: "/var/lib/postgresql/data",
   });
@@ -105,7 +113,6 @@ export default defineRailway((ctx, project) => {
     start: "node dist/main.js api",
     preDeploy: "node dist/main.js migrate",
     healthcheck: "/healthz",
-    domains: [{ domain: host("api"), port: PORT }],
     env: {
       ...common,
       ...edge,
@@ -123,7 +130,6 @@ export default defineRailway((ctx, project) => {
     source,
     start: "node dist/main.js admin",
     healthcheck: "/healthz",
-    domains: [{ domain: host("admin-api"), port: PORT }],
     env: {
       ...common,
       ...edge,

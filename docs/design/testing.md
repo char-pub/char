@@ -12,7 +12,7 @@
 | L1 单元测试 | `packages/*` 的纯函数：标识符语法、canonicalize、digest、schema、发布校验、Resolver、Diff、合并、Assembler、CCv3 映射 | Vitest | 每次提交 |
 | L1+ 性质测试 | 格式无关性（键序、缩进、默认值省略、NFC、行尾）；resolve 的确定性；合并的幂等性（已应用变更再次应用时跳过） | Vitest + fast-check | 每次提交 |
 | L2 一致性测试 | `spec/conformance/` 下的 13 个首批用例及后续补充；Resolver 输出做**字节级**比对，Assembler 只比较 decision / reason | Vitest 运行器（在 Node 中） + 浏览器（Vitest browser mode 或 Playwright）+ workerd（`@cloudflare/vitest-pool-workers`） | 每次提交 |
-| L3 集成测试 | `apps/server`：路由、授权、事务、pg-boss 任务、R2 交互、OIDC 与 webhook 校验 | Vitest + Testcontainers（Postgres 16 + MinIO）；OIDC 使用本地 JWKS；GitHub API 使用 msw 录制的响应 | 每次提交（CI） |
+| L3 集成测试 | `apps/server`：路由、授权、事务、pg-boss 任务、R2 交互、OIDC 与 webhook 校验 | Vitest + Testcontainers（Postgres 18 + MinIO）；OIDC 使用本地 JWKS；GitHub API 使用 msw 录制的响应 | 每次提交（CI） |
 | L3+ 安全测试 | 越权访问矩阵（对每个路由自动生成“他人资源”和“匿名访问”用例）、CSRF / Origin、限流、源站校验、admin 三层防护 | 同 L3 | 每次提交 |
 | L4 端到端 | 关键用户流程：UC-1～UC-8 | Playwright，针对本地全栈（docker compose）运行 | 合并到 main 时 + 发布前 |
 | L5 冒烟 / 演练 | staging 上的真实 Cloudflare、Railway、R2、GitHub App | `scripts/smoke.ts` + 人工演练记录 | 部署后 / 里程碑验收 |
@@ -60,7 +60,7 @@ spec/conformance/
 
 ## 4. 测试数据与环境
 
-- 本地和 CI 都用 `docker compose`（Postgres 16 + MinIO）；也可以用 Testcontainers，每个测试文件分配一个独立的 schema 或数据库，以便并行运行。
+- 本地和 CI 都用 `docker compose`（Postgres 18 + MinIO）；也可以用 Testcontainers，每个测试文件分配一个独立的 schema 或数据库，以便并行运行。
 - 时钟和 ID 通过注入控制（core 本身不读取时钟），测试中固定。
 - 测试不访问任何外部网络：GitHub、OIDC、CSAM provider、Turnstile 全部使用本地替身；这些替身必须按真实协议实现，例如 JWKS 签名和 HMAC 验签都要真算。
 - CCv3 样本：自己构造的合成卡，外加许可明确（CC0 或 CC-BY）的真实卡；不向仓库提交来源或许可不明的第三方卡片。

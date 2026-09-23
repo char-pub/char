@@ -59,7 +59,7 @@ async function startWithRetry<T>(start: () => Promise<T>): Promise<T> {
 export default async function setup(project: TestProject) {
   [postgres, minio] = await Promise.all([
     startWithRetry(() =>
-      new PostgreSqlContainer("postgres:16-bookworm")
+      new PostgreSqlContainer("postgres:18-bookworm")
         .withDatabase("postgres")
         .withUsername("postgres")
         .withPassword("superuser-local-test")
