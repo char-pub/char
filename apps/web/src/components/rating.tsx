@@ -1,16 +1,17 @@
 /**
  * 评级徽章与评级来源说明。effective rating 是依赖闭包与 asset 中的最高值，
  * 页面必须能解释它从哪里来。
+ *
+ * 配色固定：General 绿、Teen 琥珀、Mature 浅红底红字、Explicit 红色实心。
  */
 import type { EffectiveMeta, Rating } from "@char-pub/core";
-import { ShieldAlert, ShieldCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Badge, type BadgeVariant } from "./ui/badge";
 
-const RATING_STYLE: Record<Rating, string> = {
-  general: "border-moss/50 bg-moss-soft text-moss",
-  teen: "border-amber/50 bg-amber-soft text-foreground",
-  mature: "border-seal/60 bg-seal-soft text-accent-foreground",
-  explicit: "border-seal bg-seal text-primary-foreground",
+const RATING_VARIANT: Record<Rating, BadgeVariant> = {
+  general: "success",
+  teen: "warning",
+  mature: "danger",
+  explicit: "danger-solid",
 };
 
 export const RATING_LABEL: Record<Rating, string> = {
@@ -25,12 +26,10 @@ export function isAdultRating(r: Rating): boolean {
 }
 
 export function RatingBadge({ rating, className }: { rating: Rating; className?: string }) {
-  const Icon = isAdultRating(rating) ? ShieldAlert : ShieldCheck;
   return (
-    <span className={cn("stamp", RATING_STYLE[rating], className)}>
-      <Icon aria-hidden className="size-3" />
+    <Badge variant={RATING_VARIANT[rating]} className={className}>
       {RATING_LABEL[rating]}
-    </span>
+    </Badge>
   );
 }
 
@@ -38,11 +37,11 @@ export function RatingBadge({ rating, className }: { rating: Rating; className?:
 export function RatingSources({ meta }: { meta: EffectiveMeta }) {
   return (
     <div>
-      <p className="text-sm text-muted-foreground">
-        Rated <strong className="text-foreground">{RATING_LABEL[meta.rating]}</strong> because it
-        takes the highest rating found in the creation, its dependencies and its assets.
+      <p className="text-sm text-text-2">
+        Rated <strong className="font-semibold text-text">{RATING_LABEL[meta.rating]}</strong>{" "}
+        because it takes the highest rating found in the creation, its dependencies and its assets.
       </p>
-      <ul className="mt-3 divide-y divide-rule border-y border-rule">
+      <ul className="mt-3 divide-y divide-border border-y border-border">
         {meta.rating_sources.map((s) => {
           const decisive = s.rating === meta.rating;
           return (
@@ -52,11 +51,11 @@ export function RatingSources({ meta }: { meta: EffectiveMeta }) {
             >
               <span className="font-mono text-xs">
                 {s.ref}
-                {s.asset ? <span className="text-muted-foreground"> · asset {s.asset}</span> : null}
+                {s.asset ? <span className="text-text-3"> · asset {s.asset}</span> : null}
               </span>
               <span className="flex items-center gap-2">
                 {decisive ? (
-                  <span className="text-xs text-accent-foreground">sets the rating</span>
+                  <span className="text-xs font-medium text-text-2">sets the rating</span>
                 ) : null}
                 <RatingBadge rating={s.rating} />
               </span>
