@@ -9,7 +9,7 @@ import { isApiError } from "@/lib/api";
 import { keys, useGuest, useMe, useRegistry } from "@/lib/registry";
 import { localized } from "@/lib/text";
 
-export const Route = createFileRoute("/c/$ns/$name_/contributions/new")({
+export const Route = createFileRoute("/c/$ns/$name/contributions/new")({
   component: NewContributionRoute,
 });
 

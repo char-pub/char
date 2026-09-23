@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ContributionReview } from "@/components/contribution-review";
 import { useGuest, useMe } from "@/lib/registry";
 
-export const Route = createFileRoute("/c/$ns/$name_/contributions/$number")({
+export const Route = createFileRoute("/c/$ns/$name/contributions/$number")({
   component: ContributionRoute,
 });
 

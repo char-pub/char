@@ -11,7 +11,7 @@ const PreviewSearchSchema = z.object({
   v: z.string().max(64).optional().catch(undefined),
 });
 
-export const Route = createFileRoute("/c/$ns/$name_/preview")({
+export const Route = createFileRoute("/c/$ns/$name/preview")({
   validateSearch: (s) => PreviewSearchSchema.parse(s),
   component: PreviewRoute,
 });
