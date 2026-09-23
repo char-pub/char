@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {
+      "ref": "charpub_method_allowlist",
+      "description": "char.pub: only the HTTP methods the API uses",
+      "expression": "(http.host in {\"api.char.pub\" \"admin-api.char.pub\" \"staging-api.char.pub\" \"staging-admin-api.char.pub\" \"www.char.pub\" \"admin.char.pub\" \"staging.char.pub\" \"staging-admin.char.pub\" \"assets.char.pub\" \"staging-assets.char.pub\"}) and not (http.request.method in {\"GET\" \"HEAD\" \"POST\" \"PUT\" \"PATCH\" \"DELETE\" \"OPTIONS\"})",
+      "action": "block",
+      "enabled": true
+    }
+  ]
+}

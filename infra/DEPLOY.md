@@ -83,13 +83,17 @@ CORS 与生命周期规则见 `infra/r2/`（每个环境一份 JSON，命令写�
 - `www` / `admin`（及 staging）：由 Workers 自定义域名自动创建。
 - `assets`（及 staging）：由 R2 自定义域名自动创建。
 
+### zone 规则（WAF、限流、源站校验）
+
+这三类规则的内容在 `infra/cloudflare/`，用 `pnpm cf:rules` 对比线上状态，`pnpm cf:rules --apply` 写入（经由 tool-bridge 的 Cloudflare API 工具，只改本仓库管理的规则）。源站校验的值从本机的 `~/.charpub-secrets/<env>-origin-auth-secret` 读取。下面是在控制台手工操作时的做法。
+
 ### Transform Rule：源站校验
 
-Rules → Transform Rules → Modify Request Header：
+Rules → Transform Rules → Modify Request Header（每个环境一条）：
 
-- 条件：`http.host in {"api.char.pub" "admin-api.char.pub"}`（staging 另建一条）
-- 动作：Set static header `X-Origin-Auth` = `<ORIGIN_AUTH_SECRET 的值>`
-- 同时删除请求中客户端自带的 `X-Origin-Auth`（先 Remove 再 Set）。
+- 规则名称：例如 `staging origin auth`。
+- 条件：选“自定义筛选表达式”，点“编辑表达式”，填 `http.host in {"staging-api.char.pub" "staging-admin-api.char.pub"}`（production 为 `api.char.pub`、`admin-api.char.pub`）。
+- 动作：选 Set static，header 名 `X-Origin-Auth`，值为这个环境的 `ORIGIN_AUTH_SECRET`。Set 会覆盖客户端自带的同名头，所以不需要另加 Remove。
 
 服务端只接受带正确值的请求，所以绕过 Cloudflare 直接访问 Railway 域名会得到 403。
 
@@ -136,6 +140,8 @@ cd apps/admin && wrangler deploy --env staging   # 需用户同意
 ```
 
 `apps/web/wrangler.jsonc` 与 `apps/admin/wrangler.jsonc` 已配置 SPA fallback（两者的 `--dry-run --env staging` 都已通过）；安全响应头由各自的 `public/_headers` 下发。部署后在 Workers 设置中绑定自定义域名，admin 的两个域名都放在 Cloudflare Access 之后。
+
+部署后检查浏览器控制台：Cloudflare 会往 HTML 里插入 `static.cloudflareinsights.com` 的 beacon 脚本，被 CSP 拦下（CSP 不放行任何第三方脚本），只在控制台留下一条报错，不影响页面功能。char.pub 的 zone 已关闭 RUM，账户下的 Web Analytics 站点里也没有 char.pub，注入来源尚未查明，需要在 Workers 设置的 Domains / Observability 或 Web Analytics 页面中找到并关闭。要启用分析，先单独决定并调整 CSP。
 
 ## 6. 第三方应用
 

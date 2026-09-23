@@ -26,6 +26,7 @@
     "conformance:precheck": "tsx --conditions=@char-pub/source spec/conformance/scripts/precheck.ts",
     "conformance:review": "tsx --conditions=@char-pub/source spec/conformance/scripts/review.ts",
     "dev": "tsx scripts/dev.ts",
+    "cf:rules": "tsx scripts/cf-rules.ts",
     "dev:smoke": "tsx scripts/dev-smoke.ts",
     "dev:login": "pnpm --filter @char-pub/server exec tsx --conditions=@char-pub/source scripts/dev-login.ts",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait postgres minio mailpit && docker compose -f infra/docker-compose.yml run --rm minio-init",

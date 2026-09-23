@@ -164,3 +164,14 @@
 
 - 四次推送的 ci（check + dev-env）、codeql、scorecard 全部成功；`check` 在 runner 上跑完整的 `pnpm ci:all`，`dev-env` 在全新 runner 上跑 README 的本地开发步骤。据此勾选 M0-1、M0-4。见 [evidence/2026-09-23-m0-ci.md](evidence/2026-09-23-m0-ci.md)。
 - M0-2 暂不勾选：用探测 PR（#1，已关闭）触发依赖审查，失败原因是仓库没有开启 Dependency graph；Renovate 只有配置，组织没有安装 App。都需要用户修改仓库或组织设置。
+
+### 2026-09-23 staging：web、公共资源域名与边缘规则
+
+- web 部署到 `https://staging.char.pub`（Workers Static Assets，自定义域名由 deploy 自动绑定），构建时指定 staging API 与 staging Turnstile site key；SPA 深层路由 200，安全响应头齐全，页面能调用 staging API。
+- R2 public 桶绑定 `staging-assets.char.pub`：匿名读取 200，CORS 只对 `https://staging.char.pub` 返回允许头，对其他来源不返回。
+- 用户同意后经 tool-bridge 的 Cloudflare API 工具操作账户：
+  - `pnpm cf:rules --apply` 写入方法白名单、登录限流、staging 与 production 两条源站校验规则，接管了手工建的 staging 规则；再次比较显示与仓库一致。
+  - 外部验证：经 Cloudflare 的 `/v1/search` 200；`TRACE` 405、`PROPFIND` 403；并发请求登录接口时出现 429（响应来自 Cloudflare 边缘或应用内 Better Auth 限流，GraphQL 防火墙事件在 Free 套餐下不可查询，无法区分）；直连 Railway 仍为 403。
+  - 创建 `char.pub staging` 与 `char.pub production` 两个 Turnstile widget，secret 存在本机 `~/.charpub-secrets/`，不进仓库。
+- 冒烟测试：web、api 相关 4 项全部通过；admin 相关 2 项等 Cloudflare Access。
+- 未解决：页面被插入 Cloudflare Web Analytics 的 beacon 脚本，被 CSP 拦下（只有一条控制台报错）。zone 的 RUM 已关闭，账户下的 Web Analytics 站点里也没有 char.pub，来源尚未查明。

@@ -900,3 +900,11 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 3. **校验**：`pnpm commons:check` 按依赖顺序模拟发布，并对每个 Creation 运行与 Registry 相同的发布校验（不把任何 namespace 视为同一权利人，因此每个 Creation 都必须允许再分发）；另外检查种子内容自己的约束（CC0、general、作者署名、不含链接与邮箱）。单元测试保证草稿始终通过，并保证 `REVIEW.md` 中的 digest 与当前内容一致。
 4. **发布前提**：用户按 `REVIEW.md` 逐条审校（原创性、适龄、措辞）并签名后才发布。示例 Character 的 digest 会在依赖被固定到真实 Release 之后改变。
 5. **发布途径**：`@commons` 是 system namespace，只能由 `bootstrap --system-namespace commons --member <邮箱>` 创建，并把指定的已注册用户加为 maintainer（写审计，可重复执行）。它没有 owner，因此不能改名或转让；普通用户注册不到这个名字，也不能在里面发布。maintainer 用个人 Token 按普通 API 发布，经过与其他作品相同的发布校验。
+
+### D-154 Cloudflare 边缘规则由仓库管理 — Accepted
+
+1. **规则即代码**：`char.pub` zone 上的 WAF 方法白名单、登录接口限流与源站校验头，以 JSON 的形式放在 `infra/cloudflare/`，由 `pnpm cf:rules` 同步（默认只读并比较差异，`--apply` 才写入）。脚本只替换本仓库管理的规则（`ref` 以 `charpub_` 开头），同一阶段中其他规则原样保留；部署初期在控制台手工建的 staging 源站校验规则被同内容的托管规则接管。
+2. **staging 与 production 共用一个 zone**：方法白名单与登录限流各一条，同时覆盖两个环境的主机名（Free 套餐的限流规则只能有一条）；源站校验按环境各一条，值分别来自本机的 `staging-` / `production-origin-auth-secret`，不进入仓库，也不在只读比较时离开本机。
+3. **限流参数**：`/v1/auth/*`，按 IP 与数据中心计数，10 秒内 20 次，超出阻断 10 秒（Free 套餐允许的最短窗口与时长）。应用内另有按账号、namespace、IP 哈希与访客的限流，边缘规则只挡最粗的滥用。
+4. **Turnstile**：为 char.pub 单独创建两个 widget（`char.pub staging` 只允许 `staging.char.pub`，`char.pub production` 只允许 `www.char.pub`，模式 managed），不复用账户里已有的 widget，因为它的 secret 可能已被其他项目使用。
+5. **调用方式**：Cloudflare 的写操作经由 tool-bridge 的 Cloudflare API 工具执行，本机不保存 Cloudflare token；R2 的对象与自定义域名仍用 wrangler。
