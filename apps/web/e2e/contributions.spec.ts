@@ -215,14 +215,12 @@ test("the author sees and edits the invite list", async ({ page }) => {
   api.on(`GET ${BASE}/contributions`, { body: { items: [], next_cursor: null } });
   interface Invite {
     user: string;
-    display_name: string | null;
     namespace: string | null;
     invited_at: string;
   }
   let invited: Invite[] = [
     {
       user: OTHER.id,
-      display_name: OTHER.name,
       namespace: `@${OTHER.namespace}`,
       invited_at: "2026-09-22T12:00:00.000Z",
     },
@@ -234,33 +232,35 @@ test("the author sees and edits the invite list", async ({ page }) => {
       ...invited,
       {
         user: NEW_USER,
-        display_name: null,
         namespace: null,
         invited_at: "2026-09-22T13:00:00.000Z",
       },
     ];
-    return { body: { user: NEW_USER, invited: true } };
+    return { body: { user: NEW_USER, namespace: null, invited: true } };
   });
   api.on(`DELETE ${BASE}/contribution-invites/${OTHER.id}`, () => {
     invited = invited.filter((i) => i.user !== OTHER.id);
-    return { body: { user: OTHER.id, invited: false } };
+    return { body: { user: OTHER.id, namespace: `@${OTHER.namespace}`, invited: false } };
   });
 
   await page.goto("/c/writer/mira/contributions");
   const list = page.getByRole("list", { name: "Invited users" });
   // 名单来自服务端：刷新页面后仍然能看到之前邀请的人。
+  // 只显示 @namespace，不显示登录方式带来的显示名。
   await expect(list.getByRole("listitem")).toHaveCount(1);
-  await expect(list.getByText("Other", { exact: true })).toBeVisible();
-  await expect(list.getByText("@other")).toBeVisible();
+  await expect(list.getByText("@other", { exact: true })).toBeVisible();
+  await expect(list.getByText("Other", { exact: true })).toHaveCount(0);
 
   await page.getByLabel("Invite a user by ID").fill(NEW_USER);
   await page.getByRole("button", { name: "Invite", exact: true }).click();
   await expect(list.getByRole("listitem")).toHaveCount(2);
   await expect(list.getByText(NEW_USER)).toBeVisible();
+  // 没有个人 namespace 的人显示中性的文案。
+  await expect(list.getByText("Unknown user", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Remove Other" }).click();
+  await page.getByRole("button", { name: "Remove @other" }).click();
   await expect(list.getByRole("listitem")).toHaveCount(1);
-  await expect(list.getByText("Other", { exact: true })).toHaveCount(0);
+  await expect(list.getByText("@other", { exact: true })).toHaveCount(0);
   expect(api.calls.filter((c) => c.method === "POST").map((c) => c.body)).toEqual([
     { user: NEW_USER },
   ]);

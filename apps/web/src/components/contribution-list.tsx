@@ -305,18 +305,18 @@ export function ContributionSettings({
             <ul aria-label="Invited users" className="space-y-1 text-sm">
               {invites.data.items.map((i) => (
                 <li key={i.user} className="flex flex-wrap items-center gap-2">
-                  {i.display_name ? <UserText text={i.display_name} /> : null}
+                  {/* 只显示 @namespace：服务端不返回 OAuth 显示名，它可能是真名。 */}
                   {i.namespace ? (
-                    <span className="text-muted-foreground">
-                      <UserText text={i.namespace} />
-                    </span>
-                  ) : null}
+                    <UserText text={i.namespace} />
+                  ) : (
+                    <span className="text-muted-foreground">Unknown user</span>
+                  )}
                   <span className="font-mono text-xs text-muted-foreground">{i.user}</span>
                   <Button
                     type="button"
                     size="sm"
                     variant="ghost"
-                    aria-label={`Remove ${i.display_name ?? i.user}`}
+                    aria-label={`Remove ${i.namespace ?? i.user}`}
                     onClick={() => void uninvite(i.user)}
                   >
                     Remove

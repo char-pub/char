@@ -629,12 +629,15 @@ export const ReleaseSourceSchema = z.strictObject({
 });
 export type ReleaseSource = z.infer<typeof ReleaseSourceSchema>;
 
-/** `GET …/contribution-invites`：只有作者可见。 */
+/**
+ * `GET …/contribution-invites`：只有作者可见。被邀请人只给用户 ID 与个人 namespace（`@slug`，
+ * 没有时为 null），不给登录方式带来的显示名：OAuth 的显示名可能是真名，与署名默认不用它的
+ * 规则一致。
+ */
 export const ContributionInvitesResponseSchema = z.strictObject({
   items: z.array(
     z.strictObject({
       user: z.string(),
-      display_name: z.string().nullable(),
       namespace: z.string().nullable(),
       invited_at: z.string(),
     }),

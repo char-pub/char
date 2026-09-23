@@ -152,7 +152,7 @@ describe("release source", () => {
 });
 
 describe("invite list", () => {
-  it("lists invited users with names and namespaces, only to the author", async () => {
+  it("lists invited users with their namespaces but no display names, only to the author", async () => {
     const { owner, path } = await h.setupCreation("inv", "courier", WORKING);
     const invitee = await h.createUser("invitee");
     expect((await h.asUser(invitee).post("/v1/namespaces", { slug: "invitee" })).status).toBe(201);
@@ -170,15 +170,13 @@ describe("invite list", () => {
     expect(r.headers.get("cache-control")).toBe("private, no-store");
     const body = (await r.json()) as { items: Record<string, unknown>[] };
     expect(body.items.map((i) => ({ ...i, invited_at: typeof i.invited_at }))).toEqual([
-      {
-        user: userTypeId(invitee),
-        display_name: "invitee",
-        namespace: "@invitee",
-        invited_at: "string",
-      },
-      { user: userTypeId(plain), display_name: "plain", namespace: null, invited_at: "string" },
+      { user: userTypeId(invitee), namespace: "@invitee", invited_at: "string" },
+      { user: userTypeId(plain), namespace: null, invited_at: "string" },
     ]);
+    // 不含邮箱，也不含 OAuth 显示名（测试账号的显示名就是 invitee / plain）。
     expect(JSON.stringify(body)).not.toContain("@example.test");
+    expect(body.items.some((i) => "display_name" in i)).toBe(false);
+    expect(JSON.stringify(body)).not.toContain('"plain"');
 
     // 被邀请的人与其他登录用户都看不到名单；匿名请求要求先登录。
     for (const who of [invitee, plain]) {
@@ -231,7 +229,7 @@ describe("inviting by @namespace", () => {
     expect(await json(again)).toEqual(body);
     const list = await json(await h.asUser(owner).get(`${path}/contribution-invites`));
     expect(list.items).toEqual([
-      expect.objectContaining({ user: userTypeId(kate), namespace: "@kate", display_name: "kate" }),
+      { user: userTypeId(kate), namespace: "@kate", invited_at: expect.any(String) },
     ]);
     expect((await submit(kate)).status).toBe(201);
   });
