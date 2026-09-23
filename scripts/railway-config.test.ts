@@ -105,6 +105,10 @@ describe.each(["staging", "production"])("railway definition (%s)", (environment
       for (const group of p.optionalGroups) {
         const present = keys(group).filter((k) => vars.includes(k));
         expect([0, keys(group).length], `${name}: partial group`).toContain(present.length);
+        // 可选组在人工设置密钥之前必须整体为空：组里有一个字面值，进程就会因为“只配了一部分”
+        // 而拒绝启动。
+        const literal = present.filter((k) => r.get(name)?.variables?.[k]?.type === "literal");
+        expect(literal, `${name}: literal value in an all-or-none group`).toEqual([]);
       }
     }
   });

@@ -86,12 +86,14 @@ export default defineRailway((ctx, project) => {
     GOOGLE_CLIENT_ID: preserve(),
     GOOGLE_CLIENT_SECRET: preserve(),
   };
+  // GitHub 集成与访客验证都是“要么全配、要么全不配”：只配一部分时进程拒绝启动。所以这两组里
+  // 即使是可以写死的值（例如 OIDC audience 就是 API 地址）也留给人工，和同组的密钥一起设置。
   const githubApp = {
     GITHUB_APP_ID: preserve(),
     GITHUB_APP_PRIVATE_KEY: preserve(),
     GITHUB_WEBHOOK_SECRET: preserve(),
     GITHUB_WEBHOOK_SECRET_PREVIOUS: preserve(),
-    OIDC_AUDIENCE: apiOrigin,
+    OIDC_AUDIENCE: preserve(),
   };
   const guests = {
     TURNSTILE_SECRET_KEY: preserve(),
