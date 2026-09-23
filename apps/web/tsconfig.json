@@ -17,7 +17,6 @@
   "references": [
     { "path": "../../packages/core" },
     { "path": "../../packages/assembler" },
-    { "path": "../../packages/contracts" },
-    { "path": "../../packages/ccv3" }
+    { "path": "../../packages/contracts" }
   ]
 }
