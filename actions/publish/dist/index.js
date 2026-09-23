@@ -50974,7 +50974,6 @@ var ContributionInvitesResponseSchema = external_exports.strictObject({
   items: external_exports.array(
     external_exports.strictObject({
       user: external_exports.string(),
-      display_name: external_exports.string().nullable(),
       namespace: external_exports.string().nullable(),
       invited_at: external_exports.string()
     })

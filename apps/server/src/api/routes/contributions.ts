@@ -13,7 +13,7 @@
  * - 拒绝 / 撤回：改状态并写审计。拒绝理由同时存进 Contribution，只在详情里返回：
  *   详情只有提交者与目标 namespace 的成员能看到，列表不带理由。
  * - 邀请名单（policy 为 invited 时）：作者按用户 ID 或对方的 @namespace 邀请，名单只有作者
- *   可见。没有公开的“按名字查用户”接口，按 namespace 解析账号只发生在作者邀请时，并且限流。
+ *   可见，只列出用户 ID 与 @namespace，不含 OAuth 显示名。没有公开的“按名字查用户”接口，按 namespace 解析账号只发生在作者邀请时，并且限流。
  *
  * Agent 提交的 Contribution 必须标记为 agent：请求体可以主动声明，用 Agent Token 提交的
  * 一律是 agent，客户端不能把它改回 false。
@@ -673,7 +673,7 @@ export function register(app: Hono<Env>): void {
     return c.json(res);
   }
 
-  // 邀请名单只有作者可见：列出用户 ID、显示名与 namespace。
+  // 邀请名单只有作者可见：列出用户 ID 与 @namespace。不返回 OAuth 显示名，它可能是真名。
   route(app, {
     method: "get",
     path: INVITES,
@@ -696,7 +696,6 @@ export function register(app: Hono<Env>): void {
           const u = users.get(r.userId);
           return {
             user: encodeId("user", r.userId),
-            display_name: u?.display_name ?? null,
             namespace: u?.namespace ?? null,
             invited_at: r.createdAt.toISOString(),
           };
