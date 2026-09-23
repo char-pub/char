@@ -29,52 +29,52 @@
 - [ ] **M1-1** 标识符语法与解析（namespace / name / label / fragment_id / creation_ref / local_ref / full_ref），含所有边界用例。验证：表驱动单元测试。依据：canonical-model §2、D-115。
 - [ ] **M1-2** Canonical Model 的 zod schema 覆盖 canonical-model §3～§13 的全部类型，包括 v0 只有模型的类型；导出 JSON Schema 到 `spec/schema/`。验证：单元测试 + schema 快照审阅。覆盖：SC-1。
 - [ ] **M1-3** canonicalize：NFC、行尾归一、省略默认值、JCS；`fragment.digest` 与 `semantic_digest` 按 canonical-model §14 计算；输出 `sha256:<hex>`。验证：单元测试 + fast-check 性质测试（键序、缩进、默认值、NFC 等价输入得到相同 digest）。覆盖：SC-2。
-- [ ] **M1-4** `char check` 规则：未知占位符、`{{{{` 转义、只能 override `stable: true` 的 target、各类型的最小要求（§3.1）、必需 slot。验证：单元测试。覆盖：SC-4 的一部分。
+- [x] **M1-4** `char check` 规则：未知占位符、`{{{{` 转义、只能 override `stable: true` 的 target、各类型的最小要求（§3.1）、必需 slot。验证：单元测试。覆盖：SC-4 的一部分。
 
 ### M2 Core：Resolver、Context IR、发布校验、Diff、Contribution 合并
 
 - [ ] **M2-1** Resolver → Context IR：early binding、params、select、override 及其优先级、instance_key、participant / late slot 的 key、排序规则（IR §6.1）、EffectiveMeta 汇总（rating 取最大值、license、attribution）、graph.removed、diagnostics。验证：一致性测试集中的 Resolver 用例做字节级比对。覆盖：SC-2、SC-3、SC-13。
 - [ ] **M2-2** 发布校验 §12.1 的 9 条规则，另加 `blocked_digests`；每条规则都有反例。验证：单元测试 + 一致性测试集中的 publish 用例。覆盖：SC-4、UC-12、UC-7 反例。
-- [ ] **M2-3** Context Diff（IR §13）：added / removed / modified 字段、origin_changes、meta_changes，rating 或 license 变化要打上高亮标记。验证：单元测试。覆盖：SC-7、UC-3。
-- [ ] **M2-4** Contribution 三方合并（canonical-model §13）：按键比较，服务端计算 `sensitive`，已应用的变更跳过，冲突时报出冲突对象，同一个 Contribution 内不允许重复的键，AssetSlot 与其 variant 的变更视为同一个键。验证：表驱动测试 + 幂等性质测试。覆盖：SC-6、UC-5。
+- [x] **M2-3** Context Diff（IR §13）：added / removed / modified 字段、origin_changes、meta_changes，rating 或 license 变化要打上高亮标记。验证：单元测试。覆盖：SC-7、UC-3。
+- [x] **M2-4** Contribution 三方合并（canonical-model §13）：按键比较，服务端计算 `sensitive`，已应用的变更跳过，冲突时报出冲突对象，同一个 Contribution 内不允许重复的键，AssetSlot 与其 variant 的变更视为同一个键。验证：表驱动测试 + 幂等性质测试。覆盖：SC-6、UC-5。
 - [ ] **M2-5** 一致性测试集：IR §15 的 13 个用例加 9 个发布反例，在 Node、浏览器和 workerd 三种运行时中全部通过，且输出字节一致。验证：`pnpm test:conformance`。覆盖：SC-2、SC-3。
 
 ### M3 CCv3 与 Assembler
 
-- [ ] **M3-1** CCv3 / PNG 导入（canonical-model §15）：包括 ID 稳定性判定、`stable: false` 的派生临时 ID 与碰撞处理、只记录 policy 字段名、Import Report。验证：单元测试 + 样本集 + fuzz。覆盖：SC-8、UC-2。
+- [x] **M3-1** CCv3 / PNG 导入（canonical-model §15）：包括 ID 稳定性判定、`stable: false` 的派生临时 ID 与碰撞处理、只记录 policy 字段名、Import Report。验证：单元测试 + 样本集 + fuzz。覆盖：SC-8、UC-2。
 - [ ] **M3-2** CCv3 导出与 Loss Report（IR §14），以及 `extensions.char_pub`。验证：往返用例（一致性测试集用例 10）。覆盖：SC-8。
 - [ ] **M3-3** 参考 Assembler：locale 回退、late binding、visibility（narrator 与 per-agent）、activation（always / keyword / semantic 降级 / manual）、budget（pinned 超出预算时报错，不截断 fragment）、Session Overlay、Trace。验证：一致性测试集的 Assembler 用例（只比较 decision / reason）。覆盖：SC-3、SC-7。
-- [ ] **M3-4** 浏览器端 token 估算：结果注明使用的 tokenizer；只是估算时标记 `estimated: true`。验证：单元测试。覆盖：SC-7。
+- [x] **M3-4** 浏览器端 token 估算：结果注明使用的 tokenizer；只是估算时标记 `estimated: true`。验证：单元测试。覆盖：SC-7。
 
 ### M4 服务端基础
 
-- [ ] **M4-1** 数据库 schema 与迁移（architecture §5）：应用使用非 owner 角色；`audit_log` 对应用只有 INSERT / SELECT 权限。验证：集成测试（UPDATE / DELETE 被拒）。覆盖：SC-12。
+- [x] **M4-1** 数据库 schema 与迁移（architecture §5）：应用使用非 owner 角色；`audit_log` 对应用只有 INSERT / SELECT 权限。验证：集成测试（UPDATE / DELETE 被拒）。覆盖：SC-12。
 - [ ] **M4-2** Better Auth：GitHub / Discord / Google 登录；`__Host-` cookie；Origin 白名单；封禁后立即吊销全部会话和 Token；个人 Token（只存哈希，带 scope）。验证：集成测试。覆盖：SC-9、SC-12。
 - [ ] **M4-3** 集中式授权 `authorize()`，并用 lint 规则保证每个路由都经过它；自动生成越权测试矩阵（他人资源、匿名访问 → 404 / 403）。验证：安全测试。覆盖：SC-9、UC-7。
-- [ ] **M4-4** CAS 存储层：写入前重算哈希；按 public / private 分桶；只签发短期 URL；worker 负责把对象复制到 public 桶。验证：集成测试（MinIO）。覆盖：SC-9。
-- [ ] **M4-5** pg-boss 任务：业务写入与入队在同一事务内（或采用 outbox）；任务幂等（`singletonKey`）；失败重试与死信。验证：集成测试（中途失败时两边都不落库或都落库）。
+- [x] **M4-4** CAS 存储层：写入前重算哈希；按 public / private 分桶；只签发短期 URL；worker 负责把对象复制到 public 桶。验证：集成测试（MinIO）。覆盖：SC-9。
+- [x] **M4-5** pg-boss 任务：业务写入与入队在同一事务内（或采用 outbox）；任务幂等（`singletonKey`）；失败重试与死信。验证：集成测试（中途失败时两边都不落库或都落库）。
 - [ ] **M4-6** 源站校验中间件、安全响应头、请求体上限、应用内限流（存储在 Postgres）、kill switch 中间件。验证：集成测试。覆盖：SC-15、UC-10。
 
 ### M5 Registry 功能
 
-- [ ] **M5-1** Namespace：注册、保留名、改名后旧名永久重定向且不可被重新注册。验证：集成测试。覆盖：UC-11。
-- [ ] **M5-2** Creation 草稿（乐观锁）→ Revision → Release 发布（带 Idempotency-Key；同一 label 相同内容幂等、不同内容返回 409）→ 写入 lock、reverse_edges、release_fragments、blob_refs。验证：集成测试。覆盖：SC-1、SC-4、UC-1。
-- [ ] **M5-3** 读取与下载 API：tombstoned 返回 410 和原因；yanked 返回 warning；public IR 跳转到 CDN；private 需要鉴权，否则 404；CCv3 lazy build（202 + Retry-After）。验证：集成测试。覆盖：SC-5、SC-9、UC-1。
-- [ ] **M5-4** 搜索（D-088 / V-8 方案）：mature 过滤在服务端强制；CJK 查询可用，包括一到两个字的查询。验证：集成测试 + 中文、日文样例。覆盖：SC-13、UC-6。
-- [ ] **M5-5** yank 与 tombstone 级联：预览影响范围、在一个事务中改状态、删除副本、清除 CDN 缓存（本地用替身）、`blocked_digests` 阻止重新发布。验证：集成测试（A → B → C 依赖链）。覆盖：SC-5、UC-8。
+- [x] **M5-1** Namespace：注册、保留名、改名后旧名永久重定向且不可被重新注册。验证：集成测试。覆盖：UC-11。
+- [x] **M5-2** Creation 草稿（乐观锁）→ Revision → Release 发布（带 Idempotency-Key；同一 label 相同内容幂等、不同内容返回 409）→ 写入 lock、reverse_edges、release_fragments、blob_refs。验证：集成测试。覆盖：SC-1、SC-4、UC-1。
+- [x] **M5-3** 读取与下载 API：tombstoned 返回 410 和原因；yanked 返回 warning；public IR 跳转到 CDN；private 需要鉴权，否则 404；CCv3 lazy build（202 + Retry-After）。验证：集成测试。覆盖：SC-5、SC-9、UC-1。
+- [x] **M5-4** 搜索（D-088 / V-8 方案）：mature 过滤在服务端强制；CJK 查询可用，包括一到两个字的查询。验证：集成测试 + 中文、日文样例。覆盖：SC-13、UC-6。
+- [x] **M5-5** yank 与 tombstone 级联：预览影响范围、在一个事务中改状态、删除副本、清除 CDN 缓存（本地用替身）、`blocked_digests` 阻止重新发布。验证：集成测试（A → B → C 依赖链）。覆盖：SC-5、UC-8。
 
 ### M6 上传管线与 Contribution
 
-- [ ] **M6-1** 上传状态机：按 magic bytes 识别类型、像素和大小上限、剥离 EXIF、转 webp 和缩略图、拒绝 SVG 和 polyglot 文件；只有 `ready` 可被引用。验证：集成测试 + 恶意样本集。覆盖：SC-11、UC-9。
-- [ ] **M6-2** `CsamScanner` 接口：v0 默认 `noop` 实现（记录“未扫描”，D-121）；命中路径（quarantined、锁定账号、证据写入 evidence 桶、创建事件）用测试替身验证；员工手动标记 CSAM 也走同一条路径；存量补扫任务就位。验证：集成测试。PhotoDNA 的真实接入在审核通过后完成（DOR X-9，不阻塞 v0）。覆盖：SC-11、UC-9。
-- [ ] **M6-3** Native → Native Contribution 的完整 API：按 contribution_policy 授权、访客提交、`agent: true` 标记与过滤、限流、接受时重新校验 License 与 `rights_ack`、写入 provenance / contributors。验证：集成测试。覆盖：SC-6、UC-5、UC-10。
+- [x] **M6-1** 上传状态机：按 magic bytes 识别类型、像素和大小上限、剥离 EXIF、转 webp 和缩略图、拒绝 SVG 和 polyglot 文件；只有 `ready` 可被引用。验证：集成测试 + 恶意样本集。覆盖：SC-11、UC-9。
+- [x] **M6-2** `CsamScanner` 接口：v0 默认 `noop` 实现（记录“未扫描”，D-121）；命中路径（quarantined、锁定账号、证据写入 evidence 桶、创建事件）用测试替身验证；员工手动标记 CSAM 也走同一条路径；存量补扫任务就位。验证：集成测试。PhotoDNA 的真实接入在审核通过后完成（DOR X-9，不阻塞 v0）。覆盖：SC-11、UC-9。
+- [x] **M6-3** Native → Native Contribution 的完整 API：按 contribution_policy 授权、访客提交、`agent: true` 标记与过滤、限流、接受时重新校验 License 与 `rights_ack`、写入 provenance / contributors。验证：集成测试。覆盖：SC-6、UC-5、UC-10。
 
 ### M7 GitHub Source、CLI 与 Action
 
 - [ ] **M7-1** GitHub App 的 webhook：验签、按 delivery 去重、入队；Source Binding 按数字 ID 绑定；定期对账。验证：集成测试（用录制的 payload）。覆盖：SC-10。
 - [ ] **M7-2** OIDC 发布（security §4.4 的 10 条清单）：校验 iss / aud / 签名 / exp / jti / event_name，commit 必须等于 `sha`；按 `repository_id` + `repository_owner_id` + ref 匹配 binding；未安装 App 时拒绝（D-117）；Registry 在该 commit 重新读取源码并重算 digest。验证：本地 JWKS 表驱动测试，覆盖改名劫持、`pull_request_target`、重放、摘要不一致等反例。覆盖：SC-10、UC-4。
 - [ ] **M7-2b** 仓库 transfer 后 binding 冻结（D-118）：冻结期间发布被拒并通知作者；作者确认后可以重新绑定或换用新仓库；全程写审计。验证：集成测试（用录制的 `repository.transferred` payload 和对账场景）。覆盖：SC-10、UC-4。
-- [ ] **M7-3** `char` CLI：init / check --fix（生成稳定 ID 并写回）/ build / preview / login（个人 Token）/ publish。验证：CLI 集成测试。覆盖：SC-1。
+- [x] **M7-3** `char` CLI：init / check --fix（生成稳定 ID 并写回）/ build / preview / login（个人 Token）/ publish。验证：CLI 集成测试。覆盖：SC-1。
 - [ ] **M7-4** `char-pub/publish` Action：在 staging 上用一个真实测试仓库完成一次发布。验证：Action 运行记录 + Registry 查询。前置：DOR B-3。覆盖：UC-4。
 
 ### M8 前端

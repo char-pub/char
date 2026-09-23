@@ -817,3 +817,15 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 6. **token 与会话**：验证 token 与会话 token 都是 32 字节随机数，库里只存 sha256；验证 token 30 分钟过期、一次性。访客会话 cookie `__Host-charpub.guest`，30 天固定过期、不续期。
 7. **身份优先级**：个人 Token > 登录会话 > 访客 cookie。
 8. **停用与开关**：停用的访客除退出外一律 403 `guest.disabled`，重新验证不会解除停用；`guest_access` 开关关闭时验证与访客提交都返回 503。每次确认写一条 `guest.verified` 审计。
+
+### D-144 web 接入 Registry API 的实现取值 — Accepted
+
+1. **账号接口**：`GET /v1/me` 未登录返回 401；`GET /v1/me/creations` 返回当前用户所在 namespace 的全部作品（包括没有发布的草稿），最多 500 条；`PUT /v1/me/settings` 只接受浏览器会话，个人 Token 返回 `token.not_allowed`。开启成人内容必须带 `confirm_adult: true`，关闭时清空确认时间，每次修改写审计。
+2. **CORS**：`/v1/*` 只放行受信任的 web 来源，允许携带 cookie；允许的请求头为 `content-type`、`if-match`、`idempotency-key`，暴露 `etag`、`retry-after`，预检缓存 600 秒。
+3. **凭据**：web 只依赖 HttpOnly cookie，localStorage 不存任何凭据。读取 public IR 时不带凭据（会跨域重定向到 CDN），private 带凭据。
+4. **API 地址**：`VITE_API_BASE_URL` 为空时与页面同源，本地由 Vite 的 dev / preview 代理转发 `/v1`；生产默认 `https://api.char.pub`。
+5. **编辑器第一层**除名字、头像等字段外，还有一个“正文”字段（角色的 Description、世界的 About this world、世界书的第一条条目），因为每种类型至少需要一个对应的 fragment，不通过检查的草稿服务端不保存。自动保存 800ms 防抖，带 If-Match；遇到 409 停止自动保存并提示重新加载。
+6. **发布**：Idempotency-Key 按（revision、label、visibility）生成，重试时复用；Publish Report 每秒轮询一次，最多 90 次。
+7. **成人内容的直接链接**：搜索与浏览在服务端过滤；直接打开 mature / explicit 作品的链接时，由前端先遮挡，用户确认后才显示。读取接口本身不拦截，因为 public IR 本来就放在 CDN 上，拦截接口起不到作用。
+8. **默认作者**：新建 Creation 时，初始草稿的 `authors` 为创建者（显示名，没有则用 `@namespace`），作者之后可以修改；导入的草稿保留卡片中的作者。authors 为空时，作品页显示发布者 `@namespace`。
+9. **CSP**：`connect-src` 包含 API、`assets` / `staging-assets` 域名和 R2 账号端点（部署前用通配，拿到账号端点后收窄）；头像只显示首字母，不为第三方头像放开 `img-src`。

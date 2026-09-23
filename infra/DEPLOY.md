@@ -54,6 +54,8 @@ railway up --service api           # 部署
   - worker：public / private / uploads 读写，另一个只写 evidence 的 token；
   - admin：删除与读取元数据。
 - CORS（uploads 桶）：只允许 `https://www.char.pub`（staging：`https://staging.char.pub`）的 `PUT`，允许 `Content-Type`、`Content-Length`、`x-amz-checksum-sha256` 头。
+- CORS（public 桶）：允许同一来源的 `GET`、`HEAD`，不带凭据。浏览器会直接从 `assets` 域名读取 Context IR（公开下载会重定向过去）。
+- CORS（private 桶）：允许同一来源的 `GET`。私有内容用 API 签发的短期 URL 读取，URL 指向 R2 的账号端点 `<account>.r2.cloudflarestorage.com`。拿到账号端点后，把 web 的 CSP（`apps/web/public/_headers` 的 `connect-src`）从 `*.r2.cloudflarestorage.com` 收窄到这个具体域名。
 
 ```sh
 wrangler r2 bucket create charpub-staging-public   # 需用户同意（会产生费用）
