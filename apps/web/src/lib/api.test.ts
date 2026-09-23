@@ -103,6 +103,30 @@ describe("contributions", () => {
   });
 });
 
+describe("contribution invites", () => {
+  it("invites by @namespace and removes an invite by @namespace", async () => {
+    const r = recorder([
+      json({ user: "usr_01j00000000000000000000001", namespace: "@kate", invited: true }),
+      json({ user: "usr_01j00000000000000000000001", namespace: "@kate", invited: false }),
+      json({ code: "contribution.invite_unknown_user", status: 422, title: "", type: "" }, 422),
+    ]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect(await client.inviteByNamespace("djj", "alice", "@kate")).toEqual({
+      user: "usr_01j00000000000000000000001",
+      namespace: "@kate",
+      invited: true,
+    });
+    expect(r.calls[0]?.url).toBe("/v1/creations/@djj/alice/contribution-invites");
+    expect(r.calls[0]?.init.method).toBe("POST");
+    expect(r.calls[0]?.init.body).toBe(JSON.stringify({ namespace: "@kate" }));
+    await client.uninvite("djj", "alice", "@kate");
+    expect(r.calls[1]?.url).toBe("/v1/creations/@djj/alice/contribution-invites/%40kate");
+    const err = await client.inviteByNamespace("djj", "alice", "nobody").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).code).toBe("contribution.invite_unknown_user");
+  });
+});
+
 describe("draft helpers", () => {
   it("writes the level-0 fields into the authoring form", () => {
     let w: Working = { display_name: "x" };

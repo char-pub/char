@@ -434,10 +434,28 @@ export const ContributionSettingsRequestSchema = z.strictObject({
   policy: z.enum(["anyone", "signed-in", "invited", "closed"]),
 });
 
-/** policy 为 invited 时，邀请或取消邀请一个用户（用户 ID，`usr_…`）。 */
-export const ContributionInviteRequestSchema = z.strictObject({
+/** 邀请时填写的个人 namespace：`@slug` 或 `slug`。 */
+export const InviteNamespaceSchema = z
+  .string()
+  .regex(new RegExp(`^@?${NAMESPACE_RE.source.slice(1)}`), "not a namespace");
+
+/**
+ * policy 为 invited 时邀请一个用户，二选一：`user` 是用户 ID（`usr_…`），`namespace` 是对方的
+ * 个人 namespace（`@slug` 或 `slug`，改过名的旧名同样可以）。按 namespace 邀请只有作品的成员
+ * 能用，只会解析出个人 namespace 的 owner；不提供单独的“按名字查用户”接口，免得被用来枚举账号。
+ */
+export const ContributionInviteRequestSchema = z.union([
+  z.strictObject({ user: z.string().min(1).max(64) }),
+  z.strictObject({ namespace: InviteNamespaceSchema }),
+]);
+
+/** 邀请或取消邀请的结果：被邀请人的用户 ID 与个人 namespace（`@slug`，没有时为 null）。 */
+export const ContributionInviteResponseSchema = z.strictObject({
   user: z.string(),
+  namespace: z.string().nullable(),
+  invited: z.boolean(),
 });
+export type ContributionInviteResult = z.infer<typeof ContributionInviteResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // 经验证的访客

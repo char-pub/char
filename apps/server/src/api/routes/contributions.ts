@@ -12,6 +12,8 @@
  *   Release 的贡献者名单。
  * - 拒绝 / 撤回：改状态并写审计。拒绝理由同时存进 Contribution，只在详情里返回：
  *   详情只有提交者与目标 namespace 的成员能看到，列表不带理由。
+ * - 邀请名单（policy 为 invited 时）：作者按用户 ID 或对方的 @namespace 邀请，名单只有作者
+ *   可见。没有公开的“按名字查用户”接口，按 namespace 解析账号只发生在作者邀请时，并且限流。
  *
  * Agent 提交的 Contribution 必须标记为 agent：请求体可以主动声明，用 Agent Token 提交的
  * 一律是 agent，客户端不能把它改回 false。
@@ -19,9 +21,11 @@
 import {
   AcceptContributionRequestSchema,
   ContributionInviteRequestSchema,
+  type ContributionInviteResponseSchema,
   ContributionQuerySchema,
   ContributionSettingsRequestSchema,
   CreateContributionRequestSchema,
+  NamespaceSlugSchema,
   RejectContributionRequestSchema,
 } from "@char-pub/contracts";
 import {
@@ -36,6 +40,7 @@ import {
 } from "@char-pub/core";
 import { and, asc, eq } from "drizzle-orm";
 import type { Hono } from "hono";
+import type { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
 import type { Principal, Resource } from "../../authz/authorize.js";
 import {
@@ -45,6 +50,7 @@ import {
   contributions,
   creations,
   guests,
+  namespaceMembers,
   revisions,
 } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
@@ -71,7 +77,7 @@ import {
   withContributor,
 } from "../../registry/contributions.js";
 import { decodeId, encodeId } from "../../registry/ids.js";
-import { type CreationContext, lookupCreation } from "../../registry/lookup.js";
+import { type CreationContext, lookupCreation, lookupNamespace } from "../../registry/lookup.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
 import { CREATION_PATH } from "./drafts.js";
 
@@ -150,6 +156,36 @@ async function authorFields(c: AppContext, p: Principal) {
     return { authorUserId: null, authorGuestId: g.guestId };
   }
   return null;
+}
+
+type InviteTarget = { user: string } | { namespace: string };
+
+/**
+ * 被邀请的用户：按用户 ID，或者按个人 namespace 找到它的 owner（旧名跟随改名）。
+ * org 与 system namespace 不属于某一个人，按找不到处理。
+ */
+async function inviteeOf(c: AppContext, target: InviteTarget): Promise<{ id: string } | null> {
+  const { db } = c.var.services;
+  if ("user" in target) {
+    const userId = decodeId("user", target.user);
+    if (!userId) return null;
+    const [row] = await db
+      .select({ id: authUser.id })
+      .from(authUser)
+      .where(eq(authUser.id, userId));
+    return row ?? null;
+  }
+  const slug = target.namespace.replace(/^@/, "");
+  if (!NamespaceSlugSchema.safeParse(slug).success) return null;
+  let found = await lookupNamespace(db, slug, c.var.principal);
+  if (found.kind === "redirect") found = await lookupNamespace(db, found.to, c.var.principal);
+  if (found.kind !== "found" || found.ns.kind !== "user") return null;
+  const [owner] = await db
+    .select({ id: namespaceMembers.userId })
+    .from(namespaceMembers)
+    .where(and(eq(namespaceMembers.namespaceId, found.ns.id), eq(namespaceMembers.role, "owner")))
+    .limit(1);
+  return owner ?? null;
 }
 
 export function register(app: Hono<Env>): void {
@@ -571,15 +607,34 @@ export function register(app: Hono<Env>): void {
     };
   };
 
-  /** 修改邀请名单并写审计；被邀请的用户必须存在。 */
-  async function updateInvite(c: AppContext, ctx: CreationContext, user: string, invite: boolean) {
+  /**
+   * 修改邀请名单并写审计。被邀请人用用户 ID 或个人 namespace 指定，必须存在；找不到用户、
+   * namespace 不存在或不是个人 namespace 时返回同一个错误。邀请按操作者限流，免得有人用
+   * 邀请名单批量把 namespace 解析成账号。
+   */
+  async function updateInvite(
+    c: AppContext,
+    ctx: CreationContext,
+    target: InviteTarget,
+    invite: boolean,
+  ) {
     const { db, clock } = c.var.services;
-    const userId = decodeId("user", user);
-    const [row] = userId
-      ? await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.id, userId))
-      : [];
-    if (!row) return problem(c, 422, "contribution.invite_unknown_user");
     const p = c.var.principal;
+    if (invite && p.kind === "user") {
+      const r = await hit(
+        db,
+        `invite:user:${p.user_id}`,
+        RATE_LIMITS.contributionInvite,
+        clock.now(),
+      );
+      if (!r.allowed) {
+        const res = problem(c, 429, "rate_limited", "too many invitations, try again later");
+        res.headers.set("retry-after", String(r.retryAfterSeconds));
+        return res;
+      }
+    }
+    const row = await inviteeOf(c, target);
+    if (!row) return problem(c, 422, "contribution.invite_unknown_user");
     await db.transaction(async (tx) => {
       if (invite) {
         await tx
@@ -609,7 +664,13 @@ export function register(app: Hono<Env>): void {
         after: { user: row.id },
       });
     });
-    return c.json({ user, invited: invite });
+    const display = (await userDisplaysOf(db, [row.id])).get(row.id);
+    const res: z.input<typeof ContributionInviteResponseSchema> = {
+      user: encodeId("user", row.id),
+      namespace: display?.namespace ?? null,
+      invited: invite,
+    };
+    return c.json(res);
   }
 
   // 邀请名单只有作者可见：列出用户 ID、显示名与 namespace。
@@ -649,13 +710,17 @@ export function register(app: Hono<Env>): void {
     path: INVITES,
     body: ContributionInviteRequestSchema,
     authorize: settingsAuthorize,
-    handler: (c, { body, loaded: ctx }) => updateInvite(c, ctx, body.user, true),
+    handler: (c, { body, loaded: ctx }) => updateInvite(c, ctx, body, true),
   });
 
+  // 取消邀请：路径里可以是用户 ID，也可以是 `@namespace`。
   route(app, {
     method: "delete",
     path: `${INVITES}/:user`,
     authorize: settingsAuthorize,
-    handler: (c, { loaded: ctx }) => updateInvite(c, ctx, param(c, "user"), false),
+    handler: (c, { loaded: ctx }) => {
+      const who = param(c, "user");
+      return updateInvite(c, ctx, who.startsWith("@") ? { namespace: who } : { user: who }, false);
+    },
   });
 }

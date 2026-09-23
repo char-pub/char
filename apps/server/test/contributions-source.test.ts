@@ -4,8 +4,9 @@
  */
 import { canonicalFragment } from "@char-pub/core";
 import { and, eq } from "drizzle-orm";
+import { uuidv7 } from "uuidv7";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { creations, releases } from "../src/db/schema/index.js";
+import { creations, namespaces, releases } from "../src/db/schema/index.js";
 import {
   type ContributionHarness,
   createContributionHarness,
@@ -185,6 +186,142 @@ describe("invite list", () => {
       expect(r.status).toBe(403);
     }
     expect((await h.anonymous().get(`${path}/contribution-invites`)).status).toBe(401);
+  });
+});
+
+describe("inviting by @namespace", () => {
+  let owner: string;
+  let path: string;
+  let revision: string;
+  let kate: string;
+
+  beforeAll(async () => {
+    ({ owner, path, revision } = await h.setupCreation("byns", "courier", WORKING));
+    kate = await h.createUser("kate");
+    expect((await h.asUser(kate).post("/v1/namespaces", { slug: "kate" })).status).toBe(201);
+    const r = await h.asUser(owner).put(`${path}/contribution-settings`, { policy: "invited" });
+    expect(r.status).toBe(200);
+  });
+
+  const submit = (who: string) =>
+    h.asUser(who).post(`${path}/contributions`, {
+      title: "Tweak",
+      base_revision: revision,
+      changes: [
+        {
+          on: "fragment",
+          op: "modify",
+          id: "likes",
+          base_digest: canonicalFragment(frag("likes", "{{self}} likes tea.")).digest,
+          after: frag("likes", "{{self}} likes cocoa."),
+        },
+      ],
+      rights_ack: ACK,
+    });
+
+  it("resolves a personal namespace to its owner and lists the invitee with it", async () => {
+    expect((await submit(kate)).status).toBe(403);
+    const r = await h.asUser(owner).post(`${path}/contribution-invites`, { namespace: "@kate" });
+    expect(r.status).toBe(200);
+    const body = await json(r);
+    expect(body).toEqual({ user: userTypeId(kate), namespace: "@kate", invited: true });
+    expect(JSON.stringify(body)).not.toContain("@example.test");
+    // 不带 `@` 同样可以；重复邀请不会重复记录。
+    const again = await h.asUser(owner).post(`${path}/contribution-invites`, { namespace: "kate" });
+    expect(await json(again)).toEqual(body);
+    const list = await json(await h.asUser(owner).get(`${path}/contribution-invites`));
+    expect(list.items).toEqual([
+      expect.objectContaining({ user: userTypeId(kate), namespace: "@kate", display_name: "kate" }),
+    ]);
+    expect((await submit(kate)).status).toBe(201);
+  });
+
+  it("follows a renamed namespace and removes an invite by @namespace", async () => {
+    const renamed = await h.asUser(kate).patch("/v1/namespaces/kate", { new_slug: "kate-writes" });
+    expect(renamed.status).toBe(200);
+    const byOld = await h.asUser(owner).delete(`${path}/contribution-invites/@kate`);
+    expect(byOld.status).toBe(200);
+    expect(await json(byOld)).toEqual({
+      user: userTypeId(kate),
+      namespace: "@kate-writes",
+      invited: false,
+    });
+    expect((await submit(kate)).status).toBe(403);
+    const byNew = await h
+      .asUser(owner)
+      .post(`${path}/contribution-invites`, { namespace: "@kate-writes" });
+    expect(await json(byNew)).toMatchObject({ user: userTypeId(kate), invited: true });
+    const encoded = await h.asUser(owner).delete(`${path}/contribution-invites/%40kate-writes`);
+    expect(await json(encoded)).toMatchObject({ invited: false });
+  });
+
+  it("does not resolve unknown, organisation or system namespaces", async () => {
+    await t.app.db
+      .insert(namespaces)
+      .values({ id: uuidv7(), slug: "some-org", kind: "org", createdBy: owner });
+    for (const namespace of ["@nobody", "@some-org", "@char"]) {
+      const r = await h.asUser(owner).post(`${path}/contribution-invites`, { namespace });
+      expect(r.status).toBe(422);
+      expect(await json(r)).toMatchObject({ code: "contribution.invite_unknown_user" });
+    }
+    for (const who of ["@nobody", "@Bad_Slug", "usr_bogus"]) {
+      const r = await h.asUser(owner).delete(`${path}/contribution-invites/${who}`);
+      expect(r.status).toBe(422);
+    }
+  });
+
+  it("validates the request body", async () => {
+    for (const body of [
+      {},
+      { namespace: "Kate" },
+      { namespace: "@@kate" },
+      { namespace: "kate", user: userTypeId(kate) },
+      { user: "" },
+    ]) {
+      const r = await h.asUser(owner).post(`${path}/contribution-invites`, body);
+      expect(r.status).toBe(422);
+      expect(await json(r)).toMatchObject({ code: "request.invalid" });
+    }
+  });
+
+  it("only lets members invite, and hides creations the caller cannot see", async () => {
+    const stranger = await h.createUser("byns-stranger");
+    const r = await h
+      .asUser(stranger)
+      .post(`${path}/contribution-invites`, { namespace: "@kate-writes" });
+    expect(r.status).toBe(403);
+    const anon = await h.anonymous().post(`${path}/contribution-invites`, { namespace: "kate" });
+    expect(anon.status).toBe(401);
+    const missing = await h
+      .asUser(owner)
+      .post("/v1/creations/@byns/nothing-here/contribution-invites", { namespace: "kate" });
+    expect(missing.status).toBe(404);
+    // 没有公开 Release 的作品对非成员“不存在”。
+    const hidden = await h.asUser(owner).post("/v1/namespaces/byns/creations", {
+      name: "unpublished",
+      type: "character",
+      display_name: "Draft",
+    });
+    expect(hidden.status).toBe(201);
+    const unseen = await h
+      .asUser(stranger)
+      .post("/v1/creations/@byns/unpublished/contribution-invites", { namespace: "kate" });
+    expect(unseen.status).toBe(404);
+  });
+
+  it("rate limits invitations per account", async () => {
+    const other = await h.setupCreation("byns-limit", "courier", WORKING);
+    const me = h.asUser(other.owner);
+    let last: Response | undefined;
+    for (let i = 0; i < 61; i++) {
+      last = await me.post(`${other.path}/contribution-invites`, { namespace: "kate-writes" });
+      if (i < 60) expect(last.status).toBe(200);
+    }
+    expect(last?.status).toBe(429);
+    expect(await json(last as Response)).toMatchObject({ code: "rate_limited" });
+    expect(Number(last?.headers.get("retry-after"))).toBeGreaterThan(0);
+    // 取消邀请不受限。
+    expect((await me.delete(`${other.path}/contribution-invites/@kate-writes`)).status).toBe(200);
   });
 });
 

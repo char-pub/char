@@ -10,6 +10,8 @@ import {
   type ConfirmImportRequestSchema,
   ContributionDetailSchema,
   type ContributionInvite,
+  ContributionInviteResponseSchema,
+  type ContributionInviteResult,
   ContributionInvitesResponseSchema,
   type ContributionSettingsRequestSchema,
   ContributionSummarySchema,
@@ -123,7 +125,7 @@ export type AcceptedContribution = z.infer<typeof AcceptedContributionSchema>;
  * 一个 Release 的来源（`ReleaseSource`）：它对应的 Revision 与 canonical 形式的 Creation。
  * 贡献者在这份内容上修改，变更里的 `base_digest` 按它计算。
  */
-export type { ContributionInvite, ReleaseSource };
+export type { ContributionInvite, ContributionInviteResult, ReleaseSource };
 
 export interface ContributionQuery {
   status?: ContributionStatus | undefined;
@@ -239,6 +241,12 @@ export interface RegistryClient {
   /** 邀请名单（只有作者能读取）。 */
   contributionInvites(ns: string, name: string): Promise<{ items: ContributionInvite[] }>;
   invite(ns: string, name: string, user: string): Promise<void>;
+  /**
+   * 按对方的个人 namespace（`@slug` 或 `slug`）邀请，返回被邀请人的用户 ID 与当前的
+   * `@namespace`。找不到这个人时抛出 `contribution.invite_unknown_user`（422）。
+   * 取消邀请用 `uninvite`，`user` 传用户 ID 或 `@slug` 都可以。
+   */
+  inviteByNamespace(ns: string, name: string, namespace: string): Promise<ContributionInviteResult>;
   uninvite(ns: string, name: string, user: string): Promise<void>;
 
   /** 当前的访客会话；没有时为 null。 */
@@ -476,6 +484,13 @@ export function createRegistryClient(
     async invite(ns, name, user) {
       await send("POST", `${creationPath(ns, name)}/contribution-invites`, { body: { user } });
     },
+    inviteByNamespace: (ns, name, namespace) =>
+      json(
+        ContributionInviteResponseSchema,
+        "POST",
+        `${creationPath(ns, name)}/contribution-invites`,
+        { body: { namespace } },
+      ),
     async uninvite(ns, name, user) {
       await send(
         "DELETE",

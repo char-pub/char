@@ -50864,8 +50864,15 @@ var RejectContributionRequestSchema = external_exports.strictObject({
 var ContributionSettingsRequestSchema = external_exports.strictObject({
   policy: external_exports.enum(["anyone", "signed-in", "invited", "closed"])
 });
-var ContributionInviteRequestSchema = external_exports.strictObject({
-  user: external_exports.string()
+var InviteNamespaceSchema = external_exports.string().regex(new RegExp(`^@?${NAMESPACE_RE.source.slice(1)}`), "not a namespace");
+var ContributionInviteRequestSchema = external_exports.union([
+  external_exports.strictObject({ user: external_exports.string().min(1).max(64) }),
+  external_exports.strictObject({ namespace: InviteNamespaceSchema })
+]);
+var ContributionInviteResponseSchema = external_exports.strictObject({
+  user: external_exports.string(),
+  namespace: external_exports.string().nullable(),
+  invited: external_exports.boolean()
 });
 var GuestDisplayNameSchema = external_exports.string().trim().min(1).max(64).regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
 var GuestVerificationRequestSchema = external_exports.strictObject({

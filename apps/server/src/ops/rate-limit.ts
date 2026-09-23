@@ -59,6 +59,8 @@ export const RATE_LIMITS = {
   contributionPerAccount: { windowSeconds: 3600, max: 20 },
   contributionPerNamespace: { windowSeconds: 3600, max: 100 },
   contributionPerGuest: { windowSeconds: 3600, max: 5 },
+  /** 作者邀请贡献者：每个账号每小时 60 次，挡住用邀请批量解析 namespace。 */
+  contributionInvite: { windowSeconds: 3600, max: 60 },
   upload: { windowSeconds: 86_400, max: 200 },
   uploadNewAccount: { windowSeconds: 86_400, max: 20 },
   import: { windowSeconds: 3600, max: 30 },
