@@ -84,22 +84,24 @@ server（额外依赖 db 层、R2、pg-boss、Better Auth）
 
 ## 3. 运行时拓扑与环境
 
-| 组件 | production | staging | 本地 |
-|---|---|---|---|
-| Web SPA | `www.char.pub`（Workers Static Assets，D-119） | `staging.char.pub` | Vite dev server |
-| Admin SPA | `admin.char.pub`（Workers Static Assets + Access） | `staging-admin.char.pub` | Vite dev server |
-| 公开 API | `api.char.pub` → Railway `api` | `staging-api.char.pub` | `pnpm dev:api` |
-| Admin API | `admin-api.char.pub` → Railway `admin` | `staging-admin-api.char.pub` | `pnpm dev:admin` |
-| Worker | Railway `worker`（无域名） | 同左 | `pnpm dev:worker` |
-| Postgres | Railway Postgres（私有网络） | 独立实例 | docker compose |
-| 对象存储 | R2 `charpub-prod-{public,private,uploads,evidence}` | `charpub-staging-*` | MinIO（S3 兼容） |
-| 数据库备份 | Railway Postgres 自带备份（D-111） | 同左（可选） | 无 |
-| 公共资源 | `assets.char.pub`（R2 自定义域名） | `staging-assets.char.pub` | MinIO 直出 |
+v0 只有一个线上主站（production），不设 staging。上线前的验证依靠 CI 全量回归（`pnpm ci:all`）、本地一键环境（`pnpm dev`）与全栈 E2E；Railway 在每次部署前自动执行迁移，迁移失败则不部署。
 
-- staging 全部使用 `char.pub` 的一级子域（2026-09-22 用户决定），所以 Universal SSL 的 `*.char.pub` 证书可以直接覆盖。
-- staging 和 production **同属一个 site**，SameSite cookie 无法隔离两者，隔离要靠 host-only cookie 加严格的 Origin 校验（security §4.2）。
-- 两个环境的密钥、OAuth App、GitHub App、R2 桶和数据库完全独立，不共享任何凭证。
-- Railway 用两个 environment（`staging` / `production`），同一个 project，三个 service 加一个 Postgres。project 建在 `Hushed Chat` workspace（Pro 套餐，D-124）。
+| 组件 | 主站（production） | 本地 |
+|---|---|---|
+| Web SPA | `www.char.pub`（Workers Static Assets，D-119） | Vite dev server（`pnpm dev`） |
+| Admin SPA | `admin.char.pub`（Workers Static Assets + Access） | Vite dev server |
+| 公开 API | `api.char.pub` → Railway `api` | `pnpm dev`（从 TypeScript 源码启动） |
+| Admin API | `admin-api.char.pub` → Railway `admin` | `node dist/main.js admin` |
+| Worker | Railway `worker`（无域名） | `pnpm dev` |
+| Postgres | Railway Postgres（私有网络） | docker compose |
+| 对象存储 | R2 `charpub-{public,private,uploads,evidence}` | MinIO（S3 兼容） |
+| 数据库备份 | Railway Postgres 自带备份（D-111） | 无 |
+| 公共资源 | `assets.char.pub`（R2 自定义域名） | MinIO 直出 |
+
+- 所有域名都是 `char.pub` 的一级子域，Universal SSL 的 `*.char.pub` 证书可以直接覆盖。
+- `www`、`api`、`admin`、`admin-api` 同属一个 site，SameSite cookie 无法在它们之间隔离，所以会话 cookie 一律是 host-only（`__Host-` 前缀、不设 Domain），写请求还要通过严格的 Origin 校验（security §4.2）。admin 的会话由 Cloudflare Access 签发，与 www 的会话互不相通。
+- Railway 只有一个 environment（`production`），一个 project，三个 service 加一个 Postgres。project 建在 `Hushed Chat` workspace（Pro 套餐，D-124）。
+- 以后如果需要预发布环境，按同一份 Railway 定义新建 environment，并为它单独准备密钥、OAuth App、GitHub App、R2 桶与数据库，不与主站共享任何凭证。
 
 ---
 

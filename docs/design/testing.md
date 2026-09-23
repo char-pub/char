@@ -15,7 +15,7 @@
 | L3 集成测试 | `apps/server`：路由、授权、事务、pg-boss 任务、R2 交互、OIDC 与 webhook 校验 | Vitest + Testcontainers（Postgres 18 + MinIO）；OIDC 使用本地 JWKS；GitHub API 使用 msw 录制的响应 | 每次提交（CI） |
 | L3+ 安全测试 | 越权访问矩阵（对每个路由自动生成“他人资源”和“匿名访问”用例）、CSRF / Origin、限流、源站校验、admin 三层防护 | 同 L3 | 每次提交 |
 | L4 端到端 | 关键用户流程：UC-1～UC-8 | Playwright，针对本地全栈（docker compose）运行 | 合并到 main 时 + 发布前 |
-| L5 冒烟 / 演练 | staging 上的真实 Cloudflare、Railway、R2、GitHub App | `scripts/smoke.ts` + 人工演练记录 | 部署后 / 里程碑验收 |
+| L5 冒烟 / 演练 | 主站上的真实 Cloudflare、Railway、R2、GitHub App（使用测试账号、测试仓库与合成数据，结束后清理） | `pnpm smoke --env production` + 人工演练记录 | 部署后 / 里程碑验收 |
 | Fuzz | CCv3 PNG、JSON 和 YAML 解析器，图片管线 | fast-check 生成器 + 恶意样本集 | 每晚 |
 
 ---
@@ -77,7 +77,7 @@ lint（biome 或 eslint）+ typecheck（tsc -b）+ 依赖边界检查
   → build（所有 apps / packages）+ docker build（server）
   → gitleaks + CodeQL + dependency-review（并行）
 合并到 main：+ e2e（Playwright）→ 构建产物
-发布：手动触发 → 部署 staging → 冒烟测试 → 人工 promote 到 production
+部署：合并到 main → Railway 部署前自动迁移（失败则不部署）→ 部署主站 → 冒烟测试；冒烟失败时回滚到上一个部署
 ```
 
 所有 job 都显式声明 `permissions: contents: read`；只有发布相关的 job 才授予 `id-token: write`。

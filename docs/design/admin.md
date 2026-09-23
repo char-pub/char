@@ -144,6 +144,6 @@
 
 1. 权限矩阵：每个角色对每项能力都有 allow 和 deny 的测试，由矩阵自动生成用例。
 2. 没有有效 Access JWT、或角色不足的请求访问 admin-api 时被拒；公开的 api 进程上不存在 admin 路由（404）。
-3. Tombstone 级联：在 staging 构造依赖链 A → B → C，对 C 中的一个 fragment 执行 tombstone；预期 A、B、C 的相关 Release 全部变为 tombstoned，CDN 返回 404，resolve 返回 410 和原因代码，审计日志完整。
+3. Tombstone 级联：在主站上用测试账号构造依赖链 A → B → C（只用于演练的合成内容，结束后清理），对 C 中的一个 fragment 执行 tombstone；预期 A、B、C 的相关 Release 全部变为 tombstoned，CDN 返回 404，resolve 返回 410 和原因代码，审计日志完整。
 4. Kill switch 切换后在 5 秒内生效。
 5. 应用数据库角色对审计日志执行 UPDATE / DELETE 会失败；哈希链校验能发现被篡改的记录。

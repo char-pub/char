@@ -32,7 +32,7 @@ v0 完成后应存在以下成果：
 | O4 | GitHub Source：只读 GitHub App、Source Binding（按数字 ID 绑定）、Webhook + 对账、`char` CLI，以及通过 OIDC 发布的 `char-pub/publish` Action | D-070～D-074 |
 | O5 | Web（www.char.pub，Vite + React SPA）：浏览 / 搜索（默认隐藏 mature）、作品页、Native 编辑器（Character / World / Lorebook）、CCv3 导入、发布、Context Preview / Diff、Contribution 审阅、账号设置 | D-002，D-011，D-057，D-100 |
 | O6 | Admin（admin.char.pub）：受 Cloudflare Access（GitHub 组织成员 + 组织强制 2FA）和应用内角色保护，提供举报队列、法律下架（tombstone 级联）、用户处置、Namespace 治理、kill switch、任务面板和审计日志 | D-011，D-042，D-082，D-110 起 |
-| O7 | 运维：staging 与 production 两套环境，Cloudflare 边缘防护，启用 Railway Postgres 备份并完成恢复演练，CI 安全门禁 | D-086，D-087，D-111 |
+| O7 | 运维：一个线上主站（production），不设 staging；上线前的验证依靠 CI 全量回归、本地一键环境与全栈 E2E。Cloudflare 边缘防护，启用 Railway Postgres 备份并完成恢复演练，CI 安全门禁 | D-086，D-087，D-111 |
 | O8 | `@commons` 种子库：20～50 个高质量的 World / Lorebook | D-100 |
 
 Creator UI 对 v0 未开放的类型只保留模型：Relationship、Scenario、Persona、Style、Preset 的数据模型与 Resolver 行为在 v0 就要存在，并通过一致性用例验证，但不提供创作界面（D-101）。
@@ -52,21 +52,21 @@ Creator UI 对 v0 未开放的类型只保留模型：Relationship、Scenario、
 
 | ID | 可观测结果 | 可证明它的证据 |
 |---|---|---|
-| SC-1 | Native、CCv3 导入、GitHub 三种入口得到的 Creation 都通过同一套 Canonical schema 校验，并能发布为 Release | 集成测试 + staging 手工流程 |
+| SC-1 | Native、CCv3 导入、GitHub 三种入口得到的 Creation 都通过同一套 Canonical schema 校验，并能发布为 Release | 集成测试 + 主站手工流程 |
 | SC-2 | 相同 Release、lock 和 Resolver 版本在 Node、浏览器和 Workers 中生成**字节一致**的 Context IR；只改格式（缩进、键序、行尾）不改变 `semantic_digest` | 一致性测试集在三种运行时中通过；property-based 测试 |
 | SC-3 | 13 个一致性用例全部通过，覆盖 binding、override、菱形依赖、yanked / tombstoned、locale、visibility、budget、CCv3 往返、多路径实例、late slot、public 依赖 private 等场景 | `pnpm test:conformance` |
 | SC-4 | 发布校验 §12.1 的 9 条规则都能强制执行；每条规则至少有一个被拒绝的反例 | core 单元测试 + API 集成测试 |
-| SC-5 | Release 三态行为符合 D-042：tombstone 能级联删除所有可分发副本并清除 CDN 缓存；解析遇到 tombstoned 时返回明确错误和原因 | 集成测试 + staging 演练 |
+| SC-5 | Release 三态行为符合 D-042：tombstone 能级联删除所有可分发副本并清除 CDN 缓存；解析遇到 tombstoned 时返回明确错误和原因 | 集成测试 + 主站演练 |
 | SC-6 | Native → Native Contribution 按 canonical-model §13 合并：未冲突的变更自动 rebase，冲突被标出；敏感 metadata 必须单独确认；贡献者写入 provenance | 表驱动单元测试 + E2E |
 | SC-7 | 用户能在浏览器中看到 Context Preview（附 Trace 解释）和 Context Diff；token 数注明所用 tokenizer，只是估算时明确标注 | E2E + 人工验收 |
 | SC-8 | CCv3 导出附带 Loss Report；`system_prompt` / `post_history_instructions` 不进入 Creation / IR，Import Report 中有记录 | 单元测试 + 往返用例 |
 | SC-9 | 私有内容不会泄露：未授权请求一律返回 404；public 桶里只有 Public Release 引用的对象；IR 中不含签名 URL；public Release 不能依赖 private Release | 安全集成测试 |
-| SC-10 | GitHub 发布防 repojacking：OIDC 声明必须匹配绑定的 `repository_id` / `repository_owner_id` 和允许的 ref；Registry 自行读取源码并重算 digest | 集成测试（本地签发 JWKS）+ staging 联调 |
+| SC-10 | GitHub 发布防 repojacking：OIDC 声明必须匹配绑定的 `repository_id` / `repository_owner_id` 和允许的 ref；Registry 自行读取源码并重算 digest | 集成测试（本地签发 JWKS）+ 主站联调 |
 | SC-11 | 上传管线：只有 `ready` 状态的对象能被引用；EXIF / GPS 已剥离；非法类型、像素炸弹、多格式混合文件（polyglot）被拒绝；`CsamScanner` 接口就位（PhotoDNA 接入前是 noop，D-121），public CDN 开启 Cloudflare CSAM 被动扫描，隔离 / 证据保全 / 报告流程可用 | 集成测试 + 人工核验 |
-| SC-12 | Admin 行动（下架、封禁、强制评级、Namespace 处置、kill switch）只有通过 Cloudflare Access 且具备相应角色的员工能执行；每次行动都在同一事务内写入追加型审计日志 | 权限矩阵测试 + staging 演练 |
+| SC-12 | Admin 行动（下架、封禁、强制评级、Namespace 处置、kill switch）只有通过 Cloudflare Access 且具备相应角色的员工能执行；每次行动都在同一事务内写入追加型审计日志 | 权限矩阵测试 + 主站演练 |
 | SC-13 | mature / explicit 内容默认隐藏，用户主动开启后才可见；effective rating 取依赖闭包与 Asset 中的最大值，并解释来源 | 单元测试 + E2E |
 | SC-14 | 公开仓库安全基线：仓库中无密钥（gitleaks 与 push protection 通过）；CI 包含 CodeQL、依赖审查，Action 用 SHA 固定；只读默认权限；主分支受保护 | CI 记录 + 仓库设置截图 / API 输出 |
-| SC-15 | 运维：staging 和 production 均可访问；production 的 Railway Postgres 备份已启用，且完成一次恢复演练；源站只接受经 Cloudflare 转发的流量 | 演练记录 + 命令输出 |
+| SC-15 | 运维：主站各域名可访问；Railway Postgres 备份已启用，且完成一次恢复演练；源站只接受经 Cloudflare 转发的流量 | 演练记录 + 命令输出 |
 | SC-16 | 测试门禁：core 行覆盖率 ≥ 90%、server ≥ 80%；安全关键模块（authz、OIDC、webhook、canonical、merge）分支覆盖率 ≥ 95%；CI 全绿 | CI 覆盖率报告 |
 | SC-17 | `@commons` 发布 20～50 个 World / Lorebook，全部许可清晰，且被至少一个示例 Character 引用 | Registry 查询 + 人工审阅 |
 
