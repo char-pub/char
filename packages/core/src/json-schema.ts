@@ -93,6 +93,10 @@ export function buildJsonSchema(name: PublishedSchemaName): Record<string, unkno
     io: name === "creation" ? "input" : "output",
     unrepresentable: "any",
     metadata: registryFor(schema),
+    // 字符串上叠加的 regex 会覆盖掉 URL 的 format，这里补回来，让两条约束都出现在输出里。
+    override: (ctx) => {
+      if (ctx.zodSchema === C.HttpsUrlSchema) ctx.jsonSchema.format = "uri";
+    },
   }) as Record<string, unknown>;
   const { $schema, ...rest } = body;
   return { $schema, $id: `${SCHEMA_BASE_URL}/${name}.schema.json`, title, ...rest };

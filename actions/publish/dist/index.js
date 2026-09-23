@@ -48002,6 +48002,7 @@ var AssetRefSchema = external_exports.string().regex(
 );
 var DecimalIdSchema = external_exports.string().regex(/^[1-9][0-9]{0,19}$/);
 var GitCommitSchema = external_exports.string().regex(/^[0-9a-f]{40}$/);
+var HttpsUrlSchema = external_exports.url({ protocol: /^https$/ }).regex(/^https:\/\//);
 var SourceLocatorSchema = external_exports.discriminatedUnion("provider", [
   external_exports.strictObject({
     provider: external_exports.literal("github"),
@@ -48009,7 +48010,7 @@ var SourceLocatorSchema = external_exports.discriminatedUnion("provider", [
     commit: GitCommitSchema,
     path: external_exports.string().min(1)
   }),
-  external_exports.strictObject({ provider: external_exports.literal("http"), url: external_exports.url({ protocol: /^https$/ }) })
+  external_exports.strictObject({ provider: external_exports.literal("http"), url: HttpsUrlSchema })
 ]);
 var BlobRefSchema = external_exports.strictObject({
   digest: DigestSchema,
