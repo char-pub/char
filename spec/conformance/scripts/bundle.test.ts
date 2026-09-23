@@ -12,7 +12,9 @@ describe("conformance case files", () => {
       const c = loadCase(dir);
       const m = c.meta;
       expect(m.spec_refs.length, dir).toBeGreaterThan(0);
-      if (m.kind === "resolver" || m.kind === "publish") expect(m.expect, dir).toBeDefined();
+      expect(m.expect, dir).toBeDefined();
+      if (m.kind === "assembler") expect(m.expect, dir).toBe("trace");
+      if (m.kind === "ccv3") expect(m.expect, dir).toBe("loss-report");
       if (m.kind === "publish") expect(c.input.registry, dir).toBeDefined();
       if (m.status === "reviewed") {
         expect(m.reviewed_by, dir).toBeTruthy();

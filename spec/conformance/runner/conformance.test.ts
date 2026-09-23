@@ -2,8 +2,7 @@
  * 一致性测试：同一个文件分别在 Node、浏览器（Chromium）和 workerd 中运行。
  *
  * - reviewed 用例：严格比较实现输出与人工审阅过的预期结果。
- * - draft 用例：只确认能运行，比较标记为 todo，等待审阅。
- * - assembler / ccv3 用例：对应实现还没有接入，只校验输入的形状。
+ * - draft 用例：只确认能运行（并满足与审阅无关的硬性要求），比较标记为 todo，等待审阅。
  *
  * 最后一个测试在当前运行时里重新计算每个 reviewed Context IR 用例的 digest，并与
  * case.json 中记录的预期 digest 比较。三个运行时都通过，就说明它们输出的字节完全相同。
@@ -35,19 +34,13 @@ describe(`conformance suite on ${runtimeName()}`, () => {
     const { meta } = c;
     const label = `${c.dir}: ${meta.title}`;
 
-    if (meta.kind === "assembler" || meta.kind === "ccv3") {
-      it(`${c.dir}: input is well-formed`, () => {
-        expect(validateInput(c)).toEqual([]);
-      });
-      it.todo(`${label} (${meta.kind} implementation not wired yet)`);
-      continue;
-    }
-
     if (meta.status !== "reviewed") {
       it(`${c.dir}: runs without crashing (draft)`, () => {
         expect(validateInput(c)).toEqual([]);
         const actual = runCase(c);
         expect(actual.kind).not.toBe("unsupported");
+        const verdict = judge(c, actual);
+        expect(verdict.status, verdict.message).toBe("draft");
       });
       it.todo(`${label} (expected output awaiting human review)`);
       continue;

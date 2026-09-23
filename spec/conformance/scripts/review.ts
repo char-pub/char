@@ -8,7 +8,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ContextIRSchema, displayFragmentId } from "@char-pub/core";
-import type { CaseMeta } from "../runner/types.js";
+import type { CaseMeta, LossSummary, TraceExpectation } from "../runner/types.js";
 import { CASES_DIR } from "./cases.js";
 import { precheck } from "./precheck-lib.js";
 
@@ -114,10 +114,32 @@ for (const dir of readdirSync(CASES_DIR).sort()) {
     out.push(...irSummary(text), "");
   } else if (existsSync(join(draft, "error.json"))) {
     out.push(`Result: error \`${readFileSync(join(draft, "error.json"), "utf8").trim()}\``, "");
+  } else if (existsSync(join(draft, "trace.json"))) {
+    const trace = JSON.parse(readFileSync(join(draft, "trace.json"), "utf8")) as TraceExpectation;
+    for (const sc of trace.scenarios) {
+      out.push(`Scenario \`${sc.name}\`:`, "");
+      if ("error" in sc) {
+        out.push(`- fails with \`${sc.error.code}\``, "");
+        continue;
+      }
+      out.push("| id | decision | reason |", "|---|---|---|");
+      for (const e of sc.entries)
+        out.push(`| \`${displayFragmentId(e.id)}\` | ${e.decision} | ${e.reason} |`);
+      out.push("");
+    }
+  } else if (existsSync(join(draft, "loss-report.json"))) {
+    const l = JSON.parse(readFileSync(join(draft, "loss-report.json"), "utf8")) as LossSummary;
+    out.push(
+      `- import: omitted policy fields ${l.import.omitted_policy_fields.join(", ") || "(none)"}; unstable fragments ${l.import.unstable_fragments.join(", ") || "(none)"}`,
+      `- lorebook: ${l.import.lorebook.map((e) => `#${e.index} (source id ${e.source_id ?? "none"}) → ${e.fragment_id ?? "dropped"} [${e.activation}]`).join("; ") || "(none)"}`,
+      `- loss: policy fields ${l.loss.policy_fields.map((p) => `${p.ref}: ${p.fields.join(", ")} restored=${p.restored}`).join("; ") || "(none)"}; flattened ${l.loss.flattened_dependencies.map((d) => d.ref).join(", ") || "(none)"}; activation downgrades ${l.loss.activation_downgrades.length}; visibility ${l.loss.visibility.length}; participants ${l.loss.participants.length}; context assets ${l.loss.context_assets.length}; dropped locales ${l.loss.locales.dropped.join(", ") || "(none)"}; other ${l.loss.other.join(", ") || "(none)"}`,
+      `- exported card: system_prompt empty=${l.export.system_prompt_empty}, post_history_instructions empty=${l.export.post_history_instructions_empty}`,
+      "",
+    );
   } else if (existsSync(join(draft, "publish.json"))) {
     out.push(`Result: publish \`${readFileSync(join(draft, "publish.json"), "utf8").trim()}\``, "");
   } else {
-    out.push("Result: not wired yet (assembler / ccv3 implementation pending).", "");
+    out.push(`Result: no draft yet — run \`pnpm conformance:draft ${dir}\`.`, "");
   }
 }
 writeFileSync(OUT, `${out.join("\n")}\n`);

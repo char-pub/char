@@ -1,28 +1,34 @@
 {
-  "profile": {
-    "runtime": {
-      "name": "char-pub-conformance",
-      "version": "0"
-    },
-    "tokenizer": "estimate",
-    "context_window": 512,
-    "reserve_for_output": 128,
-    "mode": "narrator",
-    "capabilities": {
-      "images": false,
-      "system_role": true
-    }
-  },
-  "session": {
-    "bindings": {
-      "user": {
-        "kind": "persona",
-        "display_name": "Sam"
+  "scenarios": [
+    {
+      "name": "window-512",
+      "profile": {
+        "runtime": { "name": "char-pub-conformance", "version": "0" },
+        "tokenizer": "estimate",
+        "context_window": 512,
+        "reserve_for_output": 128,
+        "mode": "narrator",
+        "capabilities": { "images": false, "system_role": true }
+      },
+      "session": {
+        "bindings": { "user": { "kind": "persona", "display_name": "Sam" } },
+        "history": []
       }
     },
-    "history": []
-  },
-  "expect": {
-    "error": "assemble.pinned_over_budget"
-  }
+    {
+      "name": "window-16384",
+      "profile": {
+        "runtime": { "name": "char-pub-conformance", "version": "0" },
+        "tokenizer": "estimate",
+        "context_window": 16384,
+        "reserve_for_output": 512,
+        "mode": "narrator",
+        "capabilities": { "images": false, "system_role": true }
+      },
+      "session": {
+        "bindings": { "user": { "kind": "persona", "display_name": "Sam" } },
+        "history": []
+      }
+    }
+  ]
 }

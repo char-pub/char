@@ -1,5 +1,7 @@
 /** 运行器自身的比较规则测试，用合成的用例，不依赖真实的预期输出。 */
 import { describe, expect, it } from "vitest";
+import { compareTraces } from "./assemble.js";
+import { compareLoss } from "./ccv3.js";
 import {
   type Actual,
   firstDifference,
@@ -8,7 +10,13 @@ import {
   renderDraft,
   textDigest,
 } from "./run.js";
-import type { BundledCase, CaseMeta, ExpectedOutput } from "./types.js";
+import type {
+  BundledCase,
+  CaseMeta,
+  ExpectedOutput,
+  LossSummary,
+  TraceExpectation,
+} from "./types.js";
 
 function mk(meta: Partial<CaseMeta>, expected: ExpectedOutput = {}): BundledCase {
   return {
@@ -105,5 +113,85 @@ describe("helpers", () => {
       renderDraft({ kind: "publish", summary: { ok: true, errors: [], warnings: [] } })?.text,
     ).toContain('"ok": true');
     expect(renderDraft({ kind: "unsupported", reason: "x" })).toBeNull();
+    expect(renderDraft({ kind: "trace", trace: { scenarios: [] }, violations: [] })?.file).toBe(
+      "trace",
+    );
+  });
+});
+
+const trace = (reason: string): TraceExpectation => ({
+  scenarios: [
+    { name: "a", entries: [{ id: "@x/y#f~root", decision: "included", reason }] },
+    { name: "b", error: { code: "assemble.pinned_over_budget" } },
+  ],
+});
+
+describe("assembler traces", () => {
+  it("compare only id, decision and reason per scenario", () => {
+    const c = mk({ kind: "assembler", expect: "trace" }, { trace: trace("always") });
+    expect(judge(c, { kind: "trace", trace: trace("always"), violations: [] }).status).toBe("pass");
+    const bad = judge(c, { kind: "trace", trace: trace("pinned"), violations: [] });
+    expect(bad.status).toBe("fail");
+    expect(bad.message).toContain("always");
+  });
+
+  it("detect scenario count, name, error and entry count differences", () => {
+    const t = trace("always");
+    expect(compareTraces(t, { scenarios: [] })).toContain("2 scenarios");
+    expect(
+      compareTraces(t, {
+        scenarios: [{ ...t.scenarios[0], name: "z" } as never, t.scenarios[1] as never],
+      }),
+    ).toContain('"z"');
+    expect(
+      compareTraces(t, {
+        scenarios: [t.scenarios[0] as never, { name: "b", error: { code: "other" } }],
+      }),
+    ).toContain("other");
+    expect(
+      compareTraces(t, { scenarios: [{ name: "a", entries: [] }, t.scenarios[1] as never] }),
+    ).toContain("got 0");
+  });
+
+  it("fail on hard violations even when the case is still a draft", () => {
+    const c = mk({ kind: "assembler", expect: "trace", status: "draft" });
+    const v = judge(c, { kind: "trace", trace: trace("always"), violations: ["a: leftover"] });
+    expect(v.status).toBe("fail");
+    expect(v.message).toContain("leftover");
+  });
+
+  it("fail when the expected file is missing", () => {
+    const c = mk({ kind: "assembler", expect: "trace" });
+    expect(judge(c, { kind: "trace", trace: trace("always"), violations: [] }).message).toContain(
+      "trace.json",
+    );
+  });
+});
+
+describe("ccv3 loss summaries", () => {
+  const summary: LossSummary = {
+    import: { omitted_policy_fields: ["system_prompt"], lorebook: [], unstable_fragments: [] },
+    loss: {
+      flattened_dependencies: [],
+      activation_downgrades: [],
+      visibility: [],
+      participants: [],
+      context_assets: [],
+      locales: { dropped: [], exported: "en" },
+      policy_fields: [{ ref: "@a/b", fields: ["system_prompt"], restored: false }],
+      other: [],
+    },
+    export: { system_prompt_empty: true, post_history_instructions_empty: true },
+  };
+
+  it("compare by canonical JSON", () => {
+    const c = mk({ kind: "ccv3", expect: "loss-report" }, { "loss-report": summary });
+    expect(judge(c, { kind: "loss-report", summary }).status).toBe("pass");
+    const changed = { ...summary, export: { ...summary.export, system_prompt_empty: false } };
+    expect(judge(c, { kind: "loss-report", summary: changed }).status).toBe("fail");
+    expect(compareLoss(summary, changed)).toContain("system_prompt_empty");
+    expect(
+      judge(mk({ kind: "ccv3", expect: "loss-report" }), { kind: "loss-report", summary }).message,
+    ).toContain("loss-report.json");
   });
 });

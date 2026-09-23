@@ -6,6 +6,8 @@
   "license": "CC-BY-4.0",
   "type": "module",
   "dependencies": {
+    "@char-pub/assembler": "workspace:*",
+    "@char-pub/ccv3": "workspace:*",
     "@char-pub/core": "workspace:*"
   },
   "devDependencies": {

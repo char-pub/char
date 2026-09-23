@@ -2,11 +2,12 @@
   "id": "008-private-visibility",
   "title": "Private visibility in narrator and per-agent modes",
   "kind": "assembler",
+  "expect": "trace",
   "spec_refs": [
     "D-053",
     "canonical-model §4.4",
     "context-ir §11.2 visibility"
   ],
   "status": "draft",
-  "notes": "Bob's secret is private to Bob. per-agent, assembling for Alice (self): the secret is skipped with reason visibility. narrator: it is included, annotated that only Bob knows it."
+  "notes": "Bob's secret is private to Bob. Scenario per-agent-for-self (assembling for Alice): the secret is skipped with reason visibility. Scenario narrator: it is included; the runtime annotates that only Bob knows it (annotation text is not compared)."
 }

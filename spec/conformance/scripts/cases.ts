@@ -60,7 +60,7 @@ export function loadCase(dir: string): BundledCase {
   if (registry) input.registry = registry;
   const options = readOptional<CaseInput["options"]>(join(inputDir, "options.json"));
   if (options) input.options = options;
-  const assemble = readOptional<unknown>(join(inputDir, "assemble.json"));
+  const assemble = readOptional<CaseInput["assemble"]>(join(inputDir, "assemble.json"));
   if (assemble !== undefined) input.assemble = assemble;
   const card = readOptional<unknown>(join(inputDir, "card.json"));
   if (card !== undefined) input.card = card;
@@ -73,6 +73,10 @@ export function loadCase(dir: string): BundledCase {
   if (error) expected.error = error;
   const publish = readOptional<ExpectedOutput["publish"]>(join(expDir, "publish.json"));
   if (publish) expected.publish = publish;
+  const trace = readOptional<ExpectedOutput["trace"]>(join(expDir, "trace.json"));
+  if (trace) expected.trace = trace;
+  const loss = readOptional<ExpectedOutput["loss-report"]>(join(expDir, "loss-report.json"));
+  if (loss) expected["loss-report"] = loss;
 
   return { dir, meta, input, expected };
 }

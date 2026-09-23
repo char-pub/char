@@ -1742,13 +1742,14 @@
         "id": "008-private-visibility",
         "title": "Private visibility in narrator and per-agent modes",
         "kind": "assembler",
+        "expect": "trace",
         "spec_refs": [
           "D-053",
           "canonical-model §4.4",
           "context-ir §11.2 visibility"
         ],
         "status": "draft",
-        "notes": "Bob's secret is private to Bob. per-agent, assembling for Alice (self): the secret is skipped with reason visibility. narrator: it is included, annotated that only Bob knows it."
+        "notes": "Bob's secret is private to Bob. Scenario per-agent-for-self (assembling for Alice): the secret is skipped with reason visibility. Scenario narrator: it is included; the runtime annotates that only Bob knows it (annotation text is not compared)."
       },
       "input": {
         "deps": [
@@ -1915,63 +1916,70 @@
           }
         },
         "assemble": {
-          "profiles": [
+          "scenarios": [
             {
-              "runtime": {
-                "name": "char-pub-conformance",
-                "version": "0"
+              "name": "narrator",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 512,
+                "mode": "narrator",
+                "capabilities": {
+                  "images": false,
+                  "system_role": true
+                }
               },
-              "tokenizer": "estimate",
-              "context_window": 8192,
-              "reserve_for_output": 512,
-              "mode": "narrator",
-              "capabilities": {
-                "images": false,
-                "system_role": true
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Who does Bob really work for?"
+                  }
+                ],
+                "for_participant": "self"
               }
             },
             {
-              "runtime": {
-                "name": "char-pub-conformance",
-                "version": "0"
+              "name": "per-agent-for-self",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 512,
+                "mode": "per-agent",
+                "capabilities": {
+                  "images": false,
+                  "system_role": true
+                }
               },
-              "tokenizer": "estimate",
-              "context_window": 8192,
-              "reserve_for_output": 512,
-              "mode": "per-agent",
-              "capabilities": {
-                "images": false,
-                "system_role": true
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Who does Bob really work for?"
+                  }
+                ],
+                "for_participant": "self"
               }
-            }
-          ],
-          "session": {
-            "bindings": {
-              "user": {
-                "kind": "persona",
-                "display_name": "Sam"
-              }
-            },
-            "history": [
-              {
-                "role": "user",
-                "text": "Who does Bob really work for?"
-              }
-            ],
-            "for_participant": "self"
-          },
-          "expect": [
-            {
-              "profile": "per-agent",
-              "fragment": "@djj/bob#secret",
-              "decision": "skipped",
-              "reason": "visibility"
-            },
-            {
-              "profile": "narrator",
-              "fragment": "@djj/bob#secret",
-              "decision": "included",
-              "reason": "always"
             }
           ]
         }
@@ -1984,11 +1992,12 @@
         "id": "009-pinned-over-budget",
         "title": "Pinned content larger than the budget is an error, never truncated",
         "kind": "assembler",
+        "expect": "trace",
         "spec_refs": [
           "context-ir §11.2 budget"
         ],
         "status": "draft",
-        "notes": "The pinned instruction alone exceeds context_window - reserve_for_output; assembling must fail."
+        "notes": "Scenario window-512: the pinned instruction alone exceeds context_window - reserve_for_output, so assembling fails with assemble.pinned_over_budget (never truncated). Scenario window-16384: the same instruction fits and is included with reason pinned."
       },
       "input": {
         "deps": [],
@@ -2062,32 +2071,60 @@
           }
         },
         "assemble": {
-          "profile": {
-            "runtime": {
-              "name": "char-pub-conformance",
-              "version": "0"
-            },
-            "tokenizer": "estimate",
-            "context_window": 512,
-            "reserve_for_output": 128,
-            "mode": "narrator",
-            "capabilities": {
-              "images": false,
-              "system_role": true
-            }
-          },
-          "session": {
-            "bindings": {
-              "user": {
-                "kind": "persona",
-                "display_name": "Sam"
+          "scenarios": [
+            {
+              "name": "window-512",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 512,
+                "reserve_for_output": 128,
+                "mode": "narrator",
+                "capabilities": {
+                  "images": false,
+                  "system_role": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": []
               }
             },
-            "history": []
-          },
-          "expect": {
-            "error": "assemble.pinned_over_budget"
-          }
+            {
+              "name": "window-16384",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 16384,
+                "reserve_for_output": 512,
+                "mode": "narrator",
+                "capabilities": {
+                  "images": false,
+                  "system_role": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": []
+              }
+            }
+          ]
         }
       },
       "expected": {}
@@ -2098,6 +2135,7 @@
         "id": "010-ccv3-roundtrip",
         "title": "CCv3 round trip: import, resolve, export with a Loss Report",
         "kind": "ccv3",
+        "expect": "loss-report",
         "spec_refs": [
           "D-023",
           "D-056",
@@ -2105,7 +2143,7 @@
           "context-ir §14"
         ],
         "status": "draft",
-        "notes": "Synthetic card. Expected: lorebook entries become stable: false knowledge fragments; system_prompt and post_history_instructions are recorded by field name only and are not exported back; the Loss Report says so."
+        "notes": "Synthetic card: import -> canonicalize -> resolve -> export. Lorebook entries become stable: false knowledge fragments (one had a source id, one did not); system_prompt and post_history_instructions are recorded by field name only, are not exported back (empty in the exported card) and the Loss Report says restored: false."
       },
       "input": {
         "deps": [],
@@ -2637,12 +2675,13 @@
         "id": "012c-late-binding-session",
         "title": "Assembler: missing required late binding fails; {{user}} is bound to the session persona",
         "kind": "assembler",
+        "expect": "trace",
         "spec_refs": [
           "context-ir §5",
           "context-ir §11.2 late binding"
         ],
         "status": "draft",
-        "notes": "Same graph as 012b. Session 1 binds only the user persona: assembling fails because the required student slot is unbound. Session 2 binds both: no {{late:*}} placeholder survives."
+        "notes": "Same graph as 012b. Scenario student-unbound binds only the user persona: assembling fails with assemble.late_slot_unbound because the required student slot is unbound. Scenario all-bound binds the user persona and the student: every fragment is assembled and no {{late:*}} placeholder reaches the model messages (checked by the runner on every run)."
       },
       "input": {
         "deps": [
@@ -2764,47 +2803,61 @@
           }
         },
         "assemble": {
-          "profile": {
-            "runtime": {
-              "name": "char-pub-conformance",
-              "version": "0"
-            },
-            "tokenizer": "estimate",
-            "context_window": 8192,
-            "reserve_for_output": 512,
-            "mode": "narrator",
-            "capabilities": {
-              "images": false,
-              "system_role": true
-            }
-          },
-          "sessions": [
+          "scenarios": [
             {
-              "bindings": {
-                "user": {
-                  "kind": "persona",
-                  "display_name": "Sam"
+              "name": "student-unbound",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 512,
+                "mode": "narrator",
+                "capabilities": {
+                  "images": false,
+                  "system_role": true
                 }
               },
-              "history": [],
-              "expect": {
-                "error": "assemble.late_slot_unbound"
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": []
               }
             },
             {
-              "bindings": {
-                "user": {
-                  "kind": "persona",
-                  "display_name": "Sam"
+              "name": "all-bound",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
                 },
-                "student": {
-                  "kind": "persona",
-                  "display_name": "Kai"
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 512,
+                "mode": "narrator",
+                "capabilities": {
+                  "images": false,
+                  "system_role": true
                 }
               },
-              "history": [],
-              "expect": {
-                "no_placeholders": true
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  },
+                  "l:3016f4f88bf54dee7474a9cc76e817c13ba61be0b737b10124c0f54d8ab7a53a": {
+                    "kind": "persona",
+                    "display_name": "Kai"
+                  }
+                },
+                "history": []
               }
             }
           ]
