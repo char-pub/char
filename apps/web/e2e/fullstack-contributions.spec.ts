@@ -6,8 +6,7 @@
  * 作品的准备与作者对草稿的修改直接调用 API（在页面里用 fetch，带上会话 cookie 与 Origin），
  * 界面部分只覆盖贡献者的提交与作者的审阅。
  *
- * 读取 Release 来源内容的接口（`GET …/releases/:label/source`）服务端还没有提供，这里用
- * 作者发布时的草稿与 Revision 在浏览器层面替它应答；其余请求都打到真实的 API。
+ * 所有请求都打到真实的 API，包括贡献者读取 Release 源内容（修改的基线）的接口。
  *
  * 默认跳过；`pnpm e2e:fullstack` 会设置 `E2E_FULLSTACK=1` 并启动所需的全部进程。
  */
@@ -100,7 +99,6 @@ test("UC-5: a contribution is rebased onto the author's newer draft and the rati
     await call(author, "PUT", `${base}/draft`, { working }, { "if-match": `"${d0.version}"` }),
     "put draft",
   );
-  const published = ok(await call(author, "GET", `${base}/draft`), "draft after put");
   const revision = ok(await call(author, "POST", `${base}/revisions`, {}), "revision");
   ok(
     await call(
@@ -128,17 +126,14 @@ test("UC-5: a contribution is rebased onto the author's newer draft and the rati
   const contribCtx = await browser.newContext();
   await signInAs(contribCtx, "Cy Contributor");
   const contributor = await contribCtx.newPage();
-  await contributor.route(`**${base}/releases/1.0.0/source`, (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify({
-        revision: revision.id,
-        semantic_digest: revision.semantic_digest,
-        creation: published.working,
-      }),
-    }),
-  );
   await contributor.goto(`/c/${ns}/harbor`);
+  // 贡献者读到的基线就是 1.0.0 对应的 Revision。
+  const source = ok(
+    await call(contributor, "GET", `${base}/releases/1.0.0/source`),
+    "release source",
+  ) as { revision: string; semantic_digest: string };
+  expect(source.revision).toBe(revision.id);
+  expect(source.semantic_digest).toBe(revision.semantic_digest);
   await contributor.getByRole("link", { name: "Contributions" }).click();
   await contributor.getByRole("link", { name: "Propose a change" }).click();
   await contributor
@@ -165,6 +160,8 @@ test("UC-5: a contribution is rebased onto the author's newer draft and the rati
 
   // 4. 作者审阅：intro 会被应用；评级变更必须单独确认。
   await author.goto(`/c/${ns}/harbor/contributions`);
+  // 列表里显示贡献者的显示名，而不是用户 ID。
+  await expect(author.getByText("by Cy Contributor")).toBeVisible();
   await author.getByRole("link", { name: "Remember the captains" }).click();
   await expect(author.getByRole("listitem", { name: "Fragment #intro: will apply" })).toBeVisible();
   await expect(author.getByRole("listitem", { name: "rating: will apply" })).toBeVisible();

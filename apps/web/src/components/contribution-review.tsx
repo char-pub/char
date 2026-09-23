@@ -249,7 +249,7 @@ export function ContributionReview({
           <StatusStamp status={c.status} />
           {c.agent ? <AgentStamp /> : null}
           <span className="text-muted-foreground">
-            by <UserText text={authorLabel(c.author, meId)} /> ·{" "}
+            by <UserText text={authorLabel(c.author, { user: meId, guest: guest?.guest.id })} /> ·{" "}
             {new Date(c.created_at).toLocaleString()}
           </span>
         </div>

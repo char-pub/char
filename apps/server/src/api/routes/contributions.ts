@@ -4,8 +4,8 @@
  * - 提交：按作者设置的 contribution_policy 授权（所有人 / 登录用户 / 受邀用户 / 关闭）；
  *   按账号、目标 namespace、访客三个维度限流；变更是否敏感由服务端计算；提交时就对基线
  *   试合并一次，变更本身不合法时直接拒绝。
- * - 查看：贡献者本人与目标 namespace 的成员可见，其他人一律 404。详情里附带与作者当前
- *   草稿的合并预览。
+ * - 查看：贡献者本人（登录用户或访客）与目标 namespace 的成员可见，其他人一律 404。
+ *   详情里附带与作者当前草稿的合并预览。作者信息附带显示名与 namespace，不包含邮箱。
  * - 接受：基于作者**当前**草稿重新合并。有冲突则拒绝且不改任何数据；敏感变更（rating、
  *   license、content_warnings 等）必须逐项确认；按目标当前的 license 重新检查贡献授权。
  *   成功后写回草稿、生成新 Revision，并把贡献者写进 provenance，下一次发布时进入
@@ -33,7 +33,7 @@ import {
   isCharError,
   normalizeValue,
 } from "@char-pub/core";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { appendAudit } from "../../audit/audit.js";
 import type { Principal, Resource } from "../../authz/authorize.js";
@@ -51,6 +51,7 @@ import { hit, RATE_LIMITS } from "../../ops/rate-limit.js";
 import { auditActor, param, requestIdOf } from "../../registry/context.js";
 import {
   acceptContribution,
+  authorNamesOf,
   authorOf,
   type ContributionRow,
   changeOf,
@@ -65,6 +66,7 @@ import {
   revisionContent,
   summaryJson,
   tryMerge,
+  userDisplaysOf,
   withContributor,
 } from "../../registry/contributions.js";
 import { decodeId, encodeId } from "../../registry/ids.js";
@@ -305,7 +307,7 @@ export function register(app: Hono<Env>): void {
     authorize: async (c) => {
       const ctx = await loadCreation(c);
       if (!ctx) return notFound(c);
-      // 列表本身可以看；成员看到全部，其他登录用户只看到自己提交的，匿名看不到任何条目。
+      // 列表本身可以看；成员看到全部，其他登录用户和访客只看到自己提交的，匿名看不到任何条目。
       return { action: "creation.read", resource: ctx.resource, loaded: ctx };
     },
     handler: async (c, { loaded: ctx }) => {
@@ -315,7 +317,9 @@ export function register(app: Hono<Env>): void {
       if (!q.success) return problem(c, 422, "request.invalid", q.error.issues[0]?.message);
       const p = c.var.principal;
       const member = isMember(ctx) && p.kind === "user";
-      if (!member && p.kind !== "user") return c.json({ items: [], next_cursor: null });
+      if (!member && p.kind !== "user" && p.kind !== "guest") {
+        return c.json({ items: [], next_cursor: null });
+      }
       const before = q.data.cursor ? Number(q.data.cursor) : undefined;
       if (before !== undefined && !Number.isSafeInteger(before)) {
         return problem(c, 422, "request.invalid", "bad cursor");
@@ -324,11 +328,12 @@ export function register(app: Hono<Env>): void {
         ...(q.data.status ? { status: q.data.status } : {}),
         ...(q.data.agent ? { agent: q.data.agent === "true" } : {}),
         ...(!member && p.kind === "user" ? { authorUserId: p.user_id } : {}),
+        ...(p.kind === "guest" ? { authorGuestId: p.guest_id } : {}),
         ...(before !== undefined ? { beforeNumber: before } : {}),
         limit: q.data.limit,
       });
       const last = rows.at(-1);
-      const names = await guestNamesOf(c.var.services.db, rows);
+      const names = await authorNamesOf(c.var.services.db, rows);
       return c.json({
         items: rows.map((r) => summaryJson(r, names)),
         next_cursor: rows.length === q.data.limit && last ? String(last.number) : null,
@@ -357,7 +362,7 @@ export function register(app: Hono<Env>): void {
         preview = previewJson(tryMerge(draft?.working, changes));
       }
       return c.json({
-        ...summaryJson(item.row, await guestNamesOf(db, [item.row])),
+        ...summaryJson(item.row, await authorNamesOf(db, [item.row])),
         ...(item.row.description ? { description: item.row.description } : {}),
         changes,
         preview,
@@ -601,6 +606,38 @@ export function register(app: Hono<Env>): void {
     });
     return c.json({ user, invited: invite });
   }
+
+  // 邀请名单只有作者可见：列出用户 ID、显示名与 namespace。
+  route(app, {
+    method: "get",
+    path: INVITES,
+    authorize: settingsAuthorize,
+    handler: async (c, { loaded: ctx }) => {
+      const { db } = c.var.services;
+      const rows = await db
+        .select({ userId: contributionInvites.userId, createdAt: contributionInvites.createdAt })
+        .from(contributionInvites)
+        .where(eq(contributionInvites.creationId, ctx.creation.id))
+        .orderBy(asc(contributionInvites.createdAt), asc(contributionInvites.userId))
+        .limit(1000);
+      const users = await userDisplaysOf(
+        db,
+        rows.map((r) => r.userId),
+      );
+      c.header("cache-control", "private, no-store");
+      return c.json({
+        items: rows.map((r) => {
+          const u = users.get(r.userId);
+          return {
+            user: encodeId("user", r.userId),
+            display_name: u?.display_name ?? null,
+            namespace: u?.namespace ?? null,
+            invited_at: r.createdAt.toISOString(),
+          };
+        }),
+      });
+    },
+  });
 
   route(app, {
     method: "post",

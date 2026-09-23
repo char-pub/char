@@ -1,6 +1,6 @@
 /**
  * 作品的 Contribution 列表：可以按状态和是否由 Agent 提交过滤；Agent 提交的条目有醒目的
- * 标记。作品的成员看到全部，其他登录用户只看到自己提交的。
+ * 标记。作品的成员看到全部，其他登录用户和访客只看到自己提交的。
  *
  * 成员还可以在这里设置谁可以提交（所有人 / 登录用户 / 受邀用户 / 关闭）并管理邀请名单。
  */
@@ -59,10 +59,21 @@ export function AgentStamp() {
   );
 }
 
-/** 提交者：访客显示自己填写的名字；登录用户在是当前用户时显示“you”。 */
-export function authorLabel(author: ContributionSummary["author"], meId?: string | undefined) {
-  if ("guest_id" in author) return `${author.display_name} (guest)`;
-  return author.user === meId ? "you" : `user ${author.user}`;
+/**
+ * 提交者的显示文字。当前用户（登录用户或访客）显示“you”；访客显示自己填写的名字；
+ * 登录用户显示显示名与 namespace，都没有时才退回用户 ID。
+ */
+export function authorLabel(
+  author: ContributionSummary["author"],
+  me?: { user?: string | undefined; guest?: string | undefined },
+) {
+  if ("guest_id" in author) {
+    return author.guest_id === me?.guest ? "you" : `${author.display_name} (guest)`;
+  }
+  if (author.user === me?.user) return "you";
+  if (author.display_name && author.namespace)
+    return `${author.display_name} (${author.namespace})`;
+  return author.display_name ?? author.namespace ?? `user ${author.user}`;
 }
 
 type AgentFilter = "all" | "agent" | "human";
@@ -71,10 +82,13 @@ export function ContributionList({
   ns,
   name,
   meId,
+  guestId,
 }: {
   ns: string;
   name: string;
   meId?: string | undefined;
+  /** 以访客身份查看时的访客 ID：只会列出这个访客自己提交的。 */
+  guestId?: string | undefined;
 }) {
   const client = useRegistry();
   const ids = { status: useId(), agent: useId() };
@@ -153,7 +167,7 @@ export function ContributionList({
               <StatusStamp status={c.status} />
               {c.agent ? <AgentStamp /> : null}
               <span className="basis-full text-xs text-muted-foreground">
-                by <UserText text={authorLabel(c.author, meId)} /> ·{" "}
+                by <UserText text={authorLabel(c.author, { user: meId, guest: guestId })} /> ·{" "}
                 {new Date(c.created_at).toLocaleDateString()}
               </span>
             </li>
@@ -180,9 +194,14 @@ export function ContributionSettings({
   const [value, setValue] = useState<ContributionPolicy>(policy);
   const [saved, setSaved] = useState<string | null>(null);
   const [user, setUser] = useState("");
-  // 服务端没有列出邀请名单的接口：这里只显示本次操作过的用户。
-  const [invited, setInvited] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const invites = useQuery({
+    queryKey: keys.contributionInvites(ns, name),
+    queryFn: () => client.contributionInvites(ns, name),
+    enabled: value === "invited",
+  });
+  const refreshInvites = () =>
+    qc.invalidateQueries({ queryKey: keys.contributionInvites(ns, name) });
 
   const save = async () => {
     setError(null);
@@ -201,8 +220,8 @@ export function ContributionSettings({
     const id = user.trim();
     try {
       await client.invite(ns, name, id);
-      setInvited((l) => (l.includes(id) ? l : [...l, id]));
       setUser("");
+      await refreshInvites();
     } catch (e) {
       setError(
         isApiError(e, "contribution.invite_unknown_user")
@@ -216,7 +235,7 @@ export function ContributionSettings({
     setError(null);
     try {
       await client.uninvite(ns, name, id);
-      setInvited((l) => l.filter((x) => x !== id));
+      await refreshInvites();
     } catch {
       setError("The invitation could not be removed.");
     }
@@ -278,17 +297,35 @@ export function ContributionSettings({
               Invite
             </Button>
           </div>
-          {invited.length > 0 ? (
+          {invites.isError ? (
+            <p role="alert" className="text-sm text-seal">
+              The invitation list could not be loaded.
+            </p>
+          ) : invites.data && invites.data.items.length > 0 ? (
             <ul aria-label="Invited users" className="space-y-1 text-sm">
-              {invited.map((id) => (
-                <li key={id} className="flex items-center gap-2">
-                  <span className="font-mono text-xs">{id}</span>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => void uninvite(id)}>
+              {invites.data.items.map((i) => (
+                <li key={i.user} className="flex flex-wrap items-center gap-2">
+                  {i.display_name ? <UserText text={i.display_name} /> : null}
+                  {i.namespace ? (
+                    <span className="text-muted-foreground">
+                      <UserText text={i.namespace} />
+                    </span>
+                  ) : null}
+                  <span className="font-mono text-xs text-muted-foreground">{i.user}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Remove ${i.display_name ?? i.user}`}
+                    onClick={() => void uninvite(i.user)}
+                  >
                     Remove
                   </Button>
                 </li>
               ))}
             </ul>
+          ) : invites.data ? (
+            <p className="text-sm text-muted-foreground">Nobody is invited yet.</p>
           ) : null}
         </div>
       ) : null}

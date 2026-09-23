@@ -373,8 +373,13 @@ export const MergePreviewSchema = z.strictObject({
   reason: z.enum(["diverged", "slot_missing"]).optional(),
 });
 
+/** 登录用户附带显示名与个人 namespace（`@slug`，有则给），不包含邮箱。 */
 export const ContributionAuthorSchema = z.union([
-  z.strictObject({ user: z.string() }),
+  z.strictObject({
+    user: z.string(),
+    display_name: z.string().optional(),
+    namespace: z.string().optional(),
+  }),
   z.strictObject({ guest_id: z.string(), display_name: z.string() }),
 ]);
 
@@ -538,3 +543,33 @@ export const ConfirmImportRequestSchema = z.strictObject({
   rights: z.enum(["original", "fan-work", "licensed"]),
   license: SpdxExpressionSchema,
 });
+
+// ---------------------------------------------------------------------------
+// Release 的源内容与邀请名单
+// ---------------------------------------------------------------------------
+
+/**
+ * `GET …/releases/:label/source`：Release 对应的 Revision 与 canonical Creation。
+ * 提交 Contribution 时在这份内容上修改，`base_revision` 取这里的 `revision`。
+ */
+export const ReleaseSourceSchema = z.strictObject({
+  revision: z.string(),
+  semantic_digest: DigestSchema,
+  creation: z.unknown(),
+  /** Release 被 yank 时附带的提示。 */
+  warning: z.string().optional(),
+});
+export type ReleaseSource = z.infer<typeof ReleaseSourceSchema>;
+
+/** `GET …/contribution-invites`：只有作者可见。 */
+export const ContributionInvitesResponseSchema = z.strictObject({
+  items: z.array(
+    z.strictObject({
+      user: z.string(),
+      display_name: z.string().nullable(),
+      namespace: z.string().nullable(),
+      invited_at: z.string(),
+    }),
+  ),
+});
+export type ContributionInvite = z.infer<typeof ContributionInvitesResponseSchema>["items"][number];
