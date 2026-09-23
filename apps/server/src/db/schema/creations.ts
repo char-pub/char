@@ -170,7 +170,11 @@ export const revisions = app.table(
     message: text("message"),
     createdAt: createdAt(),
   },
-  (t) => [index("revisions_creation_idx").on(t.creationId, t.createdAt)],
+  (t) => [
+    index("revisions_creation_idx").on(t.creationId, t.createdAt),
+    // 同一内容只保留一个 Revision，重复提交直接返回已有的。
+    uniqueIndex("revisions_creation_semantic_uq").on(t.creationId, t.semanticDigest),
+  ],
 );
 
 export const revisionFragments = app.table(
