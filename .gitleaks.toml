@@ -20,6 +20,7 @@ paths = [
 ]
 
 [[allowlists]]
+# 旧设计稿已迁出工作树；git 全历史扫描仍需识别其非凭据 UUID。
 description = "Pencil design files record the file's UUID as fileToken; it identifies the file and is not a credential"
 condition = "AND"
 paths = [

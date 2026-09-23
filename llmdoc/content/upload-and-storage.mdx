@@ -24,4 +24,6 @@ relations:
 
 处理后的上传最初仍在私有 CAS。草稿引用了 digest 或上传达到 ready，并不代表公共对象已经存在；公开发布负责把解析结果实际引用的 mirrored 资产复制到公共存储。linked 资产仍由外部来源提供，不能当作本地 CAS 对象复制。
 
-当前 worker 组装注入的是 `noopScanner`，因此不能声称上线前自动 CSAM 扫描已经成为发布保证。实际命中、举报或下架由独立处置流程承担；把真实扫描器接入时要重新审阅 quarantine 到 ready 的状态转换。
+当前 worker 组装注入的是 `noopScanner`，因此不能声称上线前自动 CSAM 扫描已经成为发布保证。实际命中、举报或下架由独立处置流程承担；把真实扫描器接入时要重新审阅 quarantine 到 ready 的状态转换。真实 provider 暂不可用时须保持 processing 并重试、告警，不可自动放行；积压危及运行时暂停上传。
+
+HTTP Source 和 linked URL 是声明性来源，不应在 Registry 中无条件主动抓取任意地址；新增抓取能力会引入独立的 SSRF、重定向、大小和内网访问边界，必须重新设计。对上传只信任服务端读取与净化结果，不信任扩展名、客户端 MIME 或请求里自报的 digest。

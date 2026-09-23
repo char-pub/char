@@ -1,0 +1,54 @@
+---
+description: "v0 上线验收与未完成人工门槛：conformance expected、commons 审校、备份演练、外部账号与合规政策"
+kind: guide
+code:
+  paths:
+    - "apps/web/src/routes/policy.tsx"
+    - "content/commons/REVIEW.md"
+    - "spec/conformance/README.md"
+relations:
+  requires:
+    - "engineering/verification.mdx"
+  related:
+    - "engineering/working-agreements.mdx"
+    - "interoperability/conformance.mdx"
+    - "operations/commons-seed.mdx"
+    - "operations/database-recovery.mdx"
+    - "operations/deploy-and-edge.mdx"
+---
+
+# v0 验收与正式开放
+
+迁移旧目标文档不改变验收结果。最近仓库证据截至 2026-09-24，产品已部署，但 v0 尚未完成最终验收。代码实现、本地测试、主站只读冒烟、真实外部服务联调与人工认可分别证明不同条件，不能互相替代。每次准备开放或宣布完成时，以最终提交重新核对以下门槛。
+
+## 尚未关闭的门槛
+
+| 领域 | 必须取得的完成证据 |
+| --- | --- |
+| 公开仓库安全 | 最终复核安全基线及 Renovate App 实际运行；组织强制 2FA、secret scanning、push protection、main 保护的实际配置证据。依赖审查旧故障已有通过记录，不能继续当作当前失败，也不能据此推断其他设置已完成。 |
+| 规范和跨运行时语义 | 人工审阅 spec/schema 快照；审阅并接受 conformance expected，再在 Node、浏览器、workerd 中验证 Resolver 字节一致、binding/override/多路径/菱形冲突、九条发布拒绝规则、CCv3 往返与 Assembler 行为。目前用例仍全部为 draft，运行成功不等于语义基线通过。 |
+| 创作者理解性 | 在当前页面重生成 Preview Trace、Context Diff、编辑和 Import Report 证据，人工确认来源、激活/覆盖原因、token 估算和评级/许可差异易于理解。旧布局截图已失效。 |
+| 恢复与应急 | 启用 Railway Postgres 备份，恢复到新实例并比对数据、审计链；人工审阅密钥轮换、CSAM、法律下架、数据泄露、DoS、数据库恢复及 break-glass 七类流程。 |
+| 公共内容 | 人工审校并发布 20–50 个许可清晰的 World/Lorebook，至少一个示例 Character 精确引用；commons 候选与离线检查不等于已发布。 |
+| 包发布 | 核实 npm scope/组织条件，完成 core、ccv3、assembler、cli 的 trusted publishing 与 provenance；发布需要明确授权。 |
+| 运营合规 | 确定运营主体、公开联系渠道与政策正文；复核 NCMEC ESP 注册、被动扫描通知责任和事件流程。仓库没有这些事项的完整关闭证据。PhotoDNA 接入及存量补扫属于后续工作，不阻塞采用已声明 noop 边界的 v0。 |
+| 正式开放 | 在最终状态完成下表主站 E2E、完整回归、安全检查、smoke 和用户人工验收，再取得用户正式对外开放的确认。已部署和健康检查通过不构成此确认。 |
+
+## 主站端到端验收
+
+使用专门测试账号、仓库与合成数据，结束清理，不拿真实用户作品或非法素材演练。以下仍缺完整主站闭环证据；已完成的局部联调应保留而不夸大范围。
+
+1. 新用户 GitHub 登录，Native 创建与发布，匿名读取作品、IR 和附 Loss Report 的 CCv3。
+2. 合成 CCv3 PNG 上传，审阅 Import Report，发布再导出并核对 Loss Report。
+3. Character 引用 intrinsic World 和 keyword Lorebook；Preview 解释来源与触发，依赖升级可见 Diff，菱形冲突被拒。
+4. 真实 Action 成功发布与不允许 ref 的拒绝已验证；仍需第二账号完成改名后同名仓库劫持拒绝、transfer 冻结、作者确认恢复。
+5. 第二账号贡献与作者并行编辑：非冲突 rebase、冲突阻止、敏感字段单独确认、Agent 筛选及限流。
+6. private 隔离、public 依赖 private 被拒、GPS 元数据剥离；仅用合成图片演练员工标记 CSAM 后的隔离、保全和事件流程。
+7. Access 组织门禁、A→B→C 下架级联、公网 URL 404、resolve 410、审计、配置源健康时五秒内开关传播与保留 namespace 拒绝。
+8. Railway 备份恢复到新实例，核对备份时刻的数据与审计链。
+
+最终状态需通过 `pnpm ci:all` 以及独立 CI 的 CodeQL、依赖审查等检查，满足覆盖率和密钥扫描门禁；规范、决策、llmdoc 与实现一致。用户主站人工验收要记录日期与结论，证据失效则重验。尚有上述门槛时不得宣布 v0 全部完成。
+
+## 可追溯的历史证据
+
+2026-09-24 的 [PR #7](https://github.com/char-pub/char/pull/7) 对应源提交 `abf4e35674db60cba5776cef98f3e67cb5977244`；[PR CI](https://github.com/char-pub/char/actions/runs/35905331763) 与 [main CI](https://github.com/char-pub/char/actions/runs/35906143929) 保留运行记录。仓库当时记录本地完整回归、全栈检查与六项线上 smoke 通过，没有执行删除申请。它们是历史证据，不说明当前线上版本或补齐人工、第二账号、备份恢复验收；精确部署日志可从 Git 历史恢复。

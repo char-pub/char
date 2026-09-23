@@ -1,0 +1,25 @@
+---
+description: "DMCA 法律请求、可逆停止访问、反通知恢复、法院通知与 case 导出操作"
+kind: guide
+code:
+  paths:
+    - "apps/server/src/admin/routes/legal.ts"
+    - "apps/server/src/admin/routes/legal-actions.ts"
+relations:
+  requires:
+    - "operations/takedown-and-evidence.mdx"
+  related:
+    - "operations/csam-response.mdx"
+---
+
+# 法律请求与反通知
+
+legal/owner 处理 DMCA、法院命令、数据删除及其他法律请求。登记类型、加密申请人信息、收到时间与截止时间、URL 或作品/fragment 引用。DMCA 需核对签名、作品说明、侵权位置、联系方式、善意声明、准确性与授权声明；缺项先补充。数据删除请求先核实身份与数据关联。具体法律适用由 legal 复核。
+
+处置前 dry-run，核对依赖闭包中的所有 Release、IR、导出物、缩略图、CDN URL 和下游作者；超过 50 个 Release 的下架需要四眼确认。DMCA 默认先执行可逆的 Disable access，关联 case 隐藏 Creation；确需永久删除时才 tombstone。可逆隐藏与不可逆 tombstone 必须在确认时区分。
+
+公开原因使用 `legal.dmca`、`legal.court_order`、`legal.gdpr`、`policy.minor_sexual`、`policy.illegal`、`policy.non_consensual`、`policy.malware` 或 `author.request`；未成年人性内容转入 CSAM 流程。处置后检查状态与审计。执行 tombstone 后，另须等待 worker 删除分发副本、CDN 清除和 URL 404 核验完成，并通知下游作者移除依赖后重新发布；Disable access 只隐藏 Creation，不删除分发副本，也不使已 pin 的依赖自动失效。通知作者仅提供公开原因和反通知途径，不暴露申请人，并向申请人反馈结果。
+
+反通知先核对签名、原内容与位置、善意、管辖及联系信息，加密登记正文和收到时间，再转交原申请人。当前实现按 UTC 周一至五计算：第 12 个工作日起允许恢复、第 14 个工作日为截止，未实现节假日表；这是实现策略，不能当作所有司法情形均合规的保证。接获已起诉通知时登记 court action，阻断恢复。
+
+恢复只解除这个 case 造成的隐藏，其他独立隐藏原因继续生效；tombstone 跳过且不可恢复。核对恢复结果与跳过数量，逾期恢复需保留结果和审计标记。Export case record 包含解密后的申请人、反通知信息、处置和审计轨迹，必须填理由、审计并仅保存到受控位置。case 中记录结论与日期，支持后续透明度报告。

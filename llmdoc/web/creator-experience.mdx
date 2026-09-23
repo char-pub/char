@@ -1,8 +1,9 @@
 ---
-description: "浏览器预览是否等于真实 Runtime；Web 创作端草稿自动保存、If-Match 冲突、导入、查询缓存及服务端权限边界"
+description: "Web 品牌视觉、CJK 排版、创作者旅程与页面状态；草稿冲突、导入确认、预览和服务端权限边界"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/styles.css"
     - "apps/web/src/components/editor/avatar-field.tsx"
     - "apps/web/src/main.tsx"
     - "apps/web/src/lib/api.ts"
@@ -31,3 +32,19 @@ Web SPA 负责内容浏览、草稿编辑、导入审阅和本地预览，通过
 刷新或换设备后的预览与未完成导入应从授权 API 的持久状态恢复，不能只依赖浏览器内存。删除请求界面须明确呈现提交回执与审阅状态，不能把请求已提交表现成账号或内容已删除。
 
 预览使用 Core Resolver 与参考 Assembler，但浏览器的 tokenizer、尚未持久化的草稿以及会话输入可能与最终 Runtime 不同；预览只用于作者判断，不能作为发布完整性证明。前端路由、角色和分级过滤只是呈现层，真正可见性由 API 决定。
+
+## 旅程与界面反馈
+
+普通作者以 Web 为默认入口：注册 namespace 后新建或导入、编辑、发布；访客先理解评级、依赖与许可，再预览和下载；技术用户可锁定和比较版本。作品的 Overview、Context preview、Versions、Contributions 共用头部与外框，编辑器是独立工作区；Diff 归入 Versions。作品设置、创作操作与账号设置各有职责，举报和本人删除请求不能混为一条渠道。
+
+依赖选择必须明确版本与 Core/Recommended 语义。Contribution 接受仅进入草稿，仍要另外发布；敏感字段逐项确认、不提供全选，冲突不能接受。邀请通过 namespace 表达，不要求手写 UUID。导入的权利、评级与许可不可预选替作者确认；Token 明文仅展示一次；mature 临时遮挡解除与长期账号偏好分开。
+
+每个数据页面明确区分加载骨架、空态与下一步、错误与重试、需登录、功能关闭、mature 遮挡、统一私有/不存在 404、已移除 410 与公开原因、成功回执。API 尚无数据时使用诚实的 fallback，不能伪造头像、统计、加入时间、来源或依赖标签，也不能提供没有功能的按钮。
+
+## 品牌与视觉约定
+
+产品 UI 使用英文，为中文和日文长度、断行留余量。logo/wordmark/lockup 直接复用 `vendor/brand-assets` 及 dark 变体，不手绘改色。Plus Jakarta Sans 用于正文和标题，JetBrains Mono 用于作品引用、digest、fragment ID，经 @fontsource 自托管以符合 CSP。
+
+面板使用底色与 1px 边框，阴影限于菜单、dialog、toast；每区一个橙底深色文字主按钮。Character 橙、World 紫、Lorebook 蓝，链接蓝；危险红独立于强调色。General 绿、Teen 琥珀、Mature 浅红、Explicit 实红。主题支持 light/dark/system；Sand #F8F7F4、Night #171B22、Ink #0F172A 为基底，品牌 #FF6B3D/#8B5CF6/#2563EB 用作文字时加深以满足对比。
+
+原设计尺度保留为维护约束，实际 token 由样式源码持有：圆角 6/8/12/16 对应 chip/input-button/card/panel-dialog，另有 pill；间距 4/8/12/16/24/32/48/64；内容最大宽度 1200，桌面 gutter 32、移动端 16。字体规格为 Display 56/1.05/800、H1 36/1.15/700、H2 24/1.25/700、H3 18/1.35/600、正文 15/1.6/400、小字 13/1.45/500、标签 12/700/tracking 0.8、mono 13/500（字号/行高/字重）。原画板示例数据与占位插画不构成协议或当前实现事实。

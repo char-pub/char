@@ -3,6 +3,7 @@ description: "Railway 三进程部署、共享删除加密密钥、生产前端�
 kind: guide
 code:
   paths:
+    - ".env.example"
     - "infra/DEPLOY.md"
     - ".railway/railway.ts"
     - "apps/server/src/db/migrate.ts"
@@ -34,3 +35,5 @@ relations:
 修改边缘规则先检查计划差异与 dry run，只变更由 `charpub_` 标识的受管规则，不能批量覆盖同区其他规则。保密值只经环境或凭据机制传入，不写进日志、仓库或变更说明。公开资产重定向后的 Origin 可能变化，因此公共桶的 CORS 与上传桶不能套用同一策略。
 
 放流后按 API、管理入口、worker 健康和关键读写路径做冒烟；失败时先判定是迁移、配置、边缘路由还是业务任务，再按可回滚范围恢复。创建公开资源、变更收费配置或执行实际边缘写入前，应把具体变更与风险交给用户确认。当前资源名和命令以部署配置与脚本为准。
+
+运营只保留一个 production 主站，不设 staging；本地全栈与 CI 承担上线前验证。不要假定提交一定触发 Railway 自动部署，宣布完成前核对三个服务实际源 commit。Access 策略须把组织成员条件作为 Include，并要求 GitHub 身份，不能把任何 GitHub 登录当作员工授权。
