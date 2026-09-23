@@ -6,6 +6,10 @@
  * - `success` 为 true；
  * - `hostname`（widget 所在页面的域名）在允许列表中，防止别的站点嵌入我们的 site key 代刷；
  * - `action` 与调用方期望的一致，防止把一个表单的 token 拿到另一个表单上用。
+ *
+ * Cloudflare 公开的测试密钥（例如“始终通过”的 secret）返回固定的 hostname，不带 action，
+ * 并在 `metadata.result_with_testing_key` 中标明。这样的结果只在本地开发时接受（跳过
+ * hostname 与 action 检查）；其他环境一律拒绝，免得线上误配了测试密钥之后校验形同虚设。
  */
 import { z } from "zod";
 
@@ -27,6 +31,8 @@ export interface CloudflareTurnstileOptions {
   allowedHostnames: readonly string[];
   /** 前端渲染 widget 时声明的 action。 */
   action: string;
+  /** 是否接受 Cloudflare 测试密钥给出的结果。只在本地开发时开启。 */
+  allowTestingKeys?: boolean;
   /** siteverify 地址；测试时指向本地替身。 */
   endpoint?: string;
   fetch?: typeof fetch;
@@ -38,6 +44,7 @@ const SiteverifyResponseSchema = z.looseObject({
   hostname: z.string().optional(),
   action: z.string().optional(),
   "error-codes": z.array(z.string()).optional(),
+  metadata: z.looseObject({ result_with_testing_key: z.boolean().optional() }).optional(),
 });
 
 export class CloudflareTurnstile implements TurnstileVerifier {
@@ -77,6 +84,9 @@ export class CloudflareTurnstile implements TurnstileVerifier {
     if (!parsed.success) return { ok: false, reason: "bad-response" };
     const r = parsed.data;
     if (!r.success) return { ok: false, reason: r["error-codes"]?.[0] ?? "rejected" };
+    if (r.metadata?.result_with_testing_key === true) {
+      return this.opts.allowTestingKeys ? { ok: true } : { ok: false, reason: "testing-key" };
+    }
     if (!r.hostname || !this.hostnames.has(r.hostname.toLowerCase())) {
       return { ok: false, reason: "hostname-mismatch" };
     }

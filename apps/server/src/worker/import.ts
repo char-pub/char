@@ -20,8 +20,11 @@
  * - 原件或图片命中黑名单：整个导入被拒绝，不说明原因；
  * - CSAM 扫描命中：走与普通上传相同的处置路径（隔离、保全证据、锁定账号），导入被拒绝；
  * - 扫描服务暂时不可用、存储或数据库出错：抛出异常，按队列策略重试，不会跳过扫描。
+ *   重试用尽时导入标记为 failed（`import.internal_error`），原件保留；admin 从死信队列重新
+ *   投递后，这样的导入会重新进入 processing 继续处理。
  *
- * 幂等：只处理 pending / processing 的导入；成功的写入用 runOnce 记录，重复投递直接跳过。
+ * 幂等：只处理 pending / processing（以及上面这种可以重投的 failed）的导入；
+ * 成功的写入用 runOnce 记录，重复投递直接跳过。
  */
 import {
   type ImportedAsset,
@@ -51,7 +54,7 @@ import {
   uploads,
 } from "../db/schema/index.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
-import { runOnce } from "../jobs/queue.js";
+import { type JobQueue, runOnce } from "../jobs/queue.js";
 import { handleCsamHit } from "../moderation/csam.js";
 import { forceIdentity } from "../registry/drafts.js";
 import { encodeId } from "../registry/ids.js";
@@ -242,7 +245,8 @@ function applyAssets(
 
 export async function handleImportJob(deps: ImportDeps, job: ImportJob): Promise<ImportOutcome> {
   const { db, cas } = deps;
-  const [imp] = await db.select().from(imports).where(eq(imports.id, job.import_id)).limit(1);
+  let [imp] = await db.select().from(imports).where(eq(imports.id, job.import_id)).limit(1);
+  if (imp && isRetryableFailure(imp)) imp = await reviveImport(deps, imp);
   if (!imp || (imp.status !== "pending" && imp.status !== "processing")) return "skipped";
   const [u] = await db.select().from(uploads).where(eq(uploads.id, imp.uploadId)).limit(1);
 
@@ -479,4 +483,86 @@ export async function handleImportJob(deps: ImportDeps, job: ImportJob): Promise
   if (outcome === "name_taken") return fail("import.name_taken");
   if (outcome === "succeeded") await cas.deleteUpload(u.stagingKey);
   return outcome;
+}
+
+/**
+ * 重试用尽时的错误码。这类失败不是卡片本身的问题（例如存储或数据库长时间不可用），
+ * 原件仍然保留在 uploads 桶里，从死信队列重新投递后可以继续处理。
+ */
+export const IMPORT_INTERNAL_ERROR = "import.internal_error";
+
+type ImportRow = typeof imports.$inferSelect;
+
+function isRetryableFailure(imp: ImportRow): boolean {
+  return imp.status === "failed" && imp.errorCode === IMPORT_INTERNAL_ERROR;
+}
+
+/**
+ * 死信重新投递时，把因内部错误失败的导入放回 processing 并清掉错误。
+ * 期间用户已经用同一个名字发起了另一个进行中的导入时（部分唯一索引冲突），保持失败不动。
+ */
+async function reviveImport(deps: ImportDeps, imp: ImportRow): Promise<ImportRow | undefined> {
+  try {
+    const [row] = await deps.db
+      .update(imports)
+      .set({ status: "processing", errorCode: null, errorDetail: null, updatedAt: deps.now() })
+      .where(
+        and(
+          eq(imports.id, imp.id),
+          eq(imports.status, "failed"),
+          eq(imports.errorCode, IMPORT_INTERNAL_ERROR),
+        ),
+      )
+      .returning();
+    return row ?? imp;
+  } catch (e) {
+    if (isUniqueViolation(e)) return imp;
+    throw e;
+  }
+}
+
+function isUniqueViolation(e: unknown): boolean {
+  for (let cur: unknown = e; cur; cur = (cur as { cause?: unknown }).cause) {
+    if ((cur as { code?: unknown }).code === "23505") return true;
+  }
+  return false;
+}
+
+/**
+ * 最后一次尝试失败：把仍在进行中的导入标记为失败，发起人查询时能看到结果，而不是一直
+ * “处理中”。不删除原件，以便从死信重新投递后继续处理。
+ */
+export async function markImportInternalError(
+  deps: Pick<ImportDeps, "db" | "now">,
+  importId: string,
+  err: unknown,
+): Promise<void> {
+  const detail = err instanceof Error ? err.message.slice(0, 500) : "unknown error";
+  await deps.db
+    .update(imports)
+    .set({
+      status: "failed",
+      errorCode: IMPORT_INTERNAL_ERROR,
+      errorDetail: detail,
+      updatedAt: deps.now(),
+    })
+    .where(and(eq(imports.id, importId), inArray(imports.status, ["pending", "processing"])));
+}
+
+/** 注册导入任务的处理函数。 */
+export async function registerImportWorker(
+  queue: JobQueue,
+  deps: ImportDeps,
+  options: { pollingIntervalSeconds?: number } = {},
+): Promise<string> {
+  return queue.work<ImportJob>(
+    QUEUE_NAMES.importCcv3,
+    async (job) => {
+      await handleImportJob(deps, job.data);
+    },
+    {
+      ...options,
+      onFinalFailure: (job, err) => markImportInternalError(deps, job.data.import_id, err),
+    },
+  );
 }

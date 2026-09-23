@@ -87,6 +87,35 @@ describe("CloudflareTurnstile", () => {
     expect(await t.verify("token")).toEqual({ ok: false, reason: "bad-response" });
   });
 
+  it("accepts results produced by Cloudflare's testing keys only when allowed", async () => {
+    // siteverify 对“始终通过”的测试 secret 的实际响应：hostname 固定，没有 action。
+    const testingKeyResponse = async () =>
+      Response.json({
+        success: true,
+        "error-codes": [],
+        challenge_ts: "2026-09-23T01:54:39.598Z",
+        hostname: "example.com",
+        metadata: { result_with_testing_key: true },
+      });
+    const make = (allowTestingKeys?: boolean) =>
+      new CloudflareTurnstile({
+        secret: "1x0000000000000000000000000000000AA",
+        allowedHostnames: ["localhost"],
+        action: "guest_verification",
+        fetch: testingKeyResponse,
+        ...(allowTestingKeys !== undefined ? { allowTestingKeys } : {}),
+      });
+    expect(await make().verify("XXXX.DUMMY.TOKEN.XXXX")).toEqual({
+      ok: false,
+      reason: "testing-key",
+    });
+    expect(await make(false).verify("XXXX.DUMMY.TOKEN.XXXX")).toEqual({
+      ok: false,
+      reason: "testing-key",
+    });
+    expect(await make(true).verify("XXXX.DUMMY.TOKEN.XXXX")).toEqual({ ok: true });
+  });
+
   it("refuses to be constructed without a secret or hostnames", () => {
     expect(
       () => new CloudflareTurnstile({ secret: "", allowedHostnames: ["a"], action: "x" }),

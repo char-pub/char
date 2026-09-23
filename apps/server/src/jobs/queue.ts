@@ -10,7 +10,7 @@
  *   任务被重复投递（例如执行成功但确认前进程崩溃）时直接跳过。
  */
 import { sql } from "drizzle-orm";
-import { fromDrizzle, type Job, PgBoss } from "pg-boss";
+import { fromDrizzle, type JobWithMetadata, PgBoss } from "pg-boss";
 import type { Executor, Tx } from "../db/client.js";
 import { jobEffects } from "../db/schema/index.js";
 import type { QueueName } from "./definitions.js";
@@ -83,24 +83,58 @@ export class JobQueue {
     });
   }
 
-  /** 注册处理函数。每次取一个任务；抛出异常即视为失败，按队列配置重试或进入死信队列。 */
+  /**
+   * 注册处理函数。每次取一个任务；抛出异常即视为失败，按队列配置重试或进入死信队列。
+   *
+   * `onFinalFailure` 在最后一次尝试失败、任务即将进入死信队列时调用，用来把业务对象标记为
+   * 失败，免得它一直停在“处理中”。它自己出错只记录，原来的异常照常抛出，任务照常进入死信。
+   */
   async work<T>(
     name: QueueName,
-    handler: (job: Job<T>) => Promise<void>,
-    options: { pollingIntervalSeconds?: number; localConcurrency?: number } = {},
+    handler: (job: JobWithMetadata<T>) => Promise<void>,
+    options: {
+      pollingIntervalSeconds?: number;
+      localConcurrency?: number;
+      onFinalFailure?: (job: JobWithMetadata<T>, err: unknown) => Promise<void>;
+    } = {},
   ): Promise<string> {
-    return this.boss.work<T>(
+    const { onFinalFailure } = options;
+    return this.boss.work(
       name,
       {
         batchSize: 1,
+        includeMetadata: true,
         pollingIntervalSeconds: options.pollingIntervalSeconds ?? 2,
         localConcurrency: options.localConcurrency ?? 1,
       },
-      async (jobs) => {
-        for (const job of jobs) await handler(job);
+      async (jobs: JobWithMetadata<T>[]) => {
+        for (const job of jobs) {
+          try {
+            await handler(job);
+          } catch (err) {
+            if (onFinalFailure && isFinalAttempt(job)) {
+              await onFinalFailure(job, err).catch((e: unknown) =>
+                this.reportError(e instanceof Error ? e : new Error(String(e))),
+              );
+            }
+            throw err;
+          }
+        }
       },
     );
   }
+
+  private reportError(err: Error): void {
+    this.boss.emit("error", err);
+  }
+}
+
+/**
+ * 这是不是最后一次尝试：pg-boss 每次重新取出任务时把 retryCount 加一，
+ * retryCount 达到 retryLimit 后再失败，任务就进入死信队列。
+ */
+export function isFinalAttempt(job: Pick<JobWithMetadata, "retryCount" | "retryLimit">): boolean {
+  return job.retryCount >= job.retryLimit;
 }
 
 /**

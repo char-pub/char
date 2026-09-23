@@ -19,9 +19,10 @@ import type { GitHubSource } from "../github/source.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
 import { CloudflarePurger, LoggingPurger } from "../ops/cdn.js";
 import { noopScanner } from "../upload/csam.js";
+import { cleanupLogLine, runCleanup } from "../worker/cleanup.js";
 import { type ExportJob, handleExportJob } from "../worker/export.js";
 import { runGitHubReconcile, runGitHubSync, type SyncJob } from "../worker/github.js";
-import { handleImportJob, type ImportJob } from "../worker/import.js";
+import { registerImportWorker } from "../worker/import.js";
 import { registerPublishWorker, requeuePendingPublishes } from "../worker/publish.js";
 import { dispatchTombstoneJob, type TombstoneQueueJob } from "../worker/tombstone-dispatch.js";
 import { registerUploadWorkers } from "../worker/upload.js";
@@ -67,9 +68,7 @@ export async function startWorkers(services: Services): Promise<void> {
   };
   await registerUploadWorkers(services.queue, pipelineDeps);
   // 角色卡导入：卡片里的图片与普通上传使用同一套处理与扫描。
-  await services.queue.work<ImportJob>(QUEUE_NAMES.importCcv3, async (job) => {
-    await handleImportJob(pipelineDeps, job.data);
-  });
+  await registerImportWorker(services.queue, pipelineDeps);
   await registerPublishWorker(services.queue, {
     db: services.db,
     cas: services.cas,
@@ -87,6 +86,12 @@ export async function startWorkers(services: Services): Promise<void> {
     );
   });
   await services.queue.boss.schedule(QUEUE_NAMES.publishRequeue, "*/5 * * * *");
+  // 过期的访客验证与会话、OIDC jti、旧的 webhook 投递记录与限流计数；每小时一次。
+  await services.queue.work(QUEUE_NAMES.maintenanceCleanup, async () => {
+    const at = now();
+    process.stdout.write(cleanupLogLine(at, await runCleanup(services.db, at)));
+  });
+  await services.queue.boss.schedule(QUEUE_NAMES.maintenanceCleanup, "41 * * * *");
   await services.queue.work<ExportJob>(QUEUE_NAMES.exportBuild, async (job) => {
     await handleExportJob({ db: services.db, cas: services.cas }, job.data);
   });
