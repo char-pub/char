@@ -12,3 +12,9 @@ regexTarget = "match"
 regexes = [
   '''^(?:instance_key|key)"\s*:\s*"(?:[pl]:)?[0-9a-f]{64}"$''',
 ]
+
+[[allowlists]]
+description = "pnpm dev keeps its locally generated session secret in the git-ignored .dev/ directory"
+paths = [
+  '''(^|/)\.dev/''',
+]
