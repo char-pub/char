@@ -101,18 +101,6 @@
   --input: var(--border-strong);
   /* 焦点环用蓝色：橙色在 Sand 上对比度不足 3:1。 */
   --ring: var(--blue);
-
-  /* 过渡用，页面改完后删除：旧的“目录卡片”配色名映射到新 token。 */
-  --seal: var(--primary-text);
-  --seal-soft: var(--primary-soft);
-  --moss: var(--success);
-  --moss-soft: var(--success-soft);
-  --amber: var(--warning);
-  --amber-soft: var(--warning-soft);
-  --rule: var(--border);
-  --paper: var(--bg);
-  --paper-deep: var(--surface-2);
-  --ink-soft: var(--text-2);
 }
 
 .dark {
@@ -157,8 +145,6 @@
 @theme inline {
   --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
-  /* 过渡用，页面改完后删除：标题不再用衬线字体，`font-display` 等同于 `font-sans`。 */
-  --font-display: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
 
   /* 品牌 token（用途见 :root 的注释）。 */
   --color-bg: var(--bg);
@@ -206,16 +192,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  /* 过渡用，页面改完后删除。 */
-  --color-seal: var(--seal);
-  --color-seal-soft: var(--seal-soft);
-  --color-moss: var(--moss);
-  --color-moss-soft: var(--moss-soft);
-  --color-amber: var(--amber);
-  --color-amber-soft: var(--amber-soft);
-  --color-rule: var(--rule);
-  --color-paper-deep: var(--paper-deep);
 
   /* 圆角：6 小标签 / 8 按钮和输入框 / 12 卡片 / 16 面板和对话框；徽章用 rounded-full。 */
   --radius-sm: 0.375rem;
@@ -292,17 +268,6 @@
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
-  }
-}
-
-@layer components {
-  /* 过渡用，页面改完后删除：旧的目录卡片改成普通卡片（1px 边框、12px 圆角、无阴影）。 */
-  .catalog-card {
-    @apply relative rounded-lg border bg-card text-card-foreground;
-  }
-  /* 过渡用，页面改完后删除：旧的印章改成小号徽章，新代码用 `Badge`。 */
-  .stamp {
-    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs leading-4 font-medium whitespace-nowrap;
   }
 }
 
