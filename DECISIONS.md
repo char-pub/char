@@ -916,3 +916,9 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 3. **上线前的验证**：没有 staging 之后，依靠 CI 全量回归、本地 `pnpm dev` 与全栈端到端测试，以及 Railway 部署前自动迁移、迁移失败不部署。在主站上的端到端演练使用测试账号、测试仓库与合成数据，结束后清理。
 4. **防止误操作**：Railway 定义在 `production` 以外的 environment 中执行时直接报错（有测试覆盖）。以后如果需要预发布环境，必须使用与主站完全独立的凭证。
 5. **验收条目**：DOD 中“在 staging 上”的条目改为“在主站上”；M9-6 改为主站正式对外开放前的最终确认。已勾选的条目不受影响。
+
+### D-156 OIDC 发布比对 Action 算法下的 digest — Accepted（缺陷修复）
+
+1. **问题**：第一次在主站用真实 GitHub Action 做 OIDC 发布时，一律返回 `publish.source_digest_mismatch`。char.yaml 通常不写内部 Creation ID，Action 在 CI 里用 CLI 由 ref 派生的占位 ID 计算 semantic digest；Registry 重新读取源文件后用真实 ID 计算，两者必然不同。集成测试的“Action 上报值”也借用了 Registry 的计算方式，所以没有发现。
+2. **修复**：Registry 读取源文件时同时按 Action 的算法（不替换 ID）算出 `reported_digest`，只用它与 Action 上报的值比对；存入 Revision 与 Release 的内容仍然使用真实 ID。防护不变：比对的仍是 Registry 自己在 OIDC token 指定的 commit 上读取的内容，Action 上报的值只用于尽早发现不一致。
+3. **回归测试**：用 Action 实际调用的 `buildLocal` 构建同一份源文件，断言它的 digest 等于 `reported_digest`（修复前失败）；集成测试改为按 Action 的方式计算上报值，并分别校验 Release 的 digest 与上报值。

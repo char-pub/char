@@ -162,13 +162,13 @@ export function oidcPublishModule(gh: GitHubDeps): (app: Hono<Env>) => void {
           if (!isCharError(e)) throw e;
           return problem(c, 422, e.code, e.detail, { subject: e.subject });
         }
-        if (loaded.semantic_digest !== body.semantic_digest) {
+        if (loaded.reported_digest !== body.semantic_digest) {
           return problem(
             c,
             422,
             "publish.source_digest_mismatch",
             "the content at this commit does not match what the workflow built",
-            { reported: body.semantic_digest, computed: loaded.semantic_digest },
+            { reported: body.semantic_digest, computed: loaded.reported_digest },
           );
         }
 

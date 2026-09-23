@@ -25,6 +25,12 @@ export interface SourceAtCommit {
 export interface LoadedSource {
   creation: CanonicalCreation;
   semantic_digest: Digest;
+  /**
+   * 按 Action 的算法算出的 digest：char.yaml 没有写内部 Creation ID 时，Action 用 CLI 由 ref
+   * 派生的占位 ID 计算，不知道 Registry 里的真实 ID。只用于与 Action 上报的值比对；存入
+   * Revision 的是上面用真实 ID 算出的内容。
+   */
+  reported_digest: Digest;
   /** 读取过的文件（char.yaml 与 include），用于记录 source_digest。 */
   files: string[];
 }
@@ -66,5 +72,6 @@ export async function loadSourceAtCommit(
     ...parsed.creation,
     id: expected.creationId,
   });
-  return { creation, semantic_digest, files: [...new Set(files)].sort() };
+  const reported_digest = canonicalizeCreation(parsed.creation).semantic_digest;
+  return { creation, semantic_digest, reported_digest, files: [...new Set(files)].sort() };
 }
