@@ -431,6 +431,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: 'catalog:'
         version: 3.1136.0
+      '@char-pub/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@char-pub/core':
         specifier: workspace:*
         version: link:../../packages/core
