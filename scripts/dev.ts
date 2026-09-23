@@ -38,10 +38,13 @@ interface DevState {
 /** 第一次运行时生成本地密钥，之后复用，重启不会让已登录的会话失效。 */
 export function loadOrCreateState(): DevState {
   if (existsSync(STATE_FILE)) return JSON.parse(readFileSync(STATE_FILE, "utf8")) as DevState;
-  const state: DevState = {
+  return saveState({
     betterAuthSecret: randomBytes(36).toString("base64url"),
     systemActorId: randomUUID(),
-  };
+  });
+}
+
+function saveState(state: DevState): DevState {
   mkdirSync(STATE_DIR, { recursive: true });
   writeFileSync(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
   return state;
@@ -120,6 +123,34 @@ function run(args: string[], env: NodeJS.ProcessEnv): void {
   });
 }
 
+/**
+ * 创建系统账号。多个 clone 或 worktree 共用同一个本地数据库时，库里可能已经有另一个 ID 的
+ * 系统账号：本地开发以数据库为准，改用那个 ID 并记进 `.dev/state.json`。
+ */
+function ensureSystemActor(state: DevState, overrides: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const env = devEnv(state, overrides);
+  try {
+    execFileSync("pnpm", ["exec", ...SERVER_ENTRY, "bootstrap", "--system-actor"], {
+      cwd: ROOT,
+      env: { ...process.env, ...env },
+      stdio: ["ignore", "inherit", "pipe"],
+    });
+    return env;
+  } catch (e) {
+    const stderr = String((e as { stderr?: Buffer }).stderr ?? "");
+    const existing = /system_actor_mismatch: \S+ already belongs to ([0-9a-f-]{36})/.exec(
+      stderr,
+    )?.[1];
+    if (!existing || overrides.SYSTEM_ACTOR_ID) {
+      process.stderr.write(stderr);
+      throw e;
+    }
+    const adopted = saveState({ ...state, systemActorId: existing });
+    process.stdout.write(`using the existing local system actor ${existing}\n`);
+    return devEnv(adopted, overrides);
+  }
+}
+
 const COLORS = { api: 36, worker: 35, web: 32 } as const;
 
 /** 启动一个长期运行的子进程，输出逐行加上带颜色的前缀。 */
@@ -184,10 +215,10 @@ async function main(): Promise<void> {
     });
   }
 
+  const overrides = localOverrides();
   const state = loadOrCreateState();
-  const env = devEnv(state, localOverrides());
-  run([...SERVER_ENTRY, "migrate"], env);
-  run([...SERVER_ENTRY, "bootstrap", "--system-actor"], env);
+  run([...SERVER_ENTRY, "migrate"], devEnv(state, overrides));
+  const env = ensureSystemActor(state, overrides);
 
   process.once("SIGINT", () => stop(0));
   process.once("SIGTERM", () => stop(0));
