@@ -182,3 +182,10 @@
 - 仓库改为单一主站：Railway 定义只针对 production（其他 environment 直接报错）；R2 桶名 `charpub-*`；Cloudflare 规则只含主站主机名（已 `cf:rules --apply` 并复核）；web / admin 的 wrangler 与 CSP、冒烟测试默认目标、DOD / 部署指南 / 设计文档 / runbook 都已改写。`pnpm test` 1307、`pnpm test:e2e` web 23 / admin 107 通过。
 - production 的 Railway plan：4 项新建、无修改与删除，**等待用户同意后 apply**。
 - 需要用户：为新的 `charpub-*` 桶重新创建 R2 S3 凭证（桶在 apply 之后创建）；Cloudflare Access 应用；OAuth App；GitHub App；SMTP。
+
+### 2026-09-23 主站上线（公开部分）
+
+- 用户同意后 apply production：Postgres 18.6 与 api / admin / worker；建 `charpub_app` 角色，写入数据库连接串与本机生成的密钥（会话签名、源站校验、法律加密、系统账号 ID）。用户在控制台为新的 `charpub-*` 桶创建 R2 凭证并放在仓库根目录的 `.env`（git 忽略）；我复制到仓库外的 `~/.charpub-secrets/production-r2.env` 后写入三个进程，并在本机与 Railway 容器内验证四个桶可读写。
+- 自定义域名 `api.char.pub`、`admin-api.char.pub`：DNS 记录经 Cloudflare API 创建，Railway 同步 ACTIVE。`assets.char.pub` 绑定 public 桶。web 部署到 `www.char.pub`。`bootstrap --system-actor` 完成。
+- 冒烟测试：web 与 api 4 项通过；admin 2 项等 Cloudflare Access。边缘防护：直连源站 403、伪造头无效、方法白名单生效、公共资源 CORS 只放行 www。详见 [evidence/2026-09-23-production-deploy.md](evidence/2026-09-23-production-deploy.md)。
+- 仍需用户：Cloudflare Access 应用（admin 与 admin SPA）；GitHub OAuth App（登录）；GitHub App（Source 与 OIDC 发布）；SMTP（访客验证）；Dependency graph、Renovate、secret scanning / push protection、分支保护、组织 2FA（M0-2、M0-3）；M8-3 截图与一致性用例的人工审阅。
