@@ -399,10 +399,12 @@ test("a guest verifies by email, then submits a contribution", async ({ page }) 
   );
 
   await page.goto("/c/writer/mira/contributions/new");
-  await expect(page.getByRole("heading", { name: "Contribute as a guest" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Contribute without an account" })).toBeVisible();
+  // 访客的署名一律是 “guest · 名字”。
   await page.getByLabel("Email").fill("wren@example.test");
-  await page.getByLabel("Name shown with your contributions").fill("Wren");
-  const send = page.getByRole("button", { name: "Send the link" });
+  await page.getByLabel("Name to credit").fill("Wren");
+  await expect(page.getByText(/Shown as “guest · Wren”/)).toBeVisible();
+  const send = page.getByRole("button", { name: "Email me a link" });
   await expect(send).toBeDisabled();
   await page.getByRole("button", { name: "I am human" }).click();
   await send.click();
@@ -419,11 +421,14 @@ test("a guest verifies by email, then submits a contribution", async ({ page }) 
   expect(api.calls.find((c) => c.path.endsWith("/confirm"))?.body).toEqual({
     token: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG",
   });
-  await expect(page.getByText("Contributing as Wren")).toBeVisible();
+  const identity = page.getByRole("region", { name: "Contributing as a guest" });
+  await expect(identity.getByText(/Verified as Wren until Oct 22, 2026/)).toBeVisible();
+  await expect(identity.getByText(/credited as “guest · Wren”/)).toBeVisible();
+  await expect(page.getByText("@writer reviews your change against their draft.")).toBeVisible();
 
   await page.getByLabel("#intro · character").fill("Mira keeps the old lighthouse.");
   await page.getByLabel("Title").fill("Mention the old lighthouse");
-  const submit = page.getByRole("button", { name: "Submit the contribution" });
+  const submit = page.getByRole("button", { name: "Submit 1 change" });
   await expect(submit).toBeDisabled();
   await page.getByLabel(/I license my contribution under CC-BY-4.0/).check();
   await submit.click();
@@ -459,4 +464,30 @@ test("a guest verifies by email, then submits a contribution", async ({ page }) 
   const mine = page.getByRole("list", { name: "Contributions" });
   await expect(mine.getByRole("listitem")).toHaveCount(1);
   await expect(mine.getByText("by you")).toBeVisible();
+});
+
+test("the propose page explains why a change can't be proposed", async ({ page }) => {
+  const api = await mockApi(page, ORIGIN);
+  api.on("GET /v1/me", problem(401, "auth.required"));
+  api.on(`GET ${BASE}`, { body: creationDetail({ contribution_policy: "signed-in" }) });
+  await page.goto("/c/writer/mira/contributions/new");
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { name: "Sign in to propose a change" })).toBeVisible();
+  await expect(main.getByText("Contributions to Mira need a char.pub account.")).toBeVisible();
+  await expect(main.getByRole("button", { name: "Sign in" })).toBeVisible();
+});
+
+test("the owner is sent to the editor instead of proposing a change", async ({ page }) => {
+  const api = await asAuthor(page);
+  api.on(`GET ${BASE}`, { body: creationDetail({ latest_release: undefined, releases: [] }) });
+  await page.goto("/c/writer/mira/contributions/new");
+  // 没有公开 Release 时先说明没有可以修改的基线。
+  await expect(page.getByRole("heading", { name: "Nothing to build on yet" })).toBeVisible();
+  api.on(`GET ${BASE}`, { body: creationDetail() });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "This is your creation" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Edit the draft" })).toHaveAttribute(
+    "href",
+    "/c/writer/mira/edit",
+  );
 });

@@ -209,10 +209,10 @@ export function ContributionReview({
 
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="text-2xl font-bold text-balance break-words">
+          <h2 className="text-2xl font-bold text-balance break-words">
             <span className="mr-2 font-normal text-text-3">#{c.number}</span>
             <UserText text={c.title} />
-          </h1>
+          </h2>
           <StatusBadge status={c.status} />
           {c.agent ? <AgentBadge /> : null}
         </div>
@@ -250,9 +250,9 @@ export function ContributionReview({
           aria-labelledby="c-rejected"
           className="space-y-1 rounded-lg border border-danger/40 bg-danger-soft px-4 py-3"
         >
-          <h2 id="c-rejected" className="text-sm font-semibold text-danger">
+          <h3 id="c-rejected" className="text-sm font-semibold text-danger">
             Rejected
-          </h2>
+          </h3>
           {c.decision_reason ? (
             <p className="text-sm break-words whitespace-pre-wrap">
               <UserText text={c.decision_reason} />
@@ -271,9 +271,9 @@ export function ContributionReview({
         >
           <GitMerge aria-hidden className="size-5 shrink-0 text-success" />
           <div className="min-w-0 flex-1">
-            <h2 id="c-accepted" className="text-sm font-semibold">
+            <h3 id="c-accepted" className="text-sm font-semibold">
               Accepted
-            </h2>
+            </h3>
             <p className="text-sm text-text-2">
               The changes are in your draft (revision{" "}
               <span className="font-mono text-xs">{accepted.revision}</span>). Publish a new version
@@ -307,9 +307,9 @@ export function ContributionReview({
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {preview ? (
           <section aria-labelledby="c-preview" className="min-w-0 space-y-3">
-            <h2 id="c-preview" className="text-base font-semibold">
+            <h3 id="c-preview" className="text-base font-semibold">
               {member ? "Changes against your current draft" : "Changes against the author's draft"}
-            </h2>
+            </h3>
             {preview.error ? (
               <p role="alert" className="text-sm text-danger">
                 These changes can no longer be applied to the draft ({preview.error}).
@@ -352,9 +352,9 @@ export function ContributionReview({
           </section>
         ) : (
           <section aria-labelledby="c-changes" className="min-w-0 space-y-3">
-            <h2 id="c-changes" className="text-base font-semibold">
+            <h3 id="c-changes" className="text-base font-semibold">
               Changes
-            </h2>
+            </h3>
             <ul aria-label="Changes" className="space-y-3">
               {c.changes.map((raw, i) => {
                 const key = rawChangeKey(raw) ?? `change-${i}`;

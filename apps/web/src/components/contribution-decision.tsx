@@ -80,9 +80,9 @@ export function DecisionPanel({
 
   return (
     <section aria-labelledby="c-decide" className="space-y-4 rounded-lg border bg-surface p-5">
-      <h2 id="c-decide" className="text-base font-semibold">
+      <h3 id="c-decide" className="text-base font-semibold">
         Your decision
-      </h2>
+      </h3>
       <ul aria-label="Checks" className="space-y-2">
         {!preview ? (
           <Check ok={false} tone="bad">
@@ -199,9 +199,9 @@ export function OutcomePanel({
   }
   return (
     <section aria-labelledby="c-outcome" className="space-y-3 rounded-lg border bg-surface p-5">
-      <h2 id="c-outcome" className="text-base font-semibold">
+      <h3 id="c-outcome" className="text-base font-semibold">
         {title}
-      </h2>
+      </h3>
       <p className="text-sm text-text-2">{body}</p>
       {c.status === "accepted" && c.result_revision ? (
         <p className="text-xs text-text-3">
@@ -248,9 +248,9 @@ export function ContributorCard({
       aria-labelledby="c-contributor"
       className="space-y-3 rounded-lg bg-surface-2 p-5 text-sm"
     >
-      <h2 id="c-contributor" className="font-semibold">
+      <h3 id="c-contributor" className="font-semibold">
         Contributor
-      </h2>
+      </h3>
       <div className="flex items-center gap-3">
         <Initials name={initialsOf ?? "?"} />
         <div className="min-w-0">
