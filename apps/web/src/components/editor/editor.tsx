@@ -15,7 +15,7 @@ import { DependenciesEditor } from "./dependencies-editor";
 import { DiagnosticList } from "./diagnostics";
 import { FragmentsEditor } from "./fragments-editor";
 import { MetaEditor } from "./meta-editor";
-import { PublishPanel } from "./publish-panel";
+import { PublishDialog } from "./publish-panel";
 
 function SaveStatus({ state }: { state: SaveState }) {
   const text =
@@ -124,6 +124,7 @@ export function Editor({
   const client = useRegistry();
   const ed = useDraftEditor(client, ns, name, draft);
   const [more, setMore] = useState(() => hasAdvanced(draft.working as Working, type));
+  const [publishOpen, setPublishOpen] = useState(false);
   const errors = ed.state.kind === "invalid" ? ed.state.diagnostics : [];
   const diagnostics = [...errors, ...ed.warnings];
   const blocked =
@@ -222,12 +223,20 @@ export function Editor({
         ) : null}
       </section>
 
-      <PublishPanel
+      <Button onClick={() => setPublishOpen(true)}>Publish…</Button>
+      <PublishDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
         ns={ns}
         name={name}
+        displayName={getName(ed.working).trim()}
         existingLabels={existingLabels}
+        basedOn={undefined}
         flush={ed.flush}
         blocked={blocked}
+        warnings={ed.warnings}
+        references={getReferences(ed.working)}
+        onOpenDependencies={() => setMore(true)}
       />
     </div>
   );

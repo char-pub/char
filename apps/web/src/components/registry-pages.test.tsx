@@ -157,9 +157,10 @@ describe("PublishReport", () => {
             ],
           },
         }}
+        context={{ root: "Alice", references: [] }}
       />,
     );
-    expect(await screen.findByText("Could not publish 1.0.0")).toBeTruthy();
+    expect(await screen.findByText("The licenses don't allow this combination")).toBeTruthy();
     expect(screen.getByText("Licenses do not allow this combination.")).toBeTruthy();
     expect(screen.getByText("license.incompatible")).toBeTruthy();
     expect(screen.getByText("asset.unscanned")).toBeTruthy();
