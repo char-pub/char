@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as MeRouteImport } from './routes/me'
+import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CreateIndexRouteImport } from './routes/create.index'
 import { Route as CreateImportRouteImport } from './routes/create.import'
@@ -39,6 +40,11 @@ const BrowseRoute = BrowseRouteImport.update({
 const MeRoute = MeRouteImport.update({
   id: '/me',
   path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolicyRoute = PolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/me': typeof MeRoute
+  '/policy': typeof PolicyRoute
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/me': typeof MeRoute
+  '/policy': typeof PolicyRoute
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/me': typeof MeRoute
+  '/policy': typeof PolicyRoute
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/me'
+    | '/policy'
     | '/settings'
     | '/create/import'
     | '/guest/verify'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/me'
+    | '/policy'
     | '/settings'
     | '/create/import'
     | '/guest/verify'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/me'
+    | '/policy'
     | '/settings'
     | '/create/import'
     | '/guest/verify'
@@ -225,6 +237,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrowseRoute: typeof BrowseRoute
   MeRoute: typeof MeRoute
+  PolicyRoute: typeof PolicyRoute
   SettingsRoute: typeof SettingsRoute
   CreateImportRoute: typeof CreateImportRoute
   GuestVerifyRoute: typeof GuestVerifyRoute
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       path: '/me'
       fullPath: '/me'
       preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policy': {
+      id: '/policy'
+      path: '/policy'
+      fullPath: '/policy'
+      preLoaderRoute: typeof PolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -361,6 +381,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrowseRoute: BrowseRoute,
   MeRoute: MeRoute,
+  PolicyRoute: PolicyRoute,
   SettingsRoute: SettingsRoute,
   CreateImportRoute: CreateImportRoute,
   GuestVerifyRoute: GuestVerifyRoute,

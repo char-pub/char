@@ -1,13 +1,18 @@
 import "./styles.css";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { RouteError } from "./components/states";
 import { ApiError, createRegistryClient } from "./lib/api";
+import { noteApiError, noteWriteSucceeded } from "./lib/read-only";
 import { RegistryProvider } from "./lib/registry";
 import { routeTree } from "./routeTree.gen";
 
 const queryClient = new QueryClient({
+  // 全站只读时（`feature.read_only`）顶部显示提示条；写操作成功说明只读已经解除。
+  queryCache: new QueryCache({ onError: noteApiError }),
+  mutationCache: new MutationCache({ onError: noteApiError, onSuccess: noteWriteSucceeded }),
   defaultOptions: {
     queries: {
       staleTime: 60_000,
@@ -24,6 +29,8 @@ const router = createRouter({
   context: { queryClient },
   defaultPreload: "intent",
   scrollRestoration: true,
+  // 页面渲染出错时在内容区显示兜底（顶栏和页脚照常可用）。
+  defaultErrorComponent: RouteError,
 });
 
 declare module "@tanstack/react-router" {

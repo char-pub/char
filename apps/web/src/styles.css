@@ -3,7 +3,7 @@
 @import "@fontsource-variable/jetbrains-mono";
 /*
  * sonner 默认在运行时插入 <style> 标签，CSP（style-src 'self'）会拦下来，
- * 所以把它的样式打进我们自己的 CSS。
+ * 所以把它的样式打进我们自己的 CSS；运行时插入在构建时去掉（见 vite.config.ts）。
  */
 @import "sonner/dist/styles.css";
 

@@ -1,6 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { Layout } from "@/components/layout";
+import { AppCrash, NotFound } from "@/components/states";
+import { Toaster } from "@/components/ui/sonner";
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -8,17 +10,16 @@ export interface RouterContext {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
-    <Layout>
-      <Outlet />
-    </Layout>
+    <>
+      <Layout>
+        <Outlet />
+      </Layout>
+      <Toaster />
+    </>
   ),
-  notFoundComponent: () => (
-    <section className="space-y-3 py-16 text-center">
-      <p className="stamp border-seal text-seal">404</p>
-      <h1 className="text-3xl">This card is not in the catalog.</h1>
-      <Link to="/" className="text-sm underline">
-        Back to the front desk
-      </Link>
-    </section>
-  ),
+  // 地址不存在，或者页面抛出 notFound()：渲染在顶栏和页脚之间。
+  notFoundComponent: () => <NotFound />,
+  // 根路由自己出错时顶栏和页脚也没有渲染出来，所以是不依赖 Layout 的整页兜底；
+  // 子路由的渲染错误由 main.tsx 里的 defaultErrorComponent 在页面内容区显示。
+  errorComponent: AppCrash,
 });
