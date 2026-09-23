@@ -11,5 +11,5 @@
     "lib": ["ES2023", "DOM"],
     "types": ["node"]
   },
-  "include": ["e2e", "playwright.config.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": ["e2e", "test", "playwright.config.ts", "vite.config.ts", "vitest.config.ts"]
 }

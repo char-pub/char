@@ -1,12 +1,16 @@
 /**
  * admin 的页面框架：顶部常驻员工身份条（邮箱、角色、审计提示），左侧导航。
  * 导航按当前员工的能力显示入口；没有权限的模块不显示（后端仍会拒绝直接访问）。
+ * mock 构建在身份条上多一个角色切换器，用来检查各角色看到的界面。
  */
 import { Link } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
 import type { ReactNode } from "react";
-import type { StaffCapability } from "@/lib/api";
+import { STAFF_ROLES, type StaffCapability } from "@/lib/api";
+import { isMockBuild } from "@/lib/api-env";
 import { useMe } from "@/lib/context";
+import { MOCK_ROLES_KEY } from "@/lib/mock-keys";
+import { DECIDE_CAPABILITIES } from "@/lib/roles";
 import { ThemeToggle } from "./theme-toggle";
 
 interface NavItem {
@@ -21,6 +25,7 @@ export const NAV: NavItem[] = [
   { to: "/reports", label: "Reports", any: ["overview.read"] },
   { to: "/content", label: "Content", any: ["overview.read"] },
   { to: "/tombstone", label: "Tombstone", any: ["tombstone.policy", "tombstone.legal"] },
+  { to: "/approvals", label: "Approvals", any: [...DECIDE_CAPABILITIES] },
   { to: "/users", label: "Users", any: ["overview.read"] },
   { to: "/namespaces", label: "Namespaces", any: ["overview.read"] },
   { to: "/legal", label: "Legal", any: ["legal.manage"] },
@@ -28,7 +33,32 @@ export const NAV: NavItem[] = [
   { to: "/jobs", label: "Jobs", any: ["jobs.manage"] },
   { to: "/flags", label: "Kill switches", any: ["overview.read"] },
   { to: "/audit", label: "Audit log", any: ["audit.read_own", "audit.read_all"] },
+  { to: "/staff", label: "Staff", any: ["staff.manage"] },
 ];
+
+/** 只在 mock 构建中出现：切换扮演的角色后重新加载页面。 */
+function MockRoleSwitcher({ current }: { current: string }) {
+  return (
+    <label className="flex items-center gap-1 font-mono">
+      <span className="opacity-80">mock role</span>
+      <select
+        aria-label="Mock staff role"
+        className="rounded-sm border border-background/40 bg-foreground px-1 text-background"
+        value={current}
+        onChange={(e) => {
+          window.localStorage.setItem(MOCK_ROLES_KEY, e.target.value);
+          window.location.reload();
+        }}
+      >
+        {STAFF_ROLES.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 export function StaffBar() {
   const { me, error } = useMe();
@@ -41,6 +71,7 @@ export function StaffBar() {
             {me.email}
           </span>
           <span className="font-mono opacity-80">roles: {me.roles.join(", ")}</span>
+          {isMockBuild() ? <MockRoleSwitcher current={me.roles.join(",")} /> : null}
         </>
       ) : error ? (
         <span className="text-signal">Not signed in as staff</span>

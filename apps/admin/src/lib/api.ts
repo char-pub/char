@@ -122,6 +122,8 @@ export interface CreationAdminView {
   /** 作者写的简介：用户内容。 */
   summary: string;
   rating: string;
+  /** 发布时算出的 effective rating 与强制评级中较高的一个。 */
+  effective_rating: string;
   forced_rating: string | null;
   status: "active" | "hidden" | "suspended";
   releases: { id: string; label: string; visibility: "public" | "private"; status: string }[];
@@ -177,6 +179,7 @@ export interface UserAdminView {
   id: string;
   email: string;
   name: string;
+  /** 以 `@namespace` 表示。 */
   namespaces: string[];
   banned: boolean;
   ban_reason: string | null;
@@ -185,6 +188,19 @@ export interface UserAdminView {
   tokens: number;
   sessions: number;
   created_at: string;
+}
+
+/** `GET /v1/admin/users/:id`：概况之外的作品数量与最近的处置记录。 */
+export interface UserDetail extends UserAdminView {
+  creations: number;
+  recent_actions: { id: string; action: string; reason: string; created_at: string }[];
+}
+
+export interface StaffMember {
+  id: string;
+  email: string;
+  name: string;
+  roles: StaffRole[];
 }
 
 export interface NamespaceAdminView {
@@ -209,6 +225,29 @@ export interface LegalRequest {
   subjects: string[];
 }
 
+export interface LegalRequester {
+  name: string;
+  email?: string;
+  organization?: string;
+  address?: string;
+}
+
+/** 详情包含解密后的申请人信息；每次查看都会写一条审计记录。 */
+export interface LegalRequestDetail extends LegalRequest {
+  requester: LegalRequester;
+  counter_notice: unknown;
+}
+
+export interface NewLegalRequest {
+  kind: LegalRequest["kind"];
+  requester: LegalRequester;
+  received_at: string;
+  deadline?: string;
+  /** 涉及的对象：URL、`@ns/name@label` 或内容 digest。 */
+  subjects: string[];
+  reason: string;
+}
+
 export interface CsamIncident {
   id: string;
   upload_id: string | null;
@@ -218,6 +257,13 @@ export interface CsamIncident {
   ncmec_report_id: string | null;
   created_at: string;
   evidence_expires_at: string | null;
+}
+
+/** 手动标记 CSAM 的结果：新建的事件、受影响的 Release 数量、写入黑名单的 digest 数量。 */
+export interface CsamFlagResult {
+  incident_id: string;
+  affected_releases: number;
+  blocked: number;
 }
 
 export interface QueueStats {
@@ -255,6 +301,7 @@ export interface AdminApi {
   verifyAudit(): Promise<AuditVerify>;
 
   listReports(): Promise<Report[]>;
+  claimReport(id: string, input: WithReason): Promise<void>;
   actOnReport(
     id: string,
     input: { action: ReportAction; rating?: string } & WithReason,
@@ -271,26 +318,42 @@ export interface AdminApi {
   ): Promise<{ executed: true } | { executed: false; approval: PendingApproval }>;
   listApprovals(): Promise<PendingApproval[]>;
   confirmApproval(id: string, input: WithReason): Promise<void>;
+  cancelApproval(id: string, input: WithReason): Promise<void>;
 
   listUsers(q: { query?: string }): Promise<UserAdminView[]>;
+  getUser(id: string): Promise<UserDetail>;
   banUser(id: string, input: { until?: string } & WithReason): Promise<void>;
   unbanUser(id: string, input: WithReason): Promise<{ approval?: PendingApproval }>;
 
   listNamespaces(q: { query?: string }): Promise<NamespaceAdminView[]>;
   listReserved(): Promise<ReservedName[]>;
   addReserved(input: { slug: string } & WithReason): Promise<void>;
+  removeReserved(slug: string, input: WithReason): Promise<void>;
   setNamespaceStatus(
     slug: string,
     input: { status: "active" | "suspended" } & WithReason,
   ): Promise<void>;
+  renameNamespace(slug: string, input: { new_slug: string } & WithReason): Promise<void>;
 
   listLegalRequests(): Promise<LegalRequest[]>;
+  getLegalRequest(id: string): Promise<LegalRequestDetail>;
+  createLegalRequest(input: NewLegalRequest): Promise<{ id: string }>;
+
   listCsamIncidents(): Promise<CsamIncident[]>;
+  flagCsam(input: { blob_digest: string } & WithReason): Promise<CsamFlagResult>;
+  reportCsamIncident(id: string, input: { ncmec_report_id: string } & WithReason): Promise<void>;
 
   listQueues(): Promise<QueueStats[]>;
   listFailedJobs(): Promise<FailedJob[]>;
   retryJob(id: string, input: WithReason): Promise<void>;
   cancelJob(id: string, input: WithReason): Promise<void>;
+
+  listStaff(): Promise<StaffMember[]>;
+  /** 移除 owner 角色需要第二名 owner 确认，这时返回待确认请求。 */
+  setStaffRoles(
+    userId: string,
+    input: { roles: StaffRole[] } & WithReason,
+  ): Promise<{ approval?: PendingApproval }>;
 }
 
 /** 后端返回的 problem+json。 */
@@ -313,6 +376,7 @@ export const IMPLEMENTED_ENDPOINTS = new Set<keyof AdminApi>([
   "listAudit",
   "verifyAudit",
   "listReports",
+  "claimReport",
   "actOnReport",
   "getCreation",
   "hideCreation",
@@ -322,17 +386,27 @@ export const IMPLEMENTED_ENDPOINTS = new Set<keyof AdminApi>([
   "requestTombstone",
   "listApprovals",
   "confirmApproval",
+  "cancelApproval",
   "listUsers",
+  "getUser",
   "banUser",
   "unbanUser",
   "listNamespaces",
   "listReserved",
   "addReserved",
+  "removeReserved",
   "setNamespaceStatus",
+  "renameNamespace",
   "listLegalRequests",
+  "getLegalRequest",
+  "createLegalRequest",
   "listCsamIncidents",
+  "flagCsam",
+  "reportCsamIncident",
   "listQueues",
   "listFailedJobs",
   "retryJob",
   "cancelJob",
+  "listStaff",
+  "setStaffRoles",
 ]);
