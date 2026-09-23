@@ -1,0 +1,16 @@
+{
+  "id": "013a-asset-license-rating",
+  "title": "Independent asset license and rating are aggregated into the IR",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "D-045",
+    "D-046",
+    "canonical-model §7",
+    "canonical-model §9",
+    "context-ir §3",
+    "context-ir §8"
+  ],
+  "status": "draft",
+  "notes": "Alice is general, but her avatar variant is mature and CC-BY-NC-4.0: effective rating becomes mature and both asset license and rating are listed with their source. A context asset is referenced by a fragment; the world's cover has its own license."
+}

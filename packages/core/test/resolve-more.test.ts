@@ -631,3 +631,46 @@ describe("template helpers", () => {
     expect(displayFragmentId("@a/b#c")).toBe("@a/b#c");
   });
 });
+
+describe("unused optional late slots", () => {
+  it("drop both the late slot and its participant, so no participant points to a missing slot", () => {
+    const tpl: CreationInput = {
+      id: tid("cr", 40),
+      ref: "@commons/trio",
+      type: "relationship",
+      display_name: "Trio",
+      slots: {
+        a: { accepts: "character" },
+        b: { accepts: "persona" },
+        observer: { accepts: "persona", required: false },
+      },
+      fragments: [
+        {
+          id: "bond",
+          stable: true,
+          kind: "relationship",
+          content: { type: "text", text: "{{slot:a}} and {{slot:b}}." },
+        },
+      ],
+      meta: META,
+    };
+    const t = rel(40, tpl);
+    const c = level0Character({
+      references: [
+        {
+          id: "trio",
+          use: "@commons/trio",
+          mode: "default",
+          pin: pinOf(t),
+          bind: { a: "{{self}}", b: { late: "persona" } },
+        },
+      ],
+    });
+    const ir = resolve({ root: rel(1, c), dependencies: [t] }).ir;
+    const slotKeys = new Set(ir.late_slots.map((s) => s.key));
+    for (const p of ir.participants) {
+      if (p.late !== undefined) expect(slotKeys.has(p.late)).toBe(true);
+    }
+    expect(ir.late_slots).toHaveLength(2);
+  });
+});

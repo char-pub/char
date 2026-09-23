@@ -1,0 +1,14 @@
+{
+  "id": "003-relationship-early-late",
+  "title": "Relationship template: early binding of {{self}} and late binding of a persona",
+  "kind": "resolver",
+  "expect": "context-ir",
+  "spec_refs": [
+    "D-025",
+    "D-026",
+    "canonical-model §6",
+    "context-ir §5"
+  ],
+  "status": "draft",
+  "notes": "slot a is bound early to Alice and rendered as her name; slot b is late and stays as {{late:l:...}} with a required late slot; the param overrides its default."
+}

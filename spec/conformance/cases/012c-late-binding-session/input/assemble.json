@@ -1,0 +1,40 @@
+{
+  "scenarios": [
+    {
+      "name": "student-unbound",
+      "profile": {
+        "runtime": { "name": "char-pub-conformance", "version": "0" },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 512,
+        "mode": "narrator",
+        "capabilities": { "images": false, "system_role": true }
+      },
+      "session": {
+        "bindings": { "user": { "kind": "persona", "display_name": "Sam" } },
+        "history": []
+      }
+    },
+    {
+      "name": "all-bound",
+      "profile": {
+        "runtime": { "name": "char-pub-conformance", "version": "0" },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 512,
+        "mode": "narrator",
+        "capabilities": { "images": false, "system_role": true }
+      },
+      "session": {
+        "bindings": {
+          "user": { "kind": "persona", "display_name": "Sam" },
+          "l:3016f4f88bf54dee7474a9cc76e817c13ba61be0b737b10124c0f54d8ab7a53a": {
+            "kind": "persona",
+            "display_name": "Kai"
+          }
+        },
+        "history": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+// www.char.pub：纯静态资源的 SPA，部署在 Cloudflare Workers Static Assets。
+// 没有 Worker 脚本，所以 public/_headers 中的安全响应头对所有响应生效。
+// 部署前必须先 `pnpm --filter @char-pub/web build`；自定义域名在 Cloudflare 控制台绑定。
+{
+  "$schema": "https://unpkg.com/wrangler@4.136.0/config-schema.json",
+  "name": "charpub-web",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist/",
+    "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "staging": {
+      "name": "charpub-web-staging"
+    },
+    "production": {
+      "name": "charpub-web-production"
+    }
+  }
+}

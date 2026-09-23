@@ -1,0 +1,39 @@
+{
+  "release": "rel_01h455vb4pex5vsknk084sn007",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01h455vb4pex5vsknk084sn007",
+    "ref": "@commons/mentor",
+    "type": "relationship",
+    "display_name": "Mentor and student",
+    "slots": {
+      "mentor": {
+        "accepts": "character"
+      },
+      "student": {
+        "accepts": "persona"
+      },
+      "observer": {
+        "accepts": "persona",
+        "required": false
+      }
+    },
+    "fragments": [
+      {
+        "id": "lessons",
+        "stable": true,
+        "kind": "relationship",
+        "content": {
+          "type": "text",
+          "text": "{{slot:mentor}} has been teaching {{slot:student}} the courier routes. {{user}} is always welcome to ride along."
+        }
+      }
+    ],
+    "meta": {
+      "default_locale": "en",
+      "rights": "original",
+      "rating": "general",
+      "license": "CC0-1.0"
+    }
+  }
+}

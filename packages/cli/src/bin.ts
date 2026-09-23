@@ -2,6 +2,7 @@
 /** `char` 命令行入口：只负责解析参数，逻辑在 commands.ts。 */
 import { Command, InvalidArgumentError, Option } from "commander";
 import { cmdBuild, cmdCheck, cmdInit, cmdPreview, consoleOutput } from "./commands.js";
+import { cmdLogin, cmdPublish, DEFAULT_REGISTRY } from "./remote.js";
 
 const program = new Command()
   .name("char")
@@ -90,6 +91,36 @@ program
         messages: o.message,
         ...(o.locale ? { locale: o.locale } : {}),
       },
+      consoleOutput,
+    );
+  });
+
+program
+  .command("login")
+  .description("save a personal access token (read from stdin)")
+  .option("--registry <url>", "registry API base URL", DEFAULT_REGISTRY)
+  .action(async (o) => {
+    // Token 从标准输入读取，避免出现在命令行参数和 shell 历史里。
+    const chunks: Buffer[] = [];
+    for await (const c of process.stdin) chunks.push(c as Buffer);
+    process.exitCode = await cmdLogin(
+      { registry: o.registry, token: Buffer.concat(chunks).toString("utf8") },
+      consoleOutput,
+    );
+  });
+
+program
+  .command("publish")
+  .description("check, build and publish char.yaml as a release")
+  .requiredOption("--label <label>", "release label, e.g. 1.0.0")
+  .option("-f, --file <file>", "path to char.yaml", "char.yaml")
+  .option("--dep <file>", "dependency release snapshot (repeatable)", collect, [])
+  .addOption(
+    new Option("--visibility <v>", "visibility").choices(["public", "private"]).default("public"),
+  )
+  .action(async (o) => {
+    process.exitCode = await cmdPublish(
+      { file: o.file, label: o.label, visibility: o.visibility, deps: o.dep },
       consoleOutput,
     );
   });

@@ -1,0 +1,81 @@
+import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { ThemeToggle } from "./theme-toggle";
+
+const NAV = [
+  { to: "/browse", label: "Browse" },
+  { to: "/playground", label: "Playground" },
+  { to: "/create", label: "Create" },
+] as const;
+
+export function Layout({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-dvh flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-background focus:px-3 focus:py-2"
+      >
+        Skip to content
+      </a>
+      <header className="border-b border-foreground/80 bg-background/85 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center gap-6 px-5 py-3">
+          <Link to="/" className="flex items-baseline gap-1.5" aria-label="char.pub home">
+            <span className="font-display text-2xl font-semibold leading-none">char</span>
+            <span className="stamp -rotate-3 border-seal text-seal">.pub</span>
+          </Link>
+          <nav aria-label="Main" className="flex gap-5 text-sm">
+            {NAV.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                activeProps={{
+                  className: "text-foreground underline decoration-seal decoration-2",
+                }}
+              >
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
+            <button
+              type="button"
+              disabled
+              title="Sign-in arrives with the registry API"
+              className="rounded-sm border border-foreground/70 px-3 py-1 text-sm disabled:opacity-60"
+            >
+              Sign in
+            </button>
+          </div>
+        </div>
+      </header>
+      <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-5 py-8">
+        {children}
+      </main>
+      <footer className="border-t border-rule">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-6 text-xs text-muted-foreground">
+          <span className="font-display text-sm text-foreground">char.pub</span>
+          <span>Open registry for characters, worlds and stories.</span>
+          <nav aria-label="Footer" className="ml-auto flex gap-4">
+            <a
+              href="https://github.com/char-pub/char/blob/main/LICENSE"
+              className="hover:text-foreground"
+            >
+              License
+            </a>
+            <a
+              href="https://github.com/char-pub/char/blob/main/SECURITY.md"
+              className="hover:text-foreground"
+            >
+              Security
+            </a>
+            <span aria-disabled="true" title="Coming soon">
+              Content Policy
+            </span>
+          </nav>
+        </div>
+      </footer>
+    </div>
+  );
+}

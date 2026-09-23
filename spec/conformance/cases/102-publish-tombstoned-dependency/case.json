@@ -1,0 +1,11 @@
+{
+  "id": "102-publish-tombstoned-dependency",
+  "title": "Rule 2: no tombstoned release in the closure",
+  "kind": "publish",
+  "expect": "publish",
+  "spec_refs": [
+    "D-042",
+    "canonical-model §12.1 rule 2"
+  ],
+  "status": "draft"
+}

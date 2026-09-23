@@ -1,0 +1,12 @@
+{
+  "id": "005-diamond-conflict",
+  "title": "Diamond dependency with two different releases is rejected",
+  "kind": "resolver",
+  "expect": "error",
+  "spec_refs": [
+    "D-029",
+    "canonical-model §12.1 rule 4"
+  ],
+  "status": "draft",
+  "notes": "Alice pins Night City v1 directly and reaches Night City v2 through the lorebook; the error explains both paths."
+}

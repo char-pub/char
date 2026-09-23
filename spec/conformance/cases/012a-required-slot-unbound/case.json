@@ -1,0 +1,11 @@
+{
+  "id": "012a-required-slot-unbound",
+  "title": "Required slot left unbound on a reference is rejected",
+  "kind": "resolver",
+  "expect": "error",
+  "spec_refs": [
+    "canonical-model §6",
+    "canonical-model §12.1 rule 6"
+  ],
+  "status": "draft"
+}
