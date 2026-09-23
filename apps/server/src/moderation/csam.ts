@@ -74,6 +74,8 @@ type UploadResult = {
   blob?: { digest: string; media_type: string };
   thumbnail?: string;
   original_digest?: string;
+  /** 从这个上传中派生出的其他 blob，例如导入的角色卡里取出的图片及其缩略图。 */
+  derived?: string[];
 };
 
 async function loadSubject(db: Db, cas: Cas, input: CsamHitInput): Promise<Subject> {
@@ -81,9 +83,12 @@ async function loadSubject(db: Db, cas: Cas, input: CsamHitInput): Promise<Subje
     const [u] = await db.select().from(uploads).where(eq(uploads.id, input.uploadId)).limit(1);
     if (!u) throw new CsamHitError("csam.subject_not_found");
     const result = (u.result ?? {}) as UploadResult;
-    const digests = [result.original_digest, result.blob?.digest, result.thumbnail].filter(
-      (d): d is string => typeof d === "string",
-    );
+    const digests = [
+      result.original_digest,
+      result.blob?.digest,
+      result.thumbnail,
+      ...(result.derived ?? []),
+    ].filter((d): d is string => typeof d === "string");
     let evidence = input.original;
     if (!evidence) {
       // 原件可能已被删除（ready 之后）；那就保全处理后的 blob。
@@ -110,7 +115,12 @@ async function loadSubject(db: Db, cas: Cas, input: CsamHitInput): Promise<Subje
       .where(inArray(uploads.status, ["ready", "quarantined"]));
     const u = candidates.find((c) => {
       const r = (c.result ?? {}) as UploadResult;
-      return r.blob?.digest === digest || r.thumbnail === digest || r.original_digest === digest;
+      return (
+        r.blob?.digest === digest ||
+        r.thumbnail === digest ||
+        r.original_digest === digest ||
+        (r.derived ?? []).includes(digest)
+      );
     });
     const [meta] = await db.select().from(blobs).where(eq(blobs.digest, digest)).limit(1);
     const bucket = meta?.inPrivate ? "private" : "public";
@@ -118,9 +128,13 @@ async function loadSubject(db: Db, cas: Cas, input: CsamHitInput): Promise<Subje
       throw new CsamHitError("csam.subject_not_found");
     });
     const r = (u?.result ?? {}) as UploadResult;
-    const digests = [digest, r.original_digest, r.blob?.digest, r.thumbnail].filter(
-      (d): d is string => typeof d === "string",
-    );
+    const digests = [
+      digest,
+      r.original_digest,
+      r.blob?.digest,
+      r.thumbnail,
+      ...(r.derived ?? []),
+    ].filter((d): d is string => typeof d === "string");
     return {
       uploadId: u?.id ?? null,
       ownerUserId: u?.ownerUserId ?? null,

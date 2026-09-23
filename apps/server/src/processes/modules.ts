@@ -21,6 +21,7 @@ import { CloudflarePurger, LoggingPurger } from "../ops/cdn.js";
 import { noopScanner } from "../upload/csam.js";
 import { type ExportJob, handleExportJob } from "../worker/export.js";
 import { runGitHubReconcile, runGitHubSync, type SyncJob } from "../worker/github.js";
+import { handleImportJob, type ImportJob } from "../worker/import.js";
 import { registerPublishWorker, requeuePendingPublishes } from "../worker/publish.js";
 import { dispatchTombstoneJob, type TombstoneQueueJob } from "../worker/tombstone-dispatch.js";
 import { registerUploadWorkers } from "../worker/upload.js";
@@ -55,7 +56,7 @@ export async function startGitHubWorkers(services: Services, source: GitHubSourc
 export async function startWorkers(services: Services): Promise<void> {
   const env = parseEnv(WorkerEnvSchema);
   const now = () => services.clock.now();
-  await registerUploadWorkers(services.queue, {
+  const pipelineDeps = {
     db: services.db,
     cas: services.cas,
     queue: services.queue,
@@ -63,6 +64,11 @@ export async function startWorkers(services: Services): Promise<void> {
     now,
     newId: () => services.ids.uuid(),
     systemActorId: env.SYSTEM_ACTOR_ID,
+  };
+  await registerUploadWorkers(services.queue, pipelineDeps);
+  // 角色卡导入：卡片里的图片与普通上传使用同一套处理与扫描。
+  await services.queue.work<ImportJob>(QUEUE_NAMES.importCcv3, async (job) => {
+    await handleImportJob(pipelineDeps, job.data);
   });
   await registerPublishWorker(services.queue, {
     db: services.db,

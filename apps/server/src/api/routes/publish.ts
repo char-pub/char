@@ -69,6 +69,13 @@ export function publishResultResponse(
         "publish.label_taken",
         `${label} already points to different content; choose a new label`,
       );
+    case "import_unconfirmed":
+      return problem(
+        c,
+        422,
+        "publish.import_unconfirmed",
+        "confirm the rating, rights and license of the imported card before publishing",
+      );
   }
 }
 

@@ -61,5 +61,6 @@ export const RATE_LIMITS = {
   contributionPerGuest: { windowSeconds: 3600, max: 5 },
   upload: { windowSeconds: 86_400, max: 200 },
   uploadNewAccount: { windowSeconds: 86_400, max: 20 },
+  import: { windowSeconds: 3600, max: 30 },
   tokenCreate: { windowSeconds: 3600, max: 10 },
 } as const satisfies Record<string, RateLimitRule>;

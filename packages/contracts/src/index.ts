@@ -16,6 +16,7 @@ import {
   NAME_RE,
   NAMESPACE_RE,
   RatingSchema,
+  SpdxExpressionSchema,
   UnversionedRefSchema,
 } from "@char-pub/core";
 import { z } from "zod";
@@ -336,4 +337,69 @@ export const ContributionSettingsRequestSchema = z.strictObject({
 /** policy 为 invited 时，邀请或取消邀请一个用户（用户 ID，`usr_…`）。 */
 export const ContributionInviteRequestSchema = z.strictObject({
   user: z.string(),
+});
+
+// ---------------------------------------------------------------------------
+// 角色卡导入
+// ---------------------------------------------------------------------------
+
+/**
+ * 从一个已完成的上传（purpose 为 import）导入角色卡，生成一个新的 Creation 草稿。
+ * 导入是异步的：返回 202，之后轮询 `GET /v1/imports/:id`。同一个上传重复提交返回同一个导入。
+ */
+export const CreateImportRequestSchema = z.strictObject({
+  upload: z.string().min(1).max(64),
+  namespace: NamespaceSlugSchema,
+  name: CreationNameSchema,
+});
+
+export const IMPORT_CONFIRMATION_FIELDS = ["meta.rating", "meta.rights", "meta.license"] as const;
+
+/** Import Report：原卡片的哪些字段映射到了哪里、哪些被省略或丢弃、哪些需要作者确认。 */
+export const ImportReportSchema = z.looseObject({
+  container: z.enum(["png", "charx", "json"]),
+  format: z.string(),
+  spec: z.string(),
+  spec_version: z.string().nullable(),
+  source_digest: DigestSchema,
+  mappings: z.array(z.strictObject({ from: z.string(), to: z.string() })),
+  /** 被省略的策略字段（例如 system_prompt）及原值。报告只有发起人能看到。 */
+  omitted_policy_fields: z.array(z.strictObject({ field: z.string(), value: z.string() })),
+  placeholders: z.array(z.looseObject({})),
+  lorebook: z.array(z.looseObject({})),
+  assets: z.array(
+    z.looseObject({
+      type: z.string(),
+      name: z.string(),
+      uri: z.string(),
+      imported: z.boolean(),
+      reason: z.string().optional(),
+    }),
+  ),
+  dropped: z.array(z.strictObject({ field: z.string(), reason: z.string() })),
+  needs_confirmation: z.array(z.enum(IMPORT_CONFIRMATION_FIELDS)),
+  warnings: z.array(z.strictObject({ code: z.string(), detail: z.string() })),
+});
+export type ImportReport = z.infer<typeof ImportReportSchema>;
+
+export const ImportStatusSchema = z.strictObject({
+  import: z.string(),
+  status: z.enum(["pending", "processing", "succeeded", "failed"]),
+  error_code: z.string().optional(),
+  error_detail: z.string().optional(),
+  /** 导入成功后生成的 Creation。 */
+  creation: UnversionedRefSchema.optional(),
+  /** 发布前必须由作者确认的字段；确认后为空数组。 */
+  needs_confirmation: z.array(z.enum(IMPORT_CONFIRMATION_FIELDS)),
+  confirmed_at: z.string().nullable(),
+  report: ImportReportSchema.optional(),
+  created_at: z.string(),
+});
+export type ImportStatus = z.infer<typeof ImportStatusSchema>;
+
+/** 作者在导入向导里确认评级、权利与许可。确认之前导入生成的 Creation 不能发布。 */
+export const ConfirmImportRequestSchema = z.strictObject({
+  rating: RatingSchema,
+  rights: z.enum(["original", "fan-work", "licensed"]),
+  license: SpdxExpressionSchema,
 });
