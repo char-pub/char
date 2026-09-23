@@ -1,8 +1,9 @@
 ---
-description: "Railway 三进程部署、迁移顺序、Cloudflare Workers Static Assets、源站校验、受管规则与冒烟恢复"
+description: "Railway 三进程部署、共享删除加密密钥、生产前端构建、迁移顺序、源站校验与冒烟恢复"
 kind: guide
 code:
   paths:
+    - "infra/DEPLOY.md"
     - ".railway/railway.ts"
     - "apps/server/src/db/migrate.ts"
     - "apps/web/wrangler.jsonc"
@@ -25,6 +26,10 @@ relations:
 # 部署与边缘变更
 
 服务端同一镜像部署为公开 API、管理 API 和 worker，前端与管理前端使用 Cloudflare Workers Static Assets。部署前先完成代码门禁与数据库迁移；迁移使用 owner 权限，应用使用最小权限角色。迁移失败时停止放流，不能让新进程在旧 schema 上继续运行。三个进程分别校验所需密钥和 Origin，管理 API 还依赖 Access；单主站域名、CORS、源站共享头和 R2 桶权限共同形成信任边界。
+
+跨进程功能需要核对完整配置链：删除请求由 API 加密、管理端解密，二者必须配置同一 LEGAL_ENCRYPTION_KEY，基础设施定义保留该密钥而不写字面值。API 未配置时仅关闭受理入口，不能把服务健康误认为功能已启用；不得通过为 API 单独生成新密钥来补齐变量。
+
+前端测试会覆盖构建目录并可能写入本地或 mock API 配置。部署前必须重新生产构建，核对线上 API 与所需公开配置，不能直接发布测试遗留产物；先确认后端目标提交与迁移成功，再发布相应前端并做跨层冒烟。
 
 修改边缘规则先检查计划差异与 dry run，只变更由 `charpub_` 标识的受管规则，不能批量覆盖同区其他规则。保密值只经环境或凭据机制传入，不写进日志、仓库或变更说明。公开资产重定向后的 Origin 可能变化，因此公共桶的 CORS 与上传桶不能套用同一策略。
 
