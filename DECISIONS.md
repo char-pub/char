@@ -887,3 +887,8 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 6. **锁定上传**用独立的 `upload_locks` 表，不改 Better Auth 的用户表；被锁定的用户上传与导入返回 403 `upload.locked`。
 7. **强制员工登出**先调用 Cloudflare Access 的吊销接口，再在一个事务里删除应用会话并写审计；Access 调用失败时应用会话照样删除，结果写进响应与审计。
 8. **admin-api 的 CORS** 只允许 `ADMIN_ORIGINS`，携带凭据；Access 应用需要放行预检请求（部署指南已写明）。
+
+### D-152 Postgres 主版本改为 18；Railway 自定义域名的添加方式 — Accepted
+
+1. **Postgres 18**（用户决定，2026-09-22）：staging 的 Railway Postgres 由 `postgres-ssl` 模板创建为 18.6，本地 compose 与 Testcontainers 原来是 16。用户决定全面改用 18：Railway 定义、本地 compose（`postgres:18-bookworm`）、集成测试都使用 18。在 18 上重新运行：集成测试 1292 个（包括中文、日文与一到两字的 CJK 搜索）、全栈 E2E 3 个、`pnpm dev` 冒烟全部通过。本地 compose 使用新卷 `pgdata18`，因为 18 的镜像改变了数据目录位置，旧版本的数据目录不能被直接沿用。
+2. **自定义域名不在 Railway 定义中声明**：Railway 的 Infrastructure as Code 不支持注册自定义域名，定义只固定进程端口（8080）；api 与 admin 的域名在 service 创建后用 `railway domain <域名> --service <name> --port 8080` 添加。
