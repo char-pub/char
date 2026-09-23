@@ -1,0 +1,28 @@
+---
+description: "Tombstone 级联、CSAM 隔离、审计哈希链、证据留存、R2/CDN 删除核验和失败重试"
+kind: architecture
+code:
+  paths:
+    - "apps/server/src/registry/tombstone.ts"
+    - "apps/server/src/worker/tombstone.ts"
+    - "apps/server/src/worker/tombstone-dispatch.ts"
+    - "apps/server/src/moderation/csam.ts"
+    - "apps/server/src/audit/audit.ts"
+    - "apps/server/src/admin/routes/csam-evidence.ts"
+    - "apps/server/src/db/schema/moderation.ts"
+    - "apps/server/test/tombstone-cascade.test.ts"
+relations:
+  requires:
+    - "operations/admin-authority.mdx"
+    - "content/upload-and-storage.mdx"
+  related:
+    - "registry/reading.mdx"
+---
+
+# 下架、分发清除与证据
+
+下架先预览依赖和引用影响，再由有权管理人员触发。事务内更新 Release 状态、内容 digest 黑名单、必要的级联对象、审计事件和待处理任务；这样新的读取与重新发布会立即被拒绝。但数据库提交不等于公网副本已消失。worker 还须删除公开与私有分发对象、核验 HEAD 结果并清除 CDN 缓存；失败持续重试并保持可观察状态，直到分发清除完成。
+
+CSAM 或法律证据独立保存在受限证据存储，不因公共副本删除而一起消失。证据下载受角色、理由和 case 约束。审计链按追加和哈希校验设计，业务写入与审计同事务，应用数据库角色不得任意修改历史记录；迁移和权限设置是此保证的一部分。
+
+处置时区分“已禁止新访问”“公共副本清除已核验”“证据依法保留”三个状态。不能把任务入队或单次 CDN 请求成功当作完成信号。

@@ -1,0 +1,23 @@
+---
+description: "Reference Assembler late binding, activation, visibility, budget policy and per-turn provenance from Context IR"
+kind: architecture
+code:
+  paths:
+    - "packages/assembler/src/assemble.ts"
+    - "packages/assembler/src/activation.ts"
+    - "packages/assembler/src/render.ts"
+    - "packages/assembler/src/session.ts"
+    - "packages/assembler/src/tokens.ts"
+    - "packages/assembler/test/assemble.test.ts"
+relations:
+  requires:
+    - "runtime/resolution.mdx"
+---
+
+# 逐轮 Context 组装
+
+Assembler 消费不可变 Context IR 和本轮 Session 输入，完成 late binding、activation、visibility 过滤、预算和最终渲染。它不重新解释 Creation、选择依赖版本或改变 Creative Truth。Session 提供可变的当前状态；同一 IR 在不同轮次可以产生不同的可见片段。
+
+Pinned 内容与激活片段有不同预算语义：必须保留的内容超预算应显式失败，不能静默截断；其他候选按实现的确定性优先级选择，并把激活和舍弃原因留在 trace 中。visibility 在组装前隔离不同消费视角，尤其不能把仅供 narrator 的内容泄给其他视角。keyword 与 semantic 激活是两条策略，不能把不可用的语义能力悄悄当成精确匹配。
+
+当前包是参考 Assembler。完整 Preset 结构尚未定义，tokenizer 回退和具体预算顺序属于实现取值，修改时应对照 IR 语义与 conformance 用例。

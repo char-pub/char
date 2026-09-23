@@ -1,0 +1,26 @@
+---
+description: "三个服务进程如何隔离公开 API 和管理员路由；为什么纯计算包不能做 IO；core、api、admin、worker 与浏览器的执行和权威边界"
+kind: architecture
+code:
+  paths:
+    - "package.json"
+    - ".dependency-cruiser.cjs"
+    - "apps/server/src/main.ts"
+    - "apps/server/src/processes/start.ts"
+    - "apps/server/src/env.ts"
+    - "apps/server/Dockerfile"
+relations:
+  related:
+    - "engineering/verification.mdx"
+    - "operations/deploy-and-edge.mdx"
+---
+
+# 执行模型与权威边界
+
+仓库把可重现的内容语义放在 `packages/core`，把真实用户、存储、状态和外部服务放在 Registry。Core 不进行网络、数据库或文件 IO，能在 Node、浏览器和 Workers 中对同一输入给出相同结果。`packages/assembler` 消费解析好的 Context IR；浏览器预览可调用参考实现，但不能代替 Registry 的发布授权。
+
+服务端使用同一构建镜像，按进程类型启动公开 API、管理 API 或 worker。公开 API 只挂创作者、读取、身份及 GitHub 路由；管理 API 只挂管理路由并验证 Cloudflare Access；worker 消费任务，HTTP 仅在 loopback 提供健康检查。每种进程在启动时校验自身必需的环境变量，不应靠前端隐藏路由形成隔离。
+
+Registry 是权限与持久状态的权威：发布前重新读取依赖、资产、标签和黑名单；异步任务执行后更新持久状态。浏览器、CLI 和 GitHub Action 都是输入端，无法通过本地校验替代服务端判定。数据库迁移由独立部署步骤以 owner 权限运行，应用进程使用受限角色；迁移失败应阻止新版本放流。
+
+改动跨越纯包、HTTP 契约和 Registry 时，先确认语义定义由谁持有，再分别验证纯计算、请求边界与实际持久状态。依赖方向由仓库依赖规则约束，构建与门禁的当前命令以根 `package.json` 为准。

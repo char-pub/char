@@ -1,0 +1,22 @@
+---
+description: "更新草稿为什么需要 If-Match；HTTP Problem 响应、共享请求契约、条件写入、幂等键及客户端与服务端责任"
+kind: reference
+code:
+  paths:
+    - "packages/contracts/src/index.ts"
+    - "apps/server/src/http/middleware.ts"
+    - "apps/server/src/api/app.ts"
+    - "packages/cli/src/remote.ts"
+relations:
+  related:
+    - "registry/publishing.mdx"
+    - "identity/public-authorization.mdx"
+---
+
+# HTTP 契约与客户端边界
+
+共享 contracts 包定义公开 API 的请求、响应和 Problem 形状，供服务端、Web、CLI 和 Action 使用。客户端先按 schema 构造请求；服务端仍须做身份、授权、最新状态和业务校验。Problem 的机器代码供客户端分支使用，显示文字不能代替协议判断。
+
+草稿更新使用 `If-Match` 防止覆盖并发编辑；冲突须返回可识别的状态，让客户端停止自动保存并呈现恢复选择。发布使用幂等键：同一次重试应复用 key，不同内容或不同请求不能靠重复提交碰运气。OIDC 发布虽有独立请求 schema，但可信提交内容必须由 Registry 重新读取和计算。
+
+共享 schema 文件覆盖多个领域；修改字段时应评估具体路由的授权、持久化和客户端分支，而不能把 schema 解析成功当作权限保证。

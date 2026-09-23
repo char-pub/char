@@ -1,0 +1,28 @@
+---
+description: "浏览器预览是否等于真实 Runtime；Web 创作端草稿自动保存、If-Match 冲突、导入、查询缓存及服务端权限边界"
+kind: architecture
+code:
+  paths:
+    - "apps/web/src/main.tsx"
+    - "apps/web/src/lib/api.ts"
+    - "apps/web/src/lib/registry.tsx"
+    - "apps/web/src/lib/use-draft-editor.ts"
+    - "apps/web/src/lib/preview.ts"
+    - "apps/web/src/components/editor/editor.tsx"
+    - "apps/web/src/components/preview-panel.tsx"
+relations:
+  requires:
+    - "registry/http-contract.mdx"
+    - "identity/public-authorization.mdx"
+  related:
+    - "runtime/assembly.mdx"
+    - "content/card-import.mdx"
+---
+
+# Web 创作端的责任
+
+Web SPA 负责内容浏览、草稿编辑、导入审阅和本地预览，通过共享 HTTP 契约与 Registry 交互。查询缓存和局部编辑状态可以减少等待，但服务端的 Revision、权限、分级与发布状态仍是权威。写入成功后应使相关查询失效；切换主体或作品时不能沿用旧缓存呈现私有内容。
+
+草稿自动保存带 `If-Match`，并发修改返回冲突时停止继续覆盖，保留本地编辑供作者比较与恢复。网络超时与冲突不同，不能通过盲目重试制造新 Revision。导入向导对权利与遗漏项收集明确确认，发布状态须区分请求已接收、worker 构建中和 active。
+
+预览使用 Core Resolver 与参考 Assembler，但浏览器的 tokenizer、尚未持久化的草稿以及会话输入可能与最终 Runtime 不同；预览只用于作者判断，不能作为发布完整性证明。前端路由、角色和分级过滤只是呈现层，真正可见性由 API 决定。

@@ -1,0 +1,20 @@
+---
+description: "Creation 的名字、作品身份与内容摘要是什么关系；Canonical Creation、fragment digest、semantic digest、Release pin 和顺序敏感的规范化"
+kind: architecture
+code:
+  paths:
+    - "spec/canonical-model.md"
+    - "packages/core/src/schema/creation.ts"
+    - "packages/core/src/schema/release.ts"
+    - "packages/core/src/canonical.ts"
+    - "packages/core/src/ids.ts"
+    - "packages/core/src/json-schema.ts"
+---
+
+# Creation 的规范化与身份
+
+Creation 是可编辑的语义内容，Release 是一次不可变发布，label 是人在同一 Creation 下选择的名称，不承担 SemVer 的范围解析。引用发布内容必须锁定精确 Release；`@namespace/name` 表示作品身份，而内容 digest 表示字节级可核对的语义快照。公开规范仍处草案状态，修改规范契约须同时核对可执行 schema 和兼容性影响。
+
+规范化先把字符串变成 Unicode NFC、统一换行、去掉行尾空格，再严格校验 schema；未知字段和非纯 JSON 值应失败。等于默认值的字段和空的可选集合被省略，随后用 JCS 序列化并计算 SHA-256。fragment digest 不含自身 digest 字段；semantic digest 基于把 fragments 转成 `(id,digest)` 列表后的 manifest。这个列表保留声明顺序，因为顺序会改变最终 Context IR；对象键顺序和格式空白则不应改变 digest。
+
+Canonicalizer 是身份判定的单一实现。签名、发布、锁定图和 Diff 必须使用同一套规范化结果；如果源码和公开规范不同步，先判断该修复实现还是修订规范，不能把偶然的当前行为直接宣布为标准。

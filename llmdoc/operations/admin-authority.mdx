@@ -1,0 +1,28 @@
+---
+description: "Cloudflare Access JWT、staff 角色矩阵、admin 进程隔离、操作 reason、四眼审批与管理前端边界"
+kind: architecture
+code:
+  paths:
+    - "apps/server/src/admin/app.ts"
+    - "apps/server/src/admin/access.ts"
+    - "apps/server/src/admin/roles.ts"
+    - "apps/server/src/admin/approvals.ts"
+    - "apps/server/src/admin/routes/index.ts"
+    - "apps/server/src/admin/routes/tombstone.ts"
+    - "apps/server/src/admin/routes/legal-actions.ts"
+    - "apps/admin/src/lib/http-api.ts"
+    - "apps/admin/src/lib/roles.ts"
+    - "apps/admin/src/routes/tombstone.tsx"
+    - "apps/admin/test/roles-sync.test.ts"
+relations:
+  related:
+    - "operations/takedown-and-evidence.mdx"
+---
+
+# 管理权限与操作确认
+
+管理 API 由独立进程承载，公开 API 不挂管理路由。每个管理请求先验证 Cloudflare Access JWT 的受众与身份，再以邮件允许名单映射数据库用户和 staff 角色，由 `adminRoute` 按能力矩阵判定。管理 SPA 的角色隐藏、按钮禁用与 reason 表单改善操作体验，但不能成为授权或审计的权威。当前管理路径不使用应用内 GitHub OAuth 会话或 Better Auth admin 插件。
+
+有状态操作要求明确理由；法律处置还需关联 case。高影响动作按能力和范围走双人确认或冷静期，发起者不应自行完成第二次批准。服务端在执行前重新检查身份、状态和批准条件，不能凭前端已显示“可执行”跳过。写入动作与审计记录须保持事务一致。
+
+角色字段在后端、共享协议和前端展示之间同步；修改能力矩阵时同时检查直接 HTTP 调用的拒绝路径及 UI 呈现，尤其是受控下载和下架。

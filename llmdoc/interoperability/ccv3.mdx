@@ -1,0 +1,26 @@
+---
+description: "CCv3 card import/export semantics, policy-field omission, unstable lorebook IDs, container checks and loss report"
+kind: architecture
+code:
+  paths:
+    - "packages/ccv3/src/import.ts"
+    - "packages/ccv3/src/export.ts"
+    - "packages/ccv3/src/card.ts"
+    - "packages/ccv3/src/charx.ts"
+    - "packages/ccv3/src/png.ts"
+    - "packages/ccv3/src/assets.ts"
+relations:
+  requires:
+    - "model/canonical-identity.mdx"
+  related:
+    - "content/card-import.mdx"
+    - "runtime/resolution.mdx"
+---
+
+# CCv3 互操作边界
+
+导入器把外部卡片转换为 Creation 候选，而不是赋予其发布可信度。卡片的 `system_prompt`、`post_history_instructions` 属运行策略，不进入 Creative Truth；原值只保留在私有原件及 Import Report 中。权利、评级、许可等不能从卡片自动确证，导入结果使用待确认值并要求作者在发布前明确确认。Lorebook 来源 ID 目前保守标为不稳定，避免把可能变化的条目标识当成可持久引用。
+
+PNG 和 CHARX 是不可信容器。解析须限制大小、校验格式和 CRC，防止路径穿越及资源耗尽；抽取的资产仍需走上传净化与状态流程。单个容器通过解析不意味着其中图片或权利字段已获准公开。
+
+导出面向有损的外部消费者，必须生成 Loss Report，说明无法表示的 IR 内容。IR 的 `meta.import_omissions` 从 Creation provenance 中的 omitted policy fields 推导，两个字段位于不同层级，不能互相复制成同一路径。

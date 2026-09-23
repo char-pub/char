@@ -1,0 +1,26 @@
+---
+description: "Release 读取、可见性、tombstone 与 yank、rating 过滤、Postgres trigram/CJK 搜索、签名资产 URL"
+kind: architecture
+code:
+  paths:
+    - "apps/server/src/registry/read.ts"
+    - "apps/server/src/api/routes/read.ts"
+    - "apps/server/src/registry/search.ts"
+    - "apps/server/src/api/routes/search.ts"
+    - "apps/server/test/search-api.test.ts"
+    - "apps/web/src/routes/browse.tsx"
+relations:
+  requires:
+    - "identity/public-authorization.mdx"
+  related:
+    - "registry/publishing.mdx"
+    - "operations/takedown-and-evidence.mdx"
+---
+
+# Release 读取与发现
+
+读取层从持久 Release 状态构造对外表示。公开和私有资源的可见性由服务端身份与授权决定；私有内容不能通过搜索结果、错误差异或资产 URL 被猜出。tombstoned 内容不得继续分发，yanked 保留明确状态与警告语义，不等于删除。
+
+搜索同时处理常见词与短中文查询，使用数据库索引策略而不是单靠前端筛选。内容分级必须在服务端查询与返回边界实施，页面上的筛选参数只改善展示，不能承担权限。公开资产通过受控 CDN 路径提供，私有资产使用短期签名 URL；URL 的生成和跳转不能泄露原始私有存储键。
+
+修改发布状态或资产存储时，核对读取、搜索和缓存是否仍遵守同一可见性；下架的事务状态与公网副本实际清除之间还存在异步清理边界。

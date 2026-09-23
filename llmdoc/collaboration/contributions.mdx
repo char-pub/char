@@ -1,0 +1,26 @@
+---
+description: "Contribution proposal and Context Diff across core three-way merge, Registry acceptance and browser review"
+kind: architecture
+code:
+  paths:
+    - "packages/core/src/merge.ts"
+    - "packages/core/src/diff.ts"
+    - "apps/server/src/registry/contributions.ts"
+    - "apps/server/src/api/routes/contributions.ts"
+    - "apps/server/src/db/schema/contributions.ts"
+    - "apps/web/src/lib/contribution.ts"
+    - "apps/web/src/components/contribution-review.tsx"
+relations:
+  requires:
+    - "model/canonical-identity.mdx"
+  related:
+    - "registry/publishing.mdx"
+---
+
+# Contribution 的合并与接受
+
+Contribution 是针对基线 Release 的变更提案，不等于独立 remix。Core 按对象键和字段路径比较 base、current、after 的稳定 digest，不做文本级三方合并；任一真正冲突都返回冲突而没有部分合并产物。空的默认值形式 `set` 不是有效变更。Context Diff 另外比较内容、origin、锁定图和元数据；token delta 由调用方提供计数器。
+
+Registry 持有提案来源、作者权限和接受事务。接受时重新读取当前状态并运行合并，成功才生成新 Revision、更新草稿；不能修改既有 Release。评级、许可、内容警告和资产的敏感字段须逐项确认，前端传来的确认状态或 sensitive 标记只是请求信息，服务端要重新计算并校验。访客和受邀者的操作边界也由服务端身份与授权决定。
+
+浏览器呈现差异与冲突供作者决策，不是合并权威。修改 merge 算法时应同时检查 API 接受语义和审阅 UI 是否仍准确表达失败与敏感变更。

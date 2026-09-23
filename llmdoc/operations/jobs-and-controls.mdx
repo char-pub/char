@@ -1,0 +1,27 @@
+---
+description: "pg-boss 队列迁移、singleton、重试死信、admin 重投、功能开关缓存与 pending 发布恢复"
+kind: architecture
+code:
+  paths:
+    - "apps/server/src/jobs/definitions.ts"
+    - "apps/server/src/jobs/queue.ts"
+    - "apps/server/src/processes/modules.ts"
+    - "apps/server/src/ops/flags.ts"
+    - "apps/server/src/admin/routes/jobs.ts"
+    - "apps/server/src/worker/cleanup.ts"
+    - "apps/server/test/queue.test.ts"
+relations:
+  requires:
+    - "execution-model.mdx"
+  related:
+    - "registry/publishing.mdx"
+    - "operations/takedown-and-evidence.mdx"
+---
+
+# 后台任务与运行控制
+
+数据库迁移创建队列结构，应用进程只生产或消费已定义的任务。worker 负责调度与监督；关键任务用 singleton 和持久业务状态抵御重复投递，处理函数必须能在部分执行后安全重试。退避与重试耗尽后的死信让失败可见，管理重投应先核对对象现状和任务类型，不能无条件重复外部副作用。
+
+功能开关经缓存传播，关闭操作有短暂生效窗口；调用方必须在真正执行前复核。关闭 publish 时 pending 工作应进入可恢复的延迟或重排路径，开关恢复后重新处理，不能宣告成功或丢弃。清理任务也须尊重引用、保留和证据状态。
+
+运维判断应结合队列状态和业务记录：任务完成但状态未提交、状态已提交但后续分发清除未完成，都需要不同恢复动作。
