@@ -750,3 +750,16 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 部署形态：
 11. **一个镜像四个命令**：`api` / `admin` / `worker` / `migrate`，非 root 运行；production 缺少 `ORIGIN_AUTH_SECRET` 时进程拒绝启动。
 12. **pg-boss 权限**：应用角色不能删除队列；只能向 `pgboss.queue` 插入迁移登记过的队列名（行级安全策略），因为 pg-boss 的调度器每次启动都会调用 `create_queue`；可以更新 `pgboss.version` 那一行（调度器记录 cron 时间）。pg-boss 的后台错误只记录，不会让进程崩溃。
+
+### D-138 Registry 写路径的实现取值 — Accepted
+
+1. **新建草稿的默认值**：`license: LicenseRef-All-Rights-Reserved`、`rating: general`、`default_locale: en`。在作者选择之前取最保守的许可：作者本人可以发布，别人不能再分发。
+2. **服务端强制字段**：草稿里的 `id`、`ref`、`type` 由服务端填写，客户端提交的值被覆盖。`ref` 跟随 namespace 的当前名字。
+3. **Idempotency-Key**：在同一 Creation 内唯一；同一个 key 用于不同的 label 或 revision 返回 422 `request.idempotency_key_reused`。失败的发布释放 label（唯一约束只作用于未失败的 Release）。
+4. **发布开关关闭时**：已入队的发布任务推迟（不失败、不消耗重试次数），Release 保持 pending；worker 每 5 分钟检查一次，开关恢复后重新入队。
+5. **存储格式**：Revision 的每个 fragment 以“去掉 digest 字段的 fragment 的 JCS”存储，key 就是 fragment digest；manifest 的 key 就是 semantic digest。Release 快照为 `JCS({ snapshot_version: 1, root, dependencies: [{ release, ref, semantic_digest, creation }] })`，dependencies 按 ref 排序、包含完整闭包，不含可变状态。
+6. **反向依赖**：`reverse_edges` 只记录直接依赖；传递依赖在 `release_locks` 与 `release_fragments` 中。
+7. **同一权利人**：被发布 Creation 所在的 namespace，加上发布者所属的全部 namespace。
+8. **依赖快照已被删除时**（例如 tombstone 后清理了副本），发布直接失败，报 `publish.tombstoned_dependency` 或 `publish.dependency_unavailable`。
+9. **namespace 数量**：v0 每个账号一个个人 namespace；内置保留名约 35 个，与 `reserved_names` 表合并检查。
+10. **搜索列**在发布与 namespace 改名时于同一事务内刷新。

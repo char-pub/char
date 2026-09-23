@@ -96,3 +96,10 @@
 - 发现并修复：pg-boss 的调度器每次启动都会插入内部队列并更新版本行，原来的权限收紧会让 worker 启动即崩溃（容器实测发现）。改为用行级安全只允许插入已登记的队列名；pg-boss 后台错误改为记录而不崩溃。
 - Verification：`pnpm test` 1046 个通过；集成测试 159 个通过（15 个文件）；容器内实测：`migrate` 成功；`api` 在 production 缺少 `ORIGIN_AUTH_SECRET` 时拒绝启动，配置后不带 `X-Origin-Auth` 返回 403，带正确值时正常路由，`/healthz` 豁免；`worker` 启动后本机健康检查返回 ok。
 - Decisions：D-136（Better Auth）、D-137（读取 / 搜索 / 下架 / 上传 / 部署形态）。
+
+### 2026-09-22 Registry 写路径与本地端到端
+
+- Work：合并 Registry 写路径（subagent，31 个新集成测试）；迁移重新编号为 0004；api 进程挂载写路由，worker 运行发布任务并定时重新入队被推迟的发布；接入 Admin SPA 骨架（subagent）；GitHub App 源码读取与共享的 char.yaml 解析。
+- Verification：`pnpm test` 1077 个通过；集成测试 190 个通过（18 个文件）；本地容器端到端见 [evidence/2026-09-22-local-e2e-publish.md](evidence/2026-09-22-local-e2e-publish.md)（CLI 发布 → worker → 匿名下载 IR，内容寻址校验、幂等、409、搜索）。
+- 发现并修复：发布后作品搜不到（发布任务没有写搜索列）；GitHub 内容 API 的路径中 `/` 被编码（模拟 GitHub 的测试发现）；Action 打包产物在 CLI 重构后过期（`check:action-dist` 拦下，已重新构建并用 dry-run 验证）。
+- Decisions：D-138（写路径）。
