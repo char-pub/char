@@ -62,10 +62,10 @@ test("E2E-2: import a CCv3 PNG, confirm, publish and export it again", async ({
   await expect(omitted.getByText("system_prompt")).toBeVisible();
   await expect(page.locator("body")).not.toContainText(SECRET);
 
-  await page.getByLabel("Rating").selectOption("general");
-  await page.getByLabel("Rights").selectOption("original");
+  await page.getByRole("radio", { name: /^General/ }).check();
+  await page.getByRole("radio", { name: /^Original/ }).check();
   await page.getByLabel("License").selectOption("CC-BY-4.0");
-  await page.getByRole("button", { name: "Confirm and open the editor" }).click();
+  await page.getByRole("button", { name: "Save and open the editor" }).click();
   await expect(page).toHaveURL(new RegExp(`/c/${ns}/lumen/edit$`));
 
   const publish = page.getByRole("region", { name: "Publish" });

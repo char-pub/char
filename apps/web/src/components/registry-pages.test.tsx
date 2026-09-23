@@ -253,6 +253,10 @@ describe("ImportWizard", () => {
         updated_at: "2026-09-22T12:00:00.000Z",
       }),
       confirmImport,
+      // 地址可用性检查：没人用过这个地址。
+      creation: async () => {
+        throw new ApiError(404, "not_found");
+      },
     });
     renderWithApp(<ImportWizard ns="writer" onCreated={onCreated} />, client);
     const file = new File([JSON.stringify(card)], "Mira.json", { type: "application/json" });
@@ -274,11 +278,16 @@ describe("ImportWizard", () => {
       name: "mira",
     });
 
-    const confirm = screen.getByRole("button", { name: "Confirm and open the editor" });
+    const confirm = screen.getByRole("button", { name: "Save and open the editor" });
     expect((confirm as HTMLButtonElement).disabled).toBe(true);
-    await userEvent.selectOptions(screen.getByLabelText("Rating"), "general");
-    await userEvent.selectOptions(screen.getByLabelText("Rights"), "original");
+    // 三项都没有预选，页面说明还差什么。
+    expect(screen.getByText("Choose a rating, the rights and a license to continue.")).toBeTruthy();
+    for (const r of screen.getAllByRole("radio"))
+      expect((r as HTMLInputElement).checked).toBe(false);
+    await userEvent.click(screen.getByRole("radio", { name: /^General/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /^Original/ }));
     expect((confirm as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Choose a license to continue.")).toBeTruthy();
     await userEvent.selectOptions(screen.getByLabelText("License"), "CC-BY-4.0");
     await userEvent.click(confirm);
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith("mira"));
