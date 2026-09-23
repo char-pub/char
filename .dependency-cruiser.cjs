@@ -61,7 +61,8 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
-    exclude: { path: "(dist|coverage)/" },
+    // admin SPA 的 `@/` 别名与 web 不同，由 .dependency-cruiser.admin.cjs 单独检查。
+    exclude: { path: "(dist|coverage)/|^apps/admin/" },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: "tsconfig.depcruise.json" },
     enhancedResolveOptions: {
