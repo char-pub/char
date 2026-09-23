@@ -51,14 +51,17 @@ async function creationId(name: string) {
   return c.id;
 }
 
-/** Action 在本地用同一个解析器算出的 digest。 */
+/**
+ * Action 在 CI 里算出的 digest：char.yaml 没有内部 Creation ID，CLI 用由 ref 派生的占位 ID。
+ * 这里按同样的方式直接 canonicalize 源文件，不借用 Registry 的真实 ID。
+ */
 async function digestAt(repo: RepoFixture, sha: string, ref = "@djj/alice", name = "alice") {
   const loaded = await loadSourceAtCommit(
     g.source,
     { installation_id: INSTALL, repository_id: repo.id, commit: sha, path: PATH },
     { ref, creationId: encodeId("creation", await creationId(name)) },
   );
-  return loaded.semantic_digest;
+  return loaded.reported_digest;
 }
 
 function publish(token: string | null, body: Record<string, unknown>, key: string = randomUUID()) {
@@ -193,8 +196,19 @@ describe("UC-4: publishing from GitHub with OIDC", () => {
         jti: "uc4-jti-0001",
       },
     });
-    // Registry 自己在那个 commit 上读取并构建：Release 的 digest 就是 Action 上报的那个。
-    expect(row?.semanticDigest).toBe(await digestAt(REPO, SHA1));
+    // Registry 自己在那个 commit 上读取并构建。Release 的 digest 用 Registry 中的真实
+    // Creation ID 计算，与 Action 上报的（占位 ID）不同；两者来自同一份源文件。
+    const [creationRow] = await t.app.db
+      .select()
+      .from(creations)
+      .where(eq(creations.name, "alice"));
+    const atCommit = await loadSourceAtCommit(
+      g.source,
+      { installation_id: INSTALL, repository_id: REPO.id, commit: SHA1, path: PATH },
+      { ref: "@djj/alice", creationId: encodeId("creation", creationRow?.id ?? "") },
+    );
+    expect(row?.semanticDigest).toBe(atCommit.semantic_digest);
+    expect(atCommit.reported_digest).toBe(await digestAt(REPO, SHA1));
     const [rev] = await t.app.db
       .select()
       .from(revisions)
