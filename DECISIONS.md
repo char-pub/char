@@ -795,3 +795,25 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 5. **接受的结果**：生成一个 `author_kind = contribution` 的 Revision；合并后内容与已有 Revision 完全相同时复用它；贡献者去重后写入 provenance。
 6. **邀请**：`policy = invited` 时由 `contribution_invites` 表决定谁可以提交；作者通过 contribution-settings 与 invites 路由管理。
 7. **Agent Token**：`api_tokens.agent` 为 true 的 Token 提交的 Contribution 一律标记为 agent，请求体里的 `agent: false` 不能覆盖。
+
+### D-142 CCv3 导入的实现取值 — Accepted
+
+1. **接口**：`POST /v1/imports {upload, namespace, name}` 返回 202；同一个 upload 以相同参数重复提交返回同一个导入，换目标返回 409 `import.upload_used`；同一个名字同时只能有一个进行中的导入。创建导入行、入队与审计在同一事务内。按账号限流（每小时 30 次）。
+2. **可见性**：导入记录与 Import Report 只有发起人能看到，其他人一律 404。报告里保留 `system_prompt` 等字段的原值（只给发起人看），草稿的 provenance 只记字段名。
+3. **发布前必须确认**：`POST /v1/imports/:id/confirm {rating, rights, license}` 写入草稿并让草稿 version 加一；确认之前发布返回 422 `publish.import_unconfirmed`。确认页上的默认值沿用 ccv3 包的现有取值（默认 rights 仍待用户决定）。
+4. **原件不重新编码**：purpose 为 import 的 PNG 在上传阶段只校验完整性与黑名单，因为角色数据在 PNG 的文本 chunk 里，重编码会丢失。
+5. **卡片中的图片**走与普通上传相同的流程（黑名单、重新编码、CSAM 扫描），全部处理完才写入。单张图片无法处理时跳过并写进报告；命中黑名单或扫描命中时整个导入以 `import.rejected` 结束，不说明原因；扫描服务不可用时重试，不跳过扫描。
+6. **错误码**：`import.unsupported_format`、`import.too_large`、`import.parse_failed`、`import.digest_mismatch`、`import.name_taken`、`import.upload_unavailable`，具体原因放在 `error_detail`。
+7. **存储与引用**：原件与 Import Report 存 private 桶，由 `imports.source_digest` / `imports.report_digest` 引用（`blob_refs` 只能指向 Release）。以后的 CAS 回收必须把这两列当作有效引用。
+8. **追溯上传者**：`uploads.result.derived` 记录从一次上传中取出的图片 digest，员工单独标记其中一张图片为 CSAM 时也能找到上传者。
+
+### D-143 经验证访客的实现取值 — Accepted
+
+1. **配置**：`TURNSTILE_SECRET_KEY`、`SMTP_URL`、`EMAIL_FROM`、`GUEST_HMAC_KEY` 要么全配、要么全不配；只配一部分时进程拒绝启动。全不配时访客验证关闭（503 `guest.not_configured`），任何环境都不会跳过校验。邮件通过 SMTP 发送，服务商部署时再选。
+2. **Turnstile**：要求 `success`、`hostname` 属于受信任的 web 来源、`action = guest_verification`；超时 5 秒；网络错误或响应异常一律视为失败。
+3. **顺序与限流**：先按 IP 限流（每小时 10 次），再校验 Turnstile，再按邮箱限流（每小时 3 次）；确认接口按 IP 限流（每小时 30 次）。申请一律返回 202，不透露邮箱是否验证过。
+4. **验证邮件**在请求内同步发送，不经过任务队列，因为任务数据会落库，而明文 token 只应该出现在邮件里；发送失败时作废 token 并返回 503。邮件是纯文本，不包含访客填写的内容。
+5. **不存明文邮箱**：只存 `HMAC(GUEST_HMAC_KEY, 归一化邮箱)`，同一邮箱找回同一个访客。这把密钥单独配置、不轮换（轮换会让所有访客失去对应关系），不从会定期轮换的 `BETTER_AUTH_SECRET` 派生。
+6. **token 与会话**：验证 token 与会话 token 都是 32 字节随机数，库里只存 sha256；验证 token 30 分钟过期、一次性。访客会话 cookie `__Host-charpub.guest`，30 天固定过期、不续期。
+7. **身份优先级**：个人 Token > 登录会话 > 访客 cookie。
+8. **停用与开关**：停用的访客除退出外一律 403 `guest.disabled`，重新验证不会解除停用；`guest_access` 开关关闭时验证与访客提交都返回 503。每次确认写一条 `guest.verified` 审计。
