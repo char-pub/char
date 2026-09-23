@@ -40,6 +40,7 @@ import { type JobQueue, runOnce } from "../jobs/queue.js";
 import { loadClosure, loadRegistryState } from "../registry/closure.js";
 import { buildSnapshot, irBytes, loadRevisionContent } from "../registry/content.js";
 import { decodeId, encodeId } from "../registry/ids.js";
+import { refreshSearchColumns } from "../registry/search.js";
 import type { Cas } from "../storage/cas.js";
 
 export interface PublishJobData {
@@ -311,6 +312,8 @@ async function writeArtifacts(
           updatedAt: now,
         })
         .where(eq(creations.id, creationId));
+      // 名字、简介、标签随发布更新，搜索列在同一事务里刷新，否则新作品搜不到。
+      await refreshSearchColumns(tx, creationId);
       await appendAudit(tx, {
         at: now,
         actor: { kind: "system", id: "worker" },

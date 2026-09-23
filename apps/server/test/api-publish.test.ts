@@ -143,6 +143,11 @@ describe("UC-1: a creator publishes a Level 0 character", () => {
     expect(await h.runPublishJobs()).toEqual(["published"]);
     const report = await json(await me.get("/v1/creations/@djj/alice/releases/1.0.0/report"));
     expect(report).toMatchObject({ state: "active", release: releaseId, label: "1.0.0" });
+
+    // 发布之后，匿名用户按名字就能搜到它。
+    const [c] = await t.app.db.select().from(creations).where(eq(creations.name, "alice"));
+    expect(c?.searchText).toContain("alice");
+    expect(c?.searchGrams.length).toBeGreaterThan(0);
   });
 
   it("materializes the closure and blob references, and exposes the IR publicly", async () => {

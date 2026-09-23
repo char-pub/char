@@ -8,7 +8,12 @@ import { eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
-import { namespaceMembers, namespaceRedirects, namespaces } from "../../db/schema/index.js";
+import {
+  creations,
+  namespaceMembers,
+  namespaceRedirects,
+  namespaces,
+} from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
 import { lookupNamespace } from "../../registry/lookup.js";
@@ -17,6 +22,7 @@ import {
   ownedUserNamespaces,
   slugAvailability,
 } from "../../registry/namespaces.js";
+import { refreshSearchColumns } from "../../registry/search.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
 
 const RenameNamespaceRequestSchema = z.strictObject({ new_slug: NamespaceSlugSchema });
@@ -109,6 +115,12 @@ export function register(app: Hono<Env>): void {
           .update(namespaces)
           .set({ slug: body.new_slug, updatedAt: clock.now() })
           .where(eq(namespaces.id, loaded.id));
+        // 搜索文本包含 `@namespace/name`，改名后同一事务内刷新这个 namespace 下的全部 Creation。
+        const owned = await tx
+          .select({ id: creations.id })
+          .from(creations)
+          .where(eq(creations.namespaceId, loaded.id));
+        for (const c of owned) await refreshSearchColumns(tx, c.id);
         await appendAudit(tx, {
           at: clock.now(),
           actor: auditActor(c.var.principal),
