@@ -172,7 +172,8 @@ export async function searchCreations(
   if (input.tag)
     conds.push(sql`${creations.tags} @> ARRAY[${normalizeForSearch(input.tag)}]::text[]`);
 
-  let rank = sql<number>`0`;
+  // 不能写成字面量 0：ORDER BY 里的整数字面量会被当成列序号。
+  let rank = sql<number>`0::real`;
   const q = input.q?.trim();
   if (q) {
     const nq = normalizeForSearch(q);

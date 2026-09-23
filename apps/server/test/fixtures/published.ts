@@ -149,12 +149,15 @@ export async function publishRelease(o: PublishOptions): Promise<PublishedReleas
     mediaType: "application/vnd.char.context-ir+json",
     kind: "ir",
   });
+  // fragment 的 CAS key 就是它的 digest：对象内容是去掉 digest 字段后的 canonical JSON。
   for (const f of creation.fragments) {
+    const { digest, ...body } = f;
     await cas.putBlob(db, {
       bucket,
-      bytes: enc.encode(jcs(f as unknown as JSONValue)),
+      bytes: enc.encode(jcs(body as unknown as JSONValue)),
       mediaType: "application/json",
       kind: "fragment",
+      digest,
     });
   }
 
