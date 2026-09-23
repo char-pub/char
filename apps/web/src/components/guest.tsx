@@ -8,12 +8,13 @@
  */
 import { useQueryClient } from "@tanstack/react-query";
 import { MailCheck, UserRound } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type GuestSession, isApiError } from "@/lib/api";
 import { keys, useRegistry } from "@/lib/registry";
-import { loadTurnstile, TURNSTILE_ACTION, TURNSTILE_SITE_KEY } from "@/lib/turnstile";
+import { TURNSTILE_ACTION, TURNSTILE_SITE_KEY } from "@/lib/turnstile";
+import { TurnstileWidget } from "./turnstile-widget";
 import { UserText } from "./user-content";
 
 const RETURN_KEY = "charpub.guest.return";
@@ -28,53 +29,6 @@ export function takeGuestReturn(): string | null {
   const path = window.localStorage.getItem(RETURN_KEY);
   window.localStorage.removeItem(RETURN_KEY);
   return path?.startsWith("/c/") ? path : null;
-}
-
-function TurnstileWidget({
-  siteKey,
-  onToken,
-}: {
-  siteKey: string;
-  onToken: (token: string | null) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [failed, setFailed] = useState(false);
-  // 回调放进 ref：widget 只渲染一次，不随父组件的重新渲染而重建。
-  const cb = useRef(onToken);
-  cb.current = onToken;
-
-  useEffect(() => {
-    let widgetId: string | undefined;
-    let cancelled = false;
-    loadTurnstile()
-      .then((t) => {
-        if (cancelled || !ref.current) return;
-        widgetId = t.render(ref.current, {
-          sitekey: siteKey,
-          action: TURNSTILE_ACTION,
-          theme: "auto",
-          callback: (token) => cb.current(token),
-          "expired-callback": () => cb.current(null),
-          "error-callback": () => cb.current(null),
-        });
-      })
-      .catch(() => setFailed(true));
-    return () => {
-      cancelled = true;
-      if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
-    };
-  }, [siteKey]);
-
-  return (
-    <div className="space-y-1">
-      <div ref={ref} data-testid="turnstile" />
-      {failed ? (
-        <p role="alert" className="text-sm text-seal">
-          The human check could not load. Check your connection and reload the page.
-        </p>
-      ) : null}
-    </div>
-  );
 }
 
 const REQUEST_ERRORS: Record<string, string> = {
@@ -184,7 +138,12 @@ export function GuestVerificationForm({ returnTo }: { returnTo: string }) {
           />
         </div>
       </div>
-      <TurnstileWidget key={widgetKey} siteKey={siteKey} onToken={setToken} />
+      <TurnstileWidget
+        key={widgetKey}
+        siteKey={siteKey}
+        action={TURNSTILE_ACTION}
+        onToken={setToken}
+      />
       <Button type="submit" disabled={!valid || !token || busy}>
         Send the link
       </Button>
