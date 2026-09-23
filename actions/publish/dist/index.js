@@ -14940,11 +14940,11 @@ var require_util4 = __commonJS({
             dataURL += serializeAMimeType(parsed);
           }
           dataURL += ";base64,";
-          const decoder = new StringDecoder("latin1");
+          const decoder2 = new StringDecoder("latin1");
           for (const chunk of bytes) {
-            dataURL += btoa2(decoder.write(chunk));
+            dataURL += btoa2(decoder2.write(chunk));
           }
-          dataURL += btoa2(decoder.end());
+          dataURL += btoa2(decoder2.end());
           return dataURL;
         }
         case "Text": {
@@ -14969,11 +14969,11 @@ var require_util4 = __commonJS({
         }
         case "BinaryString": {
           let binaryString = "";
-          const decoder = new StringDecoder("latin1");
+          const decoder2 = new StringDecoder("latin1");
           for (const chunk of bytes) {
-            binaryString += decoder.write(chunk);
+            binaryString += decoder2.write(chunk);
           }
-          binaryString += decoder.end();
+          binaryString += decoder2.end();
           return binaryString;
         }
       }
@@ -50153,9 +50153,9 @@ function resolve(input2) {
     }
   }
   const assets = [...usedAssets.entries()].sort(([a], [b]) => compareStrings(a, b)).map(([id, u]) => buildAsset(id, u.inst, u.slot, u.variant, input2.publicAssetBaseUrl));
-  const participants = buildParticipants(env, rootCreation);
   const bootstrap = buildBootstrap(graph.root, env, usage);
   const late_slots = buildLateSlots(env, usage);
+  const participants = buildParticipants(env, rootCreation, new Set(late_slots.map((s) => s.key)));
   const meta3 = buildMeta(graph, fragments, assets, env, au);
   const diagnostics = sortDiagnostics(
     fragments.filter((f) => !f.origin.stable).map((f) => ({
@@ -50248,9 +50248,10 @@ function buildAsset(id, inst, slot, variant, baseUrl) {
     out.alt = pickLocalized(v.alt, c.meta.default_locale, c.meta.default_locale);
   return out;
 }
-function buildParticipants(env, root) {
+function buildParticipants(env, root, lateSlotKeys) {
   const out = [];
   for (const p of env.participants.values()) {
+    if (p.late !== void 0 && !lateSlotKeys.has(p.late)) continue;
     const item = { key: p.key, display_name: p.display_name, kind: p.kind };
     if (p.ref !== void 0) item.ref = p.ref;
     if (p.role !== void 0) item.role = p.role;
@@ -50431,14 +50432,23 @@ function placeholderCreationId(ref) {
   }
   return `cr_${out}`;
 }
-async function loadCharYaml(file2, projectRoot) {
-  const abs = path.resolve(file2);
-  const root = path.resolve(projectRoot ?? path.dirname(abs));
-  const buf = await readFile(abs);
-  if (buf.byteLength > MAX_YAML_BYTES) {
-    throw new CharError({ code: "cli.file_too_large", subject: abs });
+var decoder = new TextDecoder("utf-8", { fatal: true });
+async function parseCharYaml(bytes, yamlPath, read) {
+  if (bytes.byteLength > MAX_YAML_BYTES) {
+    throw new CharError({ code: "cli.file_too_large", subject: yamlPath });
   }
-  const doc = (0, import_yaml.parseDocument)(buf.toString("utf8"), {
+  const text = (() => {
+    try {
+      return decoder.decode(bytes);
+    } catch {
+      throw new CharError({
+        code: "cli.yaml_invalid",
+        subject: yamlPath,
+        detail: "not valid UTF-8"
+      });
+    }
+  })();
+  const doc = (0, import_yaml.parseDocument)(text, {
     schema: "core",
     customTags: [],
     uniqueKeys: true,
@@ -50447,17 +50457,17 @@ async function loadCharYaml(file2, projectRoot) {
   if (doc.errors.length > 0) {
     throw new CharError({
       code: "cli.yaml_invalid",
-      subject: abs,
+      subject: yamlPath,
       detail: doc.errors[0]?.message ?? ""
     });
   }
   const value = doc.toJS({ maxAliasCount: MAX_ALIAS_COUNT });
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new CharError({ code: "cli.yaml_not_object", subject: abs });
+    throw new CharError({ code: "cli.yaml_not_object", subject: yamlPath });
   }
   const creation = value;
-  const dir = path.dirname(abs);
-  await expandIncludes(creation, dir, root);
+  const dir = path.posix.dirname(yamlPath);
+  await expandIncludes(creation, dir, read);
   const missingIds = [];
   const fragments = creation.fragments;
   if (Array.isArray(fragments)) {
@@ -50474,38 +50484,55 @@ async function loadCharYaml(file2, projectRoot) {
     creation.id = placeholderCreationId(creation.ref);
     placeholderId = true;
   }
-  return { file: abs, root, doc, creation, missingIds, placeholderId };
+  return { doc, creation, missingIds, placeholderId };
 }
-async function expandIncludes(node2, dir, root) {
+async function loadCharYaml(file2, projectRoot) {
+  const abs = path.resolve(file2);
+  const root = path.resolve(projectRoot ?? path.dirname(abs));
+  const read = async (rel2) => {
+    const buf = await readFile(path.join(root, ...rel2.split("/"))).catch(() => null);
+    return buf ? new Uint8Array(buf) : null;
+  };
+  const rel = path.relative(root, abs).split(path.sep).join("/");
+  const parsed = await parseCharYaml(new Uint8Array(await readFile(abs)), rel, read);
+  return { file: abs, root, ...parsed };
+}
+function resolveInclude(ref, dir) {
+  const joined = path.posix.normalize(path.posix.join(dir, ref));
+  if (joined.startsWith("../") || joined === ".." || path.posix.isAbsolute(joined)) {
+    throw new CharError({ code: "cli.include_outside_project", subject: ref });
+  }
+  return joined;
+}
+async function expandIncludes(node2, dir, read) {
   if (Array.isArray(node2)) {
     for (let i = 0; i < node2.length; i++) {
       const v = node2[i];
-      if (typeof v === "string" && INCLUDE_RE.test(v)) node2[i] = await readInclude(v, dir, root);
-      else await expandIncludes(v, dir, root);
+      if (typeof v === "string" && INCLUDE_RE.test(v)) node2[i] = await readInclude(v, dir, read);
+      else await expandIncludes(v, dir, read);
     }
     return;
   }
   if (node2 && typeof node2 === "object") {
     const obj = node2;
     for (const [k, v] of Object.entries(obj)) {
-      if (typeof v === "string" && INCLUDE_RE.test(v)) obj[k] = await readInclude(v, dir, root);
-      else await expandIncludes(v, dir, root);
+      if (typeof v === "string" && INCLUDE_RE.test(v)) obj[k] = await readInclude(v, dir, read);
+      else await expandIncludes(v, dir, read);
     }
   }
 }
-async function readInclude(ref, dir, root) {
-  const target = path.resolve(dir, ref);
-  const rel = path.relative(root, target);
-  if (rel.startsWith("..") || path.isAbsolute(rel)) {
-    throw new CharError({ code: "cli.include_outside_project", subject: ref });
-  }
-  const buf = await readFile(target).catch(() => {
-    throw new CharError({ code: "cli.include_missing", subject: ref });
-  });
-  if (buf.byteLength > MAX_INCLUDE_BYTES) {
+async function readInclude(ref, dir, read) {
+  const target = resolveInclude(ref, dir);
+  const bytes = await read(target);
+  if (!bytes) throw new CharError({ code: "cli.include_missing", subject: ref });
+  if (bytes.byteLength > MAX_INCLUDE_BYTES) {
     throw new CharError({ code: "cli.include_too_large", subject: ref });
   }
-  return buf.toString("utf8");
+  try {
+    return decoder.decode(bytes);
+  } catch {
+    throw new CharError({ code: "cli.include_invalid", subject: ref, detail: "not valid UTF-8" });
+  }
 }
 
 // ../../packages/cli/src/commands.ts
