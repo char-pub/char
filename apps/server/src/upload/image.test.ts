@@ -137,9 +137,7 @@ describe("rejections", () => {
       .png({ compressionLevel: 9 })
       .toBuffer();
     expect(bomb.byteLength).toBeLessThan(2 * 1024 * 1024);
-    expect(await codeOf(processImage(new Uint8Array(bomb)))).toMatch(
-      /upload\.(too_many_pixels|decode_failed)/,
-    );
+    expect(await codeOf(processImage(new Uint8Array(bomb)))).toBe("upload.too_many_pixels");
   });
 
   it("rejects oversized files", async () => {
@@ -190,11 +188,10 @@ describe("rejections", () => {
 });
 
 describe("edge cases", () => {
-  it("reports too many pixels by metadata when the decoder limit is higher", async () => {
+  it("reports too many pixels from the header before decoding", async () => {
     const png = await solid("png", 100, 100);
-    expect(await codeOf(processImage(png, { maxPixels: 5000 }))).toMatch(
-      /upload\.(too_many_pixels|decode_failed)/,
-    );
+    expect(await codeOf(processImage(png, { maxPixels: 5000 }))).toBe("upload.too_many_pixels");
+    expect(await codeOf(processImage(png, { maxPixels: 10_000 }))).toBeUndefined();
   });
 
   it("reports decode failures during re-encoding", async () => {

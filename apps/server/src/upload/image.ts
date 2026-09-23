@@ -115,13 +115,16 @@ export async function processImage(
     }
   }
 
-  const img = sharp(input, { limitInputPixels: maxPixels, failOn: "error", animated: true });
+  // 读取元数据只解析文件头、不解码像素，所以这里不设像素上限：宽高要先读出来，才能对
+  // 解压炸弹给出明确的 `upload.too_many_pixels`。真正解码时仍由 limitInputPixels 兜底。
+  const img = sharp(input, { limitInputPixels: false, failOn: "error", animated: true });
   let meta: sharp.Metadata;
   try {
     meta = await img.metadata();
   } catch (e) {
     throw new ImageRejected("upload.decode_failed", (e as Error).message);
   }
+  // libvips 按内容选择解码器，正常情况下与文件头识别的类型一致；不一致说明文件被刻意构造过。
   if (meta.format !== type) {
     throw new ImageRejected(
       "upload.type_mismatch",
@@ -129,7 +132,6 @@ export async function processImage(
     );
   }
   if ((meta.pages ?? 1) > 1) throw new ImageRejected("upload.animated_not_supported");
-  // 解码器已经按 limitInputPixels 拒绝了超大图片；这里再按元数据检查一次，给出明确的错误码。
   if (meta.width * meta.height > maxPixels) throw new ImageRejected("upload.too_many_pixels");
 
   try {

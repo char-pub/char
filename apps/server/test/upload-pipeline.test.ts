@@ -244,7 +244,7 @@ describe("malicious and broken uploads are rejected and their originals deleted"
         .png({ compressionLevel: 9 })
         .toBuffer(),
     );
-    await expectRejected(bomb, "image/png", /upload\.(too_many_pixels|decode_failed)/);
+    await expectRejected(bomb, "image/png", /^upload\.too_many_pixels$/);
   });
 
   it("rejects a file whose content does not match the declared sha256", async () => {
