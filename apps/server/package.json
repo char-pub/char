@@ -11,6 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/s3-request-presigner": "catalog:",
+    "@char-pub/contracts": "workspace:*",
     "@char-pub/core": "workspace:*",
     "@hono/node-server": "catalog:",
     "@octokit/webhooks-methods": "catalog:",
@@ -22,6 +23,7 @@
     "pg-boss": "catalog:",
     "pino": "catalog:",
     "sharp": "catalog:",
+    "typeid-js": "catalog:",
     "uuidv7": "catalog:",
     "zod": "catalog:"
   },

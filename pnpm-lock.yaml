@@ -350,6 +350,9 @@ catalogs:
     tsx:
       specifier: ^4.23.0
       version: 4.23.13
+    typeid-js:
+      specifier: ^1.2.0
+      version: 1.2.0
     typescript:
       specifier: 6.0.3
       version: 6.0.3
@@ -431,6 +434,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: 'catalog:'
         version: 3.1136.0
+      '@char-pub/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@char-pub/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -464,6 +470,9 @@ importers:
       sharp:
         specifier: 'catalog:'
         version: 0.34.5
+      typeid-js:
+        specifier: 'catalog:'
+        version: 1.2.0
       uuidv7:
         specifier: 'catalog:'
         version: 1.2.1
@@ -5245,6 +5254,9 @@ packages:
     resolution: {integrity: sha512-NoSdpq/WEiAg5sjmBkmV/hfxv6HJH4NqPNrqjtSO5CwRmpsDfaf4begxW34KdJykH/l1yHtwBWQkCRdoXO8mPA==}
     engines: {node: '>=20'}
 
+  typeid-js@1.2.0:
+    resolution: {integrity: sha512-t76ZucAnvGC60ea/HjVsB0TSoB0cw9yjnfurUgtInXQWUI/VcrlZGpO23KN3iSe8yOGUgb1zr7W7uEzJ3hSljA==}
+
   typescript@6.0.3:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
@@ -5358,6 +5370,11 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
+
+  uuid@10.0.0:
+    resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+    hasBin: true
 
   uuidv7@1.2.1:
     resolution: {integrity: sha512-4kPkK3/XTQW9Hbm4CaqfICn+kY9LJtDVEOfgsRRra/+n2Ofg4NqzRFceAkxvQ/Ud/6BpHOPzj8cirqM7TzTN5Q==}
@@ -9934,6 +9951,10 @@ snapshots:
     dependencies:
       tagged-tag: 1.0.0
 
+  typeid-js@1.2.0:
+    dependencies:
+      uuid: 10.0.0
+
   typescript@6.0.3: {}
 
   undici-types@5.26.5: {}
@@ -10019,6 +10040,8 @@ snapshots:
       react: 19.3.0
 
   util-deprecate@1.0.2: {}
+
+  uuid@10.0.0: {}
 
   uuidv7@1.2.1: {}
 

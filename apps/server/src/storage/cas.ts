@@ -9,6 +9,7 @@
  */
 import {
   CopyObjectCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -223,6 +224,16 @@ export class Cas {
         signableHeaders: new Set(["content-length", "content-type"]),
         unhoistableHeaders: new Set(["content-length", "content-type"]),
       },
+    );
+  }
+
+  /**
+   * 从可分发的桶（public / private）中删除一个对象，用于下架。证据桶不能通过这里删除：
+   * 证据的删除只能由专门的留存期任务执行。对象本来就不存在时视为成功。
+   */
+  async deleteObject(bucket: "public" | "private", digest: string): Promise<void> {
+    await this.config.client.send(
+      new DeleteObjectCommand({ Bucket: this.bucketName(bucket), Key: casKey(digest) }),
     );
   }
 
