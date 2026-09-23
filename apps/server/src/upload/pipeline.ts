@@ -100,6 +100,7 @@ export async function processUpload(
   const original = await cas.getUpload(u.stagingKey).catch(() => null);
   if (!original) return reject("upload.missing_object");
   const declared = (u.result as { declared_sha256?: string } | null)?.declared_sha256;
+  const purpose = (u.result as { purpose?: string } | null)?.purpose;
   const digest = sha256Bytes(original);
   if (declared !== digest) return reject("upload.digest_mismatch");
   if (original.byteLength !== u.size) return reject("upload.size_mismatch");
@@ -110,14 +111,16 @@ export async function processUpload(
     .where(inArray(blockedDigests.digest, [digest]));
   if (blocked.length > 0) return reject("upload.blocked_content");
 
-  // 导入用的 JSON / CHARX 卡片不是图片：这里只校验完整性与黑名单，原件留给导入任务解析，
-  // 由导入任务负责删除（未被取走的原件随 uploads 桶的 24 小时生命周期过期）。
-  if (!u.declaredType.startsWith("image/")) {
+  // 导入用的卡片（PNG / CHARX / JSON）在这里只校验完整性与黑名单，原件原样留给导入任务：
+  // PNG 卡片的角色数据就在图片的文本 chunk 里，重新编码会把它丢掉。卡片里的图片由导入任务
+  // 取出后再走同样的图片处理与扫描；原件由导入任务负责删除（未被取走的原件随 uploads 桶的
+  // 24 小时生命周期过期）。
+  if (purpose === "import" || !u.declaredType.startsWith("image/")) {
     await db
       .update(uploads)
       .set({
         status: "ready",
-        result: { declared_sha256: declared, original_digest: digest },
+        result: { declared_sha256: declared, original_digest: digest, purpose },
         updatedAt: deps.now(),
       })
       .where(and(eq(uploads.id, uploadId), eq(uploads.status, "processing")));

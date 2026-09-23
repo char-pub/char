@@ -458,3 +458,54 @@ describe("property: non-members never get write access to any creation", () => {
     );
   });
 });
+
+describe("card imports", () => {
+  const imp = (ns: NamespaceContext, over: Partial<Extract<Resource, { type: "import" }>> = {}) =>
+    ({
+      type: "import",
+      id: "imp1",
+      owner_user_id: "u_alice",
+      ns,
+      ...over,
+    }) as const satisfies Resource;
+
+  it("imports only into namespaces the caller is a member of", () => {
+    const into = (ns: NamespaceContext) => ({ type: "namespace", ns }) as const;
+    expect(status(authorize(alice, "import.create", into(OWNER_NS)))).toBe(200);
+    expect(status(authorize(mallory, "import.create", into(FOREIGN_NS)))).toBe(403);
+    expect(status(authorize(anon, "import.create", into(FOREIGN_NS)))).toBe(401);
+    expect(
+      status(authorize(alice, "import.create", into({ ...OWNER_NS, status: "suspended" }))),
+    ).toBe(403);
+  });
+
+  it("the system resource only answers whether the caller may import at all", () => {
+    expect(status(authorize(alice, "import.create", { type: "system" }))).toBe(200);
+    expect(status(authorize(anon, "import.create", { type: "system" }))).toBe(401);
+    expect(status(authorize(guest, "import.create", { type: "system" }))).toBe(403);
+  });
+
+  it("an import is visible only to the person who started it", () => {
+    expect(status(authorize(alice, "import.read", imp(OWNER_NS)))).toBe(200);
+    for (const p of [mallory, anon, guest, oidc]) {
+      expect(status(authorize(p, "import.read", imp(FOREIGN_NS)))).toBe(404);
+      expect(status(authorize(p, "import.confirm", imp(FOREIGN_NS)))).toBe(404);
+    }
+  });
+
+  it("confirming needs membership, a write scope and an editable creation", () => {
+    expect(status(authorize(alice, "import.confirm", imp(OWNER_NS)))).toBe(200);
+    // 发起人已经不是 namespace 成员时不能再修改草稿。
+    expect(status(authorize(alice, "import.confirm", imp(FOREIGN_NS)))).toBe(403);
+    expect(
+      status(authorize(alice, "import.confirm", imp(OWNER_NS, { creation_status: "suspended" }))),
+    ).toBe(403);
+    const readOnlyToken = { ...alice, scopes: ["creations:read"] } as Principal;
+    expect(authorize(readOnlyToken, "import.confirm", imp(OWNER_NS))).toMatchObject({
+      status: 403,
+      code: "token.insufficient_scope",
+    });
+    const readOnly: AuthzContext = { disabled: new Set(["read_only"]) };
+    expect(status(authorize(alice, "import.confirm", imp(OWNER_NS), readOnly))).toBe(503);
+  });
+});

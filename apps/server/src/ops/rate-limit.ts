@@ -61,6 +61,7 @@ export const RATE_LIMITS = {
   contributionPerGuest: { windowSeconds: 3600, max: 5 },
   upload: { windowSeconds: 86_400, max: 200 },
   uploadNewAccount: { windowSeconds: 86_400, max: 20 },
+  import: { windowSeconds: 3600, max: 30 },
   tokenCreate: { windowSeconds: 3600, max: 10 },
   /** 访客验证邮件：同一 IP 每小时 10 封，同一邮箱每小时 3 封。 */
   guestVerificationPerIp: { windowSeconds: 3600, max: 10 },

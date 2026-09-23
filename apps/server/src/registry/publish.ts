@@ -25,6 +25,7 @@ import {
 } from "../db/schema/index.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
 import { storeRevisionContent } from "./content.js";
+import { hasUnconfirmedImport } from "./imports.js";
 
 export type ReleaseRow = typeof releases.$inferSelect;
 export type RevisionRow = typeof revisions.$inferSelect;
@@ -148,7 +149,9 @@ export type RequestPublishResult =
   | { kind: "same"; row: ReleaseRow }
   | { kind: "idempotent"; row: ReleaseRow }
   | { kind: "key_reused" }
-  | { kind: "taken" };
+  | { kind: "taken" }
+  /** 由导入生成、评级、权利与许可还没有被作者确认。 */
+  | { kind: "import_unconfirmed" };
 
 export async function requestPublish(
   services: Pick<Services, "db" | "ids" | "clock" | "queue">,
@@ -171,6 +174,7 @@ export async function requestPublish(
     }
     return { kind: "idempotent", row: byKey };
   }
+  if (await hasUnconfirmedImport(db, input.creationId)) return { kind: "import_unconfirmed" };
 
   const now = clock.now();
   const id = ids.uuid();

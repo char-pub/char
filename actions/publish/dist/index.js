@@ -47915,7 +47915,8 @@ var ID_PREFIXES = {
   revision: "rev",
   user: "usr",
   contribution: "ctb",
-  upload: "upl"
+  upload: "upl",
+  import: "imp"
 };
 var ID_RES = Object.fromEntries(
   Object.entries(ID_PREFIXES).map(([k, p]) => [k, new RegExp(`^${p}_${TYPEID_SUFFIX_SRC}$`)])
@@ -50813,6 +50814,54 @@ var GuestSchema = external_exports.strictObject({
 var GuestSessionResponseSchema = external_exports.strictObject({
   guest: GuestSchema,
   session_expires_at: external_exports.string()
+});
+var CreateImportRequestSchema = external_exports.strictObject({
+  upload: external_exports.string().min(1).max(64),
+  namespace: NamespaceSlugSchema,
+  name: CreationNameSchema
+});
+var IMPORT_CONFIRMATION_FIELDS = ["meta.rating", "meta.rights", "meta.license"];
+var ImportReportSchema = external_exports.looseObject({
+  container: external_exports.enum(["png", "charx", "json"]),
+  format: external_exports.string(),
+  spec: external_exports.string(),
+  spec_version: external_exports.string().nullable(),
+  source_digest: DigestSchema,
+  mappings: external_exports.array(external_exports.strictObject({ from: external_exports.string(), to: external_exports.string() })),
+  /** 被省略的策略字段（例如 system_prompt）及原值。报告只有发起人能看到。 */
+  omitted_policy_fields: external_exports.array(external_exports.strictObject({ field: external_exports.string(), value: external_exports.string() })),
+  placeholders: external_exports.array(external_exports.looseObject({})),
+  lorebook: external_exports.array(external_exports.looseObject({})),
+  assets: external_exports.array(
+    external_exports.looseObject({
+      type: external_exports.string(),
+      name: external_exports.string(),
+      uri: external_exports.string(),
+      imported: external_exports.boolean(),
+      reason: external_exports.string().optional()
+    })
+  ),
+  dropped: external_exports.array(external_exports.strictObject({ field: external_exports.string(), reason: external_exports.string() })),
+  needs_confirmation: external_exports.array(external_exports.enum(IMPORT_CONFIRMATION_FIELDS)),
+  warnings: external_exports.array(external_exports.strictObject({ code: external_exports.string(), detail: external_exports.string() }))
+});
+var ImportStatusSchema = external_exports.strictObject({
+  import: external_exports.string(),
+  status: external_exports.enum(["pending", "processing", "succeeded", "failed"]),
+  error_code: external_exports.string().optional(),
+  error_detail: external_exports.string().optional(),
+  /** 导入成功后生成的 Creation。 */
+  creation: UnversionedRefSchema.optional(),
+  /** 发布前必须由作者确认的字段；确认后为空数组。 */
+  needs_confirmation: external_exports.array(external_exports.enum(IMPORT_CONFIRMATION_FIELDS)),
+  confirmed_at: external_exports.string().nullable(),
+  report: ImportReportSchema.optional(),
+  created_at: external_exports.string()
+});
+var ConfirmImportRequestSchema = external_exports.strictObject({
+  rating: RatingSchema,
+  rights: external_exports.enum(["original", "fan-work", "licensed"]),
+  license: SpdxExpressionSchema
 });
 
 // src/run.ts

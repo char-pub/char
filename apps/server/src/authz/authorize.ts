@@ -85,6 +85,15 @@ export type Resource =
       status: "open" | "accepted" | "rejected" | "withdrawn";
     }
   | { type: "upload"; id: string; owner_user_id: string }
+  | {
+      type: "import";
+      id: string;
+      owner_user_id: string;
+      /** 导入目标所在的 namespace。 */
+      ns: NamespaceContext;
+      /** 导入生成的 Creation 的状态；导入还没有成功时省略。 */
+      creation_status?: "active" | "hidden" | "suspended";
+    }
   | { type: "account"; user_id: string }
   | { type: "system" };
 
@@ -106,6 +115,9 @@ export type Action =
   | "upload.create"
   | "upload.read"
   | "import.create"
+  | "import.read"
+  /** 确认导入卡片的评级、权利与许可。 */
+  | "import.confirm"
   | "namespace.create"
   | "namespace.rename"
   | "account.read"
@@ -142,6 +154,7 @@ const REQUIRED_SCOPE: Partial<Record<Action, Scope>> = {
   "contribution.decide": "creations:write",
   "upload.create": "creations:write",
   "import.create": "creations:write",
+  "import.confirm": "creations:write",
 };
 
 /** 会写数据的动作：全站只读时一律拒绝。 */
@@ -157,6 +170,7 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "contribution.withdraw",
   "upload.create",
   "import.create",
+  "import.confirm",
   "namespace.create",
   "namespace.rename",
   "account.manage_tokens",
@@ -232,6 +246,7 @@ function canSee(principal: Principal, r: Resource): Decision {
       return deny(404, "not_found");
     }
     case "upload":
+    case "import":
       return principal.kind === "user" && principal.user_id === r.owner_user_id
         ? ALLOW
         : deny(404, "not_found");
@@ -358,8 +373,21 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
       return isAuthor(p, r.author) ? ALLOW : deny(403, "forbidden");
 
     case "upload.create":
-    case "import.create":
       return requireUser(p) ?? ALLOW;
+
+    case "import.create":
+      // 对 namespace 判断能否导入到这里；对 system 只判断能否使用导入功能
+      // （请求体不合法、还不知道目标 namespace 时用它，之后必然以 422 结束）。
+      if (r.type === "namespace") return requireMember(p, r.ns);
+      return r.type === "system" ? (requireUser(p) ?? ALLOW) : deny(403, "bad_resource");
+
+    case "import.read":
+      return r.type === "import" ? ALLOW : deny(403, "bad_resource");
+
+    case "import.confirm":
+      if (r.type !== "import") return deny(403, "bad_resource");
+      if (r.creation_status === "suspended") return deny(403, "creation.suspended");
+      return requireMember(p, r.ns);
 
     case "upload.read":
       return r.type === "upload" ? ALLOW : deny(403, "bad_resource");
