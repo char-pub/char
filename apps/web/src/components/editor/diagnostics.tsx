@@ -31,7 +31,7 @@ export function DiagnosticList({
             key={`${d.code}:${d.subject}:${i}`}
             className={cn(
               "flex items-start gap-1.5 text-xs",
-              d.severity === "error" ? "text-seal" : "text-foreground",
+              d.severity === "error" ? "text-danger" : "text-warning",
             )}
             data-severity={d.severity}
           >
@@ -39,9 +39,7 @@ export function DiagnosticList({
             <span>
               <span className="font-mono">{d.code}</span>
               {d.detail ? ` — ${d.detail}` : ""}
-              <span className="block font-mono text-[0.7rem] text-muted-foreground">
-                {d.subject}
-              </span>
+              <span className="block font-mono text-[0.7rem] text-text-3">{d.subject}</span>
             </span>
           </li>
         );

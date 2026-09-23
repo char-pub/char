@@ -200,6 +200,7 @@ export function Editor({
                 Dependencies
               </h3>
               <DependenciesEditor
+                self={`@${ns}/${name}`}
                 working={ed.working}
                 update={ed.update}
                 diagnostics={diagnostics}
