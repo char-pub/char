@@ -88,8 +88,8 @@
 ### M9 Admin 后端、安全加固与部署
 
 - [x] **M9-1** admin 进程：只挂载 admin 路由；校验 Access JWT；员工会话与角色（MFA 由 Access 与组织 2FA 保证，D-120）；四眼确认；哈希链审计与校验工具。验证：集成测试（角色矩阵自动生成用例）+ 在公开 api 上访问 admin 路由返回 404。覆盖：SC-12、UC-8、UC-10。
-- [ ] **M9-2** 部署主站（Railway 的 production environment、Workers Static Assets、R2 桶、Access、WAF、Transform Rule、Turnstile，以及 Cloudflare CSAM Scanning Tool），冒烟测试通过。验证：`pnpm smoke --env production` 输出。前置：DOR B-1、B-5、B-6。覆盖：SC-15。
-- [ ] **M9-3** 边缘防护核验（主站）：直接访问源站（不经 Cloudflare）被拒；admin-api 不经 Access 被拒；限流生效。验证：curl 记录。覆盖：SC-15、T15。
+- [x] **M9-2** 部署主站（Railway 的 production environment、Workers Static Assets、R2 桶、Access、WAF、Transform Rule、Turnstile，以及 Cloudflare CSAM Scanning Tool），冒烟测试通过。验证：`pnpm smoke --env production` 输出。前置：DOR B-1、B-5、B-6。覆盖：SC-15。
+- [x] **M9-3** 边缘防护核验（主站）：直接访问源站（不经 Cloudflare）被拒；admin-api 不经 Access 被拒；限流生效。验证：curl 记录。覆盖：SC-15、T15。
 - [ ] **M9-4** 开启 Railway Postgres 备份，并完成一次恢复演练（把备份恢复到一个新实例，比对行数和样本数据）。验证：演练记录。前置：DOR B-1。覆盖：SC-15、UC-13。
 - [ ] **M9-5** Runbooks：密钥轮换、CSAM 命中、DMCA 处理、数据泄露、DoS / kill switch、数据库恢复、break-glass。验证：人工审阅。
 - [ ] **M9-6** 主站对外开放（取消邀请制或公开宣布）前的最终确认：在当前提交上重新运行冒烟测试并通过，端到端验收与人工验收都已完成。验证：冒烟测试输出 + 用户确认记录。前置：用户确认对外开放。覆盖：G-6。

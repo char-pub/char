@@ -195,3 +195,10 @@
 - 引入 `char-pub/brand-assets` 作为子模块（`vendor/brand-assets`，固定在 4cec283）。web 与 admin 的顶栏、页脚标志改为品牌几何（线条用 `currentColor`，浅色为 Ink、深色为 White）；favicon、ico 与 Apple touch icon 由 Vite 插件从子模块提供，仓库不保存副本，子模块缺失时构建直接报错并提示命令。CI 拉取子模块。按用户要求，配色与字体暂不改动。
 - 已部署到 `www.char.pub`，三个图标地址 200；该提交的 ci / codeql / scorecard 通过。
 - 清理：所有 subagent 已结束，只保留主 worktree；main 的上游改为 `github/main`。
+
+### 2026-09-23 主站全部上线
+
+- 用户提供 GitHub App 私钥、webhook secret、App ID、SMTP（Resend，`char.pub` 已验证），并在 Railway 中配置了 OAuth App 与部分 Access 变量。我把文件从仓库根目录移到 `~/.charpub-secrets/`，写入 api / worker，发件人 `char.pub <no-reply@char.pub>`，写入 Turnstile secret 与 `GUEST_HMAC_KEY`。
+- 修正 Access 策略（组织成员限制之前没有生效）、更正 admin 的 Access 变量；admin 与 admin SPA 上线。冒烟测试 6 项全部通过，勾选 M9-2、M9-3，证据见 [evidence/2026-09-23-production-deploy.md](evidence/2026-09-23-production-deploy.md)。
+- `bootstrap --owner shuaiqijianhao@qq.com` 与 `--system-namespace commons --member shuaiqijianhao@qq.com` 完成。
+- GitHub App 装在 `Disdjj/char-djj`（用户指定的测试仓库，不用 blog），下一步在其中做 M7-4 / E2E-4。
