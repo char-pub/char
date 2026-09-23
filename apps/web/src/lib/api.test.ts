@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError, createRegistryClient } from "./api";
+import { ApiError, createRegistryClient, MAX_REPORT_DETAILS, REPORT_CATEGORIES } from "./api";
 import { getMainText, setGreeting, setMainText, setName, type Working } from "./draft";
 import { IdempotencyKeys, suggestLabel } from "./publish";
+import { REPORT_TURNSTILE_ACTION } from "./turnstile";
 
 const headersOf = (init: RequestInit | undefined) =>
   (init?.headers ?? {}) as Record<string, string>;
@@ -124,6 +125,55 @@ describe("contribution invites", () => {
     const err = await client.inviteByNamespace("djj", "alice", "nobody").catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).code).toBe("contribution.invite_unknown_user");
+  });
+});
+
+describe("reports", () => {
+  it("reports a creation or one of its releases and returns only the acknowledgement", async () => {
+    const r = recorder([
+      json({ status: "received" }, 202),
+      json({ status: "received" }, 202),
+      json({ code: "not_found", status: 404, title: "not_found", type: "" }, 404),
+    ]);
+    const client = createRegistryClient({ baseUrl: "https://api.test", fetch: r.fetch });
+    expect(
+      await client.submitReport("djj", "alice", { category: "rating", details: "  " }),
+    ).toEqual({ status: "received" });
+    expect(r.calls[0]?.url).toBe("https://api.test/v1/creations/@djj/alice/reports");
+    expect(r.calls[0]?.init.credentials).toBe("include");
+    expect(r.calls[0]?.init.body).toBe(JSON.stringify({ category: "rating" }));
+
+    await client.submitReport(
+      "djj",
+      "alice",
+      { category: "copyright", details: "Uses my art.", turnstile_token: "tok" },
+      { label: "1.0.0" },
+    );
+    expect(r.calls[1]?.url).toBe("https://api.test/v1/creations/@djj/alice/releases/1.0.0/reports");
+    expect(JSON.parse(String(r.calls[1]?.init.body))).toEqual({
+      category: "copyright",
+      details: "Uses my art.",
+      turnstile_token: "tok",
+    });
+
+    const err = await client
+      .submitReport("djj", "secret", { category: "spam" })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).code).toBe("not_found");
+  });
+
+  it("exposes the six categories and the details limit for the form", () => {
+    expect(REPORT_CATEGORIES).toEqual([
+      "sexual_minors",
+      "copyright",
+      "rating",
+      "harassment",
+      "illegal",
+      "spam",
+    ]);
+    expect(MAX_REPORT_DETAILS).toBe(2000);
+    expect(REPORT_TURNSTILE_ACTION).toBe("report");
   });
 });
 

@@ -50899,6 +50899,22 @@ var GuestSessionResponseSchema = external_exports.strictObject({
   guest: GuestSchema,
   session_expires_at: external_exports.string()
 });
+var REPORT_CATEGORIES = [
+  "sexual_minors",
+  "copyright",
+  "rating",
+  "harassment",
+  "illegal",
+  "spam"
+];
+var ReportCategorySchema = external_exports.enum(REPORT_CATEGORIES);
+var MAX_REPORT_DETAILS = 2e3;
+var CreateReportRequestSchema = external_exports.strictObject({
+  category: ReportCategorySchema,
+  details: external_exports.string().trim().max(MAX_REPORT_DETAILS).refine((s) => !new RegExp("\\p{Cc}", "u").test(s.replace(/[\n\r\t]/g, "")), "contains control characters").optional(),
+  turnstile_token: external_exports.string().min(1).max(2048).optional()
+});
+var ReportReceivedResponseSchema = external_exports.strictObject({ status: external_exports.literal("received") });
 var CreateImportRequestSchema = external_exports.strictObject({
   upload: external_exports.string().min(1).max(64),
   namespace: NamespaceSlugSchema,

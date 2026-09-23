@@ -41,7 +41,7 @@ import type { Executor } from "../../db/client.js";
 import { guestSessions, guests, guestVerifications } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { hit, RATE_LIMITS, type RateLimitRule } from "../../ops/rate-limit.js";
-import { requestIdOf } from "../../registry/context.js";
+import { clientIp, requestIdOf } from "../../registry/context.js";
 import type { AppContext, Env } from "../app.js";
 import { route } from "../app.js";
 
@@ -56,11 +56,6 @@ const SYSTEM = { type: "system" } as const;
 
 function notConfigured(c: AppContext): Response {
   return problem(c, 503, "guest.not_configured", "guest verification is not available");
-}
-
-function clientIp(c: AppContext): string | undefined {
-  // 线上请求一定经过 Cloudflare（源站校验），这个头由 Cloudflare 写入，客户端无法伪造。
-  return c.req.header("cf-connecting-ip") ?? undefined;
 }
 
 async function limit(c: AppContext, key: string, rule: RateLimitRule): Promise<Response | null> {

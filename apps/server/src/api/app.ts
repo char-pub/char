@@ -21,6 +21,7 @@ import {
 import type { Db } from "../db/client.js";
 import { problem } from "../http/middleware.js";
 import type { JobQueue } from "../jobs/queue.js";
+import type { ReportServices } from "../moderation/reports.js";
 import type { Cas } from "../storage/cas.js";
 
 export interface Clock {
@@ -44,6 +45,11 @@ export interface Services {
   publicAssetBaseUrl: string;
   /** 访客验证（Turnstile 与发信）。没有配置时访客验证接口返回 503。 */
   guests?: GuestServices;
+  /**
+   * 匿名举报的 Turnstile 与 IP 哈希。没有配置时匿名举报返回 503，登录用户与访客照常可以
+   * 举报（只是不按 IP 限流）。
+   */
+  reports?: ReportServices;
 }
 
 export type Env = {

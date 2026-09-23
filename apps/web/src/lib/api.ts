@@ -34,6 +34,8 @@ import {
   ReleaseDetailSchema,
   type ReleaseSource,
   ReleaseSourceSchema,
+  type ReportCategory,
+  ReportReceivedResponseSchema,
   RevisionSchema,
   type TOKEN_SCOPES,
   UploadStatusSchema,
@@ -121,11 +123,23 @@ export const AcceptedContributionSchema = z.object({
 });
 export type AcceptedContribution = z.infer<typeof AcceptedContributionSchema>;
 
+/** 举报原因（六类）与说明的长度上限，表单直接用这里的值。 */
+export { MAX_REPORT_DETAILS, REPORT_CATEGORIES } from "@char-pub/contracts";
 /**
  * 一个 Release 的来源（`ReleaseSource`）：它对应的 Revision 与 canonical 形式的 Creation。
  * 贡献者在这份内容上修改，变更里的 `base_digest` 按它计算。
  */
-export type { ContributionInvite, ContributionInviteResult, ReleaseSource };
+export type { ContributionInvite, ContributionInviteResult, ReleaseSource, ReportCategory };
+
+/**
+ * 一条举报。登录用户与经验证访客不需要 `turnstile_token`；匿名用户必须带，widget 的 action
+ * 用 `REPORT_TURNSTILE_ACTION`（见 `@/lib/turnstile`）。
+ */
+export interface NewReport {
+  category: ReportCategory;
+  details?: string | undefined;
+  turnstile_token?: string | undefined;
+}
 
 export interface ContributionQuery {
   status?: ContributionStatus | undefined;
@@ -248,6 +262,20 @@ export interface RegistryClient {
    */
   inviteByNamespace(ns: string, name: string, namespace: string): Promise<ContributionInviteResult>;
   uninvite(ns: string, name: string, user: string): Promise<void>;
+
+  /**
+   * 举报一个作品；`opts.label` 给出时举报这个版本。成功只返回 `{ status: "received" }`，
+   * 不透露后续处理。看不到的作品或版本（包括别人的 private 版本）与不存在一样抛出 404
+   * `not_found`；匿名用户没带或没通过 Turnstile 抛出 403 `turnstile.required` /
+   * `turnstile.failed`；服务端没有配置 Turnstile 时匿名举报抛出 503 `report.anonymous_unavailable`；
+   * 限流是 429 `rate_limited`。
+   */
+  submitReport(
+    ns: string,
+    name: string,
+    body: NewReport,
+    opts?: { label?: string | undefined },
+  ): Promise<{ status: "received" }>;
 
   /** 当前的访客会话；没有时为 null。 */
   guestMe(): Promise<GuestSession | null>;
@@ -496,6 +524,14 @@ export function createRegistryClient(
         "DELETE",
         `${creationPath(ns, name)}/contribution-invites/${encodeURIComponent(user)}`,
       );
+    },
+
+    submitReport(ns, name, body, o = {}) {
+      const target = o.label ? release(ns, name, o.label) : creationPath(ns, name);
+      const payload: Record<string, string> = { category: body.category };
+      if (body.details?.trim()) payload.details = body.details;
+      if (body.turnstile_token) payload.turnstile_token = body.turnstile_token;
+      return json(ReportReceivedResponseSchema, "POST", `${target}/reports`, { body: payload });
     },
 
     async guestMe() {

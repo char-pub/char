@@ -70,4 +70,11 @@ export const RATE_LIMITS = {
   guestVerificationPerEmail: { windowSeconds: 3600, max: 3 },
   /** 确认验证链接：按 IP 限流。token 本身是 256 位随机数，这里只是挡住无意义的重试。 */
   guestConfirmPerIp: { windowSeconds: 3600, max: 30 },
+  /**
+   * 举报：每个账号每小时 10 次，每个访客 5 次；同一 IP 每小时 20 次（所有举报人都算，
+   * 同一网络里可能有多个登录用户，所以比按账号的上限宽一些）。
+   */
+  reportPerAccount: { windowSeconds: 3600, max: 10 },
+  reportPerGuest: { windowSeconds: 3600, max: 5 },
+  reportPerIp: { windowSeconds: 3600, max: 20 },
 } as const satisfies Record<string, RateLimitRule>;

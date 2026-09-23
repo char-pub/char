@@ -505,6 +505,49 @@ export const GuestSessionResponseSchema = z.strictObject({
 });
 
 // ---------------------------------------------------------------------------
+// 举报
+// ---------------------------------------------------------------------------
+
+/**
+ * 举报原因。内容政策定稿之前先用这六类，取值与 admin 举报队列的分类一致：涉及未成年人的
+ * 性内容、版权或商标、评级不对、骚扰或涉及真实人物、违法或有害内容、垃圾信息或恶意软件。
+ */
+export const REPORT_CATEGORIES = [
+  "sexual_minors",
+  "copyright",
+  "rating",
+  "harassment",
+  "illegal",
+  "spam",
+] as const;
+export const ReportCategorySchema = z.enum(REPORT_CATEGORIES);
+export type ReportCategory = z.infer<typeof ReportCategorySchema>;
+
+/** 举报说明的最大长度（字符）。 */
+export const MAX_REPORT_DETAILS = 2000;
+
+/**
+ * 举报一个作品（`POST /v1/creations/@ns/name/reports`）或它的某个版本
+ * （`POST /v1/creations/@ns/name/releases/:label/reports`）。登录用户与经验证访客不需要
+ * Turnstile；匿名举报必须带 `turnstile_token`（widget 的 action 是 `report`）。
+ * 说明可以换行，但不能包含其他控制字符。
+ */
+export const CreateReportRequestSchema = z.strictObject({
+  category: ReportCategorySchema,
+  details: z
+    .string()
+    .trim()
+    .max(MAX_REPORT_DETAILS)
+    .refine((s) => !/\p{Cc}/u.test(s.replace(/[\n\r\t]/g, "")), "contains control characters")
+    .optional(),
+  turnstile_token: z.string().min(1).max(2048).optional(),
+});
+export type CreateReportRequest = z.infer<typeof CreateReportRequestSchema>;
+
+/** 举报的响应只说明“已收到”，不透露是否重复、会不会处理或处理结果。 */
+export const ReportReceivedResponseSchema = z.strictObject({ status: z.literal("received") });
+
+// ---------------------------------------------------------------------------
 // 角色卡导入
 // ---------------------------------------------------------------------------
 

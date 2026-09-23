@@ -9,6 +9,7 @@ import { bindingsModule } from "../api/routes/github-bindings.js";
 import { webhookModule } from "../api/routes/github-webhook.js";
 import { oidcPublishModule } from "../api/routes/oidc-publish.js";
 import { register as read } from "../api/routes/read.js";
+import { register as reports } from "../api/routes/reports.js";
 import { register as search } from "../api/routes/search.js";
 import { register as uploads } from "../api/routes/uploads.js";
 import { REGISTRY_WRITE_MODULES } from "../api/routes/write.js";
@@ -34,6 +35,7 @@ export const API_MODULES: readonly ((app: Hono<Env>) => void)[] = [
   yank,
   uploads,
   contributions,
+  reports,
 ];
 
 /** GitHub 集成的路由模块：只有配置了 GitHub App 时才挂载。 */

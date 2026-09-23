@@ -71,6 +71,7 @@ describe("private content is invisible to everyone else", () => {
     "release.read",
     "release.yank",
     "contribution.submit",
+    "report.create",
   ];
   for (const [name, mk] of privateResources) {
     for (const action of actions) {
@@ -400,6 +401,72 @@ describe("guest verification and sessions", () => {
     expect(status(authorize(guest, "guest.read_self", r))).toBe(403);
     expect(status(authorize(anon, "guest.verify", r))).toBe(403);
     expect(status(authorize(anon, "guest.sign_out", r))).toBe(403);
+  });
+});
+
+describe("reports", () => {
+  const disabledGuest = { ...guest, disabled: true } as Principal;
+
+  it("anyone who can see a creation or release can report it", () => {
+    for (const p of [anon, guest, mallory, alice]) {
+      expect(status(authorize(p, "report.create", creation(FOREIGN_NS)))).toBe(200);
+      expect(status(authorize(p, "report.create", release(FOREIGN_NS)))).toBe(200);
+      expect(status(authorize(p, "report.create", release(FOREIGN_NS, { status: "yanked" })))).toBe(
+        200,
+      );
+    }
+    // 成员能看到自己的 private Release，也就能举报它（没有意义，但不泄露什么）。
+    expect(
+      status(authorize(alice, "report.create", release(OWNER_NS, { visibility: "private" }))),
+    ).toBe(200);
+    // 不需要特定的 Token scope。
+    const token = { ...mallory, scopes: ["creations:read"] } as Principal;
+    expect(status(authorize(token, "report.create", creation(FOREIGN_NS)))).toBe(200);
+  });
+
+  it("private or hidden targets stay 404, even in read-only mode", () => {
+    const ctx: AuthzContext = { disabled: new Set(["read_only"]) };
+    for (const p of [anon, guest, mallory]) {
+      expect(
+        authorize(p, "report.create", release(FOREIGN_NS, { visibility: "private" }), ctx),
+      ).toEqual({ allow: false, status: 404, code: "not_found" });
+    }
+  });
+
+  it("is blocked by read-only mode, bans, disabled guests and OIDC credentials", () => {
+    expect(
+      authorize(anon, "report.create", creation(FOREIGN_NS), {
+        disabled: new Set(["read_only"]),
+      }),
+    ).toEqual({ allow: false, status: 503, code: "feature.read_only" });
+    // 其他 kill switch 不影响举报。
+    expect(
+      status(
+        authorize(anon, "report.create", creation(FOREIGN_NS), {
+          disabled: new Set(["contributions", "guest_access", "uploads", "publish", "signups"]),
+        }),
+      ),
+    ).toBe(200);
+    expect(
+      authorize({ ...mallory, banned: true } as Principal, "report.create", creation(FOREIGN_NS)),
+    ).toEqual({ allow: false, status: 403, code: "account.banned" });
+    expect(authorize(disabledGuest, "report.create", creation(FOREIGN_NS))).toEqual({
+      allow: false,
+      status: 403,
+      code: "guest.disabled",
+    });
+    expect(authorize(oidc, "report.create", creation(FOREIGN_NS))).toEqual({
+      allow: false,
+      status: 403,
+      code: "forbidden",
+    });
+  });
+
+  it("needs a creation or release", () => {
+    expect(status(authorize(anon, "report.create", { type: "system" }))).toBe(403);
+    expect(status(authorize(alice, "report.create", { type: "namespace", ns: OWNER_NS }))).toBe(
+      403,
+    );
   });
 });
 
