@@ -337,3 +337,50 @@ export const ContributionSettingsRequestSchema = z.strictObject({
 export const ContributionInviteRequestSchema = z.strictObject({
   user: z.string(),
 });
+
+// ---------------------------------------------------------------------------
+// 经验证的访客
+// ---------------------------------------------------------------------------
+
+/** 访客的显示名：不能包含控制字符和双向文本控制符（防止把名字伪装成别的样子）。 */
+export const GuestDisplayNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
+
+/**
+ * 申请访客验证：通过 Turnstile 之后，服务端给这个邮箱发一封带一次性链接的邮件。
+ * 无论这个邮箱以前是否验证过，响应都一样。
+ */
+export const GuestVerificationRequestSchema = z.strictObject({
+  /** 首尾空白会被去掉；大小写不影响识别为同一个访客。 */
+  email: z.string().trim().max(254).pipe(z.email()),
+  display_name: GuestDisplayNameSchema,
+  turnstile_token: z.string().min(1).max(2048),
+});
+
+export const GuestVerificationResponseSchema = z.strictObject({
+  status: z.literal("sent"),
+  /** 链接的有效期（秒）。 */
+  expires_in: z.number().int().positive(),
+});
+
+/** 打开邮件里的链接后，前端把 fragment 中的 token 提交上来，换取访客会话 cookie。 */
+export const GuestConfirmRequestSchema = z.strictObject({
+  token: z.string().min(1).max(128),
+});
+
+export const GuestSchema = z.strictObject({
+  /** 访客 ID，形如 `gst_…`。 */
+  id: z.string(),
+  display_name: z.string(),
+  verified_at: z.string(),
+});
+export type Guest = z.infer<typeof GuestSchema>;
+
+export const GuestSessionResponseSchema = z.strictObject({
+  guest: GuestSchema,
+  session_expires_at: z.string(),
+});

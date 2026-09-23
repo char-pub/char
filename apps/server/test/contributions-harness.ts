@@ -2,14 +2,16 @@
  * Contribution 集成测试的公共工具：在写路径的测试环境上再挂载 Contribution 路由，
  * 并提供建作品、改草稿、发 Contribution 的快捷方法。
  *
- * 访客：访客验证流程还没有接入，这里用一个只存在于测试中的解析器读取 `x-test-guest` 头，
- * 把请求当作已验证的访客（访客记录预先写入 guests 表）。
+ * 访客：`createGuest` 直接在数据库里写入一个已验证的访客并为它建立真实的访客会话，
+ * `asGuest` 带着这个会话的 cookie 发请求，走的是生产环境同一条 principal 解析路径。
+ * 完整的验证流程（Turnstile + 邮件）见 guests-api 的测试。
  */
 import { uuidv7 } from "uuidv7";
 import type { Services } from "../src/api/app.js";
 import { register as contributions } from "../src/api/routes/contributions.js";
 import { REGISTRY_WRITE_MODULES } from "../src/api/routes/write.js";
 import { createApi } from "../src/api/server.js";
+import { createGuestSession, GUEST_COOKIE, randomGuestToken } from "../src/auth/guest.js";
 import { generateToken, hashToken } from "../src/auth/tokens.js";
 import type { Principal } from "../src/authz/authorize.js";
 import { apiTokens, guests } from "../src/db/schema/index.js";
@@ -58,11 +60,9 @@ export async function createContributionHarness(
   const services: Services = base.services;
   const sessionPrincipal = async (req: Request): Promise<Principal | null> => {
     const user = req.headers.get("x-test-user");
-    if (user) return { kind: "user", user_id: user, banned: false };
-    const guest = req.headers.get("x-test-guest");
-    if (guest) return { kind: "guest", guest_id: guest, disabled: false };
-    return null;
+    return user ? { kind: "user", user_id: user, banned: false } : null;
   };
+  const guestTokens = new Map<string, string>();
   const capp = createApi({
     services,
     originSecrets: [],
@@ -110,7 +110,9 @@ export async function createContributionHarness(
     ...base,
     capp,
     asUser,
-    asGuest: (g) => requester({ "x-test-guest": g }),
+    // 没有会话的访客带一个不存在的 token：服务端把它当作匿名请求。
+    asGuest: (g) =>
+      requester({ cookie: `${GUEST_COOKIE}=${guestTokens.get(g) ?? randomGuestToken()}` }),
     anonymous: () => requester({}),
     async token(userId, opts = {}) {
       const token = generateToken();
@@ -126,9 +128,12 @@ export async function createContributionHarness(
       return requester({ authorization: `Bearer ${token}` });
     },
     async createGuest(guestId, name) {
+      const now = services.clock.now();
       await t.app.db
         .insert(guests)
-        .values({ guestId, displayName: name, verifiedAt: new Date(), verificationKind: "test" });
+        .values({ guestId, displayName: name, verifiedAt: now, verificationKind: "test" });
+      const s = await createGuestSession(t.app.db, { id: uuidv7(), guestId, now });
+      guestTokens.set(guestId, s.token);
     },
     async setupCreation(ns, name, working) {
       const owner = await base.createUser(`owner-${ns}`);

@@ -335,6 +335,52 @@ describe("contribution policy", () => {
   });
 });
 
+describe("guest verification and sessions", () => {
+  const SYS = { type: "system" } as const;
+  const disabledGuest = { ...guest, disabled: true } as Principal;
+
+  it("anyone can ask for verification unless guest access or writes are switched off", () => {
+    for (const p of [anon, guest, alice]) {
+      expect(status(authorize(p, "guest.verify", SYS))).toBe(200);
+    }
+    expect(
+      status(authorize(anon, "guest.verify", SYS, { disabled: new Set(["guest_access"]) })),
+    ).toBe(503);
+    expect(status(authorize(anon, "guest.verify", SYS, { disabled: new Set(["read_only"]) }))).toBe(
+      503,
+    );
+    expect(status(authorize(disabledGuest, "guest.verify", SYS))).toBe(403);
+  });
+
+  it("only a guest can read its own session; a disabled guest cannot", () => {
+    expect(status(authorize(guest, "guest.read_self", SYS))).toBe(200);
+    expect(status(authorize(anon, "guest.read_self", SYS))).toBe(401);
+    expect(status(authorize(alice, "guest.read_self", SYS))).toBe(403);
+    expect(authorize(disabledGuest, "guest.read_self", SYS)).toEqual({
+      allow: false,
+      status: 403,
+      code: "guest.disabled",
+    });
+  });
+
+  it("signing out always works, even for a disabled guest or in read-only mode", () => {
+    for (const p of [anon, guest, disabledGuest, alice]) {
+      expect(
+        status(
+          authorize(p, "guest.sign_out", SYS, { disabled: new Set(["read_only", "guest_access"]) }),
+        ),
+      ).toBe(200);
+    }
+  });
+
+  it("guest actions need the system resource", () => {
+    const r = creation(FOREIGN_NS);
+    expect(status(authorize(guest, "guest.read_self", r))).toBe(403);
+    expect(status(authorize(anon, "guest.verify", r))).toBe(403);
+    expect(status(authorize(anon, "guest.sign_out", r))).toBe(403);
+  });
+});
+
 describe("uploads", () => {
   it("only the uploader sees an upload", () => {
     const u = { type: "upload", id: "upl1", owner_user_id: "u_alice" } as const;

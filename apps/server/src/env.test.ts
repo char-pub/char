@@ -3,7 +3,9 @@ import {
   DatabaseEnvSchema,
   EnvError,
   GitHubEnvSchema,
+  GuestEnvSchema,
   githubConfigFromEnv,
+  guestConfigFromEnv,
   MigrationEnvSchema,
   parseEnv,
   ServerEnvSchema,
@@ -110,5 +112,39 @@ describe("GitHub integration config", () => {
     expect(cfg?.privateKey).toBe("line-1\nline-2\nline-3");
     expect(cfg?.oidcAudience).toBe("https://api.char.pub");
     expect(cfg?.webhookSecrets).toEqual(["w".repeat(32), "p".repeat(32)]);
+  });
+});
+
+describe("guest verification config", () => {
+  // 测试值在运行时生成，不是真正的密钥。
+  const full = () => ({
+    TURNSTILE_SECRET_KEY: "t".repeat(35),
+    SMTP_URL: "smtps://user:pass@smtp.example.test:465",
+    EMAIL_FROM: "char.pub <no-reply@example.test>",
+    GUEST_HMAC_KEY: Buffer.alloc(32, 1).toString("base64"),
+  });
+
+  it("is off when nothing is configured", () => {
+    expect(guestConfigFromEnv(parseEnv(GuestEnvSchema, {}))).toBeNull();
+  });
+
+  it("refuses a partial configuration", () => {
+    const { SMTP_URL: _, ...partial } = full();
+    expect(() => parseEnv(GuestEnvSchema, partial)).toThrow(EnvError);
+  });
+
+  it("requires an smtp(s) URL and a key of at least 32 bytes", () => {
+    expect(() =>
+      parseEnv(GuestEnvSchema, { ...full(), SMTP_URL: "https://mail.example.test" }),
+    ).toThrow(EnvError);
+    expect(() =>
+      parseEnv(GuestEnvSchema, { ...full(), GUEST_HMAC_KEY: Buffer.alloc(16).toString("base64") }),
+    ).toThrow(EnvError);
+  });
+
+  it("decodes the HMAC key", () => {
+    const cfg = guestConfigFromEnv(parseEnv(GuestEnvSchema, full()));
+    expect(cfg?.hmacKey).toEqual(new Uint8Array(32).fill(1));
+    expect(cfg?.smtpUrl).toBe("smtps://user:pass@smtp.example.test:465");
   });
 });
