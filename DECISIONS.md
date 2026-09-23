@@ -708,9 +708,9 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 4. **检查顺序**：先比对 `repository_id` + `repository_owner_id`（不一致报 `binding.mismatch`），再看 binding 是否 frozen（报 `binding.frozen`）。
 5. **webhook**：用 `@octokit/webhooks-methods` 验签（官方包、零依赖、常量时间比较，支持轮换期间新旧 secret 并存）；body 先按严格 UTF-8 解码，保证与原始字节一致。签名缺失或无效返回 401；未订阅的事件在验签通过后返回 2xx 并忽略，避免 GitHub 重试。
 
-### D-135 CCv3 导入导出的实现取值 — Accepted（第 1 条待用户决定）
+### D-135 CCv3 导入导出的实现取值 — Accepted（第 1 条由 D-150 确认）
 
-1. **导入卡片的默认权利声明（待用户决定）**：导入时 license 默认为 `LicenseRef-All-Rights-Reserved`（最保守）。`rights` 在 schema 中没有“未知”取值，目前临时填 `original`，并把 license / rights / rating 三项列入 Import Report 的 `needs_confirmation`，由导入向导要求用户确认。**未确认前服务端拒绝发布**（发布路由检查 Import Report 的待确认项）。备选方案是在 schema 的 `rights` 中增加 `unknown`，这属于规范变更，需要用户决定。
+1. **导入卡片的默认权利声明（用户已确认保持现状，见 D-150）**：导入时 license 默认为 `LicenseRef-All-Rights-Reserved`（最保守）。`rights` 在 schema 中没有“未知”取值，目前临时填 `original`，并把 license / rights / rating 三项列入 Import Report 的 `needs_confirmation`，由导入向导要求用户确认。**未确认前服务端拒绝发布**（发布路由检查 Import Report 的待确认项）。备选方案是在 schema 的 `rights` 中增加 `unknown`，这属于规范变更，需要用户决定。
 2. **`{{self}}` 在导出中的写法**：IR 中 `{{self}}` 已被 Resolver 替换为角色名，所以导出的正文里是名字；只有对话中的说话人会还原成 `{{char}}`。CCv3 的“随角色名变化”效果因此丢失，Loss Report 不单独列出这一项（它不改变含义）。
 3. **semantic / manual 激活**：导出时丢弃并记入 Loss Report（规范允许降级为 always、keyword 或丢弃，丢弃最不会改变作品含义）。
 4. **secondary key 逻辑**：按 SillyTavern 的 `selectiveLogic` 映射，0 → `any`，3 → `all`；1 和 2（NOT 语义）无法表达，secondary 被丢弃并记入报告。
@@ -867,3 +867,23 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 2. **缓存**：public 的 source 与 Release 详情一样使用 `public, max-age=60, s-maxage=300`，不做永久缓存。原因：下架只会从 CDN 清除内容寻址的对象，永久缓存的 API 响应会继续提供已下架的内容。private 为 `private, no-store`。
 3. **邀请名单**只有作者可见（沿用作者设置的权限，需要登录成员；只有 `creations:read` 的 Token 不能读），最多 1000 条。
 4. **Contribution 作者的展示**：登录用户附带显示名与个人 namespace，不返回邮箱；provenance 中仍只存用户 ID。访客的列表只包含自己提交的 Contribution。
+
+### D-150 用户决定（2026-09-22）：推送、staging、种子内容、导入默认权利 — Accepted
+
+用户在同一次问答中给出以下决定：
+
+1. **推送**：授权在 `pnpm ci:all` 全量通过后，把本地 main force push 覆盖 `char-pub/char`（旧原型）。
+2. **staging**：授权在 `Hushed Chat` workspace 创建 Railway project `char-pub` 与 staging environment，apply `.railway/railway.ts`（Postgres 16 + api / admin / worker），并创建四个 R2 staging 桶；apply 前先向用户展示 plan。DNS、Access、Turnstile、OAuth App、GitHub App 仍由用户操作。production 部署不在本次授权内。
+3. **`@commons` 种子内容**：AI 辅助撰写原创 CC0 内容，全部通过发布校验并附一个引用它们的示例 Character；用户逐条人工审校后才发布。
+4. **导入卡片的默认权利声明**：保持 D-135 第 1 条的现状（license 默认 `LicenseRef-All-Rights-Reserved`，rights 暂填 `original`，导入向导强制逐项确认，未确认前服务端拒绝发布）；规范不增加 `rights: unknown`。
+
+### D-151 admin 后端补齐的实现取值 — Accepted
+
+1. **反通知恢复窗口**：收到反通知后第 12 个工作日起可以恢复，第 14 个工作日为最晚期限（周一至周五，UTC，不维护节假日表；任意连续 14 个工作日最多有两个美国联邦假日，因此窗口总在法定的 10～14 个工作日内）。超过最晚期限仍允许恢复，结果与审计注明 `late`。反通知只适用于已处置的 DMCA 请求；登记投诉方起诉之后不能再恢复。
+2. **DMCA 默认先隐藏**：隐藏可以在收到反通知后恢复，tombstone 不可逆。恢复只撤销这个法律请求造成的隐藏；同一 Creation 还有其他有效隐藏时保持隐藏。
+3. **CSAM 隔离证据的下载**经 admin 进程转发：签发一次性凭据（5 分钟、只限签发给的员工、只能使用一次），下载时重新校验内容 digest，响应固定为附件、`no-store`、`nosniff`。不签发存储端的签名 URL，因为签名 URL 在有效期内谁拿到都能用。只有 legal 与 owner 有 `csam.evidence` 能力。
+4. **导出**（案件记录、审计）一律用 POST：必须填写理由，导出本身写审计。审计导出为 NDJSON，每批最多 10000 条，按 id 向前翻页。
+5. **namespace 转让**一律四眼确认；接收方已有个人 namespace 时返回 409 `namespace.limit`；system namespace 不可转让；执行前重新检查，发起后 owner 已变化时返回 422 `approval.stale`。
+6. **锁定上传**用独立的 `upload_locks` 表，不改 Better Auth 的用户表；被锁定的用户上传与导入返回 403 `upload.locked`。
+7. **强制员工登出**先调用 Cloudflare Access 的吊销接口，再在一个事务里删除应用会话并写审计；Access 调用失败时应用会话照样删除，结果写进响应与审计。
+8. **admin-api 的 CORS** 只允许 `ADMIN_ORIGINS`，携带凭据；Access 应用需要放行预检请求（部署指南已写明）。
