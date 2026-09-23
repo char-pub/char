@@ -11,9 +11,12 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/s3-request-presigner": "catalog:",
+    "@char-pub/cli": "workspace:*",
     "@char-pub/contracts": "workspace:*",
     "@char-pub/core": "workspace:*",
     "@hono/node-server": "catalog:",
+    "@octokit/auth-app": "catalog:",
+    "@octokit/request": "catalog:",
     "@octokit/webhooks-methods": "catalog:",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",

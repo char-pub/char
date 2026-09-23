@@ -45,14 +45,47 @@ export interface LoadedProject {
   placeholderId: boolean;
 }
 
-export async function loadCharYaml(file: string, projectRoot?: string): Promise<LoadedProject> {
-  const abs = path.resolve(file);
-  const root = path.resolve(projectRoot ?? path.dirname(abs));
-  const buf = await readFile(abs);
-  if (buf.byteLength > MAX_YAML_BYTES) {
-    throw new CharError({ code: "cli.file_too_large", subject: abs });
+/**
+ * 读取一个仓库内文件的函数。`rel` 是相对于项目根目录、已经规范化的路径；
+ * 文件不存在时返回 null。本地文件系统与 GitHub 仓库各有一个实现。
+ */
+export type FileReader = (rel: string) => Promise<Uint8Array | null>;
+
+export interface ParsedCharYaml {
+  doc: Document;
+  creation: Record<string, unknown>;
+  missingIds: number[];
+  placeholderId: boolean;
+}
+
+const decoder = new TextDecoder("utf-8", { fatal: true });
+
+/**
+ * 解析 char.yaml 并展开 include。与文件系统无关：CLI 从本地目录读取，Registry 从 GitHub
+ * 的某个 commit 读取，两者得到的 Creation 完全相同，所以算出的 digest 也相同。
+ *
+ * @param yamlPath char.yaml 相对于项目根目录的路径
+ */
+export async function parseCharYaml(
+  bytes: Uint8Array,
+  yamlPath: string,
+  read: FileReader,
+): Promise<ParsedCharYaml> {
+  if (bytes.byteLength > MAX_YAML_BYTES) {
+    throw new CharError({ code: "cli.file_too_large", subject: yamlPath });
   }
-  const doc = parseDocument(buf.toString("utf8"), {
+  const text = (() => {
+    try {
+      return decoder.decode(bytes);
+    } catch {
+      throw new CharError({
+        code: "cli.yaml_invalid",
+        subject: yamlPath,
+        detail: "not valid UTF-8",
+      });
+    }
+  })();
+  const doc = parseDocument(text, {
     schema: "core",
     customTags: [],
     uniqueKeys: true,
@@ -61,17 +94,17 @@ export async function loadCharYaml(file: string, projectRoot?: string): Promise<
   if (doc.errors.length > 0) {
     throw new CharError({
       code: "cli.yaml_invalid",
-      subject: abs,
+      subject: yamlPath,
       detail: doc.errors[0]?.message ?? "",
     });
   }
   const value = doc.toJS({ maxAliasCount: MAX_ALIAS_COUNT }) as unknown;
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new CharError({ code: "cli.yaml_not_object", subject: abs });
+    throw new CharError({ code: "cli.yaml_not_object", subject: yamlPath });
   }
   const creation = value as Record<string, unknown>;
-  const dir = path.dirname(abs);
-  await expandIncludes(creation, dir, root);
+  const dir = path.posix.dirname(yamlPath);
+  await expandIncludes(creation, dir, read);
 
   const missingIds: number[] = [];
   const fragments = creation.fragments;
@@ -89,40 +122,60 @@ export async function loadCharYaml(file: string, projectRoot?: string): Promise<
     creation.id = placeholderCreationId(creation.ref);
     placeholderId = true;
   }
-  return { file: abs, root, doc, creation, missingIds, placeholderId };
+  return { doc, creation, missingIds, placeholderId };
 }
 
-async function expandIncludes(node: unknown, dir: string, root: string): Promise<void> {
+export async function loadCharYaml(file: string, projectRoot?: string): Promise<LoadedProject> {
+  const abs = path.resolve(file);
+  const root = path.resolve(projectRoot ?? path.dirname(abs));
+  const read: FileReader = async (rel) => {
+    const buf = await readFile(path.join(root, ...rel.split("/"))).catch(() => null);
+    return buf ? new Uint8Array(buf) : null;
+  };
+  const rel = path.relative(root, abs).split(path.sep).join("/");
+  const parsed = await parseCharYaml(new Uint8Array(await readFile(abs)), rel, read);
+  return { file: abs, root, ...parsed };
+}
+
+/** 把 include 引用解析成项目根目录下的规范化路径；跳出根目录时报错。 */
+export function resolveInclude(ref: string, dir: string): string {
+  const joined = path.posix.normalize(path.posix.join(dir, ref));
+  if (joined.startsWith("../") || joined === ".." || path.posix.isAbsolute(joined)) {
+    throw new CharError({ code: "cli.include_outside_project", subject: ref });
+  }
+  return joined;
+}
+
+async function expandIncludes(node: unknown, dir: string, read: FileReader): Promise<void> {
   if (Array.isArray(node)) {
     for (let i = 0; i < node.length; i++) {
       const v = node[i];
-      if (typeof v === "string" && INCLUDE_RE.test(v)) node[i] = await readInclude(v, dir, root);
-      else await expandIncludes(v, dir, root);
+      if (typeof v === "string" && INCLUDE_RE.test(v)) node[i] = await readInclude(v, dir, read);
+      else await expandIncludes(v, dir, read);
     }
     return;
   }
   if (node && typeof node === "object") {
     const obj = node as Record<string, unknown>;
     for (const [k, v] of Object.entries(obj)) {
-      if (typeof v === "string" && INCLUDE_RE.test(v)) obj[k] = await readInclude(v, dir, root);
-      else await expandIncludes(v, dir, root);
+      if (typeof v === "string" && INCLUDE_RE.test(v)) obj[k] = await readInclude(v, dir, read);
+      else await expandIncludes(v, dir, read);
     }
   }
 }
 
-async function readInclude(ref: string, dir: string, root: string): Promise<string> {
-  const target = path.resolve(dir, ref);
-  const rel = path.relative(root, target);
-  if (rel.startsWith("..") || path.isAbsolute(rel)) {
-    throw new CharError({ code: "cli.include_outside_project", subject: ref });
-  }
-  const buf = await readFile(target).catch(() => {
-    throw new CharError({ code: "cli.include_missing", subject: ref });
-  });
-  if (buf.byteLength > MAX_INCLUDE_BYTES) {
+async function readInclude(ref: string, dir: string, read: FileReader): Promise<string> {
+  const target = resolveInclude(ref, dir);
+  const bytes = await read(target);
+  if (!bytes) throw new CharError({ code: "cli.include_missing", subject: ref });
+  if (bytes.byteLength > MAX_INCLUDE_BYTES) {
     throw new CharError({ code: "cli.include_too_large", subject: ref });
   }
-  return buf.toString("utf8");
+  try {
+    return decoder.decode(bytes);
+  } catch {
+    throw new CharError({ code: "cli.include_invalid", subject: ref, detail: "not valid UTF-8" });
+  }
 }
 
 /** fragment ID 的一段：小写字母数字，中间可以有 `-` / `_`，1–64 个字符。 */

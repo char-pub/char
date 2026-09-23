@@ -7,6 +7,8 @@ packages:
 # 供应链防护：新发布的版本至少等 3 天再安装（单位：分钟）
 minimumReleaseAge: 4320
 catalog:
+  "@octokit/auth-app": ^8.0.0
+  "@octokit/request": ^10.0.0
   typeid-js: ^1.2.0
   better-auth: 1.7.5
   sharp: ^0.34.0
