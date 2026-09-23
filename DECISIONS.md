@@ -725,7 +725,7 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 1. **不启用 Better Auth 的 admin 插件**：它会在公开 API 上挂出冒充用户、改角色、删除用户等接口，与“公开 api 进程不挂载任何管理功能”相冲突。封禁由服务端的 `banUser` 完成（同一事务内标记封禁、删除全部会话、吊销全部个人 Token、写审计），另用 session 创建钩子阻止已封禁用户建立新会话；封禁到期后自动恢复。这取代了 DOR 中“用 admin 插件管理封禁字段”的写法。
 2. **`__Host-` cookie**：Better Auth 只会自动加 `__Secure-` 前缀，所以关闭自动前缀，把 `__Host-charpub.` 直接写进 cookie 名字（会话 cookie 为 `__Host-charpub.session`），并强制 Secure、HttpOnly、SameSite=Lax、Path=/、无 Domain。
 3. **登录限流**存在独立的 `auth_rate_limit` 表（Better Auth 的格式），与应用自己的 `rate_limits` 分开。客户端 IP 取 `cf-connecting-ip`。
-4. **不启用密码登录**；自动关联账号要求本地邮箱已验证；OAuth token 加密入库；显式开启 Origin 与 CSRF 检查（Better Auth 在测试环境默认跳过）。
+4. **不启用密码登录**；~~自动关联账号要求本地邮箱已验证~~（被 D-148 第 1 条取代：不做隐式关联）；OAuth token 加密入库；显式开启 Origin 与 CSRF 检查（Better Auth 在测试环境默认跳过）。
 5. **数据最小化**：session 的 ip_address 列保留但不写入。
 6. user id 使用 UUIDv7（`advanced.database.generateId`）。
 
@@ -827,7 +827,7 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 5. **编辑器第一层**除名字、头像等字段外，还有一个“正文”字段（角色的 Description、世界的 About this world、世界书的第一条条目），因为每种类型至少需要一个对应的 fragment，不通过检查的草稿服务端不保存。自动保存 800ms 防抖，带 If-Match；遇到 409 停止自动保存并提示重新加载。
 6. **发布**：Idempotency-Key 按（revision、label、visibility）生成，重试时复用；Publish Report 每秒轮询一次，最多 90 次。
 7. **成人内容的直接链接**：搜索与浏览在服务端过滤；直接打开 mature / explicit 作品的链接时，由前端先遮挡，用户确认后才显示。读取接口本身不拦截，因为 public IR 本来就放在 CDN 上，拦截接口起不到作用。
-8. **默认作者**：新建 Creation 时，初始草稿的 `authors` 为创建者（显示名，没有则用 `@namespace`），作者之后可以修改；导入的草稿保留卡片中的作者。authors 为空时，作品页显示发布者 `@namespace`。
+8. **默认作者**：新建 Creation 时，初始草稿的 `authors` 为创建者（署名取法见 D-148 第 3 条），作者之后可以修改；导入的草稿保留卡片中的作者。authors 为空时，作品页显示发布者 `@namespace`。
 9. **CSP**：`connect-src` 包含 API、`assets` / `staging-assets` 域名和 R2 账号端点（部署前用通配，拿到账号端点后收窄）；头像只显示首字母，不为第三方头像放开 `img-src`。
 
 ### D-145 定期清理、导入失败处理、admin 访客管理、本地邮件的实现取值 — Accepted
@@ -851,3 +851,12 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 4. **访客验证后的返回地址**存在 localStorage，只接受 `/c/` 开头的站内路径，不含任何凭据；验证链接中的 token 读出后立即从地址栏清除。构建时没有 `VITE_TURNSTILE_SITE_KEY` 就不提供访客入口。CSP 的 `script-src` 与 `frame-src` 放行 `https://challenges.cloudflare.com`。
 5. **导入向导**完全走服务端：上传原件 → 创建导入 → 轮询 → 展示 Import Report（被省略的字段只显示名字）→ 逐项确认评级、权利与许可 → 进入编辑器。需要确认的字段一律留空，由作者显式选择。web 不再依赖 `@char-pub/ccv3`。
 6. **署名**：authors 为空时显示发布者 `@namespace`。
+
+### D-148 账号关联、路由授权规则、默认署名与安全响应头 — Accepted
+
+1. **OAuth 不做隐式账号关联**（纠正 D-136 第 4 条）：用另一个登录方式登录时，即使邮箱相同、且邮箱已验证，也不会并入已有账号；第二种登录方式只能由已登录用户显式关联。原因：security 设计对账号接管的防护要求关闭按邮箱的隐式关联，D-136 的写法与之不符，实现时写成了“邮箱已验证就自动关联”。集成测试验证：打开隐式关联时，攻击者的第三方账号会被并入受害者账号。
+2. **路由授权规则**：`apps/server/src` 中所有 HTTP 路由必须通过 `route()`（admin 为 `adminRoute()`）注册，由 Biome 的 GritQL 插件在 `pnpm lint` 中强制。规则按调用形状识别（不依赖变量名），测试文件除外；少数合法例外（辅助函数本身、健康检查、Better Auth 挂载点、CORS）用 `biome-ignore lint/plugin` 标注理由，例外清单由测试逐文件核对。
+3. **默认署名**用创建者的个人 namespace（`@name`）加用户 ID，不使用登录提供方给的显示名。原因：显示名可能是真实姓名，而署名会随 Release 永久公开；作者想署真名可以自己修改。
+4. **安全响应头**包在源站校验的外层，被拒绝的请求（403）也带全部安全头。
+5. **像素上限**：图片元数据从文件头读取（不解码像素），超出像素上限时明确返回 `upload.too_many_pixels`；真正解码时仍强制上限。
+6. **已知限制**：`asset_meta` 以重新编码后的 WebP digest 为键；两张不同的原图重新编码后恰好得到相同字节时，扫描状态沿用先写入的那一条。实际只会发生在几乎相同的图片上，暂不处理。
