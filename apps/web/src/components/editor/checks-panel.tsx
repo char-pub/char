@@ -279,7 +279,7 @@ export function NextRelease({
       </p>
       {latest ? (
         <Link
-          to="/c/$ns/$name"
+          to="/c/$ns/$name/versions"
           params={{ ns, name }}
           className="inline-block text-sm font-medium text-blue-text hover:underline"
         >

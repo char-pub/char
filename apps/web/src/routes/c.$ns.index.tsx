@@ -54,7 +54,7 @@ function AuthorPage() {
   const client = useRegistry();
   const navigate = useNavigate();
   const namespace = useQuery({
-    queryKey: ["namespace", ns],
+    queryKey: keys.namespace(ns),
     queryFn: () => client.namespace(ns),
   });
   const slug = namespace.data?.slug;

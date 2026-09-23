@@ -80,8 +80,11 @@ function Breadcrumb() {
           </Link>
         </li>
         <ChevronRight aria-hidden className="size-3.5 text-text-3" />
-        {/* 作者主页上线后换成链接。 */}
-        <li>@{ns}</li>
+        <li>
+          <Link to="/c/$ns" params={{ ns }} className="hover:text-text hover:underline">
+            @{ns}
+          </Link>
+        </li>
         <ChevronRight aria-hidden className="size-3.5 text-text-3" />
         <li aria-current="page" className="font-medium text-text">
           <UserText text={localized(detail.display_name)} />
@@ -102,7 +105,12 @@ function Identity() {
         <CopyButton text={id} label={`Copy ${id}`} />
       </span>
       <span aria-hidden>·</span>
-      <span>by @{ns}</span>
+      <span>
+        by{" "}
+        <Link to="/c/$ns" params={{ ns }} className="hover:text-text hover:underline">
+          @{ns}
+        </Link>
+      </span>
       {selected ? (
         <>
           <span aria-hidden>·</span>

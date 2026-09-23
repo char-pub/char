@@ -84,11 +84,11 @@ function GlobalSearch({
           maxLength={200}
           placeholder="Search the registry"
           onChange={(e) => setQ(e.target.value)}
-          className="peer h-9 w-full rounded-md border border-input bg-surface pr-9 pl-9 text-base text-text outline-none placeholder:text-text-3 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 md:text-sm [&::-webkit-search-cancel-button]:hidden"
+          className="peer h-9 w-full rounded-md border border-input bg-surface pr-3 pl-9 text-base lg:pr-9 text-text outline-none placeholder:text-text-3 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25 md:text-sm [&::-webkit-search-cancel-button]:hidden"
         />
         <kbd
           aria-hidden
-          className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded-sm border border-border-strong px-1.5 font-mono text-[0.6875rem] leading-4 text-text-3 peer-focus:hidden md:block"
+          className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded-sm border border-border-strong px-1.5 font-mono text-[0.6875rem] leading-4 text-text-3 peer-focus:hidden lg:block"
         >
           /
         </kbd>
@@ -98,6 +98,13 @@ function GlobalSearch({
 }
 
 /** 当前页面对应的导航项用浅底色高亮（TanStack Router 给当前链接加 `data-status="active"`）。 */
+/** 作者主页和作品的公开页面属于“探索”，在这些页面上高亮 Explore；编辑器是创作工作区，不算。 */
+function inExplore(pathname: string): boolean {
+  return (
+    pathname.startsWith("/browse") || (pathname.startsWith("/c/") && !pathname.endsWith("/edit"))
+  );
+}
+
 const navLinkClass =
   "rounded-md px-3 py-1.5 text-sm font-medium text-text-2 transition-colors hover:bg-surface-2 hover:text-text data-[status=active]:bg-surface-2 data-[status=active]:text-text";
 
@@ -278,7 +285,15 @@ export function SiteHeader() {
         </Link>
         <nav aria-label="Main" className="flex items-center gap-1">
           {MAIN_NAV.map((n) => (
-            <Link key={n.to} to={n.to} className={navLinkClass}>
+            <Link
+              key={n.to}
+              to={n.to}
+              className={cn(
+                navLinkClass,
+                n.to === "/browse" && inExplore(pathname) && "bg-surface-2 text-text",
+              )}
+              aria-current={n.to === "/browse" && inExplore(pathname) ? "page" : undefined}
+            >
               {n.label}
             </Link>
           ))}
