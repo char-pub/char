@@ -75,6 +75,34 @@ describe("search", () => {
   });
 });
 
+describe("contributions", () => {
+  it("reads the rejection reason from the contribution detail", async () => {
+    const detail = {
+      id: "ctb_01j00000000000000000000001",
+      number: 3,
+      title: "Tweak",
+      status: "rejected",
+      agent: false,
+      author: { guest_id: "gst_01j00000000000000000000001", display_name: "Reader" },
+      base_revision: "rev_01j00000000000000000000001",
+      created_at: "2026-09-23T00:00:00.000Z",
+      decided_at: "2026-09-23T01:00:00.000Z",
+      changes: [],
+      preview: null,
+      result_revision: null,
+      decision_reason: "Please keep the tone.",
+    };
+    const r = recorder([json(detail), json({ ...detail, decision_reason: undefined })]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect((await client.contribution("djj", "alice", 3)).decision_reason).toBe(
+      "Please keep the tone.",
+    );
+    // 没有理由（例如撤回的 Contribution）时这个字段不存在。
+    expect((await client.contribution("djj", "alice", 3)).decision_reason).toBeUndefined();
+    expect(r.calls[0]?.url).toBe("/v1/creations/@djj/alice/contributions/3");
+  });
+});
+
 describe("draft helpers", () => {
   it("writes the level-0 fields into the authoring form", () => {
     let w: Working = { display_name: "x" };

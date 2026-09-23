@@ -10,7 +10,8 @@
  *   license、content_warnings 等）必须逐项确认；按目标当前的 license 重新检查贡献授权。
  *   成功后写回草稿、生成新 Revision，并把贡献者写进 provenance，下一次发布时进入
  *   Release 的贡献者名单。
- * - 拒绝 / 撤回：只改状态并写审计。
+ * - 拒绝 / 撤回：改状态并写审计。拒绝理由同时存进 Contribution，只在详情里返回：
+ *   详情只有提交者与目标 namespace 的成员能看到，列表不带理由。
  *
  * Agent 提交的 Contribution 必须标记为 agent：请求体可以主动声明，用 Agent Token 提交的
  * 一律是 agent，客户端不能把它改回 false。
@@ -369,6 +370,9 @@ export function register(app: Hono<Env>): void {
         result_revision: item.row.resultRevisionId
           ? encodeId("revision", item.row.resultRevisionId)
           : null,
+        ...(item.row.status === "rejected" && item.row.decisionReason
+          ? { decision_reason: item.row.decisionReason }
+          : {}),
       });
     },
   });
@@ -499,6 +503,7 @@ export function register(app: Hono<Env>): void {
             .set({
               status,
               ...(status === "rejected" && p.kind === "user" ? { decidedBy: p.user_id } : {}),
+              ...(body && "reason" in body ? { decisionReason: body.reason } : {}),
               decidedAt: now,
               updatedAt: now,
             })

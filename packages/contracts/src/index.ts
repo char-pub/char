@@ -413,6 +413,11 @@ export const ContributionDetailSchema = ContributionSummarySchema.extend({
     })
     .nullable(),
   result_revision: z.string().nullable(),
+  /**
+   * 作者拒绝时填写的理由。只有 rejected 状态、并且记录了理由时才有；详情只对提交者和
+   * 作品所在 namespace 的成员可见，列表不返回这个字段。
+   */
+  decision_reason: z.string().optional(),
 });
 
 export const AcceptContributionRequestSchema = z.strictObject({

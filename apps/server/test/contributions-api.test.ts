@@ -3,11 +3,13 @@
  * 逐项确认、授权、agent 标记、限流、kill switch、贡献授权，以及接受后发布时贡献者进入
  * Context IR。
  */
+import { readFile } from "node:fs/promises";
 import { canonicalFragment, digestOf } from "@char-pub/core";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { verifyAuditChain } from "../src/audit/audit.js";
 import { contributions, creations, releases } from "../src/db/schema/index.js";
+import { decodeId } from "../src/registry/ids.js";
 import { casKey } from "../src/storage/cas.js";
 import {
   type ContributionHarness,
@@ -358,7 +360,87 @@ describe("authorization", () => {
     expect(await json(await h.asUser(owner).get(`${path}/contributions/${n}`))).toMatchObject({
       status: "rejected",
       preview: null,
+      decision_reason: "not now",
     });
+  });
+
+  it("shows the rejection reason to the submitter and members only, and only in the detail", async () => {
+    await setPolicy("anyone");
+    await h.createGuest("guest-2", "Reader");
+    // 用新账号提交，不占用其他测试里贡献者的限流额度。
+    const submitter = await h.createUser("submitter");
+    const byUser = (await json(await h.asUser(submitter).post(`${path}/contributions`, body())))
+      .number;
+    const byGuest = (await json(await h.asGuest("guest-2").post(`${path}/contributions`, body())))
+      .number;
+    const open = await json(await h.asUser(submitter).get(`${path}/contributions/${byUser}`));
+    expect(open).not.toHaveProperty("decision_reason");
+    for (const n of [byUser, byGuest]) {
+      const rej = await h
+        .asUser(owner)
+        .post(`${path}/contributions/${n}/reject`, { reason: "  Please keep the tone.  " });
+      expect(rej.status).toBe(200);
+    }
+    for (const [who, n] of [
+      [h.asUser(submitter), byUser],
+      [h.asGuest("guest-2"), byGuest],
+      [h.asUser(owner), byUser],
+    ] as const) {
+      const d = await json(await who.get(`${path}/contributions/${n}`));
+      expect(d).toMatchObject({ status: "rejected", decision_reason: "Please keep the tone." });
+    }
+    // 看不到这个 Contribution 的人什么也拿不到，列表里也没有理由。
+    expect((await h.asUser(stranger).get(`${path}/contributions/${byUser}`)).status).toBe(404);
+    expect((await h.anonymous().get(`${path}/contributions/${byUser}`)).status).toBe(404);
+    expect((await h.asGuest("guest-2").get(`${path}/contributions/${byUser}`)).status).toBe(404);
+    const list = await json(await h.asUser(owner).get(`${path}/contributions?status=rejected`));
+    expect((list.items as unknown[]).length).toBeGreaterThan(0);
+    for (const item of list.items as Record<string, unknown>[]) {
+      expect(item).not.toHaveProperty("decision_reason");
+    }
+    // 撤回的 Contribution 没有理由；已经拒绝的不能再撤回，理由也不会被覆盖。
+    const w = (await json(await h.asUser(submitter).post(`${path}/contributions`, body()))).number;
+    await h.asUser(submitter).post(`${path}/contributions/${w}/withdraw`, {});
+    const withdrawn = await json(await h.asUser(submitter).get(`${path}/contributions/${w}`));
+    expect(withdrawn).toMatchObject({ status: "withdrawn" });
+    expect(withdrawn).not.toHaveProperty("decision_reason");
+    const again = await h.asUser(owner).post(`${path}/contributions/${byUser}/reject`, {
+      reason: "second thoughts",
+    });
+    expect(again.status).toBe(403);
+    await setPolicy("signed-in");
+  });
+
+  it("recovers reasons of earlier rejections from the audit log during the migration", async () => {
+    const submitter = await h.createUser("earlier");
+    const created = await json(await h.asUser(submitter).post(`${path}/contributions`, body()));
+    const n = created.number;
+    const id = decodeId("contribution", String(created.id));
+    expect(id).toBeTruthy();
+    await h.asUser(owner).post(`${path}/contributions/${n}/reject`, { reason: "out of scope" });
+    // 模拟迁移之前的数据：理由只在审计日志里，这一列是空的。
+    const [row] = await t.owner.db
+      .update(contributions)
+      .set({ decisionReason: null })
+      .where(eq(contributions.id, id ?? ""))
+      .returning({ id: contributions.id });
+    expect(row).toBeTruthy();
+    const migration = await readFile(
+      new URL("../drizzle/0011_contribution_decision_reason.sql", import.meta.url),
+      "utf8",
+    );
+    const backfill = migration.split("--> statement-breakpoint")[1] ?? "";
+    expect(backfill).toContain("UPDATE");
+    await t.owner.db.execute(sql.raw(backfill));
+    const d = await json(await h.asUser(submitter).get(`${path}/contributions/${n}`));
+    expect(d.decision_reason).toBe("out of scope");
+    // 再执行一次不改变结果。
+    await t.owner.db.execute(sql.raw(backfill));
+    const [after] = await t.app.db
+      .select({ reason: contributions.decisionReason })
+      .from(contributions)
+      .where(eq(contributions.id, id ?? ""));
+    expect(after?.reason).toBe("out of scope");
   });
 });
 

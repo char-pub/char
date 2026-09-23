@@ -50847,7 +50847,12 @@ var ContributionDetailSchema = ContributionSummarySchema.extend({
     /** 合并后的内容不合法（例如草稿已被改得与变更不兼容）时的错误码。 */
     error: external_exports.string().optional()
   }).nullable(),
-  result_revision: external_exports.string().nullable()
+  result_revision: external_exports.string().nullable(),
+  /**
+   * 作者拒绝时填写的理由。只有 rejected 状态、并且记录了理由时才有；详情只对提交者和
+   * 作品所在 namespace 的成员可见，列表不返回这个字段。
+   */
+  decision_reason: external_exports.string().optional()
 });
 var AcceptContributionRequestSchema = external_exports.strictObject({
   /** 逐项列出确认过的敏感变更键；不接受通配符。 */
