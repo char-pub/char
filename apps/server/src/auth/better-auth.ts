@@ -139,8 +139,13 @@ export function createAuth(opts: CreateAuthOptions) {
       cookieCache: { enabled: false },
     },
     account: {
-      // 同一邮箱的第三方账号只有在对方确认邮箱且本地账号也已验证时才会自动关联。
-      accountLinking: { enabled: true, requireLocalEmailVerified: true },
+      // 登录时不按邮箱自动关联账号：否则控制了某个第三方账号邮箱的人，可以用它登录进同邮箱的
+      // char.pub 账号。第二种登录方式只能由已登录的用户自己显式关联。
+      accountLinking: {
+        enabled: true,
+        disableImplicitLinking: true,
+        requireLocalEmailVerified: true,
+      },
       encryptOAuthTokens: true,
     },
     emailAndPassword: { enabled: false },

@@ -2,6 +2,7 @@
  * Namespace、草稿、Token 的集成测试：保留名、改名重定向、乐观锁、越权访问与 Token scope。
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { encodeId } from "../src/registry/ids.js";
 import { type ApiHarness, createHarness } from "./api-harness.js";
 import { createTestDatabase, type TestDatabase, testCas } from "./helpers.js";
 
@@ -114,6 +115,42 @@ describe("creations and drafts", () => {
       display_name: "Hero",
     });
     expect(await json(dup)).toMatchObject({ code: "creation.taken" });
+  });
+
+  it("credits the creator in a new draft by their public handle, not their login name", async () => {
+    const r = await h.as(owner).post("/v1/namespaces/author/creations", {
+      name: "fresh",
+      type: "world",
+      display_name: "Fresh",
+    });
+    expect(r.status).toBe(201);
+    const draft = await json(await h.as(owner).get("/v1/creations/@author/fresh/draft"));
+    const working = draft.working as { authors?: unknown };
+    expect(working.authors).toEqual([{ name: "@author", user: encodeId("user", owner) }]);
+    // 作者可以改成别的署名，保存后不会被服务端覆盖。
+    const put = await h.as(owner).put(
+      "/v1/creations/@author/fresh/draft",
+      {
+        working: {
+          ...(working as Record<string, unknown>),
+          authors: [{ name: "Ada L.", user: encodeId("user", owner) }],
+          fragments: [
+            {
+              id: "about",
+              stable: true,
+              kind: "world",
+              content: { type: "text", text: "A quiet valley." },
+            },
+          ],
+        },
+      },
+      { "if-match": String(draft.version) },
+    );
+    expect(put.status).toBe(200);
+    const after = await json(await h.as(owner).get("/v1/creations/@author/fresh/draft"));
+    expect((after.working as { authors?: unknown }).authors).toEqual([
+      { name: "Ada L.", user: encodeId("user", owner) },
+    ]);
   });
 
   it("other users cannot write and do not see private drafts", async () => {

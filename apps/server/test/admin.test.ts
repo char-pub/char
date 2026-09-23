@@ -7,11 +7,14 @@ import { uuidv7 } from "uuidv7";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createAdmin } from "../src/admin/app.js";
 import { registerAudit, registerFlags } from "../src/admin/ops-routes.js";
+import { adminModules } from "../src/admin/routes/index.js";
 import type { Services } from "../src/api/app.js";
 import { createApi } from "../src/api/server.js";
 import { verifyAuditChain } from "../src/audit/audit.js";
 import { authUser } from "../src/db/schema/index.js";
+import type { GitHubDeps } from "../src/github/deps.js";
 import { FlagCache } from "../src/ops/flags.js";
+import { API_MODULES, githubApiModules } from "../src/processes/modules.js";
 import { createTestDatabase, type TestDatabase, testCas } from "./helpers.js";
 
 const TEAM = "https://char-pub.cloudflareaccess.com";
@@ -19,6 +22,7 @@ const AUD = "admin-aud";
 let t: TestDatabase;
 let sign: (email: string, over?: Record<string, unknown>) => Promise<string>;
 let admin: ReturnType<typeof createAdmin>;
+let jwksForTests: ReturnType<typeof createLocalJWKSet>;
 let services: Services;
 let now = new Date("2026-09-22T12:00:00Z");
 
@@ -34,6 +38,7 @@ beforeAll(async () => {
   t = await createTestDatabase();
   const { publicKey, privateKey } = await generateKeyPair("RS256", { extractable: true });
   const jwk: JWK = { ...(await exportJWK(publicKey)), kid: "k", alg: "RS256" };
+  jwksForTests = createLocalJWKSet({ keys: [jwk] });
   sign = (email, over = {}) => {
     const iat = Math.floor(now.getTime() / 1000);
     return new SignJWT({ iss: TEAM, aud: AUD, sub: email, email, iat, exp: iat + 3600, ...over })
@@ -63,7 +68,7 @@ beforeAll(async () => {
       teamDomain: TEAM,
       audience: AUD,
       allowedEmails: new Set(Object.values(STAFF)),
-      jwks: createLocalJWKSet({ keys: [jwk] }),
+      jwks: jwksForTests,
       now: () => now,
     },
     originSecrets: [],
@@ -174,7 +179,12 @@ describe("audit log access", () => {
 
 describe("admin routes are not mounted on the public api", () => {
   it("returns 404 for admin paths on the api process", async () => {
-    const api = createApi({ services, originSecrets: [], allowedOrigins: [], modules: [] });
+    const api = createApi({
+      services,
+      originSecrets: [],
+      allowedOrigins: [],
+      modules: publicModules(),
+    });
     for (const path of ["/v1/admin/flags", "/v1/admin/audit", "/v1/admin/audit/verify"]) {
       const res = await api.request(path, {
         headers: { "cf-access-jwt-assertion": await sign(STAFF.owner) },
@@ -182,4 +192,79 @@ describe("admin routes are not mounted on the public api", () => {
       expect(res.status).toBe(404);
     }
   });
+
+  it("the api process registers no route under /v1/admin/", () => {
+    const api = createApi({
+      services,
+      originSecrets: [],
+      allowedOrigins: [],
+      modules: publicModules(),
+    });
+    const paths = handlerPaths(api);
+    expect(paths.length).toBeGreaterThan(20);
+    expect(paths.filter((p) => p.startsWith("/v1/admin"))).toEqual([]);
+  });
 });
+
+describe("the admin process only serves admin routes", () => {
+  const productionAdmin = () =>
+    createAdmin({
+      services,
+      access: {
+        teamDomain: TEAM,
+        audience: AUD,
+        allowedEmails: new Set(Object.values(STAFF)),
+        jwks: jwksForTests,
+        now: () => now,
+      },
+      originSecrets: [],
+      allowedOrigins: ["https://admin.char.pub"],
+      modules: adminModules(crypto.getRandomValues(new Uint8Array(32))),
+    });
+
+  it("registers every route under /v1/admin/, apart from the health check", () => {
+    const paths = handlerPaths(productionAdmin());
+    expect(paths.length).toBeGreaterThan(20);
+    expect(paths.filter((p) => p !== "/healthz" && !p.startsWith("/v1/admin/"))).toEqual([]);
+  });
+
+  it("answers 404 to public api routes, even for an authenticated owner", async () => {
+    const app = productionAdmin();
+    const publicPaths: [string, string][] = [
+      ["GET", "/v1/search?q=alice"],
+      ["GET", "/v1/creations/@alice/hero"],
+      ["POST", "/v1/namespaces"],
+      ["GET", "/v1/me"],
+      ["POST", "/v1/imports"],
+      ["POST", "/v1/github/webhook"],
+      ["POST", "/v1/publish/oidc"],
+      ["GET", "/v1/auth/get-session"],
+    ];
+    for (const [method, path] of publicPaths) {
+      const res = await app.request(path, {
+        method,
+        headers: {
+          origin: "https://admin.char.pub",
+          "cf-access-jwt-assertion": await sign(STAFF.owner),
+          ...(method === "POST" ? { "content-type": "application/json" } : {}),
+        },
+        ...(method === "POST" ? { body: "{}" } : {}),
+      });
+      expect([method, path, res.status]).toEqual([method, path, 404]);
+    }
+  });
+});
+
+/** 公开 api 进程在生产环境挂载的全部路由模块（GitHub 模块只注册路由，这里不需要真实依赖）。 */
+function publicModules() {
+  return [...API_MODULES, ...githubApiModules({} as GitHubDeps)];
+}
+
+/** Hono 中注册了处理函数的路径（去掉 `app.use` 注册的全局中间件）。 */
+function handlerPaths(app: { routes: { method: string; path: string }[] }): string[] {
+  return [
+    ...new Set(
+      app.routes.filter((r) => !(r.method === "ALL" && r.path === "/*")).map((r) => r.path),
+    ),
+  ];
+}

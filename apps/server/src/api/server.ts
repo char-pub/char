@@ -42,11 +42,13 @@ export interface ApiOptions {
 export function createApi(opts: ApiOptions): Hono<Env> {
   const app = new Hono<Env>();
   app.use(requestId(() => opts.services.ids.uuid()));
-  if (opts.originSecrets.length > 0) app.use(originAuth({ secrets: opts.originSecrets }));
+  // 安全响应头放在最外层，被源站校验拒绝的响应也带上。
   app.use(apiSecurityHeaders());
+  if (opts.originSecrets.length > 0) app.use(originAuth({ secrets: opts.originSecrets }));
   // 前端（www）与 API 在不同的子域名，浏览器的跨域请求需要 CORS：只对白名单中的 Origin
   // 放行，并允许携带 session cookie。
   const allowed = new Set(opts.allowedOrigins);
+  // biome-ignore lint/plugin: CORS 中间件只回答预检请求并设置响应头，不返回任何业务数据。
   app.use(
     "/v1/*",
     cors({
@@ -99,9 +101,11 @@ export function createApi(opts: ApiOptions): Hono<Env> {
     await next();
   });
 
+  // biome-ignore lint/plugin: 健康检查不读取任何数据，给负载均衡与部署探针使用。
   app.get("/healthz", (c) => c.json({ ok: true }));
   // 登录接口由 Better Auth 自己处理授权（它们本身就是建立身份的地方），所以不经过 route()。
   const authHandler = opts.authHandler;
+  // biome-ignore lint/plugin: 登录与回调接口由 Better Auth 处理，见上一条注释。
   if (authHandler) app.on(["GET", "POST"], "/v1/auth/*", (c) => authHandler(c.req.raw));
   for (const register of opts.modules) register(app);
   app.notFound((c) => problem(c, 404, "not_found"));

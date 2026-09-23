@@ -16,6 +16,12 @@
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "javascript": { "formatter": { "quoteStyle": "double", "semicolons": "always" } },
   "css": { "parser": { "tailwindDirectives": true } },
+  "plugins": [
+    {
+      "path": "./tools/biome/no-direct-route.grit",
+      "includes": ["**/apps/server/src/**/*.ts", "!**/*.test.ts"]
+    }
+  ],
   "linter": {
     "enabled": true,
     "rules": {

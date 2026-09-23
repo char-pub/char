@@ -1,0 +1,40 @@
+// 服务端的 HTTP 路由只能通过 route()（公开 api）或 adminRoute()（admin）注册，这两个函数在调用
+// 处理函数之前执行授权。这条规则按调用的形状识别 Hono 的直接注册，不依赖变量名：
+//   x.get / post / put / patch / delete / all / options / route / mount(路径, 处理函数, ...)
+//   x.on(方法或方法数组, 路径, 处理函数, ...)
+//   x.use("带路径的中间件", ...)，带路径的中间件同样可以直接返回响应
+//   x[method](路径, 处理函数, ...)
+// 确实需要绕过授权的地方（两个注册函数本身、健康检查、Better Auth、CORS）用
+// `biome-ignore lint/plugin: <理由>` 标出，routes-guard 测试会核对这些例外的清单。
+language js
+
+or {
+  `$obj.$method($path, $handler, $...)` where {
+    $method <: or {
+      `get`,
+      `post`,
+      `put`,
+      `patch`,
+      `delete`,
+      `all`,
+      `options`,
+      `route`,
+      `mount`
+    }
+  },
+  `$obj.on($methods, $path, $handler, $...)` where {
+    $methods <: or {
+      string(),
+      array()
+    }
+  },
+  `$obj.use($path, $handler, $...)` where {
+    $path <: or {
+      string(),
+      JsTemplateExpression()
+    }
+  },
+  `$obj[$key]($path, $handler, $...)`
+} as $call where {
+  register_diagnostic(span=$call, message="路由必须通过 route() / adminRoute() 注册，这样每个路由都会经过 authorize()。")
+}

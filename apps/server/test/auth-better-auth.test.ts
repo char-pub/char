@@ -57,7 +57,7 @@ function makeApi(auth: ReturnType<typeof makeAuth>) {
     flags: async () => new Set(),
   } as unknown as Services;
   const echo = (app: Hono<Env>) => {
-    // 测试专用：直接回显 principal，不经过 route()（路由扫描只检查 api/routes 目录）。
+    // 测试专用：直接回显 principal。路由必须经过 route() 的 lint 规则只作用于 apps/server/src。
     app.get("/whoami", (c) => c.json(c.var.principal));
   };
   return createApi({

@@ -33,6 +33,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@octokit/webhooks-examples": "catalog:",
     "@testcontainers/minio": "catalog:",
     "@testcontainers/postgresql": "catalog:",
     "@types/node": "catalog:",
