@@ -156,8 +156,9 @@ export function createAdmin(opts: AdminOptions): Hono<AdminEnv> {
   // admin SPA 与 admin-api 在不同的子域名：只对白名单中的 Origin 放行跨域请求，并允许携带
   // Access 的 cookie。预检请求在这里直接返回，不经过 Access JWT 校验（预检不带 cookie）。
   const allowed = new Set(opts.allowedOrigins);
+  // biome-ignore lint/plugin: CORS 中间件只回答预检请求并设置响应头，不返回任何业务数据。
   app.use(
-    "/v1/*",
+    "/v1/admin/*",
     cors({
       origin: (origin) => (allowed.has(origin) ? origin : null),
       credentials: true,

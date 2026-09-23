@@ -104,7 +104,7 @@ describe("route registration lint rule", () => {
       const n = text.split("\n").filter((l) => l.includes("biome-ignore lint/plugin")).length;
       if (n > 0) found.push(`${path.relative(SERVER_SRC, file)}:${n}`);
     }
-    // route() 与 adminRoute() 本身、两个健康检查、Better Auth 的挂载点、CORS 中间件。
-    expect(found.sort()).toEqual(["admin/app.ts:2", "api/app.ts:1", "api/server.ts:3"]);
+    // route() 与 adminRoute() 本身、两个健康检查、Better Auth 的挂载点、api 与 admin 的 CORS 中间件。
+    expect(found.sort()).toEqual(["admin/app.ts:3", "api/app.ts:1", "api/server.ts:3"]);
   });
 });
