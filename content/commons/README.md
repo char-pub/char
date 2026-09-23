@@ -37,3 +37,11 @@ node packages/cli/dist/bin.js preview -f $S/wren-the-harbor-guide.pinned.yaml \
 ```
 
 （先运行 `pnpm --filter @char-pub/cli build`。）
+
+## Publishing after review
+
+Only items whose three checkboxes in `REVIEW.md` are ticked and signed are published. `@commons` is a system namespace: nobody can register it, and it has no owner, so it cannot be renamed or transferred. Publishing uses the normal API and publish checks:
+
+1. The curator signs in to www once, so the account exists.
+2. On the deployed worker: `node dist/main.js bootstrap --system-namespace commons --member <curator email>` creates `@commons` (if needed) and adds the curator as a maintainer. It is written to the audit log and safe to repeat.
+3. The curator creates a personal token with `creations:write` and `releases:publish`, then runs `char login` and `char publish` for each reviewed directory, dependencies first (worlds and lorebooks before the example character).
