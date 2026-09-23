@@ -1,23 +1,39 @@
 /**
- * Playground 的 Session 控制面板：语言、模式、预算、tokenizer、用户 Persona、对话历史、
- * 手动启用的 fragment。
+ * Context Preview 的 Session 面板：语言、Runtime 模式、上下文窗口、tokenizer、用户 Persona、
+ * 对话历史、手动启用的片段。改动后预览立即重新组装。
  */
 import type { TokenizerName } from "@char-pub/assembler";
 import { type ContextIR, displayFragmentId } from "@char-pub/core";
 import { useId } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import type { PreviewSettings } from "@/lib/preview";
 
 export const TOKENIZER_OPTIONS: { value: TokenizerName; label: string }[] = [
-  { value: "estimate", label: "Estimate (fast, approximate)" },
+  { value: "estimate", label: "estimate (approximate, fast)" },
   { value: "o200k_base", label: "o200k_base (GPT-4o family)" },
   { value: "cl100k_base", label: "cl100k_base (GPT-4 family)" },
 ];
 
-const selectClass =
-  "h-9 w-full rounded-sm border border-input bg-card px-2 text-sm focus-visible:outline-2 focus-visible:outline-seal";
+/** 常见的上下文窗口；当前值不在里面时也列出来。 */
+const WINDOWS = [2048, 4096, 8192, 16_384, 32_768, 128_000, 200_000];
+
+function languageName(code: string): string {
+  try {
+    const name = new Intl.DisplayNames(["en"], { type: "language" }).of(code);
+    return name && name !== code ? `${name} (${code})` : code;
+  } catch {
+    return code;
+  }
+}
+
+const MODES: { value: PreviewSettings["mode"]; label: string }[] = [
+  { value: "narrator", label: "Narrator" },
+  { value: "per-agent", label: "Per-agent" },
+];
 
 export function SessionControls({
   ir,
@@ -39,91 +55,106 @@ export function SessionControls({
     mode: useId(),
     window: useId(),
     tokenizer: useId(),
+    tokenizerStatus: useId(),
     persona: useId(),
     personaDesc: useId(),
     history: useId(),
+    historyHint: useId(),
   };
   const set = (patch: Partial<PreviewSettings>) => onChange({ ...settings, ...patch });
   const locales = [
     ...new Set([ir.meta.default_locale, ...ir.meta.available_locales, "ja", "en"]),
   ].sort();
+  const windows = [...new Set([...WINDOWS, settings.contextWindow])].sort((a, b) => a - b);
   const manual = ir.fragments.filter(
     (f) => f.activation.mode === "manual" || f.activation.mode === "semantic",
   );
 
   return (
     <form className="space-y-5" onSubmit={(e) => e.preventDefault()} aria-label="Session settings">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor={ids.locale}>Language</Label>
-          <select
-            id={ids.locale}
-            className={selectClass}
-            value={settings.locale}
-            onChange={(e) => set({ locale: e.target.value })}
-          >
-            {locales.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor={ids.mode}>Runtime mode</Label>
-          <select
-            id={ids.mode}
-            className={selectClass}
-            value={settings.mode}
-            onChange={(e) => set({ mode: e.target.value as PreviewSettings["mode"] })}
-          >
-            <option value="narrator">narrator</option>
-            <option value="per-agent">per-agent</option>
-          </select>
-        </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={ids.locale}>Language</Label>
+        <NativeSelect
+          id={ids.locale}
+          value={settings.locale}
+          onChange={(e) => set({ locale: e.target.value })}
+        >
+          {locales.map((l) => (
+            <option key={l} value={l}>
+              {languageName(l)}
+            </option>
+          ))}
+        </NativeSelect>
       </div>
 
+      <fieldset className="space-y-1.5">
+        <legend id={ids.mode} className="text-sm font-medium">
+          Runtime mode
+        </legend>
+        <div className="grid grid-cols-2 gap-1 rounded-md bg-surface-2 p-1">
+          {MODES.map((m) => (
+            <label
+              key={m.value}
+              className="cursor-pointer rounded-sm px-3 py-1.5 text-center text-sm font-medium text-text-2 transition-colors has-[:checked]:bg-surface has-[:checked]:text-text has-[:checked]:shadow-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/40"
+            >
+              <input
+                type="radio"
+                name={ids.mode}
+                value={m.value}
+                className="sr-only"
+                checked={settings.mode === m.value}
+                onChange={() => set({ mode: m.value })}
+              />
+              {m.label}
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-text-3">
+          {settings.mode === "narrator"
+            ? "One model voices everyone; private passages are only a hint."
+            : "Each character gets its own context; private passages stay private."}
+        </p>
+      </fieldset>
+
       <div className="space-y-1.5">
-        <Label htmlFor={ids.window}>Context window (tokens)</Label>
-        <Input
+        <Label htmlFor={ids.window}>Context window</Label>
+        <NativeSelect
           id={ids.window}
-          type="number"
-          min={64}
-          max={2_000_000}
-          step={64}
-          value={settings.contextWindow}
+          className="font-mono"
+          value={String(settings.contextWindow)}
           onChange={(e) => {
             const n = Number.parseInt(e.target.value, 10);
             if (Number.isFinite(n) && n > 0) set({ contextWindow: n });
           }}
-        />
-        <p className="text-xs text-muted-foreground">
+        >
+          {windows.map((w) => (
+            <option key={w} value={w}>
+              {w.toLocaleString("en-US")} tokens
+            </option>
+          ))}
+        </NativeSelect>
+        <p className="text-xs text-text-3">
           {settings.reserveForOutput.toLocaleString("en-US")} tokens are kept free for the reply.
         </p>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor={ids.tokenizer}>Tokenizer</Label>
-        <select
+        <NativeSelect
           id={ids.tokenizer}
-          className={selectClass}
           value={tokenizer}
           onChange={(e) => onTokenizer(e.target.value as TokenizerName)}
-          aria-describedby={`${ids.tokenizer}-status`}
+          aria-describedby={ids.tokenizerStatus}
         >
           {TOKENIZER_OPTIONS.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
             </option>
           ))}
-        </select>
-        <p
-          id={`${ids.tokenizer}-status`}
-          className="text-xs text-muted-foreground"
-          aria-live="polite"
-        >
+        </NativeSelect>
+        <p id={ids.tokenizerStatus} className="text-xs text-text-3" aria-live="polite">
           {tokenizerStatus === "loading"
-            ? "Loading tokenizer… counts are estimates until it is ready."
+            ? "Loading the tokenizer… counts are estimates until it is ready."
             : tokenizerStatus === "error"
               ? "Could not load this tokenizer; showing estimates."
               : tokenizer === "estimate"
@@ -132,15 +163,17 @@ export function SessionControls({
         </p>
       </div>
 
-      <fieldset className="space-y-3 border-t border-rule pt-4">
-        <legend className="font-display text-base">You, in this session</legend>
-        <div className="space-y-1.5">
+      <fieldset className="space-y-3 border-t pt-4">
+        <legend className="float-left mb-3 w-full text-sm font-semibold">
+          You, in this session
+        </legend>
+        <div className="clear-both space-y-1.5">
           <Label htmlFor={ids.persona}>Persona name</Label>
           <Input
             id={ids.persona}
             value={settings.persona.name}
             onChange={(e) => set({ persona: { ...settings.persona, name: e.target.value } })}
-            placeholder="Required to bind {{user}}"
+            placeholder="Required to fill in {{user}}"
           />
         </div>
         <div className="space-y-1.5">
@@ -154,44 +187,50 @@ export function SessionControls({
         </div>
       </fieldset>
 
-      <div className="space-y-1.5 border-t border-rule pt-4">
+      <div className="space-y-1.5 border-t pt-4">
         <Label htmlFor={ids.history}>Chat history</Label>
         <Textarea
           id={ids.history}
           rows={4}
-          className="font-mono text-xs"
+          aria-describedby={ids.historyHint}
           value={settings.historyText}
           onChange={(e) => set({ historyText: e.target.value })}
         />
-        <p className="text-xs text-muted-foreground">
-          One message per line, starting with <code>user:</code> or <code>assistant:</code>. Keyword
-          lore is triggered by recent messages.
+        <p id={ids.historyHint} className="text-xs text-text-3">
+          One message per line, starting with <code className="font-mono">user:</code> or{" "}
+          <code className="font-mono">assistant:</code>. Keywords here can switch passages on.
         </p>
       </div>
 
       {manual.length > 0 ? (
-        <fieldset className="space-y-2 border-t border-rule pt-4">
-          <legend className="font-display text-base">Enable by hand</legend>
-          {manual.map((f) => {
-            const checked = settings.manualEnabled.includes(f.id);
-            return (
-              <label key={f.id} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="accent-[var(--seal)]"
-                  checked={checked}
-                  onChange={() =>
-                    set({
-                      manualEnabled: checked
-                        ? settings.manualEnabled.filter((x) => x !== f.id)
-                        : [...settings.manualEnabled, f.id],
-                    })
-                  }
-                />
-                <span className="font-mono text-xs">{displayFragmentId(f.id)}</span>
-              </label>
-            );
-          })}
+        <fieldset className="space-y-2 border-t pt-4">
+          <legend className="float-left mb-2 w-full text-sm font-semibold">
+            Enable passages by hand
+          </legend>
+          <div className="clear-both space-y-2">
+            {manual.map((f) => {
+              const checked = settings.manualEnabled.includes(f.id);
+              const id = `manual-${f.id.replace(/[^A-Za-z0-9]/g, "-")}`;
+              return (
+                <div key={f.id} className="flex items-center gap-2">
+                  <Checkbox
+                    id={id}
+                    checked={checked}
+                    onCheckedChange={() =>
+                      set({
+                        manualEnabled: checked
+                          ? settings.manualEnabled.filter((x) => x !== f.id)
+                          : [...settings.manualEnabled, f.id],
+                      })
+                    }
+                  />
+                  <Label htmlFor={id} className="font-mono text-xs font-normal break-all">
+                    {displayFragmentId(f.id)}
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
         </fieldset>
       ) : null}
     </form>

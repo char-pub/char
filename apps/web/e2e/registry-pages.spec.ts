@@ -7,7 +7,7 @@
  * （锁定到 Release）、被谁依赖、署名与许可；设置页保存成人内容开关。
  */
 import { expect, test } from "@playwright/test";
-import { diffPair, resolveSample } from "../src/fixtures/samples";
+import { diffPair, releases, resolveSample } from "../src/fixtures/samples";
 import { creationDetail, ME, mockApi } from "./mock-api";
 
 const ORIGIN = "http://127.0.0.1:4173";
@@ -160,36 +160,141 @@ test("turning mature content on needs the 18+ confirmation and is saved on the s
 test("the creation page explains its rating, dependencies, dependents and credits", async ({
   page,
 }) => {
-  await withCreation(page, null);
+  const api = await withCreation(page, null);
+  // 依赖的版本号从它们各自的作品详情里查到。
+  api.on("GET /v1/creations/@cyberpunk/night-city", {
+    body: creationDetail({
+      ref: "@cyberpunk/night-city",
+      type: "world",
+      display_name: "Night City",
+      releases: [{ ...release("2.0.0", "mature", 5), id: releases.nightCityV2.release }],
+    }),
+  });
   await page.goto("/c/djj/alice");
   await expect(page.getByRole("heading", { name: "Alice", level: 1 })).toBeVisible();
+  // 头部：`@ns/name@label`、类型、评级、许可；标签页里 Overview 是当前页。
+  const main = page.getByRole("main");
+  await expect(main.getByText("@djj/alice@1.2.0", { exact: true })).toBeVisible();
+  await expect(main.locator("header").getByText("Character")).toBeVisible();
+  await expect(main.locator("header").getByText("CC-BY-4.0")).toBeVisible();
+  const tabs = page.getByRole("navigation", { name: "Creation sections" });
+  await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(tabs.getByRole("link", { name: /Versions/ })).toContainText("2");
+  // 不是所有者：没有 Edit 和 Settings。
+  await expect(main.getByRole("link", { name: "Edit" })).toHaveCount(0);
+  await expect(tabs.getByRole("link", { name: "Settings" })).toHaveCount(0);
 
   // effective rating 来自依赖：说明哪个来源决定了评级。
   const why = page.getByRole("region", { name: "Why this rating" });
   await expect(why.getByText("Mature", { exact: true }).first()).toBeVisible();
-  await expect(why.getByText("sets the rating")).toBeVisible();
-  await expect(why.getByText("@cyberpunk/night-city")).toBeVisible();
+  await expect(why.getByText(/because a dependency is rated Mature/)).toBeVisible();
+  await expect(
+    why.getByRole("listitem").filter({ hasText: "sets the rating" }).first(),
+  ).toContainText("@cyberpunk/night-city");
 
-  // 依赖锁定到精确的 Release。
+  // 依赖：关系文案、Core / Recommended、锁定的版本（查不到版本号时显示 Release ID）。
   const deps = page.getByRole("region", { name: "Built on" });
-  await expect(deps.getByText("@cyberpunk/night-city · world")).toBeVisible();
-  await expect(deps.getByText("@cyberpunk/corps · lorebook")).toBeVisible();
-  await expect(deps.getByText(/locked to rel_/).first()).toBeVisible();
+  const night = deps.getByRole("listitem").filter({ hasText: "Lives in Night City" });
+  await expect(night).toContainText("@cyberpunk/night-city@2.0.0");
+  await expect(night.getByText("Core", { exact: true })).toBeVisible();
+  const corps = deps.getByRole("listitem").filter({ hasText: "Knows about" });
+  await expect(corps.getByText("Recommended")).toBeVisible();
+  await expect(corps.getByText(/locked to rel_/)).toBeVisible();
 
   // 反向依赖。
   const used = page.getByRole("region", { name: "Used by" });
   await expect(used.getByRole("link", { name: "The Heist" })).toBeVisible();
-  await expect(used.getByText("@other/heist@0.3.0 · default")).toBeVisible();
+  await expect(used.getByText("@other/heist@0.3.0")).toBeVisible();
 
   // 署名与许可：自身与每个依赖。
   const credits = page.getByRole("region", { name: "Credits & licenses" });
   await expect(credits.getByText("Cyberpunk Commons").first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Release 1.2.0" })).toContainText("Public");
 
-  // mature 内容默认被遮挡，确认后才显示。
-  await expect(page.getByText("Mature content is hidden")).toBeVisible();
+  // mature 内容默认被遮挡，说明评级来源；确认后才显示。
+  const gate = page.getByRole("heading", { name: "Mature content is hidden" });
+  await expect(gate).toBeVisible();
+  await expect(
+    main.getByText("Rated Mature because of @cyberpunk/night-city (World)."),
+  ).toBeVisible();
   await expect(page.getByRole("region", { name: "What it says" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Show mature content" }).click();
-  await expect(page.getByRole("region", { name: "What it says" })).toBeVisible();
+  await page.getByRole("button", { name: "Show this once" }).click();
+  await expect(page.getByRole("region", { name: /What it says/ })).toBeVisible();
+
+  // “Show this once”在这个会话里对这个作品一直有效：切换标签、刷新都不再遮挡。
+  await tabs.getByRole("link", { name: "Context preview" }).click();
+  await expect(page.getByRole("table")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(gate).toHaveCount(0);
+});
+
+test("switching tabs keeps the version, and yanked and removed versions say so", async ({
+  page,
+}) => {
+  const api = await withCreation(page, {
+    ...ME,
+    settings: { show_mature: true, mature_confirmed_at: "2026-09-23T08:00:00.000Z", locale: null },
+  });
+  api.on(`GET ${BASE}`, {
+    body: alice({
+      releases: [
+        RELEASES[0],
+        { ...RELEASES[1], status: "yanked", status_reason: "Broken greeting placeholder" },
+        { ...release("1.0.0", "general", 0), status: "tombstoned", status_reason: "legal.dmca" },
+      ],
+    }),
+  });
+  await page.goto("/c/djj/alice?v=1.1.0");
+  await expect(page.getByRole("main").getByText("@djj/alice@1.1.0", { exact: true })).toBeVisible();
+  const notice = page.getByRole("note").filter({ hasText: "was yanked" });
+  await expect(notice).toContainText("Version 1.1.0 was yanked: “Broken greeting placeholder”");
+  // yank 之后内容仍然可用。
+  await expect(page.getByRole("region", { name: /What it says/ })).toBeVisible();
+
+  const tabs = page.getByRole("navigation", { name: "Creation sections" });
+  await tabs.getByRole("link", { name: "Context preview" }).click();
+  await expect(page).toHaveURL(/\/c\/djj\/alice\/preview\?v=1\.1\.0$/);
+  await tabs.getByRole("link", { name: "Overview" }).click();
+  await expect(page).toHaveURL(/\/c\/djj\/alice\?v=1\.1\.0$/);
+
+  // 已移除的版本：410，只显示公开的原因代码，并引导去看其他版本。
+  await page.goto("/c/djj/alice?v=1.0.0");
+  await expect(
+    page.getByRole("heading", {
+      name: /Version 1.0.0 was removed after a copyright \(DMCA\) notice/,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("legal.dmca")).toBeVisible();
+  await page.getByRole("link", { name: "See other versions" }).click();
+  await expect(page).toHaveURL(/\/c\/djj\/alice\/versions/);
+});
+
+test("a creation that doesn't exist or is private gets the shared 404", async ({ page }) => {
+  const api = await mockApi(page, ORIGIN);
+  api.on("GET /v1/me", { status: 401, body: { code: "auth.required" } });
+  await page.goto("/c/djj/secret");
+  await expect(page.getByRole("heading", { name: "Nothing at @djj/secret" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Creation sections" })).toHaveCount(0);
+});
+
+test("on a phone the header stacks and the tabs scroll sideways", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await withCreation(page, null);
+  await page.goto("/c/djj/alice");
+  const download = page.getByRole("button", { name: "Download" });
+  await expect(download).toBeVisible();
+  const box = await download.boundingBox();
+  const heading = await page.getByRole("heading", { name: "Alice", level: 1 }).boundingBox();
+  // 主操作在标题下方，不和标题挤在同一行。
+  expect(box && heading && box.y > heading.y + heading.height).toBe(true);
+  const tabs = page.getByRole("navigation", { name: "Creation sections" });
+  const scroll = await tabs.evaluate((el) => el.scrollWidth > el.clientWidth);
+  expect(scroll).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= 390)).toBe(true);
 });
 
 test("an account that turned mature content on sees it without the gate", async ({ page }) => {

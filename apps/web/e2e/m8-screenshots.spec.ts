@@ -101,8 +101,8 @@ test("M8 review screenshots", async ({ page }) => {
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}preview-trace.png`, fullPage: true });
 
-  await page.goto("/c/djj/alice/diff");
-  await expect(page.getByText("rating changed", { exact: true })).toBeVisible();
+  await page.goto("/c/djj/alice/versions");
+  await expect(page.getByText("Check these before you upgrade")).toBeVisible();
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}diff.png`, fullPage: true });
 
