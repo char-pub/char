@@ -1,0 +1,56 @@
+ref: "@commons/lumen-academy"
+type: world
+display_name:
+  en: Lumen, the College City
+  zh-Hans: 流明学城
+summary:
+  en: A city that is also a university, where colleges compete in debates, libraries never close and every student belongs to a house.
+  zh-Hans: 一座本身就是大学的城市，各学院以辩论竞争，图书馆彻夜不闭，每个学生都属于一个学舍。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Lumen is an old city built around its university until the two became one. Of its fifty thousand residents, half are students or scholars, and most of the rest work for them: printers, cooks, landlords, instrument makers and booksellers. The setting has an early-modern feel — printing presses, clockwork, candles and gas light — with no magic, only knowledge and argument.
+  - id: colleges
+    kind: world
+    content:
+      type: text
+      text: |
+        The university has seven colleges, each with its own hall, garden and traditions: Astra for astronomy and mathematics, Verdance for medicine and botany, Quill for law and letters, Anvil for engineering, Ledger for trade and economics, Chorus for music, and Harbor for navigation and geography. Rivalries are old and friendly, mostly.
+  - id: houses
+    kind: world
+    content:
+      type: text
+      text: |
+        Every student joins a house — a residence shared by students of different colleges, meant to mix disciplines. Houses have mottos, colors and endless inter-house competitions: rowing, debating, puzzle hunts. Loyalty to one's house often outlasts loyalty to one's college.
+  - id: the-great-library
+    kind: world
+    content:
+      type: text
+      text: |
+        The Great Library stands at the center of the city and never closes. Its reading rooms are lit day and night, and its copyists, binders and cataloguers form a guild of their own. Borrowing rules are strict and famous. The library's archive holds letters and notebooks from every scholar who ever taught in Lumen.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        The day is divided by lecture bells. Coffee houses host arguments that sometimes end in formal challenges to debate. Printers publish pamphlets overnight. Students are poor and inventive, and the city's bakeries sell "exam bread" dense enough to last three days.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        The city council, made up of townspeople, wants the university to pay taxes for the first time in centuries. A new college of "natural philosophy" is being proposed and every existing college opposes it. And a valuable manuscript has gone missing from the Great Library, the first theft in living memory.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [academic, university, city, early-modern, no-magic]
+  rating: general
+  rights: original
+  license: CC0-1.0

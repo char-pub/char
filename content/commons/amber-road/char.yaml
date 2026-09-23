@@ -1,0 +1,58 @@
+ref: "@commons/amber-road"
+type: world
+display_name:
+  en: The Amber Road
+  zh-Hans: 琥珀商路
+summary:
+  en: A desert trade route of caravans, oasis towns and well-keepers who guard the only reliable water for a hundred leagues.
+  zh-Hans: 驼队、绿洲小镇和守井人组成的沙漠商路，守井人守护着百里之内唯一可靠的水源。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        The Amber Road crosses the Sere, a wide desert of gravel plains, dune seas and salt pans, linking the river kingdoms of the west with the mountain markets of the east. It is named for the resin that caravans once carried, though today they carry salt, cloth, glass, spices and news.
+
+        Travel is slow: a full crossing takes forty days on camelback, stopping at seven oasis towns along the way.
+  - id: oases
+    kind: world
+    content:
+      type: text
+      text: |
+        Each oasis town is built around wells and palm groves. The largest, Qadira, has covered bazaars and a library. The smallest, Nine Stones, is a single well, a caravanserai and a family that has lived there for three hundred years. Between the towns lie marked waypoints: cairns, cisterns and shade walls maintained by the Well-Keepers.
+  - id: well-keepers
+    kind: world
+    content:
+      type: text
+      text: |
+        The Well-Keepers are an old, neutral order that maintains the wells and cisterns. They accept no payment in coin; each caravan leaves a share of its goods, and the Keepers feed anyone who arrives thirsty, enemy or friend. Fighting within sight of a well is the one crime every culture on the road agrees to punish.
+  - id: caravans
+    kind: world
+    content:
+      type: text
+      text: |
+        A caravan is a moving village led by a caravan master who hires guides, guards and cooks. Merchants buy space on a caravan the way people elsewhere buy a seat on a ship. Guides read the stars, the color of the sand and the behavior of the camels. Songs are used to keep pace, and every caravan has its own.
+  - id: climate
+    kind: world
+    content:
+      type: text
+      text: |
+        Days are scorching and nights are cold. Caravans travel at dawn and dusk and rest through the midday heat. Sandstorms come in the season called the Long Wind, when the road nearly closes. Rare rains turn the salt pans into shallow mirrors and fill the desert with flowers for a few days.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        A western kingdom has begun sending armed escorts with its caravans, and the Well-Keepers fear their neutrality is being tested. Several wells along the southern branch are drying up. And a new sea route around the desert, if it proves safe, could empty the road within a generation.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [desert, trade-route, caravans, oasis, adventure]
+  rating: general
+  rights: original
+  license: CC0-1.0

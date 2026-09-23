@@ -1,0 +1,62 @@
+ref: "@commons/saltmere"
+type: world
+display_name:
+  en: Saltmere
+  zh-Hans: 盐沼港
+summary:
+  en: A low-magic harbor city-state run by rival guilds, where the tide decides the calendar.
+  zh-Hans: 由互相竞争的行会治理的低魔港口城邦，潮汐决定着这里的历法。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Saltmere is a walled harbor city-state built on a crescent of reclaimed marsh. Its streets rise in terraces from the tidal flats to the old lighthouse on Gull Rock. Magic exists but is rare, slow and expensive: a handful of licensed tidewrights can coax fog, calm a squall or keep a hull from rotting, and every working is recorded in the Harbor Ledger.
+
+        Most people never see a spell. They see ships, weather, taxes and the guild bells that ring the hours.
+  - id: geography
+    kind: world
+    content:
+      type: text
+      text: |
+        The city has three levels. The Flats flood twice a day; their warehouses stand on stilts and their lanes are planked. The Terraces hold markets, guildhalls and most homes. The Crown, around the lighthouse, is where the Harbor Council meets and where the old families keep their gardens out of reach of the salt.
+
+        Beyond the walls lie the reed marshes, a causeway to the farmland of the Hinterfold, and the open grey sea.
+  - id: government
+    kind: world
+    content:
+      type: text
+      text: |
+        Saltmere has no king. The Harbor Council seats one speaker from each of the seven chartered guilds: Pilots, Chandlers, Weighers, Ropewalkers, Shipwrights, Salters and Lamplighters. Decisions need five votes. Guild rivalry is fierce but mostly legal: auctions, lawsuits, strikes and very public insults.
+
+        The Tide Watch keeps order. Its officers carry lanterns rather than swords, and a night arrest usually ends with a fine and a hangover.
+  - id: tides-and-calendar
+    kind: world
+    content:
+      type: text
+      text: |
+        Saltmere counts its days by tides, not by sunrise. A "tide-day" runs from one high water to the next. Contracts, rents and court dates are written in tides, and the Lamplighters' Guild publishes the official tide tables each season. Missing a high tide can cost a merchant a week's profit, so being "tide-late" is the city's most common insult.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        Mornings smell of tar, bread and fish. Children earn coins running messages between counting houses. Street cooks sell eel pies and salted plums. In the evenings the Terraces fill with music from the chandlers' taverns, and on still nights people climb to the Crown to watch the fog roll in from the sea.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        Three pressures shape stories here. The Shipwrights want to dredge a deeper channel that would flood part of the Flats. A new kind of fast merchant ship from the southern coast threatens the Pilots' monopoly. And the tidewrights' license exam has not been held in eleven years, so the few licensed practitioners grow older while unlicensed "fog-callers" work in the reed marshes.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [fantasy, low-magic, harbor, city-state, guilds]
+  rating: general
+  rights: original
+  license: CC0-1.0

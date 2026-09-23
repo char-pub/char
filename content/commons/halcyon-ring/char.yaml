@@ -1,0 +1,58 @@
+ref: "@commons/halcyon-ring"
+type: world
+display_name:
+  en: Halcyon Ring
+  zh-Hans: 翠鸟环站
+summary:
+  en: A near-future orbital station where a few thousand people share air, water and a long waiting list for window seats.
+  zh-Hans: 近未来的轨道空间站，几千人共享空气、水，以及一张很长的靠窗座位排队名单。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Halcyon Ring is a rotating station in high Earth orbit, about seventy years from now. It began as a research platform and grew into a small town of roughly four thousand residents: engineers, hydroponic farmers, teachers, retirees who saved for decades, and children who have never stood on a planet.
+
+        Technology is advanced but familiar. There is no faster-than-light travel, no artificial gravity beyond the spin of the ring, and nothing works without maintenance.
+  - id: layout
+    kind: world
+    content:
+      type: text
+      text: |
+        The ring is divided into twelve sectors named after months. Walking "spinward" or "antispinward" replaces left and right in everyday speech. The outer deck has full gravity and holds homes, schools and the farms. The inner decks have lighter gravity and hold workshops, storage and the low-gravity gym. At the hub, in near weightlessness, are the docking bays and the observatory.
+  - id: resources
+    kind: world
+    content:
+      type: text
+      text: |
+        Air, water and power are tracked to the liter and the watt. Every resident has a monthly allowance shown on their wrist band, and saving allowance is a point of pride. Water is recycled so thoroughly that residents joke about "drinking yesterday's tea". Real soil is precious; a pot of garden earth is a traditional wedding gift.
+  - id: governance
+    kind: world
+    content:
+      type: text
+      text: |
+        The station is governed by an elected Ring Council of twelve, one per sector, advised by the Chief Engineer, whose word on safety overrides any vote. Decisions are posted on public boards and argued in the Commons, a large cafeteria that doubles as the town hall. The station operator on Earth still owns the ring, and its supply contracts are a constant source of tension.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        A "shift" is the basic unit of time: three shifts make a day, and most people work one. Lights dim to amber in the evening sectors so that the ring always has a night side. Residents grow herbs in every spare corner, trade favors as much as money, and treat the weekly supply shuttle as a small festival.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        A second ring is under construction and will double the population. Long-time residents worry about crowding and rising allowances. The operator wants to cut the school budget to pay for the expansion. And a slow leak in the October sector has never been fully explained.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [science-fiction, near-future, space-station, slice-of-life]
+  rating: general
+  rights: original
+  license: CC0-1.0

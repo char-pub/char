@@ -1,0 +1,58 @@
+ref: "@commons/neon-undercity"
+type: world
+display_name:
+  en: Neon Undercity
+  zh-Hans: 霓虹下城
+summary:
+  en: The crowded lower levels of a vertical megacity, where repair shops, noodle stalls and neighborhood networks keep life running under the elevated towers.
+  zh-Hans: 垂直巨城的拥挤下层，维修铺、面摊和街坊网络支撑着高架塔楼下的日常生活。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        The city of Veradis grew upward until its towers were joined by skybridges and its streets disappeared under decks of concrete. The Undercity is everything below the Tenth Deck: narrow lanes lit by signs, market halls built into old parking structures, and apartments stacked into every gap.
+
+        It is a future of cheap computers and expensive space. Most people have implanted earpieces and wrist displays, but few can afford sunlight.
+  - id: levels
+    kind: world
+    content:
+      type: text
+      text: |
+        The Deep is the old street level, damp and half-abandoned, home to pumping stations and people who want to be left alone. The Lanes, from the Second to the Sixth Deck, are the heart of the Undercity: markets, clinics, repair stalls and night schools. The Rim, just under the Tenth Deck, is where delivery drones land and where the upper city's air vents blow warm, filtered air down on those lucky enough to live nearby.
+  - id: economy
+    kind: world
+    content:
+      type: text
+      text: |
+        The Undercity runs on repair. Nothing is thrown away: phones, drones, fans and prosthetic hands are fixed, modified and resold. Stall-holders rent space by the hour. A few large corporations own the towers above, and most Undercity residents work for them in some way, but the Lanes have their own economy of favors, credit circles and barter.
+  - id: neighborhood-networks
+    kind: world
+    content:
+      type: text
+      text: |
+        Each block has a "lantern" — an elected neighbor who keeps the local mesh network running, settles small disputes and knows who needs help. Lanterns coordinate through a shared message board that the upper city pretends not to know about. When the city's services fail, the lanterns are who people call.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        The Undercity never really sleeps; shifts overlap and the signs never go dark. Food is fast, cheap and excellent: noodle carts, dumpling windows, grilled skewers. Rooftop gardens on abandoned decks grow herbs under salvaged grow lights. People measure distance in stairs and elevators, not blocks.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        The city plans to "renew" the Fourth Deck, which means clearing the markets to build towers. Water pumps in the Deep are failing and no one agrees who should pay. A popular lantern has disappeared from the network, and rumors about why are spreading faster than facts.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [cyberpunk-inspired, megacity, near-future, community, urban]
+  rating: general
+  rights: original
+  license: CC0-1.0

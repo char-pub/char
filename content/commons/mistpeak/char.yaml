@@ -1,0 +1,58 @@
+ref: "@commons/mistpeak"
+type: world
+display_name:
+  en: Mistpeak
+  zh-Hans: 雾峰城
+summary:
+  en: A mountain town of terraced tea fields, cliffside temples and stone stairways, inspired by East Asian hill towns.
+  zh-Hans: 层层茶田、崖边寺庙与石阶组成的山城，取材于东亚的山地小镇。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Mistpeak is a town built on the flanks of a steep mountain above a river gorge. Its houses cling to the slope in tiers, joined by thousands of stone steps. For much of the year clouds sit on the town, so the upper streets are often above the weather while the lower ones are lost in white.
+
+        The setting is a gentle, pre-industrial world with a light touch of folklore: people believe in mountain spirits and leave offerings, but nothing supernatural is ever certain.
+  - id: terraces
+    kind: world
+    content:
+      type: text
+      text: |
+        The town lives on tea. Terraced gardens cover every slope that faces the morning sun, and each family tends its own rows. The spring harvest, picked before the first rain, is the most valuable; merchants climb the stairs from the river port to bid on it. Porters carry everything up and down the mountain in baskets on their backs, because no cart can climb the steps.
+  - id: temples
+    kind: world
+    content:
+      type: text
+      text: |
+        Near the summit stands the Hall of Listening Clouds, a temple where monks keep records of weather, harvests and births going back four centuries. Smaller shrines sit at every bend of the main stairway. Travelers ring the shrine bells as they pass, and it is said that the mountain counts the bells.
+  - id: governance
+    kind: world
+    content:
+      type: text
+      text: |
+        A council of elders chosen by the tea families settles disputes over water, boundaries and marriages. A magistrate appointed from the distant capital visits twice a year to collect taxes and is treated with great courtesy and very little information.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        Mornings begin with the temple drum. Teahouses on the landings of the great stairway serve as post office, market and gossip center. Every household keeps a tiny stove for roasting leaves. Festivals follow the tea calendar: the First Picking, the Rain Welcome, the Moon Tasting in autumn when the year's best leaves are shared.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        A landslide last year closed the lower stairway, and the town argues over whether to rebuild it or cut a new road that would let carts in and porters' work disappear. Young people leave for the river cities. And a merchant house from the capital is quietly buying terraces from families in debt.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [east-asian-inspired, mountain, tea, pre-industrial, folklore]
+  rating: general
+  rights: original
+  license: CC0-1.0

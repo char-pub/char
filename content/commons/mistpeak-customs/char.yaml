@@ -1,0 +1,128 @@
+ref: "@commons/mistpeak-customs"
+type: lorebook
+display_name:
+  en: Mistpeak Tea, Temples and Customs
+  zh-Hans: 雾峰城的茶、寺庙与习俗
+summary:
+  en: Tea harvests, temple records, porters, shrine bells and the festivals and manners of Mistpeak.
+  zh-Hans: 雾峰城的茶叶采收、寺庙记录、挑夫、神龛钟声，以及当地的节庆与礼节。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: tea/first-picking
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The First Picking happens in early spring, before the first rain. Only the top two leaves and a bud are taken from each shoot. The tea from these days is the most valuable of the year, and families sleep in the gardens during the picking so as not to miss a dry morning.
+    activation:
+      mode: keyword
+      keys: [First Picking, spring harvest, first flush]
+  - id: tea/roasting
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Every household in Mistpeak roasts its own leaves in a shallow iron pan over a small stove. The roaster's hands keep the leaves moving for an hour or more. A family's roasting style is a secret passed down, and tasters can tell which terrace a tea came from.
+    activation:
+      mode: keyword
+      keys: [roasting, roast, iron pan]
+  - id: tea/moon-tasting
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Moon Tasting is held on the brightest full moon of autumn. Each family brings its best tea to the great landing, and everyone tastes everyone else's. The elders name the "tea of the year", and the winning family is honored for twelve months.
+    activation:
+      mode: keyword
+      keys: [Moon Tasting, tea of the year, full moon]
+  - id: people/porters
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Porters carry everything up and down the mountain in tall baskets held by a strap across the forehead. They are paid by weight and step count, and the best of them can climb the full stairway twice in a day. Porters have their own songs and their own resting stones.
+    activation:
+      mode: keyword
+      keys: [porter, porters, basket]
+  - id: people/elders
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Council of Elders is chosen from the heads of the tea families. It settles disputes about water, boundaries and marriages at a stone table on the great landing, in public. Decisions are usually made by consensus, which can take many cups of tea.
+    activation:
+      mode: keyword
+      keys: [elders, Council of Elders, elder]
+  - id: people/magistrate
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The magistrate from the capital visits Mistpeak in spring and autumn to collect taxes and hear appeals. The town treats the magistrate with elaborate politeness, excellent tea and very little useful information. Every child learns the phrase "the harvest was modest this year".
+    activation:
+      mode: keyword
+      keys: [magistrate, taxes, capital]
+  - id: places/hall-of-listening-clouds
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Hall of Listening Clouds is the temple near the summit. Its monks keep daily records of weather, harvests, births and deaths going back four centuries, written in a clear, plain hand. Visitors may ask to read the entry for the day they were born.
+    activation:
+      mode: keyword
+      keys: [Hall of Listening Clouds, temple, monk, monks]
+  - id: places/shrines
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Small shrines stand at every bend of the great stairway, each with a bell. Travelers ring each bell as they pass. The saying goes that the mountain counts the bells, so skipping one is bad luck. Shrine offerings are simple: a pinch of tea, a flower or a smooth stone.
+    activation:
+      mode: keyword
+      keys: [shrine, shrines, bell, offering]
+  - id: places/great-stairway
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The great stairway has over three thousand steps from the river port to the temple. Landings every few hundred steps hold teahouses, benches and resting stones for porters. The lower stairway was closed by a landslide last year, forcing everyone onto a steep side path.
+    activation:
+      mode: keyword
+      keys: [stairway, stairs, steps, landing]
+  - id: customs/greetings
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        In Mistpeak people greet each other by asking "Have you had your tea?" The polite answer is "Yes, thank you", even if you have not. Offering tea to a guest is required; refusing a first cup is rude, but refusing a third is expected.
+    activation:
+      mode: keyword
+      keys: [greeting, have you had your tea, manners]
+  - id: customs/rain-welcome
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Rain Welcome marks the end of the First Picking and the arrival of the spring rains. Children run through the terraces with paper umbrellas, drums sound from the temple and everyone eats sweet rice cakes wrapped in tea leaves.
+    activation:
+      mode: keyword
+      keys: [Rain Welcome, spring rain, rice cakes]
+  - id: folklore/mountain-spirit
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        People in Mistpeak speak of the mountain as if it were a person — patient, watchful and fond of courtesy. Nobody claims to have seen the mountain spirit, but lost travelers who were polite to the shrines always seem to find their way home.
+    activation:
+      mode: keyword
+      keys: [mountain spirit, spirit, folklore]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [east-asian-inspired, tea, customs, folklore, festivals]
+  rating: general
+  rights: original
+  license: CC0-1.0

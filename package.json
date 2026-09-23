@@ -19,6 +19,7 @@
     "test:integration": "vitest run --project integration --project server-unit --coverage --coverage.include=apps/server/src/** --coverage.exclude=apps/server/src/db/schema/** --coverage.reportsDirectory=coverage/server",
     "build": "pnpm -r --if-present build",
     "schema:export": "tsx --conditions=@char-pub/source packages/core/scripts/export-json-schema.ts",
+    "commons:check": "tsx --conditions=@char-pub/source scripts/commons-check.ts",
     "conformance:bundle": "tsx --conditions=@char-pub/source spec/conformance/scripts/bundle.ts",
     "conformance:draft": "tsx --conditions=@char-pub/source spec/conformance/scripts/draft.ts",
     "conformance:accept": "tsx --conditions=@char-pub/source spec/conformance/scripts/accept.ts",

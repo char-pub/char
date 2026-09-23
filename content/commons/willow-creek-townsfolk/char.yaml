@@ -1,0 +1,128 @@
+ref: "@commons/willow-creek-townsfolk"
+type: lorebook
+display_name:
+  en: Willow Creek Places and Traditions
+  zh-Hans: 柳溪镇的去处与传统
+summary:
+  en: The shops, landmarks, local institutions and yearly traditions of the small town of Willow Creek.
+  zh-Hans: 柳溪镇的店铺、地标、本地机构与一年四季的传统。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: places/diner
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Creekside Diner opens at six every morning and has served the same breakfast menu for thirty years. Its booths are informally reserved: farmers by the window, the retired teachers' table in the back. The pie of the day is written on a chalkboard and usually sells out by two.
+    activation:
+      mode: keyword
+      keys: [diner, Creekside Diner, pie]
+  - id: places/hardware-store
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Bell's Hardware has been run by the same family for three generations. It sells nails by weight, lends tools to neighbors and keeps a bulletin board that is the town's real news source. The current owner is retiring, and nobody knows who will take it over.
+    activation:
+      mode: keyword
+      keys: [hardware store, Bell's Hardware]
+  - id: places/bookshop
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Page and Paw is a small bookshop on Main Street with a large orange cat named Biscuit who sleeps in the window. It hosts a monthly book club and story time for children on Saturday mornings. Biscuit has his own shelf of recommendations.
+    activation:
+      mode: keyword
+      keys: [bookshop, Page and Paw, Biscuit]
+  - id: places/new-coffee-place
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Grind opened on Main Street last year, and in Willow Creek it will be "the new coffee place" for at least a decade. It has fast internet, oat milk and a steady crowd of remote workers. Some long-time residents refuse to go in; others secretly love it.
+    activation:
+      mode: keyword
+      keys: [coffee place, The Grind, coffee]
+  - id: places/lake
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Willow Lake has a public beach, a wooden boardwalk and a boat rental that opens on the first warm weekend of the year. In winter it freezes solid enough for skating, and the fire department tests the ice before anyone is allowed on it.
+    activation:
+      mode: keyword
+      keys: [Willow Lake, lake, boardwalk, beach]
+  - id: places/old-mill
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The old mill by the creek was restored as a community arts center. It holds pottery classes, a small theater and the town's summer art fair. The mill wheel still turns, though it no longer grinds anything.
+    activation:
+      mode: keyword
+      keys: [old mill, arts center, mill]
+  - id: places/orchard
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Hartley Orchard grows apples and pears on the hills west of town. In autumn it opens for picking and runs the harvest festival. Its cider donuts are the most famous food in Willow Creek.
+    activation:
+      mode: keyword
+      keys: [orchard, Hartley Orchard, apples, cider donuts]
+  - id: community/fire-department
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Willow Creek Volunteer Fire Department answers about sixty calls a year, most of them for fallen trees and stuck cats. Its pancake breakfast fundraiser each spring is the best-attended event in town.
+    activation:
+      mode: keyword
+      keys: [fire department, volunteer firefighters, pancake breakfast]
+  - id: community/town-council
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The town council meets in the school gym on the first Tuesday of each month. Anyone may speak during public comment. Meetings about parking, dogs on the beach and the resort proposal have been known to last until midnight.
+    activation:
+      mode: keyword
+      keys: [town council, council meeting, public comment]
+  - id: traditions/harvest-festival
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The harvest festival in October features a parade down Main Street, a pie contest, a hay maze at the orchard and a bonfire by the lake. The high school band plays, not always in tune, and the whole town turns out.
+    activation:
+      mode: keyword
+      keys: [harvest festival, parade, pie contest]
+  - id: traditions/holiday-lights
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        On the first Saturday of December, the whole town gathers for the lighting of Main Street. Every shop decorates its window, and the diner serves free cocoa. The switch is traditionally flipped by the oldest resident who can still make it to the podium.
+    activation:
+      mode: keyword
+      keys: [holiday lights, Main Street lights, cocoa]
+  - id: events/resort-proposal
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A developer wants to build a resort with a hotel and marina on the north shore of Willow Lake. Supporters want the jobs and tourists; opponents worry about traffic, prices and losing the quiet shore where families have picnicked for generations.
+    activation:
+      mode: keyword
+      keys: [resort, north shore, developer]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [modern, small-town, places, traditions]
+  rating: general
+  rights: original
+  license: CC0-1.0

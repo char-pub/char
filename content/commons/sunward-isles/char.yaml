@@ -1,0 +1,56 @@
+ref: "@commons/sunward-isles"
+type: world
+display_name:
+  en: The Sunward Isles
+  zh-Hans: 向阳群岛
+summary:
+  en: A mythic archipelago where sailors navigate by stars and songs, and every island keeps a story about how it was raised from the sea.
+  zh-Hans: 神话般的群岛，水手以星辰和歌谣导航，每座岛都流传着自己如何从海中升起的故事。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        The Sunward Isles are a scattered archipelago of volcanic peaks, coral atolls and lagoons across a warm, wide ocean. The world has a mythic flavor: the islanders tell of the Sea Mother who raised the islands and the Star Weavers who hung the constellations to guide canoes home. Whether the old powers still act in the world is left open; people behave as though they might be listening.
+  - id: islands
+    kind: world
+    content:
+      type: text
+      text: |
+        Great Ember is the largest island, with a smoking volcano and terraced taro fields. Coralhome is a ring of atolls around a vast lagoon where fishing villages stand on stilts. Windward Rock is a sheer cliff island of seabird colonies and a navigation school. Dozens of smaller islands, some uninhabited, are known only to the families who fish their reefs.
+  - id: navigation
+    kind: world
+    content:
+      type: text
+      text: |
+        Voyaging is the heart of island culture. Navigators read stars, swell patterns, cloud shapes and the flight of birds, and carry the routes in long chants passed from teacher to student. A navigator's apprenticeship takes ten years. The great double-hulled voyaging canoes are built by whole villages and are named like people.
+  - id: society
+    kind: world
+    content:
+      type: text
+      text: |
+        Each island is led by a chief chosen by the elders from certain families. Disputes between islands are settled at gatherings held on neutral beaches, with feasting, speeches and canoe races that decide more than they appear to. Gifts create obligations, and a generous chief is a powerful one.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        Days are shaped by the sea: fishing at dawn, tending gardens, weaving, carving and building. Food is fish, breadfruit, taro, coconut and fruit. Evenings are for music, dancing and stories on the beach. Children learn to swim before they walk and to name the stars before they read.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        The volcano on Great Ember has been restless, and some say the Sea Mother is displeased. A long drought has emptied the rain tanks on the small islands. Foreign ships with square sails have been sighted beyond the reef, and the chiefs cannot agree whether to welcome or avoid them.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [mythic, islands, ocean, voyaging, folklore]
+  rating: general
+  rights: original
+  license: CC0-1.0
