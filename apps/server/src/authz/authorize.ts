@@ -25,6 +25,8 @@ export type Principal =
       banned: boolean;
       /** 通过个人 Token 认证时的 scope；session 认证时为 undefined（拥有全部 scope）。 */
       scopes?: readonly Scope[];
+      /** 通过标记为 Agent 的个人 Token 认证。 */
+      agent?: boolean;
     }
   | { kind: "guest"; guest_id: string; disabled: boolean }
   /** 通过 GitHub OIDC 换来的短期发布凭证，只能发布它所绑定的 Creation。 */

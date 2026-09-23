@@ -47,6 +47,7 @@ export async function principalFromToken(
       id: apiTokens.id,
       userId: apiTokens.userId,
       scopes: apiTokens.scopes,
+      agent: apiTokens.agent,
       lastUsedAt: apiTokens.lastUsedAt,
       banned: authUser.banned,
       banExpires: authUser.banExpires,
@@ -76,5 +77,11 @@ export async function principalFromToken(
       );
   }
   const banned = row.banned && (!row.banExpires || row.banExpires > now);
-  return { kind: "user", user_id: row.userId, banned, scopes: row.scopes as Scope[] };
+  return {
+    kind: "user",
+    user_id: row.userId,
+    banned,
+    scopes: row.scopes as Scope[],
+    ...(row.agent ? { agent: true } : {}),
+  };
 }

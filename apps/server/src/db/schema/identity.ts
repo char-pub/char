@@ -51,6 +51,8 @@ export const apiTokens = app.table(
     prefix: text("prefix").notNull(),
     tokenHash: text("token_hash").notNull(),
     scopes: text("scopes").array().notNull().default(emptyTextArray),
+    /** 给 Agent 使用的 Token：用它提交的 Contribution 一律标记为 agent，不能改回。 */
+    agent: boolean("agent").notNull().default(false),
     expiresAt: ts("expires_at"),
     lastUsedAt: ts("last_used_at"),
     revokedAt: ts("revoked_at"),

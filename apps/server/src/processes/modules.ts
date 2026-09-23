@@ -4,6 +4,7 @@
  */
 import type { Hono } from "hono";
 import type { Env, Services } from "../api/app.js";
+import { register as contributions } from "../api/routes/contributions.js";
 import { register as read } from "../api/routes/read.js";
 import { register as search } from "../api/routes/search.js";
 import { register as uploads } from "../api/routes/uploads.js";
@@ -23,6 +24,7 @@ export const API_MODULES: readonly ((app: Hono<Env>) => void)[] = [
   search,
   yank,
   uploads,
+  contributions,
 ];
 
 /** 注册 worker 的任务处理函数。 */
