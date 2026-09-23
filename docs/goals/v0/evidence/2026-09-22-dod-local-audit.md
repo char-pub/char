@@ -404,3 +404,21 @@
 缺口：“admin 进程只挂载 admin 路由”没有直接测试（没有断言 admin 进程对公开路由返回 404，也没有断言注册的路径都在 `/v1/admin/` 下）。
 
 结论：缺口（只缺测试）。
+
+## 复核：缺口补齐之后（main `d5274a2`）
+
+审计列出的缺口由后续改动补齐，在 `d5274a2` 上重新运行：`pnpm test:unit` 1205 个通过（带覆盖率门槛），`pnpm test:integration` 1168 个通过（集成 + server 单测，带覆盖率门槛），`pnpm lint` 通过（含路由授权规则）。
+
+| 条目 | 补齐的证据 | 结论 |
+|---|---|---|
+| M1-1 | `packages/core/src/ids.test.ts`：fragment_id 单段 64 字符通过、65 字符拒绝，各类引用中的段长度上限，slot / param / cast 名字 32 字符上限 | 可打勾 |
+| M1-3 | `packages/core/test/digest.test.ts`：按规范公式手写 canonical 字节的已知答案向量（期望值离线计算，测试中用两种实现独立重算）；fast-check 随机组合 36 种显式默认值，digest 不变；16 个反向用例 | 可打勾 |
+| M4-2 | `apps/server/test/auth-oauth-providers.test.ts`：Discord 与 Google 按真实协议伪造端点的完整回调（建号、`__Host-` cookie、封禁账号不能登录、同邮箱不隐式关联） | 可打勾 |
+| M4-3 | `tools/biome/no-direct-route.grit` 由 `pnpm lint` 执行，覆盖 admin 与 ops 路由，不依赖变量名；`routes-guard.test.ts` 用真实 Biome 验证 10 种违规写法被拦截、7 种无关调用不误报，并核对例外清单；变异验证（去掉 `delete` 后测试失败） | 可打勾 |
+| M4-6 | `apps/server/test/edge-origin.test.ts`：按生产配置启动 api 与 admin，缺头 / 错值 / 空值 403，当前值与上一个值放行，`/healthz` 豁免，403 响应也带全部安全头 | 可打勾 |
+| M7-1 | `apps/server/test/github-webhook-examples.test.ts`：`@octokit/webhooks-examples` 的官方示例 payload 重新签名后走真实 webhook 入口；worker 注册定期对账任务 | 可打勾 |
+| M7-2 | OIDC 发布成功后 `published_by` 与 11 个 claim 完全相等 | 可打勾 |
+| M7-2b | 官方 `repository.transferred` payload 冻结绑定；对账场景已有测试 | 可打勾 |
+| M9-1 | `apps/server/test/admin.test.ts`：admin 进程注册的路径除 `/healthz` 外都在 `/v1/admin/` 下；已认证 owner 访问 8 个公开路由都得到 404（使用生产模块列表） | 可打勾 |
+
+仍未勾选：M0-4（需要 CI `dev-env` 首次运行记录）；M1-2（schema 快照需要人工审阅）；M2-1、M2-2、M2-5、M3-2、M3-3（一致性预期输出需要人工接受）。
