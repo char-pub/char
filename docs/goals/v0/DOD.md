@@ -79,11 +79,11 @@
 
 ### M8 前端
 
-- [ ] **M8-1** Web：浏览与搜索（默认隐藏 mature，开启时需要确认）、作品页（effective rating 与来源说明、依赖、反向依赖、attribution）、账号设置。验证：Playwright 测试。覆盖：SC-13、UC-6。
-- [ ] **M8-2** Native 编辑器（Character / World / Lorebook，渐进式展示）、CCv3 导入向导（展示 Import Report）、发布流程（展示 Publish Report）。验证：Playwright 测试。覆盖：UC-1、UC-2。
+- [x] **M8-1** Web：浏览与搜索（默认隐藏 mature，开启时需要确认）、作品页（effective rating 与来源说明、依赖、反向依赖、attribution）、账号设置。验证：Playwright 测试。覆盖：SC-13、UC-6。
+- [x] **M8-2** Native 编辑器（Character / World / Lorebook，渐进式展示）、CCv3 导入向导（展示 Import Report）、发布流程（展示 Publish Report）。验证：Playwright 测试。覆盖：UC-1、UC-2。
 - [ ] **M8-3** Context Preview（在浏览器中运行 Assembler，展示 Trace 解释）与 Context Diff；页面标注所用 tokenizer 或估算。验证：Playwright 测试 + 人工审阅。覆盖：SC-7、UC-3。
-- [ ] **M8-4** Contribution 审阅界面：冲突标记；敏感变更单独确认（不能一键全部接受）。验证：Playwright 测试。覆盖：SC-6、UC-5。
-- [ ] **M8-5** Admin SPA：[admin.md §6](../../design/admin.md#6-admin-功能清单v0) 的全部模块。验证：Playwright 测试 + 权限矩阵测试。覆盖：SC-12。
+- [x] **M8-4** Contribution 审阅界面：冲突标记；敏感变更单独确认（不能一键全部接受）。验证：Playwright 测试。覆盖：SC-6、UC-5。
+- [x] **M8-5** Admin SPA：[admin.md §6](../../design/admin.md#6-admin-功能清单v0) 的全部模块。验证：Playwright 测试 + 权限矩阵测试。覆盖：SC-12。
 
 ### M9 Admin 后端、安全加固与部署
 
