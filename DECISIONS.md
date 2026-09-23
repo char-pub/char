@@ -728,3 +728,25 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 4. **不启用密码登录**；自动关联账号要求本地邮箱已验证；OAuth token 加密入库；显式开启 Origin 与 CSRF 检查（Better Auth 在测试环境默认跳过）。
 5. **数据最小化**：session 的 ip_address 列保留但不写入。
 6. user id 使用 UUIDv7（`advanced.database.generateId`）。
+
+### D-137 读取、搜索、上传、下架与部署形态的实现取值 — Accepted
+
+读取与搜索：
+1. **Release 地址**：规范路径是 `/v1/creations/@ns/name/releases/:label`；`@ns/name@label` 以 308 重定向过去。改名后 GET 请求 301 到新地址并保留路径后缀；写接口不跟随改名，直接 404。
+2. **公众可见**：只算发布任务已完成（`publish_state = done`）的 Release；Creation 只要有一个 public 且未 tombstoned 的 Release 就对公众可见。
+3. **缓存**：公开读接口 `public, max-age=60, s-maxage=300`；IR 与导出物的重定向永久缓存（immutable）；私有内容 `private, no-store`；搜索只缓存匿名请求，带 `Vary: Cookie, Authorization`。CCv3 导出缓存 key 为 `ccv3:ccv3-export@<版本>:<semantic_digest>:<lock_digest>`，导出实现变化时递增版本号。
+4. **搜索**：一到两个字的 CJK 查询用应用层 unigram / bigram 数组 + GIN，三个字及以上用 pg_trgm；查询先做 NFKC 归一（半角假名可以命中全角）；LIKE 通配符转义。mature / explicit 需要用户开启并记录确认时间，两者缺一仍然隐藏。
+
+下架（tombstone）：
+5. **停止分发的对象**：受影响 Release 的快照、IR、导出物，加上被下架对象本身；整体下架一个 Release 或 Creation 时还包括它直接引用的 fragment 与 asset。仍被未受影响的 Release 引用的共享对象保留。
+6. **黑名单**：下架 fragment / asset 时写它自己的 digest；整体下架时写直接受影响 Release 的 semantic digest。
+7. **CSAM 处置后的下架**由 worker 自动执行：CSAM 路径入队下架请求，worker 按内容逐个执行 tombstone（执行者为系统账号，原因 `policy.minor_sexual`），再删除副本并清除 CDN 缓存。每个对象的操作 ID 由原操作 ID 确定性派生，重复投递安全。
+
+上传与 CSAM：
+8. **系统执行者账号**：自动处置记录的执行者是一个预置在 `auth_user` 中的系统账号（`SYSTEM_ACTOR_ID`），部署时创建。
+9. **证据先于处置写入**：先把原件写入证据桶，再在一个事务中完成隔离、黑名单、处置记录、事件、审计、封禁与下架入队，提交后才删除可分发副本。事务失败时证据保留在桶里（宁可多保全）。证据保全期限在报告时由 legal 设为报告日加 1 年。
+10. **错误码**：配额超限为 `rate_limited`（429，带 Retry-After）；命中黑名单统一返回 `upload.rejected`，不说明原因。
+
+部署形态：
+11. **一个镜像四个命令**：`api` / `admin` / `worker` / `migrate`，非 root 运行；production 缺少 `ORIGIN_AUTH_SECRET` 时进程拒绝启动。
+12. **pg-boss 权限**：应用角色不能删除队列；只能向 `pgboss.queue` 插入迁移登记过的队列名（行级安全策略），因为 pg-boss 的调度器每次启动都会调用 `create_queue`；可以更新 `pgboss.version` 那一行（调度器记录 cron 时间）。pg-boss 的后台错误只记录，不会让进程崩溃。
