@@ -18,13 +18,13 @@ import {
 import { and, eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { appendAudit } from "../../audit/audit.js";
-import { creationDrafts, creations, revisionFragments, revisions } from "../../db/schema/index.js";
+import { creationDrafts } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
-import { storeRevisionContent } from "../../registry/content.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
 import { forceIdentity } from "../../registry/drafts.js";
 import { encodeId } from "../../registry/ids.js";
 import { type CreationContext, lookupCreation } from "../../registry/lookup.js";
+import { createRevision } from "../../registry/publish.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
 
 /** `@ns` 与 name 两段路径参数；`@` 属于参数值的一部分。 */
@@ -190,7 +190,7 @@ export function register(app: Hono<Env>): void {
       return { action: "creation.edit", resource: ctx.resource, loaded: ctx };
     },
     handler: async (c, { body, loaded }) => {
-      const { db, cas, ids, clock } = c.var.services;
+      const { db } = c.var.services;
       const creationId = loaded.creation.id;
       const [draft] = await db
         .select()
@@ -203,82 +203,26 @@ export function register(app: Hono<Env>): void {
         forceIdentity(draft.working as Record<string, unknown>, identityOf(loaded)),
       );
       if (!v.ok) return v.response;
-      const semantic = v.canonical.semantic_digest;
 
-      const existing = async () => {
-        const [r] = await db
-          .select()
-          .from(revisions)
-          .where(and(eq(revisions.creationId, creationId), eq(revisions.semanticDigest, semantic)))
-          .limit(1);
-        return r;
-      };
-      const revisionJson = (r: typeof revisions.$inferSelect) => ({
-        id: encodeId("revision", r.id),
-        semantic_digest: r.semanticDigest,
-        ...(r.message ? { message: r.message } : {}),
-        created_at: r.createdAt.toISOString(),
+      const { row, created } = await createRevision(c.var.services, {
+        creationId,
+        canonical: v.canonical,
+        parentId: draft.baseRevisionId,
+        author: { kind: "user", userId: userIdOf(c.var.principal) },
+        message: body.message ?? null,
+        actor: auditActor(c.var.principal),
+        requestId: requestIdOf(c),
+        updateDraftBase: true,
       });
-
-      const before = await existing();
-      if (before) return c.json(revisionJson(before), 200);
-
-      // 内容先写入对象存储：对象按内容寻址，重复写入没有副作用，所以放在事务之外。
-      const stored = await storeRevisionContent(db, cas, v.canonical);
-      const id = ids.uuid();
-      const now = clock.now();
-      const inserted = await db.transaction(async (tx) => {
-        const rows = await tx
-          .insert(revisions)
-          .values({
-            id,
-            creationId,
-            parentId: draft.baseRevisionId,
-            manifestDigest: semantic,
-            semanticDigest: semantic,
-            authorKind: "user",
-            authorUserId: userIdOf(c.var.principal),
-            message: body.message ?? null,
-            createdAt: now,
-          })
-          .onConflictDoNothing()
-          .returning();
-        const row = rows[0];
-        if (!row) return null;
-        if (stored.fragments.length > 0) {
-          await tx.insert(revisionFragments).values(
-            stored.fragments.map((f) => ({
-              revisionId: id,
-              fragmentId: f.id,
-              digest: f.digest,
-              kind: f.kind as (typeof revisionFragments.$inferInsert)["kind"],
-              stable: f.stable,
-              position: f.position,
-            })),
-          );
-        }
-        await tx
-          .update(creations)
-          .set({ headRevisionId: id, updatedAt: now })
-          .where(eq(creations.id, creationId));
-        await tx
-          .update(creationDrafts)
-          .set({ baseRevisionId: id })
-          .where(eq(creationDrafts.creationId, creationId));
-        await appendAudit(tx, {
-          at: now,
-          actor: auditActor(c.var.principal),
-          action: "revision.create",
-          subject: `creation:${creationId}`,
-          requestId: requestIdOf(c),
-          after: { revision: id, semantic_digest: semantic },
-        });
-        return row;
-      });
-      // 并发创建了同样内容的 Revision：返回先写入的那个。
-      const row = inserted ?? (await existing());
-      if (!row) return problem(c, 500, "internal");
-      return c.json(revisionJson(row), inserted ? 201 : 200);
+      return c.json(
+        {
+          id: encodeId("revision", row.id),
+          semantic_digest: row.semanticDigest,
+          ...(row.message ? { message: row.message } : {}),
+          created_at: row.createdAt.toISOString(),
+        },
+        created ? 201 : 200,
+      );
     },
   });
 }

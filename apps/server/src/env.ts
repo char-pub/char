@@ -147,6 +147,62 @@ export const WorkerEnvSchema = z.object({
 });
 export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;
 
+/**
+ * GitHub Source：GitHub App（只读 Metadata 与 Contents）、webhook 验签与 OIDC 发布的 audience。
+ * 四项都没有配置时整个 GitHub 集成关闭（本地开发）；只配置了一部分视为配置错误。
+ */
+export const GitHubEnvSchema = z
+  .object({
+    GITHUB_APP_ID: z
+      .string()
+      .regex(/^[1-9][0-9]*$/)
+      .optional(),
+    /** PEM 格式的 App 私钥。变量里的 `\n` 会被还原成换行，方便写成一行。 */
+    GITHUB_APP_PRIVATE_KEY: nonEmpty.transform((s) => s.replaceAll("\\n", "\n")).optional(),
+    GITHUB_WEBHOOK_SECRET: z.string().min(20).optional(),
+    GITHUB_WEBHOOK_SECRET_PREVIOUS: z.string().min(20).optional(),
+    /** OIDC token 的 audience，与 Action 里的 registry 地址一致，例如 https://api.char.pub。 */
+    OIDC_AUDIENCE: url.optional(),
+  })
+  .refine(
+    (e) => {
+      const set = [
+        e.GITHUB_APP_ID,
+        e.GITHUB_APP_PRIVATE_KEY,
+        e.GITHUB_WEBHOOK_SECRET,
+        e.OIDC_AUDIENCE,
+      ];
+      return set.every((v) => v === undefined) || set.every((v) => v !== undefined);
+    },
+    {
+      message:
+        "set all of GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, GITHUB_WEBHOOK_SECRET and OIDC_AUDIENCE, or none",
+      path: ["GITHUB_APP_ID"],
+    },
+  );
+export type GitHubEnv = z.infer<typeof GitHubEnvSchema>;
+
+export interface GitHubConfig {
+  appId: string;
+  privateKey: string;
+  webhookSecrets: string[];
+  oidcAudience: string;
+}
+
+/** 完整配置了 GitHub 集成时返回配置，否则返回 null。 */
+export function githubConfigFromEnv(env: GitHubEnv): GitHubConfig | null {
+  if (!env.GITHUB_APP_ID || !env.GITHUB_APP_PRIVATE_KEY || !env.GITHUB_WEBHOOK_SECRET) return null;
+  if (!env.OIDC_AUDIENCE) return null;
+  return {
+    appId: env.GITHUB_APP_ID,
+    privateKey: env.GITHUB_APP_PRIVATE_KEY,
+    webhookSecrets: [env.GITHUB_WEBHOOK_SECRET, env.GITHUB_WEBHOOK_SECRET_PREVIOUS].filter(
+      (s): s is string => s !== undefined,
+    ),
+    oidcAudience: env.OIDC_AUDIENCE.replace(/\/+$/, ""),
+  };
+}
+
 /** admin 进程：Cloudflare Access 与员工允许名单。 */
 export const AdminEnvSchema = z.object({
   CF_ACCESS_TEAM_DOMAIN: url,

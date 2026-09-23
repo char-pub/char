@@ -5,8 +5,9 @@
  * 登录：测试用一个只存在于这里的 session 解析器，读取 `x-test-user` 头来模拟浏览器会话。
  * 生产代码中没有这个后门——它只通过 `createApi({ sessionPrincipal })` 在测试里注入。
  */
+import type { Hono } from "hono";
 import { uuidv7 } from "uuidv7";
-import type { Services } from "../src/api/app.js";
+import type { Env, Services } from "../src/api/app.js";
 import { REGISTRY_WRITE_MODULES } from "../src/api/routes/write.js";
 import { createApi } from "../src/api/server.js";
 import type { Principal } from "../src/authz/authorize.js";
@@ -44,7 +45,11 @@ export interface Requester {
   delete(path: string, headers?: Record<string, string>): Promise<Response>;
 }
 
-export async function createHarness(t: TestDatabase, cas: Cas): Promise<ApiHarness> {
+export async function createHarness(
+  t: TestDatabase,
+  cas: Cas,
+  opts: { extraModules?: readonly ((app: Hono<Env>) => void)[] } = {},
+): Promise<ApiHarness> {
   const queue = new JobQueue({ connectionString: t.appUrl, max: 4 });
   queue.boss.on("error", () => {});
   await queue.start();
@@ -80,7 +85,7 @@ export async function createHarness(t: TestDatabase, cas: Cas): Promise<ApiHarne
     originSecrets: [],
     allowedOrigins: [ORIGIN],
     sessionPrincipal,
-    modules: REGISTRY_WRITE_MODULES,
+    modules: [...REGISTRY_WRITE_MODULES, ...(opts.extraModules ?? [])],
   });
 
   const requester = (auth: Record<string, string>): Requester => {

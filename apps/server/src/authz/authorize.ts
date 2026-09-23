@@ -93,6 +93,8 @@ export type Action =
   | "creation.edit"
   | "creation.publish"
   | "creation.update_settings"
+  /** 绑定、解绑 GitHub 仓库，处理冻结的 binding。 */
+  | "creation.manage_source"
   | "release.read"
   | "release.yank"
   | "contribution.submit"
@@ -124,6 +126,7 @@ const REQUIRED_SCOPE: Partial<Record<Action, Scope>> = {
   "creation.create": "creations:write",
   "creation.edit": "creations:write",
   "creation.update_settings": "creations:write",
+  "creation.manage_source": "creations:write",
   "creation.publish": "releases:publish",
   "release.yank": "releases:publish",
   "contribution.submit": "contributions:write",
@@ -139,6 +142,7 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "creation.edit",
   "creation.publish",
   "creation.update_settings",
+  "creation.manage_source",
   "release.yank",
   "contribution.submit",
   "contribution.decide",
@@ -199,6 +203,8 @@ function canSee(principal: Principal, r: Resource): Decision {
   switch (r.type) {
     case "creation":
       if (isMember(r.ns) && principal.kind === "user") return ALLOW;
+      // OIDC 发布凭证能看到它绑定的 Creation，即使它还没有任何公开的 Release（首次发布）。
+      if (principal.kind === "oidc" && principal.creation_id === r.id) return ALLOW;
       if (r.status !== "active" || r.ns.status !== "active") return deny(404, "not_found");
       return r.has_public_release ? ALLOW : deny(404, "not_found");
     case "release":
@@ -285,6 +291,7 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
 
     case "creation.edit":
     case "creation.update_settings":
+    case "creation.manage_source":
       if (r.type !== "creation") return deny(403, "bad_resource");
       if (r.status === "suspended") return deny(403, "creation.suspended");
       return requireMember(p, r.ns);

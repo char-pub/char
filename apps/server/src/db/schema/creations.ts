@@ -151,7 +151,12 @@ export const creationDrafts = app.table("creation_drafts", {
   updatedAt: updatedAt(),
 });
 
-export const revisionAuthorKindEnum = app.enum("revision_author_kind", ["user", "contribution"]);
+/** Revision 的来源：网页编辑（user）、合并的投稿（contribution）或外部 Source（例如 GitHub）。 */
+export const revisionAuthorKindEnum = app.enum("revision_author_kind", [
+  "user",
+  "contribution",
+  "source",
+]);
 
 /** 不可变的历史版本；内容通过 CAS 引用。 */
 export const revisions = app.table(
