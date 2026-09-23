@@ -1,0 +1,12 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://staging.char.pub"],
+        "methods": ["PUT"],
+        "headers": ["content-type", "content-length", "x-amz-checksum-sha256"]
+      },
+      "maxAgeSeconds": 600
+    }
+  ]
+}

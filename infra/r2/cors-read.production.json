@@ -1,0 +1,12 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://www.char.pub"],
+        "methods": ["GET", "HEAD"]
+      },
+      "exposeHeaders": ["etag", "content-length"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}

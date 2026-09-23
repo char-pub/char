@@ -71,6 +71,8 @@ wrangler r2 bucket create charpub-staging-uploads
 wrangler r2 bucket create charpub-staging-evidence
 ```
 
+CORS 与生命周期规则见 `infra/r2/`（每个环境一份 JSON，命令写在 `infra/r2/README.md`）。
+
 ## 4. Cloudflare 边缘配置
 
 当前 wrangler 登录的 token 对 `char.pub` zone 只有读权限。以下步骤需要用户在控制台操作，或者提供有写权限的 token。
