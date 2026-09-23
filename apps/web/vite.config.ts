@@ -25,7 +25,7 @@ export default defineConfig({
     }),
     react(),
     tailwindcss(),
-    brandIcons(),
+    brandIcons({ social: true }),
   ],
   resolve: {
     conditions: sourceConditions,

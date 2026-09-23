@@ -3,13 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>char.pub</title>
     <meta name="description" content="char.pub — an open registry for AI characters, worlds and stories." />
-    <meta name="theme-color" content="#f5f0e6" />
+    <meta name="theme-color" content="#F8F7F4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171B22" media="(prefers-color-scheme: dark)" />
+    <!--
+      首屏渲染前按保存的主题给 <html> 加 .dark，避免闪一下浅色。CSP 不允许 inline script，
+      所以用同源的同步外链脚本；放在 theme-color 之后，手动选了主题时可以一起改掉。
+    -->
+    <script src="/theme-init.js"></script>
     <link rel="icon" href="/favicon-light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)" />
     <link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <title>char.pub</title>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="char.pub" />
+    <meta property="og:title" content="char.pub — open characters, shared worlds" />
+    <meta property="og:description" content="An open registry for AI characters, worlds and lorebooks. Build on each other's work, pin exact versions, and take them to any runtime." />
+    <meta property="og:url" content="https://www.char.pub/" />
+    <meta property="og:image" content="https://www.char.pub/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="char.pub — open characters, shared worlds" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="char.pub — open characters, shared worlds" />
+    <meta name="twitter:description" content="An open registry for AI characters, worlds and lorebooks." />
+    <meta name="twitter:image" content="https://www.char.pub/og.png" />
   </head>
   <body>
     <div id="root"></div>
