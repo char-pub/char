@@ -1,6 +1,6 @@
 # char.pub Web 重新设计（v0）
 
-> 状态：Draft，2026-09-23。功能拆分、操作路径、UI 方向和全部页面的设计稿已确认；下一步按第 10 节实现。
+> 状态：已实现，2026-09-23。功能拆分、操作路径、UI 方向和设计稿已确认，第 10 节的实现顺序已全部完成（决策见 DECISIONS D-156，进度见 goals/v0/PROGRESS）。
 > 设计稿：[`web.pen`](web.pen)（Pencil）。品牌来源：`vendor/brand-assets`。
 > 相关文档：[架构](architecture.md) · [安全](security.md) · [Admin](admin.md)。
 
@@ -302,3 +302,18 @@ Create → 导入 → 上传 PNG / JSON / CHARX → 导入报告 → 确认评�
 6. **贡献与账户**：贡献列表、审阅、提交；我的作品；设置（含改名）。
 7. **服务端补齐与新功能**：搜索按 namespace 过滤并做作者主页；公开举报接口和举报对话框；拒绝理由字段；按 @namespace 查找用户；yank；GitHub 绑定界面。
 8. **测试**：更新 Playwright 用例和截图，跑一遍 `pnpm ci:all`。
+
+---
+
+## 11. 实现与设计稿的差异
+
+下列内容设计稿里有，但接口还没有对应字段或流程，实现时如实省略，没有编造数据：
+
+- 作品卡片、我的作品：没有头像字段，用类型色加首字母代替。
+- 作品页 Release 卡片：没有“来源”和“发布者”字段，发布者先显示 `@namespace`。
+- Built on：Context IR 里只有依赖的 Release ID，版本号要逐个查询依赖作品；查不到时显示 `locked to rel_…`。
+- 贡献列表：没有各状态的总数、变更数、敏感变更数和冲突标记。
+- 作者主页：namespace 没有简介和加入时间；作品数只在全部加载完之后显示准确数字。
+- 编辑器的 Next release：没有显示“改了几段、token 增减”，只给建议版本号和 Versions 链接。
+- GitHub 绑定：只能查看、确认或解绑，不能新建；设计稿里的 “Use a different one” 没有对应接口。
+- 设置：Sign-in methods 和 Your data 只做说明，没有做成按钮。
