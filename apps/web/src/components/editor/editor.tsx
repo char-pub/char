@@ -7,7 +7,7 @@ import { ChevronDown, ChevronRight, CloudCheck, CloudOff, Loader2 } from "lucide
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { Draft } from "@/lib/api";
-import { getFragments, getName, getReferences, type Working } from "@/lib/draft";
+import { getFragments, getName, getReferences, MAIN_FRAGMENT, type Working } from "@/lib/draft";
 import { useRegistry } from "@/lib/registry";
 import { type SaveState, useDraftEditor } from "@/lib/use-draft-editor";
 import { BasicsFields } from "./basics-fields";
@@ -93,8 +93,19 @@ export function ConflictNotice({
   );
 }
 
-function hasAdvanced(w: Working): boolean {
-  return getFragments(w).length > 0 || getReferences(w).length > 0;
+/**
+ * 草稿里是否已经用到了第一层之外的内容：除第一层的正文之外还有其他 fragment，或者有依赖。
+ * 用到了就默认展开“More options”，否则只显示第一层。正文本身也是一个 fragment，不能计入，
+ * 否则每个能保存的草稿都会默认展开。
+ */
+export function hasAdvanced(w: Working, type: CreationType): boolean {
+  const main = MAIN_FRAGMENT[type];
+  const fragments = getFragments(w);
+  const mainId =
+    fragments.find((f) => f.id === main?.id)?.id ??
+    fragments.find((f) => f.kind === main?.kind)?.id;
+  const others = fragments.filter((f) => f.id !== mainId);
+  return others.length > 0 || getReferences(w).length > 0;
 }
 
 export function Editor({
@@ -112,7 +123,7 @@ export function Editor({
 }) {
   const client = useRegistry();
   const ed = useDraftEditor(client, ns, name, draft);
-  const [more, setMore] = useState(() => hasAdvanced(draft.working as Working));
+  const [more, setMore] = useState(() => hasAdvanced(draft.working as Working, type));
   const errors = ed.state.kind === "invalid" ? ed.state.diagnostics : [];
   const diagnostics = [...errors, ...ed.warnings];
   const blocked =

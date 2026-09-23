@@ -8,7 +8,13 @@
  */
 import type { ContextIR, Rating } from "@char-pub/core";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, GitPullRequestArrow, Pencil } from "lucide-react";
+import {
+  AlertTriangle,
+  GitCompareArrows,
+  GitPullRequestArrow,
+  Pencil,
+  ScanEye,
+} from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import type { CreationDetail, Dependent, ReleaseDetail } from "@/lib/api";
 import { localized, parseRef } from "@/lib/text";
@@ -102,6 +108,26 @@ export function CreationView(p: CreationViewProps) {
               <UserText text={title} />
             </h1>
             <div className="flex flex-wrap gap-2">
+              {p.label && !p.tombstoned ? (
+                <Link
+                  to="/c/$ns/$name/preview"
+                  params={{ ns: p.ns, name: p.name }}
+                  search={{ v: p.label }}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <ScanEye aria-hidden /> Preview
+                </Link>
+              ) : null}
+              {detail.releases.filter((r) => r.status !== "tombstoned").length > 1 ? (
+                <Link
+                  to="/c/$ns/$name/diff"
+                  params={{ ns: p.ns, name: p.name }}
+                  search={{}}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <GitCompareArrows aria-hidden /> Compare versions
+                </Link>
+              ) : null}
               {p.canEdit || detail.latest_release ? (
                 <Link
                   to="/c/$ns/$name/contributions"

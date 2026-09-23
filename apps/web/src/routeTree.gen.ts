@@ -19,7 +19,9 @@ import { Route as GuestVerifyRouteImport } from './routes/guest.verify'
 import { Route as PlaygroundIndexRouteImport } from './routes/playground.index'
 import { Route as PlaygroundDiffRouteImport } from './routes/playground.diff'
 import { Route as CNsNameRouteImport } from './routes/c.$ns.$name'
+import { Route as CNsNameDiffRouteImport } from './routes/c.$ns.$name_.diff'
 import { Route as CNsNameEditRouteImport } from './routes/c.$ns.$name_.edit'
+import { Route as CNsNamePreviewRouteImport } from './routes/c.$ns.$name_.preview'
 import { Route as CNsNameContributionsIndexRouteImport } from './routes/c.$ns.$name_.contributions.index'
 import { Route as CNsNameContributionsNumberRouteImport } from './routes/c.$ns.$name_.contributions.$number'
 import { Route as CNsNameContributionsNewRouteImport } from './routes/c.$ns.$name_.contributions.new'
@@ -74,9 +76,19 @@ const CNsNameRoute = CNsNameRouteImport.update({
   path: '/c/$ns/$name',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CNsNameDiffRoute = CNsNameDiffRouteImport.update({
+  id: '/c/$ns/$name_/diff',
+  path: '/c/$ns/$name/diff',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CNsNameEditRoute = CNsNameEditRouteImport.update({
   id: '/c/$ns/$name_/edit',
   path: '/c/$ns/$name/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CNsNamePreviewRoute = CNsNamePreviewRouteImport.update({
+  id: '/c/$ns/$name_/preview',
+  path: '/c/$ns/$name/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CNsNameContributionsIndexRoute =
@@ -108,7 +120,9 @@ export interface FileRoutesByFullPath {
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name/edit': typeof CNsNameEditRoute
+  '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
   '/c/$ns/$name/contributions/$number': typeof CNsNameContributionsNumberRoute
   '/c/$ns/$name/contributions/new': typeof CNsNameContributionsNewRoute
   '/c/$ns/$name/contributions/': typeof CNsNameContributionsIndexRoute
@@ -124,7 +138,9 @@ export interface FileRoutesByTo {
   '/create': typeof CreateIndexRoute
   '/playground': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name/edit': typeof CNsNameEditRoute
+  '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
   '/c/$ns/$name/contributions/$number': typeof CNsNameContributionsNumberRoute
   '/c/$ns/$name/contributions/new': typeof CNsNameContributionsNewRoute
   '/c/$ns/$name/contributions': typeof CNsNameContributionsIndexRoute
@@ -141,7 +157,9 @@ export interface FileRoutesById {
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name_/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name_/edit': typeof CNsNameEditRoute
+  '/c/$ns/$name_/preview': typeof CNsNamePreviewRoute
   '/c/$ns/$name_/contributions/$number': typeof CNsNameContributionsNumberRoute
   '/c/$ns/$name_/contributions/new': typeof CNsNameContributionsNewRoute
   '/c/$ns/$name_/contributions/': typeof CNsNameContributionsIndexRoute
@@ -159,7 +177,9 @@ export interface FileRouteTypes {
     | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/$name/diff'
     | '/c/$ns/$name/edit'
+    | '/c/$ns/$name/preview'
     | '/c/$ns/$name/contributions/$number'
     | '/c/$ns/$name/contributions/new'
     | '/c/$ns/$name/contributions/'
@@ -175,7 +195,9 @@ export interface FileRouteTypes {
     | '/create'
     | '/playground'
     | '/c/$ns/$name'
+    | '/c/$ns/$name/diff'
     | '/c/$ns/$name/edit'
+    | '/c/$ns/$name/preview'
     | '/c/$ns/$name/contributions/$number'
     | '/c/$ns/$name/contributions/new'
     | '/c/$ns/$name/contributions'
@@ -191,7 +213,9 @@ export interface FileRouteTypes {
     | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/$name_/diff'
     | '/c/$ns/$name_/edit'
+    | '/c/$ns/$name_/preview'
     | '/c/$ns/$name_/contributions/$number'
     | '/c/$ns/$name_/contributions/new'
     | '/c/$ns/$name_/contributions/'
@@ -208,7 +232,9 @@ export interface RootRouteChildren {
   CreateIndexRoute: typeof CreateIndexRoute
   PlaygroundIndexRoute: typeof PlaygroundIndexRoute
   CNsNameRoute: typeof CNsNameRoute
+  CNsNameDiffRoute: typeof CNsNameDiffRoute
   CNsNameEditRoute: typeof CNsNameEditRoute
+  CNsNamePreviewRoute: typeof CNsNamePreviewRoute
   CNsNameContributionsNumberRoute: typeof CNsNameContributionsNumberRoute
   CNsNameContributionsNewRoute: typeof CNsNameContributionsNewRoute
   CNsNameContributionsIndexRoute: typeof CNsNameContributionsIndexRoute
@@ -286,11 +312,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CNsNameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$ns/$name_/diff': {
+      id: '/c/$ns/$name_/diff'
+      path: '/c/$ns/$name/diff'
+      fullPath: '/c/$ns/$name/diff'
+      preLoaderRoute: typeof CNsNameDiffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/c/$ns/$name_/edit': {
       id: '/c/$ns/$name_/edit'
       path: '/c/$ns/$name/edit'
       fullPath: '/c/$ns/$name/edit'
       preLoaderRoute: typeof CNsNameEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$ns/$name_/preview': {
+      id: '/c/$ns/$name_/preview'
+      path: '/c/$ns/$name/preview'
+      fullPath: '/c/$ns/$name/preview'
+      preLoaderRoute: typeof CNsNamePreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/c/$ns/$name_/contributions/': {
@@ -328,7 +368,9 @@ const rootRouteChildren: RootRouteChildren = {
   CreateIndexRoute: CreateIndexRoute,
   PlaygroundIndexRoute: PlaygroundIndexRoute,
   CNsNameRoute: CNsNameRoute,
+  CNsNameDiffRoute: CNsNameDiffRoute,
   CNsNameEditRoute: CNsNameEditRoute,
+  CNsNamePreviewRoute: CNsNamePreviewRoute,
   CNsNameContributionsNumberRoute: CNsNameContributionsNumberRoute,
   CNsNameContributionsNewRoute: CNsNameContributionsNewRoute,
   CNsNameContributionsIndexRoute: CNsNameContributionsIndexRoute,
