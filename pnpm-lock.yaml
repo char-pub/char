@@ -616,9 +616,6 @@ importers:
       '@char-pub/assembler':
         specifier: workspace:*
         version: link:../../packages/assembler
-      '@char-pub/ccv3':
-        specifier: workspace:*
-        version: link:../../packages/ccv3
       '@char-pub/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

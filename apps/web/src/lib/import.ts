@@ -1,107 +1,103 @@
 /**
- * 在浏览器里导入角色卡（CCv3 / CCv2 / PNG / CHARX / JSON）。
+ * 角色卡导入（CCv3 / CCv2 / PNG / CHARX / JSON），转换在服务端完成：
  *
- * 转换完全在本地完成（`@char-pub/ccv3`），原件不上传。转换结果写进一个新 Creation 的
- * 草稿；卡片里的图片单独走上传流程（服务端重新编码，去除卡片元数据），完成后替换草稿中
- * 的 blob 引用。以后服务端提供 `POST /v1/imports` 时，这一步可以改为上传原件由服务端转换。
+ * 1. 浏览器算出原件的 sha256，申请一个 purpose 为 import 的上传，把原件直接 PUT 到对象
+ *    存储，等上传通过完整性检查；
+ * 2. `POST /v1/imports` 让服务端解析卡片，在作者的 namespace 下生成一个新 Creation 的草稿，
+ *    卡片里的图片走与普通上传相同的处理与扫描；
+ * 3. 轮询导入状态，拿到 Import Report；
+ * 4. 作者显式确认评级、权利与许可之后才能发布。
  */
-import { type ImportResult, importCard, type Rights } from "@char-pub/ccv3";
-import { type CreationInput, isCharError, type Rating } from "@char-pub/core";
-import type { RegistryClient } from "./api";
-import type { BlobInfo } from "./draft";
-import { uploadImage } from "./upload";
+import { MAX_UPLOAD_BYTES } from "@char-pub/contracts";
+import { sha256Bytes } from "@char-pub/core";
+import type { ImportStatus, RegistryClient } from "./api";
+import { UploadError } from "./upload";
 
-/** 预览时使用的占位 ID 与 ref；真正写入草稿时服务端会换成新 Creation 的值。 */
-export const PREVIEW_ID = "cr_00000000000000000000000000";
-export const PREVIEW_REF = "@preview/card";
+export type CardContentType = "image/png" | "application/json" | "application/zip";
 
-export interface ImportChoices {
-  rating?: Rating | undefined;
-  rights?: Rights | undefined;
-  license?: string | undefined;
-}
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export class ImportError extends Error {
-  readonly code: string;
-  constructor(code: string, message: string) {
-    super(message);
-    this.name = "ImportError";
-    this.code = code;
+/** 按文件头判断容器类型：PNG、ZIP（CHARX）或 JSON。都不是时返回 null。 */
+export function sniffCardType(bytes: Uint8Array): CardContentType | null {
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (png.every((b, i) => bytes[i] === b)) return "image/png";
+  if (bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04) {
+    return "application/zip";
   }
-}
-
-/** 把文件内容转换成 Creation；格式不对时抛出 `ImportError`。 */
-export function convertCard(
-  input: Uint8Array,
-  opts: ImportChoices & { id?: string; ref?: string } = {},
-): ImportResult {
-  try {
-    return importCard(input, {
-      ids: { creation: opts.id ?? PREVIEW_ID },
-      ref: opts.ref ?? PREVIEW_REF,
-      ...(opts.rating ? { rating: opts.rating } : {}),
-      ...(opts.rights ? { rights: opts.rights } : {}),
-      ...(opts.license ? { license: opts.license } : {}),
-    });
-  } catch (e) {
-    if (isCharError(e)) {
-      throw new ImportError(e.code, e.detail ?? "This file is not a character card we can read.");
-    }
-    throw new ImportError("import.failed", "This file is not a character card we can read.");
+  // JSON：跳过 UTF-8 BOM 与空白之后以 `{` 开头。
+  let i = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? 3 : 0;
+  while (
+    i < bytes.length &&
+    (bytes[i] === 0x20 || bytes[i] === 0x0a || bytes[i] === 0x0d || bytes[i] === 0x09)
+  ) {
+    i++;
   }
+  return bytes[i] === 0x7b ? "application/json" : null;
 }
 
-/** 卡片中的名字（用来预填名字与地址）。 */
-export function cardName(result: ImportResult): string {
-  const d = result.creation.display_name;
-  return typeof d === "string" ? d : (Object.values(d)[0] ?? "");
+const IMPORT_ERRORS: Record<string, string> = {
+  "import.unsupported_format": "This file is not a character card we can read.",
+  "import.parse_failed": "The card could not be read. It may be damaged.",
+  "import.too_large": "The card is too large to import.",
+  "import.rejected": "This file cannot be imported.",
+  "import.name_taken": "That address is already taken. Choose another one.",
+  "import.digest_mismatch": "The upload was damaged on the way. Try again.",
+  "import.upload_unavailable": "The upload expired. Choose the file again.",
+  "import.internal_error": "The import failed on our side. Try again later.",
+};
+
+/** 导入失败时给作者看的说明。 */
+export function importErrorMessage(code: string | undefined): string {
+  return (code && IMPORT_ERRORS[code]) || "The import did not finish. Try again.";
 }
 
-/** 标记为 stable: false 的 lore 条目：可以运行，但别人不能针对它们做 override。 */
-export function unstableEntries(result: ImportResult): string[] {
-  return (result.creation.fragments ?? []).filter((f) => !f.stable).map((f) => f.id);
-}
-
-/**
- * 上传卡片里的图片，并把草稿中的 blob 引用换成上传后的结果。上传失败的图片从草稿中
- * 移除（连同引用它的 fragment），并返回它们的名字。
- */
-export async function uploadCardAssets(
+/** 上传原件并等它通过完整性检查，返回上传 ID。 */
+export async function uploadCard(
   client: RegistryClient,
-  result: ImportResult,
-  upload: (blob: Blob) => Promise<BlobInfo> = (b) => uploadImage(client, b),
-): Promise<{ creation: CreationInput; failed: string[] }> {
-  const uploaded = new Map<string, BlobInfo>();
-  const failed: string[] = [];
-  for (const a of result.assets) {
-    const key = `${a.slot}/${a.variant}`;
-    try {
-      const bytes = new Uint8Array(a.bytes);
-      uploaded.set(key, await upload(new Blob([bytes], { type: a.media_type })));
-    } catch {
-      failed.push(key);
-    }
+  file: Blob,
+  opts: { pollMs?: number; maxPolls?: number } = {},
+): Promise<string> {
+  if (file.size > MAX_UPLOAD_BYTES) throw new UploadError("Cards can be at most 20 MB.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const type = sniffCardType(bytes);
+  if (!type) throw new UploadError("This file is not a PNG, JSON or CHARX character card.");
+  const target = await client.createUpload({
+    purpose: "import",
+    content_type: type,
+    size: bytes.byteLength,
+    sha256: sha256Bytes(bytes),
+  });
+  await client.putUpload(target, new Blob([bytes], { type }));
+  let status = await client.completeUpload(target.upload);
+  for (
+    let i = 0;
+    i < (opts.maxPolls ?? 60) && (status.status === "uploaded" || status.status === "processing");
+    i++
+  ) {
+    await sleep(opts.pollMs ?? 1000);
+    status = await client.upload(target.upload);
   }
-  const slots = (result.creation.assets ?? [])
-    .map((s) => ({
-      ...s,
-      variants: s.variants
-        .filter((v) => uploaded.has(`${s.slot}/${v.id}`))
-        .map((v) => {
-          const b = uploaded.get(`${s.slot}/${v.id}`) as BlobInfo;
-          return {
-            ...v,
-            media_type: b.media_type,
-            blob: { digest: b.digest, size: b.size, availability: "mirrored" as const },
-          };
-        }),
-    }))
-    // 默认变体上传失败时整个 slot 都不能用。
-    .filter((s) => s.variants.some((v) => v.id === "default"));
-  const kept = new Set(slots.map((s) => s.slot));
-  const refOk = (ref: string) => kept.has(ref.split("/")[1] ?? "");
-  const fragments = (result.creation.fragments ?? [])
-    .filter((f) => f.content.type !== "media" || refOk(f.content.asset))
-    .map((f) => (f.asset_refs ? { ...f, asset_refs: f.asset_refs.filter(refOk) } : f));
-  return { creation: { ...result.creation, assets: slots, fragments }, failed };
+  if (status.status === "ready") return target.upload;
+  if (status.status === "rejected" || status.status === "quarantined") {
+    throw new UploadError("This file cannot be imported.");
+  }
+  throw new UploadError("The upload is still being checked. Try again in a moment.");
+}
+
+/** 轮询导入任务，直到成功或失败。 */
+export async function waitForImport(
+  client: RegistryClient,
+  first: ImportStatus,
+  opts: { pollMs?: number; maxPolls?: number } = {},
+): Promise<ImportStatus> {
+  let status = first;
+  for (
+    let i = 0;
+    i < (opts.maxPolls ?? 90) && (status.status === "pending" || status.status === "processing");
+    i++
+  ) {
+    await sleep(opts.pollMs ?? 1000);
+    status = await client.importStatus(status.import);
+  }
+  return status;
 }
