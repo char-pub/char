@@ -7,6 +7,9 @@
  *   相同。预期文件就是一行 JCS 文本，不带尾随换行；比较前只去掉文件末尾可能存在的一个 `\n`。
  * - 错误用例：比较错误的 `code`；预期里写了 `subject` 时也比较 `subject`。
  * - 发布用例：比较 `ok`、error 级问题的 code 列表和 warning 级问题的 code 列表（按报告顺序）。
+ * - Assembler 用例：按场景比较 Trace 中每个 entry 的 `id`、`decision`、`reason`，或组装失败的
+ *   错误码（见 assemble.ts）。
+ * - CCv3 用例：比较往返的 Loss Report 摘要（见 ccv3.ts）。
  *
  * 状态为 draft 的用例只运行、不比较：它们的预期输出还没有经过人工审阅。
  */
@@ -20,13 +23,26 @@ import {
   resolve,
   sha256Hex,
 } from "@char-pub/core";
-import type { Bundle, BundledCase, ErrorExpectation, ExpectKind, PublishSummary } from "./types.js";
+import { compareTraces, runAssembleScenarios } from "./assemble.js";
+import { compareLoss, runRoundTrip } from "./ccv3.js";
+import type {
+  Bundle,
+  BundledCase,
+  ErrorExpectation,
+  ExpectKind,
+  LossSummary,
+  PublishSummary,
+  TraceExpectation,
+} from "./types.js";
 
 /** 运行一个用例得到的实际结果，形态与预期文件一一对应。 */
 export type Actual =
   | { kind: "context-ir"; text: string; digest: string }
   | { kind: "error"; error: ErrorExpectation; detail?: string }
   | { kind: "publish"; summary: PublishSummary }
+  /** `violations` 是违反硬性要求的场景（例如占位符残留），不为空时用例直接失败。 */
+  | { kind: "trace"; trace: TraceExpectation; violations: string[] }
+  | { kind: "loss-report"; summary: LossSummary }
   | { kind: "unsupported"; reason: string };
 
 export interface Verdict {
@@ -65,11 +81,15 @@ function toError(e: unknown): Actual {
 /** 按用例声明的形态运行实现。不会抛出 CharError；其他异常说明实现有 bug，原样抛出。 */
 export function runCase(c: BundledCase): Actual {
   const { meta, input } = c;
-  if (meta.kind === "assembler" || meta.kind === "ccv3") {
-    return {
-      kind: "unsupported",
-      reason: `${meta.kind} cases are not wired to an implementation yet`,
-    };
+  if (meta.kind === "ccv3") {
+    if (input.card === undefined) {
+      return toError(new CharError({ code: "conformance.missing_card", subject: c.dir }));
+    }
+    try {
+      return { kind: "loss-report", summary: runRoundTrip(input.card) };
+    } catch (e) {
+      return toError(e);
+    }
   }
   if (!input.root) {
     return toError(new CharError({ code: "conformance.missing_root", subject: c.dir }));
@@ -104,6 +124,13 @@ export function runCase(c: BundledCase): Actual {
         ? { publicAssetBaseUrl: input.options.publicAssetBaseUrl }
         : {}),
     });
+    if (meta.kind === "assembler") {
+      if (!input.assemble) {
+        return toError(new CharError({ code: "conformance.missing_assemble", subject: c.dir }));
+      }
+      const { expectation, violations } = runAssembleScenarios(out.ir, input.assemble);
+      return { kind: "trace", trace: expectation, violations };
+    }
     return { kind: "context-ir", text: out.json, digest: textDigest(out.json) };
   } catch (e) {
     return toError(e);
@@ -111,9 +138,8 @@ export function runCase(c: BundledCase): Actual {
 }
 
 /**
- * 只校验输入的形状，用于还没有接入实现的 assembler / ccv3 用例：
- * 输入里的 Creation 都要符合 schema，assembler 用例的 Runtime Profile 也要合法。
- * 返回问题列表，空列表表示输入合法。
+ * 校验输入的形状：输入里的 Creation 都要符合 schema，assembler 用例的每个场景都要有
+ * 名字（不重复）和合法的 Runtime Profile。返回问题列表，空列表表示输入合法。
  */
 export function validateInput(c: BundledCase): string[] {
   const problems: string[] = [];
@@ -124,16 +150,17 @@ export function validateInput(c: BundledCase): string[] {
       problems.push(`${r.release}: ${parsed.error.issues[0]?.message ?? "invalid creation"}`);
     }
   }
-  const assemble = c.input.assemble as { profile?: unknown; profiles?: unknown[] } | undefined;
-  if (assemble) {
-    const profiles = [
-      ...(assemble.profile ? [assemble.profile] : []),
-      ...(assemble.profiles ?? []),
-    ];
-    if (profiles.length === 0) problems.push("assemble: no runtime profile");
-    for (const p of profiles) {
-      const parsed = RuntimeProfileSchema.safeParse(p);
-      if (!parsed.success) problems.push(`profile: ${parsed.error.issues[0]?.message}`);
+  const assemble = c.input.assemble;
+  if (c.meta.kind === "assembler") {
+    const scenarios = assemble?.scenarios ?? [];
+    if (scenarios.length === 0) problems.push("assemble: no scenarios");
+    const names = new Set<string>();
+    for (const s of scenarios) {
+      if (!s.name) problems.push("assemble: scenario without a name");
+      if (names.has(s.name)) problems.push(`assemble: duplicate scenario ${s.name}`);
+      names.add(s.name);
+      const parsed = RuntimeProfileSchema.safeParse(s.profile);
+      if (!parsed.success) problems.push(`${s.name}: ${parsed.error.issues[0]?.message}`);
     }
   }
   if (c.meta.kind === "ccv3" && c.input.card === undefined) problems.push("ccv3: missing card");
@@ -153,6 +180,10 @@ function sameList(a: readonly string[], b: readonly string[]): boolean {
 export function judge(c: BundledCase, actual: Actual): Verdict {
   const base = { dir: c.dir, actual };
   if (actual.kind === "unsupported") return { ...base, status: "todo", message: actual.reason };
+  // 硬性要求与是否审阅无关：违反时直接失败。
+  if (actual.kind === "trace" && actual.violations.length > 0) {
+    return { ...base, status: "fail", message: actual.violations.join("; ") };
+  }
   if (c.meta.status !== "reviewed") return { ...base, status: "draft" };
   const want = c.meta.expect as ExpectKind | undefined;
   if (!want) return { ...base, status: "fail", message: "reviewed case has no `expect` kind" };
@@ -201,6 +232,20 @@ export function judge(c: BundledCase, actual: Actual): Verdict {
         message: `expected ${JSON.stringify(expected)}, got ${JSON.stringify(s)}`,
       };
     }
+    case "trace": {
+      const expected = c.expected.trace;
+      if (!expected) return { ...base, status: "fail", message: "missing expected/trace.json" };
+      const diff = compareTraces(expected, actual.trace);
+      return diff ? { ...base, status: "fail", message: diff } : { ...base, status: "pass" };
+    }
+    case "loss-report": {
+      const expected = c.expected["loss-report"];
+      if (!expected) {
+        return { ...base, status: "fail", message: "missing expected/loss-report.json" };
+      }
+      const diff = compareLoss(expected, actual.summary);
+      return diff ? { ...base, status: "fail", message: diff } : { ...base, status: "pass" };
+    }
   }
 }
 
@@ -226,6 +271,10 @@ export function renderDraft(actual: Actual): { file: ExpectKind; text: string } 
       return { file: "error", text: `${JSON.stringify(actual.error, null, 2)}\n` };
     case "publish":
       return { file: "publish", text: `${JSON.stringify(actual.summary, null, 2)}\n` };
+    case "trace":
+      return { file: "trace", text: `${JSON.stringify(actual.trace, null, 2)}\n` };
+    case "loss-report":
+      return { file: "loss-report", text: `${JSON.stringify(actual.summary, null, 2)}\n` };
     case "unsupported":
       return null;
   }

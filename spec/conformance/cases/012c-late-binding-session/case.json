@@ -2,10 +2,11 @@
   "id": "012c-late-binding-session",
   "title": "Assembler: missing required late binding fails; {{user}} is bound to the session persona",
   "kind": "assembler",
+  "expect": "trace",
   "spec_refs": [
     "context-ir §5",
     "context-ir §11.2 late binding"
   ],
   "status": "draft",
-  "notes": "Same graph as 012b. Session 1 binds only the user persona: assembling fails because the required student slot is unbound. Session 2 binds both: no {{late:*}} placeholder survives."
+  "notes": "Same graph as 012b. Scenario student-unbound binds only the user persona: assembling fails with assemble.late_slot_unbound because the required student slot is unbound. Scenario all-bound binds the user persona and the student: every fragment is assembled and no {{late:*}} placeholder reaches the model messages (checked by the runner on every run)."
 }

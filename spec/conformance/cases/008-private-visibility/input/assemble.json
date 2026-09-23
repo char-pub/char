@@ -1,61 +1,36 @@
 {
-  "profiles": [
+  "scenarios": [
     {
-      "runtime": {
-        "name": "char-pub-conformance",
-        "version": "0"
+      "name": "narrator",
+      "profile": {
+        "runtime": { "name": "char-pub-conformance", "version": "0" },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 512,
+        "mode": "narrator",
+        "capabilities": { "images": false, "system_role": true }
       },
-      "tokenizer": "estimate",
-      "context_window": 8192,
-      "reserve_for_output": 512,
-      "mode": "narrator",
-      "capabilities": {
-        "images": false,
-        "system_role": true
+      "session": {
+        "bindings": { "user": { "kind": "persona", "display_name": "Sam" } },
+        "history": [{ "role": "user", "text": "Who does Bob really work for?" }],
+        "for_participant": "self"
       }
     },
     {
-      "runtime": {
-        "name": "char-pub-conformance",
-        "version": "0"
+      "name": "per-agent-for-self",
+      "profile": {
+        "runtime": { "name": "char-pub-conformance", "version": "0" },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 512,
+        "mode": "per-agent",
+        "capabilities": { "images": false, "system_role": true }
       },
-      "tokenizer": "estimate",
-      "context_window": 8192,
-      "reserve_for_output": 512,
-      "mode": "per-agent",
-      "capabilities": {
-        "images": false,
-        "system_role": true
+      "session": {
+        "bindings": { "user": { "kind": "persona", "display_name": "Sam" } },
+        "history": [{ "role": "user", "text": "Who does Bob really work for?" }],
+        "for_participant": "self"
       }
-    }
-  ],
-  "session": {
-    "bindings": {
-      "user": {
-        "kind": "persona",
-        "display_name": "Sam"
-      }
-    },
-    "history": [
-      {
-        "role": "user",
-        "text": "Who does Bob really work for?"
-      }
-    ],
-    "for_participant": "self"
-  },
-  "expect": [
-    {
-      "profile": "per-agent",
-      "fragment": "@djj/bob#secret",
-      "decision": "skipped",
-      "reason": "visibility"
-    },
-    {
-      "profile": "narrator",
-      "fragment": "@djj/bob#secret",
-      "decision": "included",
-      "reason": "always"
     }
   ]
 }

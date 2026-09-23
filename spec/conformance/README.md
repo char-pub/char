@@ -18,16 +18,20 @@ spec/conformance/
 │   │   ├── deps/*.json      releases in its dependency closure (loaded in file-name order)
 │   │   ├── registry.json    publish cases: label, used labels, asset states, blocked digests, owner namespaces
 │   │   ├── options.json     optional resolver options (e.g. publicAssetBaseUrl)
-│   │   ├── assemble.json    assembler cases: runtime profile(s) and session scenario(s)
+│   │   ├── assemble.json    assembler cases: named scenarios, each a runtime profile + session
 │   │   └── card.json        ccv3 cases: the input character card
 │   ├── expected/            human-reviewed expected output (only for reviewed cases)
 │   │   ├── context-ir.json  resolver cases that succeed
 │   │   ├── error.json       cases that must fail: { "code", "subject"? }
-│   │   └── publish.json     publish cases: { "ok", "errors": [codes], "warnings": [codes] }
+│   │   ├── publish.json     publish cases: { "ok", "errors": [codes], "warnings": [codes] }
+│   │   ├── trace.json       assembler cases: per scenario, trace decisions or an error code
+│   │   └── loss-report.json ccv3 cases: the comparable part of the round trip (see below)
 │   └── draft/               current implementation output awaiting review (never committed)
 ├── runner/
 │   ├── types.ts             data format
 │   ├── run.ts               pure runner: run a case and judge the result (no file system, no Node APIs)
+│   ├── assemble.ts          assembler scenarios and trace comparison
+│   ├── ccv3.ts              CCv3 round trip and loss summary comparison
 │   ├── cases.gen.json       all cases bundled into one file (generated, committed)
 │   └── conformance.test.ts  the test, run in Node, Chromium and workerd
 └── scripts/                 Node-only tooling: bundle, draft, accept
@@ -44,7 +48,7 @@ Case IDs: `001`–`013` follow the first batch listed in the Context IR specific
 | `id` | Equal to the directory name. |
 | `title` | What the case demonstrates. |
 | `kind` | `resolver`, `publish`, `assembler` or `ccv3`. |
-| `expect` | Result shape: `context-ir`, `error` or `publish`. Absent for kinds that are not wired yet. |
+| `expect` | Result shape: `context-ir`, `error`, `publish`, `trace` or `loss-report`. |
 | `spec_refs` | Clauses of the specification or decisions the case verifies. |
 | `status` | `draft` (inputs exist, expected output not reviewed) or `reviewed`. |
 | `reviewed_by`, `reviewed_at` | Who approved the expected output, and when (`YYYY-MM-DD`). |
@@ -59,11 +63,25 @@ Case IDs: `001`–`013` follow the first batch listed in the Context IR specific
 - **Errors** — `code` must match. When the expected file has a `subject`, it must match too.
 - **Publish reports** — `ok` must match, and the lists of error-level and warning-level issue
   codes must match in order.
-- **Assembler traces** (when wired) — compare only `decision` and `reason` per entry, never
-  token counts.
+- **Assembler traces** — `input/assemble.json` lists named scenarios
+  (`{ "scenarios": [{ "name", "profile", "session" }] }`); every scenario resolves the IR and
+  assembles it once with the `estimate` tokenizer. `expected/trace.json` is
+  `{ "scenarios": [{ "name", "entries": [{ "id", "decision", "reason" }] }] }`, or
+  `{ "name", "error": { "code" } }` for a scenario that must fail. Only `id`, `decision` and
+  `reason` are compared, in order — never token counts, regions or annotation text.
+  Independently of review status, a successful scenario fails the case if a `{{late:*}}`
+  placeholder reaches the model messages.
+- **CCv3 round trips** — the card in `input/card.json` is imported, canonicalized, resolved and
+  exported. `expected/loss-report.json` holds only the stable part: from the import, the omitted
+  policy field names, each lorebook entry's source id / derived fragment id / activation, and
+  the fragments marked `stable: false`; from the Loss Report, flattened dependencies (without
+  token counts), activation downgrades, private visibility, extra participants, context assets,
+  dropped locales, policy fields with their `restored` flag and other losses (subjects only);
+  from the exported card, whether `system_prompt` and `post_history_instructions` are empty.
+  Token estimates and human-readable details are never compared. The summary is compared as
+  RFC 8785 canonical JSON.
 
-Cases with `status: "draft"` are executed (they must not crash) but not compared. Assembler and
-CCv3 cases currently only validate their inputs.
+Cases with `status: "draft"` are executed (they must not crash) but not compared.
 
 ## Expected output must be reviewed by a human
 
@@ -76,6 +94,9 @@ implementation emits, because that would freeze bugs into the spec.
    `cases/<case>/draft/`. This directory is git-ignored.
 3. A reviewer reads the draft against the specification and the case notes. If it is wrong, fix
    the implementation (or the case) and draft again.
+   `pnpm conformance:precheck` checks drafted Context IR for mechanical invariants, and
+   `pnpm conformance:review` writes `REVIEW.md` (not committed) with a readable summary of every
+   draft — including a table of trace decisions per assembler scenario — to review against.
 4. When the output is correct:
    `pnpm conformance:accept <case> --reviewer <name>`
    moves the draft to `expected/`, sets `status: "reviewed"`, records reviewer, date and the

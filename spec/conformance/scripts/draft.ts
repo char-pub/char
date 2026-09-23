@@ -1,6 +1,6 @@
 /**
  * `pnpm conformance:draft [<case> ...]`：运行当前实现，把输出写到 cases/<case>/draft/，
- * 供人工审阅。不带参数时处理全部 resolver / publish 用例。
+ * 供人工审阅。不带参数时处理全部用例。
  *
  * draft/ 不提交到仓库。审阅人逐项核对输出是否符合规范后，再用 `conformance:accept`
  * 把它变成预期结果；不能跳过审阅直接把当前输出当作规范。
@@ -38,6 +38,17 @@ for (const dir of dirs) {
         ? `${actual.error.code} (${actual.error.subject ?? ""})${actual.detail ? `: ${actual.detail}` : ""}`
         : actual.kind === "publish"
           ? JSON.stringify(actual.summary)
-          : "";
+          : actual.kind === "trace"
+            ? actual.trace.scenarios
+                .map((sc) =>
+                  "error" in sc
+                    ? `${sc.name}: ${sc.error.code}`
+                    : `${sc.name}: ${sc.entries.length} entries`,
+                )
+                .join("; ") +
+              (actual.violations.length ? `  VIOLATIONS: ${actual.violations.join("; ")}` : "")
+            : actual.kind === "loss-report"
+              ? `policy fields ${actual.summary.import.omitted_policy_fields.join(", ")}; unstable ${actual.summary.import.unstable_fragments.join(", ")}`
+              : "";
   console.log(`${dir}: draft/${EXPECTED_FILES[draft.file]}  ${summary}`);
 }
