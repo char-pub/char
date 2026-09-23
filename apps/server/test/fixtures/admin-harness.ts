@@ -5,6 +5,7 @@
 import { randomBytes } from "node:crypto";
 import { createLocalJWKSet, exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
 import { uuidv7 } from "uuidv7";
+import type { AccessRevoker } from "../../src/admin/access-revoke.js";
 import { createAdmin } from "../../src/admin/app.js";
 import type { StaffRole } from "../../src/admin/roles.js";
 import { adminModules } from "../../src/admin/routes/index.js";
@@ -45,6 +46,10 @@ export interface AdminHarness {
     path: string,
     body?: unknown,
   ): Promise<{ status: number; json: Record<string, unknown> }>;
+  /** 以某名员工的身份调用 admin API，返回原始响应（用于下载与导出）。 */
+  raw(email: string, method: string, path: string, body?: unknown): Promise<Response>;
+  /** 直接调用 admin 应用，可以自己控制请求头（例如跨域预检）。 */
+  request(path: string, init: RequestInit): Promise<Response>;
   /** 调用公开 API。 */
   publicRequest(path: string, user?: string): Promise<Response>;
   setNow(d: Date): void;
@@ -53,7 +58,9 @@ export interface AdminHarness {
   close(): Promise<void>;
 }
 
-export async function createAdminHarness(): Promise<AdminHarness> {
+export async function createAdminHarness(
+  opts: { revokeAccess?: AccessRevoker } = {},
+): Promise<AdminHarness> {
   const t = await createTestDatabase();
   const queue = new JobQueue({ connectionString: t.appUrl, max: 4 });
   queue.boss.on("error", () => {});
@@ -97,7 +104,7 @@ export async function createAdminHarness(): Promise<AdminHarness> {
     },
     originSecrets: [],
     allowedOrigins: [ORIGIN],
-    modules: adminModules(legalKey),
+    modules: adminModules(legalKey, opts),
   });
   const api = createApi({
     services,
@@ -115,23 +122,28 @@ export async function createAdminHarness(): Promise<AdminHarness> {
       .setProtectedHeader({ alg: "RS256", kid: "k" })
       .sign(privateKey);
   };
+  const raw = async (email: string, method: string, path: string, body?: unknown) => {
+    const headers: Record<string, string> = {
+      origin: ORIGIN,
+      "cf-access-jwt-assertion": await sign(email),
+    };
+    if (body !== undefined) headers["content-type"] = "application/json";
+    return admin.request(path, {
+      method,
+      headers,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+  };
   return {
     t,
     queue,
     services,
     legalKey,
     staff,
+    raw,
+    request: (path, init) => Promise.resolve(admin.request(path, init)),
     async call(email, method, path, body) {
-      const headers: Record<string, string> = {
-        origin: ORIGIN,
-        "cf-access-jwt-assertion": await sign(email),
-      };
-      if (body !== undefined) headers["content-type"] = "application/json";
-      const res = await admin.request(path, {
-        method,
-        headers,
-        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-      });
+      const res = await raw(email, method, path, body);
       const text = await res.text();
       return {
         status: res.status,

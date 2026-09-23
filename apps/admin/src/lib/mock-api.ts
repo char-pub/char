@@ -5,7 +5,9 @@
  * - 按员工角色计算能力，缺少能力时返回 403 `admin.forbidden`（读接口也一样）；
  * - 写操作要求理由至少 10 个字符，法律依据的操作要求关联法律请求；
  * - 大范围 tombstone、CSAM 锁定账号的解封、移除 owner 角色走四眼流程；
- * - 强制评级只能调高，CSAM 锁定的账号不能被普通封禁覆盖，系统里至少保留一名 owner。
+ * - 强制评级只能调高，CSAM 锁定的账号不能被普通封禁覆盖，系统里至少保留一名 owner；
+ * - namespace 转让总是走四眼流程；DMCA 反通知的恢复期限按工作日计算；
+ * - 隔离证据只给具备证据权限的员工，下载得到的是一个普通文件，不做预览。
  *
  * 示例数据全部是虚构的。
  */
@@ -15,9 +17,11 @@ import {
   type AuditItem,
   type CreationAdminView,
   type CsamIncident,
+  type EvidenceMeta,
   type FailedJob,
   type Flag,
   type FlagKey,
+  type GuestAdminView,
   type LegalRequestDetail,
   type Me,
   MIN_REASON_LENGTH,
@@ -32,7 +36,7 @@ import {
   type UserDetail,
   type WithReason,
 } from "./api";
-import { capabilitiesOf } from "./roles";
+import { capabilitiesOf, DECIDE_CAPABILITIES } from "./roles";
 
 const HOUR = 60 * 60 * 1000;
 const COOLING_OFF_MS = 24 * HOUR;
@@ -75,6 +79,28 @@ function requireReason(input: WithReason) {
   if ((input.reason ?? "").trim().length < MIN_REASON_LENGTH) {
     throw new ApiError(422, "admin.reason_required");
   }
+}
+
+/** 与后端相同的工作日计算：周一到周五（UTC），保留原来的时刻。 */
+function addWeekdays(from: Date, n: number): Date {
+  const d = new Date(from.getTime());
+  let left = n;
+  while (left > 0) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const day = d.getUTCDay();
+    if (day !== 0 && day !== 6) left--;
+  }
+  return d;
+}
+
+const RESTORE_NOT_BEFORE_WEEKDAYS = 12;
+const RESTORE_DEADLINE_WEEKDAYS = 14;
+
+function jsonFile(value: unknown, filename: string) {
+  return {
+    blob: new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
+    filename,
+  };
 }
 
 function tombstoneCapability(reasonCode: string): StaffCapability {
@@ -212,6 +238,18 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
         { id: "rel_bh_3", label: "2.0.0-draft", visibility: "private", status: "active" },
       ],
     },
+    {
+      id: "cr2",
+      ref: "@fanworks/cover-song",
+      type: "character",
+      display_name: "Cover Song",
+      summary: "A singer who covers classic songs.",
+      rating: "general",
+      effective_rating: "general",
+      forced_rating: null,
+      status: "hidden",
+      releases: [{ id: "rel_cs_1", label: "1.0.0", visibility: "public", status: "active" }],
+    },
   ];
   const findCreation = (idOrRef: string) =>
     creations.find((x) => x.id === idOrRef || x.ref === idOrRef);
@@ -274,6 +312,8 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       csam_locked: false,
       tokens: 2,
       sessions: 1,
+      uploads_locked: false,
+      uploads_locked_at: null,
       created_at: "2026-09-01T00:00:00.000Z",
       creations: 3,
       recent_actions: [
@@ -296,6 +336,8 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       csam_locked: true,
       tokens: 0,
       sessions: 0,
+      uploads_locked: false,
+      uploads_locked_at: null,
       created_at: "2026-09-10T00:00:00.000Z",
       creations: 0,
       recent_actions: [],
@@ -390,6 +432,12 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
         organization: "Example Rights Agency LLC",
       },
       counter_notice: null,
+      counter_notice_received_at: null,
+      restore_not_before: null,
+      restore_deadline: null,
+      court_action_at: null,
+      restored_at: null,
+      actions: [],
     },
     {
       id: "lr2",
@@ -400,8 +448,45 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       subjects: ["@spam/mirror"],
       requester: { name: "District court clerk" },
       counter_notice: null,
+      counter_notice_received_at: null,
+      restore_not_before: null,
+      restore_deadline: null,
+      court_action_at: null,
+      restored_at: null,
+      actions: [],
+    },
+    {
+      // 已收到反通知、恢复期限已经开始的 DMCA 请求：仪表盘上会提醒恢复。
+      id: "lr3",
+      kind: "dmca",
+      received_at: at(-30 * 24 * HOUR),
+      deadline: null,
+      status: "counter_notice",
+      subjects: ["@fanworks/cover-song"],
+      requester: { name: "Label Rights Desk", email: "desk@example.org" },
+      counter_notice: {
+        name: "Cover Artist",
+        address: "1 Example Street",
+        statement: "The work is a licensed cover.",
+      },
+      counter_notice_received_at: at(-18 * 24 * HOUR),
+      restore_not_before: at(-2 * 24 * HOUR),
+      restore_deadline: at(24 * HOUR),
+      court_action_at: null,
+      restored_at: null,
+      actions: [
+        {
+          id: "ma-lr3",
+          action: "creation.hide",
+          subject: { creation: "cr2" },
+          created_at: at(-29 * 24 * HOUR),
+          reverted: false,
+        },
+      ],
     },
   ];
+  /** 因每个法律请求而隐藏的 Creation。 */
+  const hiddenByLegal = new Map<string, Set<string>>([["lr3", new Set(["cr2"])]]);
   let legalSeq = legal.length;
 
   const incidents: CsamIncident[] = [
@@ -414,6 +499,32 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       ncmec_report_id: null,
       created_at: "2026-09-22T05:00:00.000Z",
       evidence_expires_at: null,
+    },
+  ];
+  const evidenceSize = 48213;
+
+  const guests: GuestAdminView[] = [
+    {
+      id: "gst_01j9mockvisitor0000000001",
+      display_name: "Friendly visitor",
+      verified_at: "2026-09-20T10:00:00.000Z",
+      verification_kind: "email",
+      disabled: false,
+      disabled_at: null,
+      sessions: 1,
+      contributions: 2,
+      created_at: "2026-09-20T09:58:00.000Z",
+    },
+    {
+      id: "gst_01j9mockspammer0000000002",
+      display_name: "Link spammer",
+      verified_at: "2026-09-18T10:00:00.000Z",
+      verification_kind: "email",
+      disabled: true,
+      disabled_at: "2026-09-19T08:00:00.000Z",
+      sessions: 0,
+      contributions: 14,
+      created_at: "2026-09-18T09:50:00.000Z",
     },
   ];
 
@@ -632,7 +743,7 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       return { executed: true as const };
     },
     listApprovals: async () => {
-      need("tombstone.policy", "tombstone.legal", "users.ban", "staff.manage");
+      need(...DECIDE_CAPABILITIES);
       return clone(
         approvals.filter(
           (a) => a.status === "pending" && can(approvalCapability.get(a.id) ?? "staff.manage"),
@@ -640,7 +751,7 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       );
     },
     confirmApproval: async (id, input) => {
-      need("tombstone.policy", "tombstone.legal", "users.ban", "staff.manage");
+      need(...DECIDE_CAPABILITIES);
       requireReason(input);
       const a = approvals.find((x) => x.id === id);
       if (!a) throw new ApiError(404, "not_found");
@@ -661,7 +772,7 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       });
     },
     cancelApproval: async (id, input) => {
-      need("tombstone.policy", "tombstone.legal", "users.ban", "staff.manage");
+      need(...DECIDE_CAPABILITIES);
       requireReason(input);
       const a = approvals.find((x) => x.id === id);
       if (!a) throw new ApiError(404, "not_found");
@@ -791,7 +902,7 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
 
     listLegalRequests: async () => {
       need("legal.manage");
-      return clone(legal.map(({ requester: _r, counter_notice: _c, ...l }) => l));
+      return clone(legal.map(({ requester: _r, counter_notice: _c, actions: _a, ...l }) => l));
     },
     getLegalRequest: async (id) => {
       need("legal.manage");
@@ -818,6 +929,12 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
         subjects: input.subjects,
         requester: input.requester,
         counter_notice: null,
+        counter_notice_received_at: null,
+        restore_not_before: null,
+        restore_deadline: null,
+        court_action_at: null,
+        restored_at: null,
+        actions: [],
       });
       // 审计中不记录申请人信息。
       addAudit("legal.register", `legal_request:${id}`, null, {
@@ -906,6 +1023,272 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       }
       setRoles(member, roles);
       return {};
+    },
+
+    revokeCredentials: async (id, input) => {
+      need("users.ban");
+      requireReason(input);
+      const u = users.find((x) => x.id === id);
+      if (!u) throw new ApiError(404, "not_found");
+      if (input.sessions === false && input.tokens === false) {
+        throw new ApiError(422, "admin.nothing_to_revoke");
+      }
+      const sessions = input.sessions === false ? 0 : u.sessions;
+      const tokens = input.tokens === false ? 0 : u.tokens;
+      u.sessions -= sessions;
+      u.tokens -= tokens;
+      addAudit("user.revoke_credentials", `user:${id}`, null, { sessions, tokens });
+      return { sessions_revoked: sessions, tokens_revoked: tokens };
+    },
+    setUploadLock: async (id, input) => {
+      need("users.ban");
+      requireReason(input);
+      const u = users.find((x) => x.id === id);
+      if (!u) throw new ApiError(404, "not_found");
+      if (u.uploads_locked === input.locked) return;
+      u.uploads_locked = input.locked;
+      u.uploads_locked_at = input.locked ? iso() : null;
+      addAudit(input.locked ? "user.lock_uploads" : "user.unlock_uploads", `user:${id}`, null, {
+        reason: input.reason,
+      });
+    },
+
+    listGuests: async (q) => {
+      need("overview.read");
+      return clone(
+        guests.filter(
+          (g) =>
+            (!q.status || q.status === "all" || (q.status === "disabled") === g.disabled) &&
+            (!q.query || g.display_name.toLowerCase().includes(q.query.toLowerCase())),
+        ),
+      );
+    },
+    getGuest: async (id) => {
+      need("overview.read");
+      const g = guests.find((x) => x.id === id);
+      if (!g) throw new ApiError(404, "not_found");
+      return clone(g);
+    },
+    disableGuest: async (id, input) => {
+      need("users.ban");
+      requireReason(input);
+      const g = guests.find((x) => x.id === id);
+      if (!g) throw new ApiError(404, "not_found");
+      if (g.disabled) return;
+      g.disabled = true;
+      g.disabled_at = iso();
+      g.sessions = 0;
+      addAudit("guest.disable", `guest:${id}`, null, { reason: input.reason });
+    },
+    enableGuest: async (id, input) => {
+      need("users.ban");
+      requireReason(input);
+      const g = guests.find((x) => x.id === id);
+      if (!g) throw new ApiError(404, "not_found");
+      if (!g.disabled) return;
+      g.disabled = false;
+      g.disabled_at = null;
+      addAudit("guest.enable", `guest:${id}`, null, { reason: input.reason });
+    },
+
+    transferNamespace: async (slug, input) => {
+      need("namespaces.govern");
+      requireReason(input);
+      const n = namespaces.find((x) => x.slug === slug);
+      if (!n) throw new ApiError(404, "not_found");
+      if (n.kind === "system") throw new ApiError(422, "namespace.not_transferable");
+      const target = users.find((u) => u.id === input.to || u.email === input.to);
+      if (!target) throw new ApiError(422, "namespace.transfer_target_not_found");
+      if (target.email === n.owner) throw new ApiError(422, "namespace.same_owner");
+      const pending = approvals.some(
+        (a) =>
+          a.status === "pending" &&
+          a.kind === "namespace.transfer" &&
+          a.subject.startsWith(`namespace:@${slug} `),
+      );
+      if (pending) throw new ApiError(409, "namespace.transfer_pending");
+      return {
+        approval: makeApproval(
+          "namespace.transfer",
+          `namespace:@${slug} → ${target.id}`,
+          input.reason,
+          "namespaces.govern",
+          () => {
+            addAudit(
+              "namespace.transfer",
+              `namespace:${slug}`,
+              { owner: n.owner },
+              { owner: target.email },
+            );
+            n.owner = target.email;
+          },
+        ),
+      };
+    },
+
+    disableAccess: async (id, input) => {
+      need("legal.manage");
+      requireReason(input);
+      const l = legal.find((x) => x.id === id);
+      if (!l) throw new ApiError(404, "not_found");
+      if (l.status === "closed") throw new ApiError(409, "legal.closed");
+      const found = input.creations.map((ref) => {
+        const c = findCreation(ref.trim());
+        if (!c) throw new ApiError(422, "legal.subject_not_found", ref);
+        return c;
+      });
+      const set = hiddenByLegal.get(id) ?? new Set<string>();
+      for (const c of found) {
+        c.status = "hidden";
+        set.add(c.id);
+        l.actions.push({
+          id: `ma${auditSeq + 1}`,
+          action: "creation.hide",
+          subject: { creation: c.id },
+          created_at: iso(),
+          reverted: false,
+        });
+        addAudit("creation.hide", `creation:${c.id}`, null, { legal_request_id: id });
+      }
+      hiddenByLegal.set(id, set);
+      if (l.status === "open") l.status = "actioned";
+      addAudit("legal.disable_access", `legal_request:${id}`, null, {
+        creations: found.map((c) => c.id),
+      });
+      return { hidden: found.length };
+    },
+    registerCounterNotice: async (id, input) => {
+      need("legal.manage");
+      requireReason(input);
+      const l = legal.find((x) => x.id === id);
+      if (!l) throw new ApiError(404, "not_found");
+      if (l.kind !== "dmca") throw new ApiError(422, "legal.counter_notice_dmca_only");
+      if (l.status !== "actioned") throw new ApiError(409, "legal.not_actioned");
+      const received = new Date(input.received_at);
+      if (received > now()) throw new ApiError(422, "legal.received_in_future");
+      const notBefore = addWeekdays(received, RESTORE_NOT_BEFORE_WEEKDAYS).toISOString();
+      const deadline = addWeekdays(received, RESTORE_DEADLINE_WEEKDAYS).toISOString();
+      l.status = "counter_notice";
+      l.counter_notice = input.counter_notice;
+      l.counter_notice_received_at = received.toISOString();
+      l.restore_not_before = notBefore;
+      l.restore_deadline = deadline;
+      addAudit("legal.counter_notice", `legal_request:${id}`, null, {
+        restore_not_before: notBefore,
+        restore_deadline: deadline,
+      });
+      return { restore_not_before: notBefore, restore_deadline: deadline };
+    },
+    recordCourtAction: async (id, input) => {
+      need("legal.manage");
+      requireReason(input);
+      const l = legal.find((x) => x.id === id);
+      if (!l) throw new ApiError(404, "not_found");
+      if (l.status !== "counter_notice") throw new ApiError(409, "legal.no_counter_notice");
+      if (l.court_action_at) return;
+      l.court_action_at = iso();
+      addAudit("legal.court_action", `legal_request:${id}`, null, { reason: input.reason });
+    },
+    restoreLegal: async (id, input) => {
+      need("legal.manage");
+      requireReason(input);
+      const l = legal.find((x) => x.id === id);
+      if (!l) throw new ApiError(404, "not_found");
+      if (l.status !== "counter_notice") throw new ApiError(409, "legal.no_counter_notice");
+      if (l.court_action_at) throw new ApiError(409, "legal.court_action_filed");
+      if (!l.restore_not_before || now() < new Date(l.restore_not_before)) {
+        throw new ApiError(409, "legal.restore_window_not_open");
+      }
+      const restored: string[] = [];
+      for (const cid of hiddenByLegal.get(id) ?? []) {
+        const c = findCreation(cid);
+        if (c) {
+          c.status = "active";
+          restored.push(c.id);
+        }
+      }
+      for (const a of l.actions) a.reverted = true;
+      l.status = "closed";
+      l.restored_at = iso();
+      const late = l.restore_deadline !== null && now() > new Date(l.restore_deadline);
+      addAudit("legal.restore", `legal_request:${id}`, null, { restored, late });
+      return { restored, kept_hidden: [], not_restorable: 0, late };
+    },
+    exportLegalCase: async (id, input) => {
+      need("legal.manage");
+      requireReason(input);
+      const l = legal.find((x) => x.id === id);
+      if (!l) throw new ApiError(404, "not_found");
+      addAudit("legal.export", `legal_request:${id}`, null, { reason: input.reason });
+      return jsonFile(
+        {
+          format: "char-pub.legal-case/1",
+          exported_at: iso(),
+          exported_by: me.email,
+          request: l,
+          audit: audit.filter((a) => a.subject === `legal_request:${id}`),
+        },
+        `legal-request-${id}.json`,
+      );
+    },
+
+    getEvidence: async (id) => {
+      need("csam.evidence");
+      const i = incidents.find((x) => x.id === id);
+      if (!i) throw new ApiError(404, "not_found");
+      const hex = i.blob_digest.slice("sha256:".length);
+      const meta: EvidenceMeta = {
+        incident_id: i.id,
+        evidence_digest: i.blob_digest,
+        blob_digest: i.blob_digest,
+        size: evidenceSize,
+        media_type: "image/png",
+        present: true,
+        storage: { bucket: "evidence", key: `evidence/cas/sha256/${hex.slice(0, 2)}/${hex}` },
+        retain_until: i.evidence_expires_at,
+      };
+      return clone(meta);
+    },
+    downloadEvidence: async (id, input) => {
+      need("csam.evidence");
+      requireReason(input);
+      const i = incidents.find((x) => x.id === id);
+      if (!i) throw new ApiError(404, "not_found");
+      addAudit("csam.evidence_ticket", `csam_incident:${id}`, null, { reason: input.reason });
+      addAudit("csam.evidence_download", `csam_incident:${id}`, null, null);
+      // mock 不保存任何素材，下载内容只是占位字节。
+      return {
+        blob: new Blob([new Uint8Array(16)], { type: "application/octet-stream" }),
+        filename: `evidence-${id}.bin`,
+      };
+    },
+
+    exportAudit: async (input) => {
+      need("audit.read_all");
+      requireReason(input);
+      const rows = audit.filter(
+        (a) =>
+          (!input.action || a.action === input.action) &&
+          (!input.subject || a.subject === input.subject) &&
+          (!input.before || Number(a.id) < Number(input.before)),
+      );
+      const { reason, ...filters } = input;
+      addAudit("audit.export", "audit_log", null, { reason, filters, count: rows.length });
+      const lines = rows.map((r) => `${JSON.stringify(r)}\n`);
+      return {
+        blob: new Blob(lines, { type: "application/x-ndjson" }),
+        filename: `audit-${iso().slice(0, 10)}.ndjson`,
+        next_before: null,
+      };
+    },
+
+    signOutStaff: async (userId, input) => {
+      need("staff.manage");
+      requireReason(input);
+      const member = staff.find((s) => s.id === userId);
+      if (!member) throw new ApiError(404, "not_found");
+      addAudit("staff.sign_out", `user:${userId}`, null, { access: "not_configured" });
+      return { sessions_revoked: 1, access: "not_configured" as const };
     },
   };
 }

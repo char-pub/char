@@ -1,20 +1,23 @@
 /**
- * 审计日志：分页浏览、按 subject 过滤、展开查看字段变更、校验哈希链、导出为 JSON。
+ * 审计日志：分页浏览、按 subject 过滤、展开查看字段变更、校验哈希链、导出。
  * 只有 `audit.read_own` 能力的员工只能看到自己的操作，这由后端过滤。
- * 导出按当前过滤条件逐页读取，最多 `EXPORT_LIMIT` 条。
+ * 导出由服务端按当前过滤条件生成 NDJSON（每次最多 10000 条，更多时可以接着导出下一批），
+ * 必须填写理由，导出本身写入审计。
  */
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, ShieldCheck, ShieldX } from "lucide-react";
 import { Fragment, useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { AuditItem, AuditVerify } from "@/lib/api";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import type { AuditVerify } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
-import { cn, downloadJson } from "@/lib/utils";
+import { saveFile } from "@/lib/download";
+import { cn } from "@/lib/utils";
 import { JsonDiff } from "./json-diff";
 import { Empty, ErrorNote, Field, PageHeader, Restricted, Time } from "./page";
+import { ReasonForm } from "./reason-form";
 
 const PAGE = 50;
-const EXPORT_LIMIT = 5000;
 
 export function AuditPage() {
   return (
@@ -44,33 +47,9 @@ function AuditLog() {
   const [verify, setVerify] = useState<AuditVerify | null>(null);
   const [verifyError, setVerifyError] = useState<unknown>(null);
   const [exporting, setExporting] = useState(false);
-
-  async function exportAll() {
-    setExporting(true);
-    setVerifyError(null);
-    try {
-      const items: AuditItem[] = [];
-      let cursor: string | undefined;
-      do {
-        const page = await api.listAudit({
-          limit: 200,
-          ...(applied ? { subject: applied } : {}),
-          ...(cursor ? { before: cursor } : {}),
-        });
-        items.push(...page.items);
-        cursor = page.next_before ?? undefined;
-      } while (cursor && items.length < EXPORT_LIMIT);
-      downloadJson(`audit-${applied ? applied.replace(/[^\w.-]+/g, "_") : "all"}.json`, {
-        exported_at: new Date().toISOString(),
-        filter: applied ? { subject: applied } : {},
-        items: items.slice(0, EXPORT_LIMIT),
-      });
-    } catch (e) {
-      setVerifyError(e);
-    } finally {
-      setExporting(false);
-    }
-  }
+  /** 上一次导出还有剩余时，下一批的起点。 */
+  const [exportNext, setExportNext] = useState<string | null>(null);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
 
   return (
     <div className="space-y-4">
@@ -80,8 +59,8 @@ function AuditLog() {
         actions={
           can("audit.read_all") ? (
             <>
-              <Button size="sm" variant="outline" disabled={exporting} onClick={exportAll}>
-                {exporting ? "Exporting…" : "Export JSON"}
+              <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+                Export
               </Button>
               <Button
                 size="sm"
@@ -101,6 +80,41 @@ function AuditLog() {
           ) : null
         }
       />
+      {exportNotice ? (
+        <p role="status" className="text-sm">
+          {exportNotice}
+        </p>
+      ) : null}
+      {exporting ? (
+        <Dialog open onOpenChange={(o) => (!o ? setExporting(false) : undefined)}>
+          <DialogContent>
+            <DialogTitle>Export the audit log</DialogTitle>
+            <DialogDescription>
+              Exports {applied ? `entries for ${applied}` : "all entries"} as NDJSON, newest first,
+              up to 10,000 per file{exportNext ? `, continuing below entry ${exportNext}` : ""}. The
+              export itself is recorded in the audit log.
+            </DialogDescription>
+            <ReasonForm
+              submitLabel="Download NDJSON"
+              onSubmit={async ({ reason }) => {
+                const file = await api.exportAudit({
+                  reason,
+                  ...(applied ? { subject: applied } : {}),
+                  ...(exportNext ? { before: exportNext } : {}),
+                });
+                saveFile(file);
+                setExportNext(file.next_before);
+                setExportNotice(
+                  file.next_before
+                    ? `Downloaded ${file.filename}. More entries remain; export again to continue.`
+                    : `Downloaded ${file.filename}.`,
+                );
+                setExporting(false);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
       {verify ? (
         <p
           role="status"

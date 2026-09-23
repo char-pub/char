@@ -4,6 +4,9 @@
  * 角色可以叠加。移除某人的 owner 角色需要第二名 owner 确认（提交后生成待确认请求）；
  * 系统里必须始终至少保留一名 owner，所以唯一 owner 的 owner 角色在这里不能取消。
  * 员工角色只在 admin 中生效，公开站点上员工没有任何管理权限。
+ *
+ * 强制登出：吊销该员工在 www 的全部会话，并在配置了 Access API 时吊销其 Cloudflare Access
+ * 会话（没有配置时页面会注明只吊销了应用会话）。
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -18,7 +21,7 @@ const ROLE_HINT: Record<StaffRole, string> = {
   viewer: "read-only overview; sees only their own audit entries",
   moderator: "handles ordinary reports: dismiss, hide, force rating, yank",
   trust_safety: "bans, policy tombstones, kill switches, read-only CSAM incidents",
-  legal: "legal requests, legal tombstones, NCMEC reports, full audit log",
+  legal: "legal requests, legal tombstones, NCMEC reports, CSAM evidence, full audit log",
   admin: "operations: namespaces, jobs, kill switches, bans",
   owner: "everything, including staff management",
 };
@@ -36,6 +39,7 @@ function StaffList() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["staff"], queryFn: () => api.listStaff() });
   const [editing, setEditing] = useState<StaffMember | null>(null);
+  const [signingOut, setSigningOut] = useState<StaffMember | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const owners = (q.data ?? []).filter((s) => s.roles.includes("owner"));
   return (
@@ -78,14 +82,47 @@ function StaffList() {
                 </div>
               </td>
               <td className="text-right">
-                <Button size="xs" variant="outline" onClick={() => setEditing(s)}>
-                  Edit roles
-                </Button>
+                <div className="flex justify-end gap-1">
+                  <Button size="xs" variant="outline" onClick={() => setSigningOut(s)}>
+                    Sign out
+                  </Button>
+                  <Button size="xs" variant="outline" onClick={() => setEditing(s)}>
+                    Edit roles
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      {signingOut ? (
+        <Dialog open onOpenChange={(o) => (!o ? setSigningOut(null) : undefined)}>
+          <DialogContent>
+            <DialogTitle>Sign out {signingOut.email}</DialogTitle>
+            <DialogDescription>
+              Revokes every www session of this staff member and their Cloudflare Access session, so
+              they must sign in through Access again.
+            </DialogDescription>
+            <ReasonForm
+              submitLabel="Sign out everywhere"
+              danger
+              onSubmit={async ({ reason }) => {
+                const r = await api.signOutStaff(signingOut.id, { reason });
+                setNotice(
+                  `Signed out ${signingOut.email}: revoked ${r.sessions_revoked} session(s); ${
+                    r.access === "revoked"
+                      ? "Access session revoked."
+                      : r.access === "failed"
+                        ? "revoking the Access session failed, try again."
+                        : "Access session not revoked (Access API not configured)."
+                  }`,
+                );
+                setSigningOut(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
       {editing ? (
         <EditRolesDialog
           member={editing}

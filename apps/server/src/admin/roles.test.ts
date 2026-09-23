@@ -21,6 +21,7 @@ const EXPECTED: Record<StaffCapability, StaffRole[]> = {
   "users.ban": ["trust_safety", "admin", "owner"],
   "csam.read": ["trust_safety", "legal", "owner"],
   "csam.report": ["legal", "owner"],
+  "csam.evidence": ["legal", "owner"],
   "legal.manage": ["legal", "owner"],
   "tombstone.policy": ["trust_safety", "owner"],
   "tombstone.legal": ["legal", "owner"],

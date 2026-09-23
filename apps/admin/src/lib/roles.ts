@@ -15,6 +15,7 @@ export const STAFF_CAPABILITIES: readonly StaffCapability[] = [
   "users.ban",
   "csam.read",
   "csam.report",
+  "csam.evidence",
   "legal.manage",
   "tombstone.policy",
   "tombstone.legal",
@@ -45,6 +46,7 @@ export const ROLE_CAPABILITIES: Record<Exclude<StaffRole, "owner">, readonly Sta
     "audit.read_all",
     "csam.read",
     "csam.report",
+    "csam.evidence",
     "legal.manage",
     "tombstone.legal",
   ],
@@ -92,4 +94,5 @@ export const DECIDE_CAPABILITIES: readonly StaffCapability[] = [
   "tombstone.legal",
   "users.ban",
   "staff.manage",
+  "namespaces.govern",
 ];

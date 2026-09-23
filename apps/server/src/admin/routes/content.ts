@@ -9,12 +9,12 @@
  * 每个写操作都在一个事务里同时写处置记录与审计日志。
  */
 import { RATINGS, type Rating } from "@char-pub/core";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
 import type { Tx } from "../../db/client.js";
-import { creations, namespaces, releases } from "../../db/schema/index.js";
+import { creations, moderationActions, namespaces, releases } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { effectiveRatingOf } from "../../registry/read.js";
 import { type AdminContext, type AdminEnv, adminRoute } from "../app.js";
@@ -71,14 +71,20 @@ async function creationView(c: AdminContext, id: string) {
   };
 }
 
-/** 设置隐藏状态。已被管理员冻结（suspended）的 Creation 不能通过这里恢复。 */
+/**
+ * 设置隐藏状态。已被管理员冻结（suspended）的 Creation 不能通过这里恢复。
+ *
+ * 取消隐藏会把这个 Creation 上所有仍然有效的隐藏记录标记为已撤销，这样之后可以根据
+ * “是否还有未撤销的隐藏记录”判断它为什么仍然是隐藏的（例如法律请求恢复内容时）。
+ */
 export async function setCreationHidden(
   tx: Tx,
   c: AdminContext,
   creationId: string,
   hidden: boolean,
   reason: string,
-): Promise<{ ok: true } | { ok: false; status: 404 | 409; code: string }> {
+  opts: { legalRequestId?: string } = {},
+): Promise<{ ok: true; actionId: string } | { ok: false; status: 404 | 409; code: string }> {
   const [row] = await tx.select().from(creations).where(eq(creations.id, creationId)).for("update");
   if (!row) return { ok: false, status: 404, code: "not_found" };
   if (row.status === "suspended") return { ok: false, status: 409, code: "creation.suspended" };
@@ -88,11 +94,24 @@ export async function setCreationHidden(
     .update(creations)
     .set({ status: next, updatedAt: now })
     .where(eq(creations.id, creationId));
-  await recordAction(tx, c, {
+  const actionId = await recordAction(tx, c, {
     action: hidden ? "creation.hide" : "creation.unhide",
     subject: { creation: creationId },
     reason,
+    legalRequestId: opts.legalRequestId,
   });
+  if (!hidden) {
+    await tx
+      .update(moderationActions)
+      .set({ revertedBy: actionId })
+      .where(
+        and(
+          eq(moderationActions.action, "creation.hide"),
+          isNull(moderationActions.revertedBy),
+          sql`${moderationActions.subject} @> ${JSON.stringify({ creation: creationId })}::jsonb`,
+        ),
+      );
+  }
   await appendAudit(tx, {
     at: now,
     actor: staffActor(c),
@@ -100,9 +119,13 @@ export async function setCreationHidden(
     subject: `creation:${creationId}`,
     requestId: c.var.requestId,
     before: { status: row.status },
-    after: { status: next, reason },
+    after: {
+      status: next,
+      reason,
+      ...(opts.legalRequestId ? { legal_request_id: opts.legalRequestId } : {}),
+    },
   });
-  return { ok: true };
+  return { ok: true, actionId };
 }
 
 /** 强制调高评级：新评级不能低于当前的 effective rating。 */

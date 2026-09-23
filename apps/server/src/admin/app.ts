@@ -11,6 +11,7 @@
  */
 import { eq } from "drizzle-orm";
 import { type Context, Hono } from "hono";
+import { cors } from "hono/cors";
 import type { z } from "zod";
 import type { Services } from "../api/app.js";
 import { authUser } from "../db/schema/index.js";
@@ -149,6 +150,20 @@ export function createAdmin(opts: AdminOptions): Hono<AdminEnv> {
   if (opts.originSecrets.length > 0) app.use(originAuth({ secrets: opts.originSecrets }));
   app.use(apiSecurityHeaders());
   app.get("/healthz", (c) => c.json({ ok: true }));
+  // admin SPA 与 admin-api 在不同的子域名：只对白名单中的 Origin 放行跨域请求，并允许携带
+  // Access 的 cookie。预检请求在这里直接返回，不经过 Access JWT 校验（预检不带 cookie）。
+  const allowed = new Set(opts.allowedOrigins);
+  app.use(
+    "/v1/*",
+    cors({
+      origin: (origin) => (allowed.has(origin) ? origin : null),
+      credentials: true,
+      allowMethods: ["GET", "POST", "PUT", "DELETE"],
+      allowHeaders: ["content-type"],
+      exposeHeaders: ["content-disposition", "x-next-before"],
+      maxAge: 600,
+    }),
+  );
   app.use(originCheck({ allowed: opts.allowedOrigins }));
   app.use(jsonBodyLimit());
   app.use(async (c, next) => {

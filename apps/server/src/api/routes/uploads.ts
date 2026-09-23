@@ -18,6 +18,7 @@ import type { z } from "zod";
 import { authUser, blockedDigests, uploads } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { QUEUE_NAMES } from "../../jobs/definitions.js";
+import { uploadsLocked } from "../../moderation/upload-lock.js";
 import { hit, RATE_LIMITS } from "../../ops/rate-limit.js";
 import { stagingKeyFor, UPLOAD_LIMITS, UPLOAD_TTL_MS } from "../../upload/pipeline.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
@@ -82,6 +83,7 @@ export function register(app: Hono<Env>): void {
       const { db, cas, clock, ids } = c.var.services;
       const now = clock.now();
       const uid = userId(c);
+      if (await uploadsLocked(db, uid)) return problem(c, 403, "upload.locked");
 
       const typeProblem = limitFor(body.purpose, body.content_type);
       if (typeProblem) return problem(c, 422, typeProblem);

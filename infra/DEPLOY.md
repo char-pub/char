@@ -97,6 +97,8 @@ Rules → Transform Rules → Modify Request Header：
 - 身份提供者：GitHub。
 - 策略：Include → GitHub Organization `char-pub`；会话 8 小时。
 - 记下 Application Audience (AUD) Tag，写入 admin 进程的 `CF_ACCESS_AUD`；团队域名写入 `CF_ACCESS_TEAM_DOMAIN`。
+- admin SPA 跨域调用 admin-api：在 Access 应用的 CORS 设置中允许预检请求直接通过（“Bypass options requests to origin”），由 admin 进程按 `ADMIN_ORIGINS` 应答预检；其他请求仍然必须带 Access 会话。
+- 强制员工登出时吊销 Access 会话（可选）：创建一个只有 Access: Organizations, Identity Providers, and Groups 编辑权限的 API Token，把账户 ID 与 Token 写入 admin 进程的 `CF_ACCESS_ACCOUNT_ID`、`CF_ACCESS_API_TOKEN`。不配置时强制登出只吊销应用会话，界面会注明。
 - `char-pub` 组织开启“要求成员启用双因素认证”（修改组织设置需要用户同意）。
 
 ### Turnstile 与访客验证邮件

@@ -8,6 +8,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { newGuestId } from "../src/auth/guest.js";
 import {
   authRateLimit,
+  authUser,
+  csamIncidents,
+  evidenceDownloadTickets,
   guestSessions,
   guests,
   guestVerifications,
@@ -46,7 +49,8 @@ async function countOf(table: string): Promise<number> {
 async function reset(): Promise<void> {
   await t.owner.db.execute(
     sql`TRUNCATE app.guest_sessions, app.guest_verifications, app.guests, app.oidc_jti,
-        app.webhook_deliveries, app.rate_limits, app.auth_rate_limit CASCADE`,
+        app.webhook_deliveries, app.rate_limits, app.auth_rate_limit,
+        app.evidence_download_tickets CASCADE`,
   );
 }
 
@@ -119,6 +123,7 @@ describe("maintenance cleanup", () => {
       webhook_deliveries: 1,
       rate_limits: 1,
       auth_rate_limit: 1,
+      evidence_download_tickets: 0,
     });
     for (const table of [
       "guest_verifications",
@@ -135,6 +140,26 @@ describe("maintenance cleanup", () => {
 
     // 重复执行不会再删除任何东西。
     expect(Object.values(await runCleanup(t.app.db, NOW)).every((n) => n === 0)).toBe(true);
+  });
+
+  it("deletes expired evidence download tickets and keeps live ones", async () => {
+    const staffId = uuidv7();
+    await t.app.db
+      .insert(authUser)
+      .values({ id: staffId, email: `s-${staffId}@char.pub`, name: "s" });
+    const incidentId = uuidv7();
+    await t.app.db.insert(csamIncidents).values({
+      id: incidentId,
+      blobDigest: `sha256:${"a".repeat(64)}`,
+      reason: "staff_flag",
+      evidenceKey: `evidence/cas/sha256/aa/${"a".repeat(64)}`,
+    });
+    await t.app.db.insert(evidenceDownloadTickets).values([
+      { tokenHash: "old", incidentId, staffId, expiresAt: ago(60_000) },
+      { tokenHash: "live", incidentId, staffId, expiresAt: later(60_000) },
+    ]);
+    expect((await runCleanup(t.app.db, NOW)).evidence_download_tickets).toBe(1);
+    expect(await countOf("evidence_download_tickets")).toBe(1);
   });
 
   it("a live rate-limit window is kept even when its counter is old", async () => {
@@ -164,6 +189,7 @@ describe("maintenance cleanup", () => {
       webhook_deliveries: 0,
       rate_limits: 0,
       auth_rate_limit: 0,
+      evidence_download_tickets: 0,
     });
     expect(line.endsWith("\n")).toBe(true);
     expect(JSON.parse(line)).toEqual({

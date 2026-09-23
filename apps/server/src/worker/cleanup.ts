@@ -9,6 +9,7 @@
  * | `webhook_deliveries`  | 收到超过 30 天                             |
  * | `rate_limits`         | 窗口开始于最长限流窗口之前，计数不再生效   |
  * | `auth_rate_limit`     | 最近一次请求在一天之前（登录限流窗口是分钟级） |
+ * | `evidence_download_tickets` | 已过期（签发与下载都另有审计记录）   |
  *
  * webhook 投递记录只用于按 delivery ID 去重。GitHub 只允许重新投递最近几天内的事件，
  * 保留 30 天足以覆盖重投窗口，也留出排查问题的时间。
@@ -23,6 +24,7 @@ import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { Executor } from "../db/client.js";
 import {
   authRateLimit,
+  evidenceDownloadTickets,
   guestSessions,
   guestVerifications,
   oidcJti,
@@ -47,6 +49,7 @@ export interface CleanupResult {
   webhook_deliveries: number;
   rate_limits: number;
   auth_rate_limit: number;
+  evidence_download_tickets: number;
 }
 
 export interface CleanupOptions {
@@ -106,6 +109,12 @@ const TARGETS: readonly Target[] = [
     key: authRateLimit.id,
     // Better Auth 以毫秒时间戳记录最近一次请求。
     where: (now) => lt(authRateLimit.lastRequest, now.getTime() - DAY_MS),
+  },
+  {
+    name: "evidence_download_tickets",
+    table: evidenceDownloadTickets,
+    key: evidenceDownloadTickets.tokenHash,
+    where: (now) => lt(evidenceDownloadTickets.expiresAt, now),
   },
 ];
 

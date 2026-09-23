@@ -1,11 +1,13 @@
 /**
  * 法律请求与 CSAM 事件（受限页面）。
  *
- * 法律请求：登记、截止日期提醒、查看详情（解密申请人信息，每次查看都写审计）、导出案件记录，
- * 以及跳转到下架页面预览影响并执行。
+ * 法律请求：登记、截止日期提醒、查看详情（解密申请人信息，每次查看都写审计）、停止访问
+ * （隐藏涉及的 Creation）、登记反通知与投诉方起诉、在恢复期限内恢复内容、导出案件记录（服务端
+ * 生成，导出写审计），以及跳转到下架页面预览影响并执行 tombstone（不可恢复）。
  *
  * CSAM 事件：列表、员工手动标记（与扫描命中走同一条处置路径）、登记 NCMEC 报告。登记报告后，
- * 证据保全到报告日期加 1 年。界面上永远不显示或下载被标记的内容本身。
+ * 证据保全到报告日期加 1 年。界面上永远不显示被标记的内容；具备证据权限的员工可以查看证据的
+ * 元数据，并在填写理由后把证据下载为文件（一次性凭据、写审计），页面不做任何预览。
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -14,9 +16,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { CsamIncident, LegalRequest, LegalRequestDetail } from "@/lib/api";
+import type { CsamIncident, LegalRequest, LegalRequestDetail, RestoreResult } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
-import { downloadJson } from "@/lib/utils";
+import { saveFile } from "@/lib/download";
 import { Empty, ErrorNote, Field, PageHeader, Restricted, Tag, Time, UserText } from "./page";
 import { ReasonForm } from "./reason-form";
 
@@ -35,6 +37,29 @@ export function deadlineState(
   const left = new Date(l.deadline).getTime() - now;
   if (left < 0) return "overdue";
   return left <= DEADLINE_WARNING_MS ? "soon" : null;
+}
+
+/**
+ * 收到反通知之后的恢复状态：恢复期限已经开始（due）、已经超过最晚期限（overdue）、
+ * 还没开始（waiting）；投诉方已起诉或已经恢复时为 null。
+ */
+export function restoreState(
+  l: Pick<LegalRequest, "status" | "restore_not_before" | "restore_deadline" | "court_action_at">,
+  now: number,
+): "waiting" | "due" | "overdue" | null {
+  if (l.status !== "counter_notice" || l.court_action_at || !l.restore_not_before) return null;
+  if (now < new Date(l.restore_not_before).getTime()) return "waiting";
+  if (l.restore_deadline && now > new Date(l.restore_deadline).getTime()) return "overdue";
+  return "due";
+}
+
+function RestoreTag({ l }: { l: LegalRequest }) {
+  const state = restoreState(l, Date.now());
+  if (state === "overdue") return <Tag tone="danger">restore overdue</Tag>;
+  if (state === "due") return <Tag tone="warn">restore due</Tag>;
+  if (state === "waiting") return <Tag>restore window not open</Tag>;
+  if (l.status === "counter_notice" && l.court_action_at) return <Tag>court action filed</Tag>;
+  return null;
 }
 
 function DeadlineTag({ l }: { l: LegalRequest }) {
@@ -119,7 +144,12 @@ function LegalRequests() {
                   <DeadlineTag l={l} />
                 </div>
               </td>
-              <td>{l.status}</td>
+              <td>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {l.status}
+                  <RestoreTag l={l} />
+                </div>
+              </td>
               <td className="text-right">
                 <Button size="xs" variant="outline" onClick={() => setViewing(l.id)}>
                   Open
@@ -140,7 +170,16 @@ function LegalRequests() {
           }}
         />
       ) : null}
-      {viewing ? <LegalDetailDialog id={viewing} onClose={() => setViewing(null)} /> : null}
+      {viewing ? (
+        <LegalDetailDialog
+          id={viewing}
+          onClose={() => setViewing(null)}
+          onChanged={async (message) => {
+            setNotice(message);
+            await qc.invalidateQueries({ queryKey: ["legal"] });
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -259,9 +298,57 @@ function RegisterLegalDialog({
   );
 }
 
-function LegalDetailDialog({ id, onClose }: { id: string; onClose: () => void }) {
+type LegalAction = "disable" | "counter" | "court" | "restore" | "export";
+
+const LEGAL_ACTION_INFO: Record<
+  LegalAction,
+  { label: string; submit: string; description: string; danger?: boolean }
+> = {
+  disable: {
+    label: "Disable access",
+    submit: "Hide creations",
+    description:
+      "Hides the listed creations from search and their public pages. This can be restored after a valid counter-notice; a tombstone cannot.",
+    danger: true,
+  },
+  counter: {
+    label: "Register counter-notice",
+    submit: "Register counter-notice",
+    description:
+      "The counter-notice sender's details are encrypted like the requester's. Content may be restored from the 12th to the 14th business day after it was received, unless the complainant reports a court action first.",
+  },
+  court: {
+    label: "Record court action",
+    submit: "Record court action",
+    description:
+      "The complainant reported that they filed a court action. The content then stays hidden and can no longer be restored under this request.",
+  },
+  restore: {
+    label: "Restore content",
+    submit: "Restore hidden creations",
+    description:
+      "Restores the creations hidden under this request. Creations that are also hidden for other reasons stay hidden; tombstoned objects cannot be restored.",
+  },
+  export: {
+    label: "Export case record",
+    submit: "Download case record",
+    description:
+      "Downloads the full case record, including decrypted requester and counter-notice details. The export is recorded in the audit log.",
+  },
+};
+
+function LegalDetailDialog({
+  id,
+  onClose,
+  onChanged,
+}: {
+  id: string;
+  onClose: () => void;
+  onChanged: (message: string) => Promise<void>;
+}) {
   const api = useApi();
   const { can } = useMe();
+  const qc = useQueryClient();
   // 每次打开都重新请求：查看本身要留下审计记录，不使用缓存。
   const q = useQuery({
     queryKey: ["legal-detail", id],
@@ -270,6 +357,78 @@ function LegalDetailDialog({ id, onClose }: { id: string; onClose: () => void })
     staleTime: 0,
   });
   const l: LegalRequestDetail | undefined = q.data;
+  const [action, setAction] = useState<LegalAction | null>(null);
+  const [creations, setCreations] = useState("");
+  const [cnName, setCnName] = useState("");
+  const [cnEmail, setCnEmail] = useState("");
+  const [cnAddress, setCnAddress] = useState("");
+  const [cnStatement, setCnStatement] = useState("");
+  const [cnReceived, setCnReceived] = useState(nowLocal);
+  const [result, setResult] = useState<RestoreResult | null>(null);
+  const creationList = creations
+    .split("\n")
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  const available: LegalAction[] = l
+    ? [
+        ...(l.status === "open" || l.status === "actioned" ? (["disable"] as const) : []),
+        ...(l.kind === "dmca" && l.status === "actioned" ? (["counter"] as const) : []),
+        ...(l.status === "counter_notice" && !l.court_action_at ? (["court"] as const) : []),
+        ...(restoreState(l, Date.now()) === "due" || restoreState(l, Date.now()) === "overdue"
+          ? (["restore"] as const)
+          : []),
+        "export" as const,
+      ]
+    : [];
+
+  const fieldsReady =
+    action === "disable"
+      ? creationList.length > 0
+      : action === "counter"
+        ? cnName.trim() !== "" &&
+          cnAddress.trim() !== "" &&
+          cnStatement.trim() !== "" &&
+          cnReceived !== ""
+        : true;
+
+  async function run(reason: string) {
+    if (!action) return;
+    if (action === "export") {
+      saveFile(await api.exportLegalCase(id, { reason }));
+      setAction(null);
+      return;
+    }
+    let message = "";
+    if (action === "disable") {
+      const r = await api.disableAccess(id, { creations: creationList, reason });
+      message = `Hid ${r.hidden} creation(s) under legal request ${id}.`;
+      setCreations("");
+    } else if (action === "counter") {
+      const r = await api.registerCounterNotice(id, {
+        counter_notice: {
+          name: cnName.trim(),
+          ...(cnEmail.trim() ? { email: cnEmail.trim() } : {}),
+          address: cnAddress.trim(),
+          statement: cnStatement.trim(),
+        },
+        received_at: localToIso(cnReceived),
+        reason,
+      });
+      message = `Registered the counter-notice for ${id}. Restore between ${new Date(r.restore_not_before).toLocaleDateString()} and ${new Date(r.restore_deadline).toLocaleDateString()}.`;
+    } else if (action === "court") {
+      await api.recordCourtAction(id, { reason });
+      message = `Recorded a court action for ${id}; the content stays hidden.`;
+    } else {
+      const r = await api.restoreLegal(id, { reason });
+      setResult(r);
+      message = `Restored ${r.restored.length} creation(s) for ${id}.`;
+    }
+    setAction(null);
+    await qc.invalidateQueries({ queryKey: ["legal-detail", id] });
+    await onChanged(message);
+  }
+
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent>
@@ -285,7 +444,10 @@ function LegalDetailDialog({ id, onClose }: { id: string; onClose: () => void })
               <dt className="text-muted-foreground">Kind</dt>
               <dd>{l.kind}</dd>
               <dt className="text-muted-foreground">Status</dt>
-              <dd>{l.status}</dd>
+              <dd className="flex items-center gap-1.5">
+                {l.status}
+                <RestoreTag l={l} />
+              </dd>
               <dt className="text-muted-foreground">Requester</dt>
               <dd data-testid="legal-requester">
                 <UserText text={l.requester.name} />
@@ -310,6 +472,19 @@ function LegalDetailDialog({ id, onClose }: { id: string; onClose: () => void })
                 <Time iso={l.deadline} />
                 <DeadlineTag l={l} />
               </dd>
+              {l.counter_notice ? (
+                <>
+                  <dt className="text-muted-foreground">Counter-notice</dt>
+                  <dd data-testid="legal-counter-notice">
+                    <UserText text={l.counter_notice.name} /> · received{" "}
+                    <Time iso={l.counter_notice_received_at} />
+                  </dd>
+                  <dt className="text-muted-foreground">Restore window</dt>
+                  <dd>
+                    <Time iso={l.restore_not_before} /> – <Time iso={l.restore_deadline} />
+                  </dd>
+                </>
+              ) : null}
             </dl>
             <div>
               <h3 className="mb-1 text-sm">Subjects</h3>
@@ -328,22 +503,111 @@ function LegalDetailDialog({ id, onClose }: { id: string; onClose: () => void })
                 ))}
               </ul>
             </div>
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  const audit = await api.listAudit({ subject: `legal_request:${id}`, limit: 200 });
-                  downloadJson(`legal-request-${id}.json`, {
-                    exported_at: new Date().toISOString(),
-                    request: l,
-                    audit: audit.items,
-                  });
-                }}
-              >
-                Export case record
-              </Button>
+            {l.actions.length > 0 ? (
+              <div>
+                <h3 className="mb-1 text-sm">Actions taken</h3>
+                <ul className="space-y-1" aria-label="Actions taken">
+                  {l.actions.map((a) => (
+                    <li key={a.id} className="flex flex-wrap items-center gap-2">
+                      <Time iso={a.created_at} />
+                      <span className="font-mono text-xs">{a.action}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {JSON.stringify(a.subject)}
+                      </span>
+                      {a.reverted ? <Tag>reverted</Tag> : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {result ? (
+              <p role="status" className="text-sm">
+                Restored {result.restored.length}; still hidden for other reasons:{" "}
+                {result.kept_hidden.length}; not restorable (tombstoned): {result.not_restorable}
+                {result.late ? " · restored after the deadline" : ""}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap justify-end gap-1">
+              {available.map((a) => (
+                <Button
+                  key={a}
+                  size="sm"
+                  variant={action === a ? "default" : "outline"}
+                  onClick={() => setAction(a)}
+                >
+                  {LEGAL_ACTION_INFO[a].label}
+                </Button>
+              ))}
             </div>
+            {action ? (
+              <section
+                className="space-y-2 rounded-md border p-3"
+                aria-label={LEGAL_ACTION_INFO[action].label}
+              >
+                <p className="text-muted-foreground">{LEGAL_ACTION_INFO[action].description}</p>
+                <ReasonForm
+                  key={action}
+                  submitLabel={LEGAL_ACTION_INFO[action].submit}
+                  danger={LEGAL_ACTION_INFO[action].danger ?? false}
+                  fieldsReady={fieldsReady}
+                  onSubmit={async ({ reason }) => run(reason)}
+                >
+                  {action === "disable" ? (
+                    <div className="space-y-1">
+                      <Label htmlFor="legal-creations">
+                        Creations to hide (one per line: @ns/name or creation ID)
+                      </Label>
+                      <Textarea
+                        id="legal-creations"
+                        rows={3}
+                        className="font-mono text-xs"
+                        value={creations}
+                        onChange={(e) => setCreations(e.target.value)}
+                      />
+                    </div>
+                  ) : null}
+                  {action === "counter" ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <Field
+                        label="Sender name"
+                        className="h-8"
+                        value={cnName}
+                        onChange={(e) => setCnName(e.target.value)}
+                      />
+                      <Field
+                        label="Sender email (optional)"
+                        type="email"
+                        className="h-8"
+                        value={cnEmail}
+                        onChange={(e) => setCnEmail(e.target.value)}
+                      />
+                      <Field
+                        label="Sender address"
+                        className="h-8"
+                        value={cnAddress}
+                        onChange={(e) => setCnAddress(e.target.value)}
+                      />
+                      <Field
+                        label="Counter-notice received at"
+                        type="datetime-local"
+                        className="h-8"
+                        value={cnReceived}
+                        onChange={(e) => setCnReceived(e.target.value)}
+                      />
+                      <div className="col-span-2 space-y-1">
+                        <Label htmlFor="legal-cn-statement">Statement</Label>
+                        <Textarea
+                          id="legal-cn-statement"
+                          rows={3}
+                          value={cnStatement}
+                          onChange={(e) => setCnStatement(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+                </ReasonForm>
+              </section>
+            ) : null}
           </div>
         ) : null}
       </DialogContent>
@@ -370,6 +634,7 @@ function CsamIncidents() {
   const q = useQuery({ queryKey: ["csam"], queryFn: () => api.listCsamIncidents() });
   const [flagging, setFlagging] = useState(false);
   const [reporting, setReporting] = useState<CsamIncident | null>(null);
+  const [evidence, setEvidence] = useState<CsamIncident | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [digest, setDigest] = useState("");
   const [ncmecId, setNcmecId] = useState("");
@@ -379,7 +644,7 @@ function CsamIncidents() {
     <div className="space-y-4">
       <PageHeader
         title="CSAM incidents"
-        description="Never download, forward or screenshot the content. Evidence is only accessible to the legal role and every access is audited."
+        description="Never open, forward or screenshot the content. Evidence is only accessible to the legal role: downloads need a reason, use a one-time link and are audited."
         actions={
           canFlag ? (
             <Button size="sm" variant="destructive" onClick={() => setFlagging(true)}>
@@ -426,18 +691,25 @@ function CsamIncidents() {
               </td>
               <td>{i.status === "open" ? <Tag tone="danger">open</Tag> : <Tag>{i.status}</Tag>}</td>
               <td className="text-right">
-                {can("csam.report") && i.status === "open" ? (
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() => {
-                      setNcmecId("");
-                      setReporting(i);
-                    }}
-                  >
-                    Record NCMEC report
-                  </Button>
-                ) : null}
+                <div className="flex justify-end gap-1">
+                  {can("csam.evidence") ? (
+                    <Button size="xs" variant="outline" onClick={() => setEvidence(i)}>
+                      Evidence
+                    </Button>
+                  ) : null}
+                  {can("csam.report") && i.status === "open" ? (
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => {
+                        setNcmecId("");
+                        setReporting(i);
+                      }}
+                    >
+                      Record NCMEC report
+                    </Button>
+                  ) : null}
+                </div>
               </td>
             </tr>
           ))}
@@ -478,6 +750,7 @@ function CsamIncidents() {
           </DialogContent>
         </Dialog>
       ) : null}
+      {evidence ? <EvidenceDialog incident={evidence} onClose={() => setEvidence(null)} /> : null}
       {reporting ? (
         <Dialog open onOpenChange={(o) => (!o ? setReporting(null) : undefined)}>
           <DialogContent>
@@ -509,5 +782,64 @@ function CsamIncidents() {
         </Dialog>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * 隔离证据：只显示元数据；下载前必须填写理由并勾选确认，下载得到的是一个文件，
+ * 页面上不显示任何内容预览。
+ */
+function EvidenceDialog({ incident, onClose }: { incident: CsamIncident; onClose: () => void }) {
+  const api = useApi();
+  const q = useQuery({
+    queryKey: ["evidence", incident.id],
+    queryFn: () => api.getEvidence(incident.id),
+    gcTime: 0,
+    staleTime: 0,
+  });
+  const [done, setDone] = useState(false);
+  const m = q.data;
+  return (
+    <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
+      <DialogContent>
+        <DialogTitle>Evidence for {incident.id}</DialogTitle>
+        <DialogDescription>
+          Metadata only. The content is never shown here. Download it only when it is required for a
+          report to the authorities.
+        </DialogDescription>
+        {q.error ? <ErrorNote error={q.error} /> : null}
+        {m ? (
+          <div className="space-y-3 text-sm">
+            <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-1" data-testid="evidence-meta">
+              <dt className="text-muted-foreground">Digest</dt>
+              <dd className="font-mono text-xs break-all">{m.evidence_digest}</dd>
+              <dt className="text-muted-foreground">Size</dt>
+              <dd className="font-mono">{m.size === null ? "—" : `${m.size} bytes`}</dd>
+              <dt className="text-muted-foreground">Type</dt>
+              <dd className="font-mono text-xs">{m.media_type ?? "—"}</dd>
+              <dt className="text-muted-foreground">Stored at</dt>
+              <dd className="font-mono text-xs break-all">
+                {m.storage.bucket}/{m.storage.key}
+              </dd>
+              <dt className="text-muted-foreground">Kept until</dt>
+              <dd>{m.retain_until ? <Time iso={m.retain_until} /> : "until reported"}</dd>
+            </dl>
+            {done ? (
+              <p role="status">The evidence file was downloaded. The link cannot be used again.</p>
+            ) : null}
+            <ReasonForm
+              submitLabel="Download evidence file"
+              danger
+              fieldsReady={m.present}
+              confirmText="I need this file for a report to the authorities and will not open it on this device beyond what the report requires."
+              onSubmit={async ({ reason }) => {
+                saveFile(await api.downloadEvidence(incident.id, { reason }));
+                setDone(true);
+              }}
+            />
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -268,8 +268,8 @@ test("legal: deadlines, register a request, audited detail view, case export, le
   await expect(register).toBeDisabled();
   await dialog.getByLabel(/^Reason/).fill(REASON);
   await register.click();
-  await expect(page.getByRole("status")).toHaveText("Registered legal request lr3.");
-  await expect(page.getByTestId("legal-lr3")).toContainText("@alice/fan-art");
+  await expect(page.getByRole("status")).toHaveText("Registered legal request lr4.");
+  await expect(page.getByTestId("legal-lr4")).toContainText("@alice/fan-art");
 
   await page.getByTestId("legal-lr1").getByRole("button", { name: "Open" }).click();
   dialog = page.getByRole("dialog");
@@ -277,10 +277,12 @@ test("legal: deadlines, register a request, audited detail view, case export, le
   await expect(dialog.getByTestId("legal-requester")).toContainText("Example Rights Agency");
   await expect(dialog.getByTestId("legal-requester")).toContainText("notices@example.org");
 
-  const [download] = await Promise.all([
-    page.waitForEvent("download"),
-    dialog.getByRole("button", { name: "Export case record" }).click(),
-  ]);
+  // 案件导出由服务端生成，包含解密后的申请人信息，必须填写理由。
+  await dialog.getByRole("button", { name: "Export case record" }).click();
+  const exportForm = dialog.getByRole("region", { name: "Export case record" });
+  const exportButton = exportForm.getByRole("button", { name: "Download case record" });
+  await giveReason(exportForm, exportButton);
+  const [download] = await Promise.all([page.waitForEvent("download"), exportButton.click()]);
   expect(download.suggestedFilename()).toBe("legal-request-lr1.json");
   const record = JSON.parse(readFileSync(await download.path(), "utf8")) as {
     request: { requester: { name: string } };
@@ -288,6 +290,7 @@ test("legal: deadlines, register a request, audited detail view, case export, le
   };
   expect(record.request.requester.name).toBe("Example Rights Agency");
   expect(record.audit.map((a) => a.action)).toContain("legal.view");
+  expect(record.audit.map((a) => a.action)).toContain("legal.export");
 
   await dialog.getByRole("link", { name: "Preview tombstone" }).click();
   await expect(page).toHaveURL(/\/tombstone\?subject=/);
@@ -398,16 +401,19 @@ test("kill switch, dashboard and audit: toggle, see it everywhere, verify and ex
   await page.getByRole("button", { name: "Verify hash chain" }).click();
   await expect(page.getByRole("status")).toContainText("Chain intact · 4 entries");
 
-  const [download] = await Promise.all([
-    page.waitForEvent("download"),
-    page.getByRole("button", { name: "Export JSON" }).click(),
-  ]);
-  expect(download.suggestedFilename()).toBe("audit-flag_uploads.json");
-  const exported = JSON.parse(readFileSync(await download.path(), "utf8")) as {
-    items: { action: string; subject: string }[];
-  };
-  expect(exported.items).toHaveLength(1);
-  expect(exported.items[0]).toMatchObject({ action: "flag.toggle", subject: "flag:uploads" });
+  // 导出由服务端生成 NDJSON，必须填写理由。
+  await page.getByRole("button", { name: "Export", exact: true }).click();
+  const exportDialog = page.getByRole("dialog");
+  const exportButton = exportDialog.getByRole("button", { name: "Download NDJSON" });
+  await giveReason(exportDialog, exportButton);
+  const [download] = await Promise.all([page.waitForEvent("download"), exportButton.click()]);
+  expect(download.suggestedFilename()).toMatch(/^audit-\d{4}-\d{2}-\d{2}\.ndjson$/);
+  const exported = readFileSync(await download.path(), "utf8")
+    .trim()
+    .split("\n")
+    .map((l) => JSON.parse(l) as { action: string; subject: string });
+  expect(exported).toHaveLength(1);
+  expect(exported[0]).toMatchObject({ action: "flag.toggle", subject: "flag:uploads" });
 });
 
 test("staff: the only owner keeps the owner role; adding is direct, removing an owner needs four-eyes", async ({

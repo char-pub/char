@@ -10,13 +10,51 @@ import type { NamespaceAdminView, UserAdminView, WithReason } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
 import { DECIDE_CAPABILITIES } from "@/lib/roles";
 import { FLAG_INFO } from "./flags";
-import { deadlineState } from "./legal";
+import { deadlineState, restoreState } from "./legal";
 import { Empty, ErrorNote, Field, PageHeader, Restricted, Tag, Time, UserText } from "./page";
 import { ReasonForm } from "./reason-form";
 
 // ---------------------------------------------------------------------------
 // 用户
 // ---------------------------------------------------------------------------
+
+const USER_ACTIONS: Record<
+  "ban" | "unban" | "lock" | "unlock" | "revoke",
+  { title: string; description: string; submit: string; danger: boolean }
+> = {
+  ban: {
+    title: "Ban",
+    description: "All sessions and personal tokens are revoked immediately.",
+    submit: "Ban account",
+    danger: true,
+  },
+  unban: {
+    title: "Unban",
+    description: "The user can sign in again.",
+    submit: "Unban account",
+    danger: false,
+  },
+  revoke: {
+    title: "Revoke sessions of",
+    description:
+      "Signs the account out everywhere and revokes every personal token. The account is not banned; the user can sign in again and create new tokens.",
+    submit: "Revoke sessions and tokens",
+    danger: true,
+  },
+  lock: {
+    title: "Lock uploads for",
+    description:
+      "The user can no longer upload files or import character cards. Existing content is not affected.",
+    submit: "Lock uploads",
+    danger: true,
+  },
+  unlock: {
+    title: "Unlock uploads for",
+    description: "The user can upload files and import character cards again.",
+    submit: "Unlock uploads",
+    danger: false,
+  },
+};
 
 export function UsersPage() {
   const api = useApi();
@@ -28,7 +66,10 @@ export function UsersPage() {
     queryKey: ["users", applied],
     queryFn: () => api.listUsers({ query: applied }),
   });
-  const [acting, setActing] = useState<{ user: UserAdminView; kind: "ban" | "unban" } | null>(null);
+  const [acting, setActing] = useState<{
+    user: UserAdminView;
+    kind: "ban" | "unban" | "lock" | "unlock" | "revoke";
+  } | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
   const [until, setUntil] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -41,7 +82,7 @@ export function UsersPage() {
         ...(until ? { until: new Date(until).toISOString() } : {}),
       });
       setNotice(`Banned ${acting.user.email}; all sessions and tokens were revoked.`);
-    } else {
+    } else if (acting.kind === "unban") {
       const r = await api.unbanUser(acting.user.id, input);
       setNotice(
         r.approval
@@ -49,12 +90,23 @@ export function UsersPage() {
           : `Unbanned ${acting.user.email}.`,
       );
       if (r.approval) await qc.invalidateQueries({ queryKey: ["approvals"] });
+    } else if (acting.kind === "revoke") {
+      const r = await api.revokeCredentials(acting.user.id, input);
+      setNotice(
+        `Signed ${acting.user.email} out: revoked ${r.sessions_revoked} session(s) and ${r.tokens_revoked} token(s).`,
+      );
+    } else {
+      const locked = acting.kind === "lock";
+      await api.setUploadLock(acting.user.id, { locked, ...input });
+      setNotice(`${locked ? "Locked" : "Unlocked"} uploads for ${acting.user.email}.`);
     }
     await qc.invalidateQueries({ queryKey: ["users"] });
     await qc.invalidateQueries({ queryKey: ["user"] });
     setActing(null);
     setUntil("");
   }
+
+  const dialog = acting ? USER_ACTIONS[acting.kind] : null;
 
   return (
     <div className="space-y-4">
@@ -118,6 +170,12 @@ export function UsersPage() {
                 ) : (
                   <Tag tone="ok">active</Tag>
                 )}
+                {u.uploads_locked ? (
+                  <>
+                    {" "}
+                    <Tag tone="warn">uploads locked</Tag>
+                  </>
+                ) : null}
                 {u.ban_expires ? (
                   <div className="text-xs text-muted-foreground">
                     until <Time iso={u.ban_expires} />
@@ -133,13 +191,31 @@ export function UsersPage() {
                     Details
                   </Button>
                   {can("users.ban") ? (
-                    <Button
-                      size="xs"
-                      variant={u.banned ? "outline" : "destructive"}
-                      onClick={() => setActing({ user: u, kind: u.banned ? "unban" : "ban" })}
-                    >
-                      {u.banned ? "Unban" : "Ban"}
-                    </Button>
+                    <>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => setActing({ user: u, kind: "revoke" })}
+                      >
+                        Revoke sessions
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() =>
+                          setActing({ user: u, kind: u.uploads_locked ? "unlock" : "lock" })
+                        }
+                      >
+                        {u.uploads_locked ? "Unlock uploads" : "Lock uploads"}
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant={u.banned ? "outline" : "destructive"}
+                        onClick={() => setActing({ user: u, kind: u.banned ? "unban" : "ban" })}
+                      >
+                        {u.banned ? "Unban" : "Ban"}
+                      </Button>
+                    </>
                   ) : null}
                 </div>
               </td>
@@ -148,24 +224,18 @@ export function UsersPage() {
         </tbody>
       </table>
       {viewing ? <UserDetailDialog id={viewing} onClose={() => setViewing(null)} /> : null}
-      {acting ? (
+      {acting && dialog ? (
         <Dialog open onOpenChange={(o) => (!o ? setActing(null) : undefined)}>
           <DialogContent>
             <DialogTitle>
-              {acting.kind === "ban" ? "Ban" : "Unban"} {acting.user.email}
+              {dialog.title} {acting.user.email}
             </DialogTitle>
             <DialogDescription>
-              {acting.kind === "ban"
-                ? "All sessions and personal tokens are revoked immediately."
-                : acting.user.csam_locked
-                  ? "This account was locked because of a CSAM incident. A second staff member must confirm."
-                  : "The user can sign in again."}
+              {acting.kind === "unban" && acting.user.csam_locked
+                ? "This account was locked because of a CSAM incident. A second staff member must confirm."
+                : dialog.description}
             </DialogDescription>
-            <ReasonForm
-              submitLabel={acting.kind === "ban" ? "Ban account" : "Unban account"}
-              danger={acting.kind === "ban"}
-              onSubmit={run}
-            >
+            <ReasonForm submitLabel={dialog.submit} danger={dialog.danger} onSubmit={run}>
               {acting.kind === "ban" ? (
                 <Field
                   label="Until (optional; empty means indefinitely)"
@@ -221,6 +291,16 @@ function UserDetailDialog({ id, onClose }: { id: string; onClose: () => void }) 
                   <Tag tone="ok">active</Tag>
                 )}
               </dd>
+              <dt className="text-muted-foreground">Uploads</dt>
+              <dd>
+                {u.uploads_locked ? (
+                  <>
+                    <Tag tone="warn">locked</Tag> since <Time iso={u.uploads_locked_at} />
+                  </>
+                ) : (
+                  <Tag tone="ok">allowed</Tag>
+                )}
+              </dd>
             </dl>
             <div>
               <h3 className="mb-1 text-sm">Moderation history</h3>
@@ -254,6 +334,7 @@ function UserDetailDialog({ id, onClose }: { id: string; onClose: () => void }) 
 type NamespaceAction =
   | { kind: "status"; ns: NamespaceAdminView; status: "active" | "suspended" }
   | { kind: "rename"; ns: NamespaceAdminView }
+  | { kind: "transfer"; ns: NamespaceAdminView }
   | { kind: "reserve" }
   | { kind: "unreserve"; slug: string };
 
@@ -281,6 +362,12 @@ export function NamespacesPage() {
       } else if (acting.kind === "rename") {
         await api.renameNamespace(acting.ns.slug, { new_slug: slug, ...input });
         setNotice(`Renamed @${acting.ns.slug} to @${slug}; the old name now redirects.`);
+      } else if (acting.kind === "transfer") {
+        const r = await api.transferNamespace(acting.ns.slug, { to: slug, ...input });
+        setNotice(
+          `Transfer of @${acting.ns.slug} requested (${r.approval.id}); a second staff member must confirm it on the Approvals page.`,
+        );
+        await qc.invalidateQueries({ queryKey: ["approvals"] });
       } else if (acting.kind === "reserve") {
         await api.addReserved({ slug, ...input });
         setNotice(`Reserved @${slug}.`);
@@ -301,20 +388,25 @@ export function NamespacesPage() {
       ? `${acting.status === "suspended" ? "Freeze" : "Unfreeze"} @${acting.ns.slug}`
       : acting?.kind === "rename"
         ? `Rename @${acting.ns.slug}`
-        : acting?.kind === "reserve"
-          ? "Reserve a namespace"
-          : acting?.kind === "unreserve"
-            ? `Release reservation of @${acting.slug}`
-            : "";
+        : acting?.kind === "transfer"
+          ? `Transfer @${acting.ns.slug}`
+          : acting?.kind === "reserve"
+            ? "Reserve a namespace"
+            : acting?.kind === "unreserve"
+              ? `Release reservation of @${acting.slug}`
+              : "";
   const description =
     acting?.kind === "status"
       ? "A frozen namespace cannot publish or edit, and its content is hidden from the public."
       : acting?.kind === "rename"
         ? "The old name is kept as a permanent redirect and can never be registered by anyone else."
-        : acting?.kind === "reserve"
-          ? "Reserved names cannot be registered by anyone."
-          : "Releasing a reservation does not free a name that is already registered or redirected.";
-  const needsSlug = acting?.kind === "rename" || acting?.kind === "reserve";
+        : acting?.kind === "transfer"
+          ? "The new owner gets full control and the current owner loses access. A second staff member must confirm before anything changes."
+          : acting?.kind === "reserve"
+            ? "Reserved names cannot be registered by anyone."
+            : "Releasing a reservation does not free a name that is already registered or redirected.";
+  const needsSlug =
+    acting?.kind === "rename" || acting?.kind === "reserve" || acting?.kind === "transfer";
 
   return (
     <div className="space-y-4">
@@ -383,6 +475,16 @@ export function NamespacesPage() {
                     >
                       Rename
                     </Button>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => {
+                        setSlug("");
+                        setActing({ kind: "transfer", ns: n });
+                      }}
+                    >
+                      Transfer
+                    </Button>
                   </div>
                 ) : null}
               </td>
@@ -433,8 +535,11 @@ export function NamespacesPage() {
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
             <ReasonForm
-              submitLabel="Confirm"
-              danger={acting.kind === "status" && acting.status === "suspended"}
+              submitLabel={acting.kind === "transfer" ? "Request transfer" : "Confirm"}
+              danger={
+                (acting.kind === "status" && acting.status === "suspended") ||
+                acting.kind === "transfer"
+              }
               fieldsReady={!needsSlug || slug !== ""}
               onSubmit={async (input) => {
                 await run.mutateAsync(input);
@@ -442,10 +547,22 @@ export function NamespacesPage() {
             >
               {needsSlug ? (
                 <Field
-                  label={acting.kind === "rename" ? "New name" : "Name"}
+                  label={
+                    acting.kind === "rename"
+                      ? "New name"
+                      : acting.kind === "transfer"
+                        ? "New owner (user ID or email)"
+                        : "Name"
+                  }
                   className="h-8 font-mono"
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value.toLowerCase().trim())}
+                  onChange={(e) =>
+                    setSlug(
+                      acting.kind === "transfer"
+                        ? e.target.value.trim()
+                        : e.target.value.toLowerCase().trim(),
+                    )
+                  }
                 />
               ) : null}
             </ReasonForm>
@@ -652,6 +769,15 @@ export function DashboardPage() {
     .map((l) => l.deadline)
     .filter((d): d is string => d !== null)
     .sort()[0];
+  // 收到反通知后必须在期限内恢复内容（投诉方起诉的除外）。
+  const restoreDue = (legal.data ?? []).filter((l) => {
+    const state = restoreState(l, now);
+    return state === "due" || state === "overdue";
+  });
+  const nextRestore = restoreDue
+    .map((l) => l.restore_deadline)
+    .filter((d): d is string => d !== null)
+    .sort()[0];
   const tiles: {
     label: string;
     value: string | number;
@@ -669,6 +795,14 @@ export function DashboardPage() {
       ...(nextDeadline
         ? { note: `next deadline ${nextDeadline.slice(0, 16).replace("T", " ")}` }
         : {}),
+      show: can("legal.manage"),
+    },
+    {
+      label: "Counter-notice restores due",
+      value: restoreDue.length,
+      to: "/legal",
+      alert: restoreDue.length > 0,
+      ...(nextRestore ? { note: `restore by ${nextRestore.slice(0, 16).replace("T", " ")}` } : {}),
       show: can("legal.manage"),
     },
     {

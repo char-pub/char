@@ -7,6 +7,7 @@
  */
 import { createRemoteJWKSet } from "jose";
 import { uuidv7 } from "uuidv7";
+import { cloudflareAccessRevoker } from "../admin/access-revoke.js";
 import { createAdmin } from "../admin/app.js";
 import { adminModules } from "../admin/routes/index.js";
 import { parseLegalKey } from "../admin/routes/legal.js";
@@ -113,7 +114,16 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       },
       originSecrets: originSecretsFromEnv(edge),
       allowedOrigins: adminEnv.ADMIN_ORIGINS,
-      modules: adminModules(parseLegalKey(adminEnv.LEGAL_ENCRYPTION_KEY)),
+      modules: adminModules(parseLegalKey(adminEnv.LEGAL_ENCRYPTION_KEY), {
+        ...(adminEnv.CF_ACCESS_ACCOUNT_ID && adminEnv.CF_ACCESS_API_TOKEN
+          ? {
+              revokeAccess: cloudflareAccessRevoker({
+                accountId: adminEnv.CF_ACCESS_ACCOUNT_ID,
+                apiToken: adminEnv.CF_ACCESS_API_TOKEN,
+              }),
+            }
+          : {}),
+      }),
     });
     return { fetch: app.fetch, shutdown };
   }

@@ -42,6 +42,7 @@ import {
 } from "../approvals.js";
 import { FOUR_EYES_THRESHOLD_RELEASES, type StaffCapability, staffCan } from "../roles.js";
 import { parseId, publicId } from "./common.js";
+import { executeNamespaceTransfer, type TransferPayload } from "./namespaces.js";
 import { executeRoleChange } from "./staff.js";
 import { executeUnban } from "./users.js";
 
@@ -176,6 +177,7 @@ const DECIDE_CAPABILITIES = [
   "tombstone.legal",
   "users.ban",
   "staff.manage",
+  "namespaces.govern",
 ] as const;
 
 export function registerTombstone(app: Hono<AdminEnv>): void {
@@ -292,6 +294,13 @@ export function registerTombstone(app: Hono<AdminEnv>): void {
             await runTombstone(tx, c, payload as unknown as TombstonePayload, row.initiatedBy);
           } else if (row.kind === "unban.csam") {
             await executeUnban(tx, c, String(payload.user_id), row.reason);
+          } else if (row.kind === "namespace.transfer") {
+            await executeNamespaceTransfer(
+              tx,
+              c,
+              payload as unknown as TransferPayload,
+              row.reason,
+            );
           } else {
             const done = await executeRoleChange(
               tx,

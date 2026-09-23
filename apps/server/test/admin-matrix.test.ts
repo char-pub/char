@@ -59,6 +59,16 @@ describe("every admin route is authorized by the capability matrix", () => {
       "/v1/admin/legal-requests",
       "/v1/admin/queues",
       "/v1/admin/staff/:user_id",
+      "/v1/admin/users/:id/upload-lock",
+      "/v1/admin/users/:id/revoke",
+      "/v1/admin/namespaces/:slug/transfer",
+      "/v1/admin/legal-requests/:id/counter-notice",
+      "/v1/admin/legal-requests/:id/restore",
+      "/v1/admin/legal-requests/:id/export",
+      "/v1/admin/audit/export",
+      "/v1/admin/csam-incidents/:id/evidence",
+      "/v1/admin/csam-evidence/:ticket",
+      "/v1/admin/staff/:user_id/sign-out",
     ]) {
       expect(paths.has(p)).toBe(true);
     }

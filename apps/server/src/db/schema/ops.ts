@@ -53,6 +53,13 @@ export const legalRequests = app.table("legal_requests", {
   status: legalStatusEnum("status").notNull().default("received"),
   deadline: ts("deadline"),
   counterNotice: jsonb("counter_notice"),
+  counterNoticeReceivedAt: ts("counter_notice_received_at"),
+  /** 收到反通知后可以恢复内容的最早时间与最晚时间。 */
+  restoreNotBefore: ts("restore_not_before"),
+  restoreDeadline: ts("restore_deadline"),
+  /** 投诉方告知已就此提起诉讼：这时不能恢复。 */
+  courtActionAt: ts("court_action_at"),
+  restoredAt: ts("restored_at"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

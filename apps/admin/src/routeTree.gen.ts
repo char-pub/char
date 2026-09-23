@@ -15,6 +15,7 @@ import { Route as AuditRouteImport } from './routes/audit'
 import { Route as ContentRouteImport } from './routes/content'
 import { Route as CsamRouteImport } from './routes/csam'
 import { Route as FlagsRouteImport } from './routes/flags'
+import { Route as GuestsRouteImport } from './routes/guests'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as NamespacesRouteImport } from './routes/namespaces'
@@ -51,6 +52,11 @@ const CsamRoute = CsamRouteImport.update({
 const FlagsRoute = FlagsRouteImport.update({
   id: '/flags',
   path: '/flags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuestsRoute = GuestsRouteImport.update({
+  id: '/guests',
+  path: '/guests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JobsRoute = JobsRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/content': typeof ContentRoute
   '/csam': typeof CsamRoute
   '/flags': typeof FlagsRoute
+  '/guests': typeof GuestsRoute
   '/jobs': typeof JobsRoute
   '/legal': typeof LegalRoute
   '/namespaces': typeof NamespacesRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/content': typeof ContentRoute
   '/csam': typeof CsamRoute
   '/flags': typeof FlagsRoute
+  '/guests': typeof GuestsRoute
   '/jobs': typeof JobsRoute
   '/legal': typeof LegalRoute
   '/namespaces': typeof NamespacesRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/content': typeof ContentRoute
   '/csam': typeof CsamRoute
   '/flags': typeof FlagsRoute
+  '/guests': typeof GuestsRoute
   '/jobs': typeof JobsRoute
   '/legal': typeof LegalRoute
   '/namespaces': typeof NamespacesRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/content'
     | '/csam'
     | '/flags'
+    | '/guests'
     | '/jobs'
     | '/legal'
     | '/namespaces'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/content'
     | '/csam'
     | '/flags'
+    | '/guests'
     | '/jobs'
     | '/legal'
     | '/namespaces'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/content'
     | '/csam'
     | '/flags'
+    | '/guests'
     | '/jobs'
     | '/legal'
     | '/namespaces'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   ContentRoute: typeof ContentRoute
   CsamRoute: typeof CsamRoute
   FlagsRoute: typeof FlagsRoute
+  GuestsRoute: typeof GuestsRoute
   JobsRoute: typeof JobsRoute
   LegalRoute: typeof LegalRoute
   NamespacesRoute: typeof NamespacesRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/flags'
       fullPath: '/flags'
       preLoaderRoute: typeof FlagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guests': {
+      id: '/guests'
+      path: '/guests'
+      fullPath: '/guests'
+      preLoaderRoute: typeof GuestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jobs': {
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContentRoute: ContentRoute,
   CsamRoute: CsamRoute,
   FlagsRoute: FlagsRoute,
+  GuestsRoute: GuestsRoute,
   JobsRoute: JobsRoute,
   LegalRoute: LegalRoute,
   NamespacesRoute: NamespacesRoute,

@@ -26,6 +26,7 @@ export type StaffCapability =
   | "users.ban"
   | "csam.read"
   | "csam.report"
+  | "csam.evidence"
   | "legal.manage"
   | "tombstone.policy"
   | "tombstone.legal"
@@ -163,7 +164,7 @@ export type TombstoneReason = (typeof TOMBSTONE_REASONS)[number];
 /** 需要两名员工的操作。 */
 export interface PendingApproval {
   id: string;
-  kind: "tombstone.large" | "unban.csam" | "staff.remove_owner";
+  kind: "tombstone.large" | "unban.csam" | "staff.remove_owner" | "namespace.transfer";
   subject: string;
   initiated_by: string;
   initiated_at: string;
@@ -187,6 +188,9 @@ export interface UserAdminView {
   csam_locked: boolean;
   tokens: number;
   sessions: number;
+  /** 被员工锁定上传：不能再上传文件或导入角色卡。 */
+  uploads_locked: boolean;
+  uploads_locked_at: string | null;
   created_at: string;
 }
 
@@ -223,6 +227,40 @@ export interface LegalRequest {
   deadline: string | null;
   status: "open" | "actioned" | "counter_notice" | "closed";
   subjects: string[];
+  counter_notice_received_at: string | null;
+  /** 收到反通知后允许恢复内容的最早与最晚时间。 */
+  restore_not_before: string | null;
+  restore_deadline: string | null;
+  /** 投诉方告知已经起诉：这时不能恢复。 */
+  court_action_at: string | null;
+  restored_at: string | null;
+}
+
+export interface CounterNotice {
+  name: string;
+  email?: string;
+  address: string;
+  /** 反通知正文：善意声明与同意管辖的声明。 */
+  statement: string;
+}
+
+/** 与法律请求关联的处置记录。 */
+export interface LegalAction {
+  id: string;
+  action: string;
+  subject: Record<string, unknown>;
+  created_at: string;
+  reverted: boolean;
+}
+
+export interface RestoreResult {
+  restored: string[];
+  /** 因其他原因仍然隐藏的 Creation。 */
+  kept_hidden: string[];
+  /** 已经 tombstone 的对象数量：不可恢复。 */
+  not_restorable: number;
+  /** 超过了最晚恢复期限。 */
+  late: boolean;
 }
 
 export interface LegalRequester {
@@ -235,7 +273,8 @@ export interface LegalRequester {
 /** 详情包含解密后的申请人信息；每次查看都会写一条审计记录。 */
 export interface LegalRequestDetail extends LegalRequest {
   requester: LegalRequester;
-  counter_notice: unknown;
+  counter_notice: CounterNotice | null;
+  actions: LegalAction[];
 }
 
 export interface NewLegalRequest {
@@ -257,6 +296,46 @@ export interface CsamIncident {
   ncmec_report_id: string | null;
   created_at: string;
   evidence_expires_at: string | null;
+}
+
+/** 隔离证据的元数据：页面上只显示这些，不预览内容。 */
+export interface EvidenceMeta {
+  incident_id: string;
+  evidence_digest: string;
+  blob_digest: string;
+  size: number | null;
+  media_type: string | null;
+  present: boolean;
+  storage: { bucket: string; key: string };
+  retain_until: string | null;
+}
+
+/** 下载得到的文件：由调用方交给浏览器保存，不在页面中打开。 */
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
+
+export interface AuditExportFilters {
+  from?: string;
+  to?: string;
+  action?: string;
+  subject?: string;
+  actor?: string;
+  before?: string;
+}
+
+export interface GuestAdminView {
+  id: string;
+  /** 访客自己填写的显示名：用户内容。 */
+  display_name: string;
+  verified_at: string | null;
+  verification_kind: string | null;
+  disabled: boolean;
+  disabled_at: string | null;
+  sessions: number;
+  contributions: number;
+  created_at: string;
 }
 
 /** 手动标记 CSAM 的结果：新建的事件、受影响的 Release 数量、写入黑名单的 digest 数量。 */
@@ -299,6 +378,10 @@ export interface AdminApi {
 
   listAudit(q: { before?: string; subject?: string; limit?: number }): Promise<AuditPage>;
   verifyAudit(): Promise<AuditVerify>;
+  /** NDJSON 导出，每次最多 10000 条；还有更多时返回下一批的起点。 */
+  exportAudit(
+    input: AuditExportFilters & WithReason,
+  ): Promise<DownloadedFile & { next_before: string | null }>;
 
   listReports(): Promise<Report[]>;
   claimReport(id: string, input: WithReason): Promise<void>;
@@ -324,6 +407,20 @@ export interface AdminApi {
   getUser(id: string): Promise<UserDetail>;
   banUser(id: string, input: { until?: string } & WithReason): Promise<void>;
   unbanUser(id: string, input: WithReason): Promise<{ approval?: PendingApproval }>;
+  /** 吊销会话与个人 Token，不封禁账号。 */
+  revokeCredentials(
+    id: string,
+    input: { sessions?: boolean; tokens?: boolean } & WithReason,
+  ): Promise<{ sessions_revoked: number; tokens_revoked: number }>;
+  setUploadLock(id: string, input: { locked: boolean } & WithReason): Promise<void>;
+
+  listGuests(q: {
+    status?: "all" | "active" | "disabled";
+    query?: string;
+  }): Promise<GuestAdminView[]>;
+  getGuest(id: string): Promise<GuestAdminView>;
+  disableGuest(id: string, input: WithReason): Promise<void>;
+  enableGuest(id: string, input: WithReason): Promise<void>;
 
   listNamespaces(q: { query?: string }): Promise<NamespaceAdminView[]>;
   listReserved(): Promise<ReservedName[]>;
@@ -334,14 +431,35 @@ export interface AdminApi {
     input: { status: "active" | "suspended" } & WithReason,
   ): Promise<void>;
   renameNamespace(slug: string, input: { new_slug: string } & WithReason): Promise<void>;
+  /** 转让总是需要第二名员工确认，返回待确认请求。`to` 是用户 ID 或邮箱。 */
+  transferNamespace(
+    slug: string,
+    input: { to: string } & WithReason,
+  ): Promise<{ approval: PendingApproval }>;
 
   listLegalRequests(): Promise<LegalRequest[]>;
   getLegalRequest(id: string): Promise<LegalRequestDetail>;
   createLegalRequest(input: NewLegalRequest): Promise<{ id: string }>;
+  /** 隐藏涉及的 Creation（可以恢复）。 */
+  disableAccess(
+    id: string,
+    input: { creations: string[] } & WithReason,
+  ): Promise<{ hidden: number }>;
+  registerCounterNotice(
+    id: string,
+    input: { counter_notice: CounterNotice; received_at: string } & WithReason,
+  ): Promise<{ restore_not_before: string; restore_deadline: string }>;
+  recordCourtAction(id: string, input: WithReason): Promise<void>;
+  restoreLegal(id: string, input: WithReason): Promise<RestoreResult>;
+  /** 案件记录（包含解密后的申请人信息），导出本身写审计。 */
+  exportLegalCase(id: string, input: WithReason): Promise<DownloadedFile>;
 
   listCsamIncidents(): Promise<CsamIncident[]>;
   flagCsam(input: { blob_digest: string } & WithReason): Promise<CsamFlagResult>;
   reportCsamIncident(id: string, input: { ncmec_report_id: string } & WithReason): Promise<void>;
+  getEvidence(incidentId: string): Promise<EvidenceMeta>;
+  /** 签发一次性凭据并立即用它下载；只保存为文件，不在页面中预览。 */
+  downloadEvidence(incidentId: string, input: WithReason): Promise<DownloadedFile>;
 
   listQueues(): Promise<QueueStats[]>;
   listFailedJobs(): Promise<FailedJob[]>;
@@ -354,6 +472,11 @@ export interface AdminApi {
     userId: string,
     input: { roles: StaffRole[] } & WithReason,
   ): Promise<{ approval?: PendingApproval }>;
+  /** 吊销员工在 www 的会话与 Cloudflare Access 会话。 */
+  signOutStaff(
+    userId: string,
+    input: WithReason,
+  ): Promise<{ sessions_revoked: number; access: "revoked" | "failed" | "not_configured" }>;
 }
 
 /** 后端返回的 problem+json。 */
@@ -409,4 +532,20 @@ export const IMPLEMENTED_ENDPOINTS = new Set<keyof AdminApi>([
   "cancelJob",
   "listStaff",
   "setStaffRoles",
+  "revokeCredentials",
+  "setUploadLock",
+  "listGuests",
+  "getGuest",
+  "disableGuest",
+  "enableGuest",
+  "transferNamespace",
+  "disableAccess",
+  "registerCounterNotice",
+  "recordCourtAction",
+  "restoreLegal",
+  "exportLegalCase",
+  "getEvidence",
+  "downloadEvidence",
+  "exportAudit",
+  "signOutStaff",
 ]);
