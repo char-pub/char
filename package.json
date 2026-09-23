@@ -26,7 +26,7 @@
     "conformance:review": "tsx --conditions=@char-pub/source spec/conformance/scripts/review.ts",
     "dev": "tsx scripts/dev.ts",
     "dev:login": "pnpm --filter @char-pub/server exec tsx --conditions=@char-pub/source scripts/dev-login.ts",
-    "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait postgres minio mailpit && docker compose -f infra/docker-compose.yml run --rm minio-init",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
     "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm test:web && pnpm test:conformance && pnpm test:integration && pnpm build && pnpm test:e2e && pnpm check:action-dist && pnpm secrets",

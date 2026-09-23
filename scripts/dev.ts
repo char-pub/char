@@ -209,10 +209,7 @@ async function main(): Promise<void> {
     }
   }
   if (!(await reachable("http://127.0.0.1:59000/minio/health/ready"))) {
-    execFileSync("docker", ["compose", "-f", "infra/docker-compose.yml", "up", "-d", "--wait"], {
-      cwd: ROOT,
-      stdio: "inherit",
-    });
+    execFileSync("pnpm", ["infra:up"], { cwd: ROOT, stdio: "inherit" });
   }
 
   const overrides = localOverrides();

@@ -122,7 +122,7 @@ async function infraRunning(): Promise<boolean> {
 /** Playwright globalSetup：启动依赖、迁移数据库、启动 API 与 worker。 */
 export default async function setup(): Promise<() => Promise<void>> {
   if (!(await infraRunning())) {
-    sh("docker", ["compose", "-f", "infra/docker-compose.yml", "up", "-d", "--wait"]);
+    sh("pnpm", ["infra:up"]);
   }
   sh("pnpm", ["--filter", "@char-pub/server", "build"]);
 
