@@ -97,9 +97,12 @@ Rules → Transform Rules → Modify Request Header：
 - 记下 Application Audience (AUD) Tag，写入 admin 进程的 `CF_ACCESS_AUD`；团队域名写入 `CF_ACCESS_TEAM_DOMAIN`。
 - `char-pub` 组织开启“要求成员启用双因素认证”（修改组织设置需要用户同意）。
 
-### Turnstile
+### Turnstile 与访客验证邮件
 
-- 创建 widget，域名 `www.char.pub`（staging 另建）；site key 给前端，secret 写入 `TURNSTILE_SECRET_KEY`。
+- 创建 widget，域名 `www.char.pub`（staging 另建）；site key 给前端，secret 写入 `TURNSTILE_SECRET_KEY`。前端渲染 widget 时 action 设为 `guest_verification`，服务端会核对 action 与页面域名（取 `AUTH_TRUSTED_ORIGINS` 中的域名）。
+- 访客验证邮件通过 SMTP 发送，服务商部署时选择（需要能配置 SPF / DKIM 的发信服务，发信域名用 `char.pub`）。把连接串写入 `SMTP_URL`（`smtps://用户名:密码@主机:465`），发件人写入 `EMAIL_FROM`（例如 `char.pub <no-reply@char.pub>`）。
+- `GUEST_HMAC_KEY` 用 `openssl rand -base64 32` 生成，每个环境一个，之后不要轮换：同一邮箱找回同一个访客依赖它。
+- 这四项要么全部配置，要么全部留空（访客验证关闭，接口返回 503）。开通访客贡献前，在 admin 中确认 `guest_access` 开关处于开启状态。
 
 ### CSAM Scanning Tool
 

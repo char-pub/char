@@ -64,15 +64,58 @@ export const apiTokens = app.table(
   ],
 );
 
-/** 经验证的访客（允许所有人贡献时使用）。 */
-export const guests = app.table("guests", {
-  guestId: text("guest_id").primaryKey(),
-  displayName: text("display_name").notNull(),
-  verifiedAt: ts("verified_at"),
-  verificationKind: text("verification_kind"),
-  disabledAt: ts("disabled_at"),
-  createdAt: createdAt(),
-});
+/**
+ * 经验证的访客（作者允许所有人贡献时使用）。
+ *
+ * 不保存明文邮箱：`email_hmac` 是规范化邮箱的 HMAC，只用来让同一个邮箱再次验证时找回
+ * 同一个访客。
+ */
+export const guests = app.table(
+  "guests",
+  {
+    guestId: text("guest_id").primaryKey(),
+    displayName: text("display_name").notNull(),
+    emailHmac: text("email_hmac"),
+    verifiedAt: ts("verified_at"),
+    verificationKind: text("verification_kind"),
+    disabledAt: ts("disabled_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("guests_email_hmac_uq").on(t.emailHmac)],
+);
+
+/** 访客邮箱验证：一次性 token 只存哈希，30 分钟过期，使用后记录 consumed_at。 */
+export const guestVerifications = app.table(
+  "guest_verifications",
+  {
+    id: pk(),
+    tokenHash: text("token_hash").notNull(),
+    emailHmac: text("email_hmac").notNull(),
+    displayName: text("display_name").notNull(),
+    expiresAt: ts("expires_at").notNull(),
+    consumedAt: ts("consumed_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("guest_verifications_token_uq").on(t.tokenHash)],
+);
+
+/** 访客会话：cookie 中是随机 token，这里只存它的哈希。登出时删除整行。 */
+export const guestSessions = app.table(
+  "guest_sessions",
+  {
+    id: pk(),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.guestId, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: ts("expires_at").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("guest_sessions_token_uq").on(t.tokenHash),
+    index("guest_sessions_guest_idx").on(t.guestId),
+  ],
+);
 
 /** 应用内限流计数（固定窗口），存储在 Postgres，不引入 Redis。 */
 export const rateLimits = app.table("rate_limits", {

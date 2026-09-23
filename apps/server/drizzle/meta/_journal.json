@@ -57,6 +57,13 @@
       "when": 1790126044253,
       "tag": "0007_contributions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790126965820,
+      "tag": "0008_guests",
+      "breakpoints": true
     }
   ]
 }

@@ -15,6 +15,8 @@
 | OAuth client secret（GitHub / Discord / Google） | 按 provider 要求 | 用户登录 | 大多数 provider 允许两个 secret 并存 |
 | `BETTER_AUTH_SECRET` | 每年 | **所有会话失效**，用户需要重新登录 | 不能 |
 | Turnstile secret | 按需 | 注册、访客验证 | 能：Cloudflare 支持轮换窗口 |
+| SMTP 凭证（`SMTP_URL`） | 按服务商要求 | 访客验证邮件 | 能：先在服务商处建新凭证再删旧的 |
+| `GUEST_HMAC_KEY` | 不轮换（只在泄露时更换） | 更换后已验证的访客无法再被同一邮箱找回，只能重新验证成为新访客 | 不能 |
 | 数据库口令 | 按需 | 应用连接数据库 | 需要短暂重启 |
 
 ## 通用步骤
@@ -49,6 +51,14 @@
 1. 在 GitHub App 设置页生成新私钥（此时新旧两把同时有效）。
 2. 更新 `GITHUB_APP_PRIVATE_KEY`，部署，触发一次对账任务确认能拿到 installation token。
 3. 在 GitHub 删除旧私钥。
+
+### `GUEST_HMAC_KEY`
+
+它把访客邮箱映射成数据库里的 `email_hmac`，平时不轮换。泄露时更换：拿到这把密钥的人可以用候选邮箱逐个比对 `email_hmac`，但仍然拿不到明文邮箱列表。
+
+1. 生成新值（`openssl rand -base64 32`），更新变量并部署。
+2. 已有访客的会话不受影响；同一邮箱下次验证时会得到一个新的访客 ID。
+3. 在审计日志登记，并按[数据泄露](data-breach.md)预案评估影响。
 
 ### `BETTER_AUTH_SECRET`
 

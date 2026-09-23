@@ -110,6 +110,12 @@ export type Action =
   | "namespace.rename"
   | "account.read"
   | "account.manage_tokens"
+  /** 申请与确认访客邮箱验证。 */
+  | "guest.verify"
+  /** 查看当前访客会话。 */
+  | "guest.read_self"
+  /** 退出访客会话。 */
+  | "guest.sign_out"
   | "search";
 
 export type Decision =
@@ -154,6 +160,7 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "namespace.create",
   "namespace.rename",
   "account.manage_tokens",
+  "guest.verify",
 ]);
 
 /** 动作对应的 kill switch。 */
@@ -162,6 +169,7 @@ const ACTION_FLAG: Partial<Record<Action, FeatureFlag>> = {
   "contribution.submit": "contributions",
   "upload.create": "uploads",
   "import.create": "uploads",
+  "guest.verify": "guest_access",
 };
 
 export interface AuthzContext {
@@ -195,7 +203,10 @@ export function authorize(
       return deny(403, "token.insufficient_scope");
     }
   }
-  if (principal.kind === "guest" && principal.disabled) return deny(403, "guest.disabled");
+  // 被停用的访客什么都不能做，只能退出（清掉浏览器里的 cookie）。
+  if (principal.kind === "guest" && principal.disabled && action !== "guest.sign_out") {
+    return deny(403, "guest.disabled");
+  }
 
   return decide(principal, action, resource, ctx);
 }
@@ -361,5 +372,16 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
         return deny(403, "token.not_allowed");
       }
       return requireUser(p) ?? ALLOW;
+
+    // 任何人都可以申请访客验证（Turnstile 与限流在路由里执行）；退出只作用于请求自带的
+    // 访客 cookie，也不需要身份。
+    case "guest.verify":
+    case "guest.sign_out":
+      return r.type === "system" ? ALLOW : deny(403, "bad_resource");
+
+    case "guest.read_self":
+      if (r.type !== "system") return deny(403, "bad_resource");
+      if (p.kind === "guest") return ALLOW;
+      return p.kind === "anonymous" ? deny(401, "auth.required") : deny(403, "forbidden");
   }
 }

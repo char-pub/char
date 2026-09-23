@@ -23,6 +23,7 @@
     "drizzle-orm": "catalog:",
     "hono": "catalog:",
     "jose": "catalog:",
+    "nodemailer": "catalog:",
     "pg": "catalog:",
     "pg-boss": "catalog:",
     "pino": "catalog:",

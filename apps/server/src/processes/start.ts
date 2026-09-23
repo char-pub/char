@@ -13,6 +13,9 @@ import { parseLegalKey } from "../admin/routes/legal.js";
 import type { Services } from "../api/app.js";
 import { createApi } from "../api/server.js";
 import { createAuth, sessionPrincipalResolver } from "../auth/better-auth.js";
+import { SmtpEmailSender } from "../auth/email.js";
+import { GUEST_TURNSTILE_ACTION, GuestHasher, type GuestServices } from "../auth/guest.js";
+import { CloudflareTurnstile } from "../auth/turnstile.js";
 import { createDatabase } from "../db/client.js";
 import {
   AdminEnvSchema,
@@ -20,7 +23,9 @@ import {
   authProvidersFromEnv,
   EdgeEnvSchema,
   GitHubEnvSchema,
+  GuestEnvSchema,
   githubConfigFromEnv,
+  guestConfigFromEnv,
   originSecretsFromEnv,
   parseEnv,
   ServerEnvSchema,
@@ -81,8 +86,9 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       ipAddressHeaders: ["cf-connecting-ip"],
     });
     const gh = githubFromEnv();
+    const guests = guestsFromEnv(authEnv.AUTH_TRUSTED_ORIGINS);
     const app = createApi({
-      services,
+      services: guests ? { ...services, guests } : services,
       originSecrets: originSecretsFromEnv(edge),
       allowedOrigins: authEnv.AUTH_TRUSTED_ORIGINS,
       sessionPrincipal: sessionPrincipalResolver(auth),
@@ -139,5 +145,26 @@ function githubFromEnv(): GitHubDeps | null {
     webhookSecrets: cfg.webhookSecrets,
     oidcAudience: cfg.oidcAudience,
     jwks: githubJwks(),
+  };
+}
+
+/**
+ * 读取访客验证的配置。没有配置时返回 null，访客验证接口返回 503。Turnstile 的 hostname
+ * 允许列表取前端 Origin 白名单中的域名：widget 只会出现在这些页面上。
+ */
+function guestsFromEnv(webOrigins: readonly string[]): GuestServices | null {
+  const cfg = guestConfigFromEnv(parseEnv(GuestEnvSchema));
+  if (!cfg) {
+    process.stdout.write("guest verification is not configured; guest routes return 503\n");
+    return null;
+  }
+  return {
+    turnstile: new CloudflareTurnstile({
+      secret: cfg.turnstileSecret,
+      allowedHostnames: webOrigins.map((o) => new URL(o).hostname),
+      action: GUEST_TURNSTILE_ACTION,
+    }),
+    email: new SmtpEmailSender(cfg.smtpUrl, cfg.emailFrom),
+    hasher: new GuestHasher(cfg.hmacKey),
   };
 }

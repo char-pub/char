@@ -50789,6 +50789,31 @@ var ContributionSettingsRequestSchema = external_exports.strictObject({
 var ContributionInviteRequestSchema = external_exports.strictObject({
   user: external_exports.string()
 });
+var GuestDisplayNameSchema = external_exports.string().trim().min(1).max(64).regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
+var GuestVerificationRequestSchema = external_exports.strictObject({
+  /** 首尾空白会被去掉；大小写不影响识别为同一个访客。 */
+  email: external_exports.string().trim().max(254).pipe(external_exports.email()),
+  display_name: GuestDisplayNameSchema,
+  turnstile_token: external_exports.string().min(1).max(2048)
+});
+var GuestVerificationResponseSchema = external_exports.strictObject({
+  status: external_exports.literal("sent"),
+  /** 链接的有效期（秒）。 */
+  expires_in: external_exports.number().int().positive()
+});
+var GuestConfirmRequestSchema = external_exports.strictObject({
+  token: external_exports.string().min(1).max(128)
+});
+var GuestSchema = external_exports.strictObject({
+  /** 访客 ID，形如 `gst_…`。 */
+  id: external_exports.string(),
+  display_name: external_exports.string(),
+  verified_at: external_exports.string()
+});
+var GuestSessionResponseSchema = external_exports.strictObject({
+  guest: GuestSchema,
+  session_expires_at: external_exports.string()
+});
 
 // src/run.ts
 var ALLOWED_EVENTS = /* @__PURE__ */ new Set(["push", "workflow_dispatch", "release"]);

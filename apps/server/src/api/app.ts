@@ -9,6 +9,7 @@
  */
 import type { Context, Hono } from "hono";
 import type { z } from "zod";
+import type { GuestServices } from "../auth/guest.js";
 import {
   type Action,
   type AuthzContext,
@@ -41,6 +42,8 @@ export interface Services {
   flags(): Promise<AuthzContext["disabled"]>;
   /** public 资源的 URL 前缀，例如 `https://assets.char.pub/cas/sha256`。 */
   publicAssetBaseUrl: string;
+  /** 访客验证（Turnstile 与发信）。没有配置时访客验证接口返回 503。 */
+  guests?: GuestServices;
 }
 
 export type Env = {

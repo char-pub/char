@@ -312,8 +312,8 @@ describe("authorization", () => {
     expect((d.working.provenance as { contributors: unknown[] }).contributors).toEqual([
       expect.objectContaining({ author: { guest_id: "guest-1", display_name: "Visitor" } }),
     ]);
-    // 没有验证过的访客不能提交。
-    expect((await h.asGuest("nobody").post(`${path}/contributions`, body())).status).toBe(403);
+    // 没有访客会话（或会话无效）的请求按匿名处理，不能提交。
+    expect((await h.asGuest("nobody").post(`${path}/contributions`, body())).status).toBe(401);
     await h.setFlag("guest_access", false);
     expect((await h.asGuest("guest-1").post(`${path}/contributions`, body())).status).toBe(503);
     await h.setFlag("guest_access", true);

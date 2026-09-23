@@ -311,6 +311,9 @@ catalogs:
     lucide-react:
       specifier: ^1.0.0
       version: 1.47.0
+    nodemailer:
+      specifier: ^10.0.0
+      version: 10.0.10
     pg:
       specifier: ^8.0.0
       version: 8.23.0
@@ -558,6 +561,9 @@ importers:
       jose:
         specifier: 'catalog:'
         version: 6.2.12
+      nodemailer:
+        specifier: 'catalog:'
+        version: 10.0.10
       pg:
         specifier: 'catalog:'
         version: 8.23.0
@@ -4815,6 +4821,10 @@ packages:
   node-releases@2.0.56:
     resolution: {integrity: sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==}
     engines: {node: '>=18'}
+
+  nodemailer@10.0.10:
+    resolution: {integrity: sha512-He9XskOFms62SyAKkLu8CcGcYHAo+BSHSsORI8s4PJH8qZgZY4L4lDfvyN0twvmbpyG+eGrxpyBlskj9d9rJ8A==}
+    engines: {node: '>=20.0.0'}
 
   non-error@0.1.0:
     resolution: {integrity: sha512-TMB1uHiGsHRGv1uYclfhivcnf0/PdFp2pNqRxXjncaAsjYMoisaQJI+SSZCqRq+VliwRTC8tsMQfmrWjDMhkPQ==}
@@ -9421,6 +9431,8 @@ snapshots:
   nanostores@1.5.3: {}
 
   node-releases@2.0.56: {}
+
+  nodemailer@10.0.10: {}
 
   non-error@0.1.0: {}
 

@@ -2,10 +2,13 @@
  * 组装公开 API（`api` 进程）。admin 路由不在这里挂载：它们只存在于单独的 admin 进程。
  *
  * 中间件顺序：请求 ID → 源站校验 → 安全响应头 → Origin 校验 → 请求体上限 →
- * principal 解析 → 路由。每个路由模块导出一个 `register(app)` 函数，并通过 `route()`
+ * principal 解析 → 路由。principal 的来源依次是：个人 Token、创作者的登录会话、访客会话；
+ * 登录用户优先，同时带着访客 cookie 时按登录用户处理。每个路由模块导出一个 `register(app)` 函数，并通过 `route()`
  * 注册路由，保证都经过授权。
  */
 import { Hono } from "hono";
+import { getCookie } from "hono/cookie";
+import { GUEST_COOKIE, guestPrincipalFromSession } from "../auth/guest.js";
 import { principalFromToken } from "../auth/tokens.js";
 import type { Principal } from "../authz/authorize.js";
 import {
@@ -66,6 +69,16 @@ export function createApi(opts: ApiOptions): Hono<Env> {
       if (!principal) return problem(c, 401, "auth.invalid_token");
     } else if (opts.sessionPrincipal) {
       principal = await opts.sessionPrincipal(c.req.raw);
+    }
+    if (!principal) {
+      const guestToken = getCookie(c, GUEST_COOKIE);
+      if (guestToken) {
+        principal = await guestPrincipalFromSession(
+          opts.services.db,
+          guestToken,
+          opts.services.clock.now(),
+        );
+      }
     }
     c.set("principal", principal ?? { kind: "anonymous" });
     await next();
