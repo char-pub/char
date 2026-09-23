@@ -120,11 +120,18 @@ Rules → Transform Rules → Modify Request Header：
 ## 5. 前端（Workers Static Assets）
 
 ```sh
-pnpm --filter @char-pub/web build
+# web：构建时指定 API 地址。不设置时默认是 production 的 https://api.char.pub，
+# staging 构建必须显式设置，否则 staging 页面会调用 production API。
+VITE_API_BASE_URL=https://staging-api.char.pub VITE_TURNSTILE_SITE_KEY=<staging site key> \
+  pnpm --filter @char-pub/web build
 cd apps/web && wrangler deploy --env staging     # 需用户同意
+
+# admin：按当前域名自动选择 staging 或 production 的 admin-api，不需要构建变量。
+pnpm --filter @char-pub/admin build
+cd apps/admin && wrangler deploy --env staging   # 需用户同意
 ```
 
-`apps/web/wrangler.jsonc` 已配置 SPA fallback；安全响应头由 `apps/web/public/_headers` 下发。部署后在 Workers 设置中绑定自定义域名。
+`apps/web/wrangler.jsonc` 与 `apps/admin/wrangler.jsonc` 已配置 SPA fallback（两者的 `--dry-run --env staging` 都已通过）；安全响应头由各自的 `public/_headers` 下发。部署后在 Workers 设置中绑定自定义域名，admin 的两个域名都放在 Cloudflare Access 之后。
 
 ## 6. 第三方应用
 
