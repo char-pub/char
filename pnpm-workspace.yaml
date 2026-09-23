@@ -6,6 +6,7 @@ packages:
 # 供应链防护：新发布的版本至少等 3 天再安装（单位：分钟）
 minimumReleaseAge: 4320
 catalog:
+  better-auth: 1.7.5
   sharp: ^0.34.0
   esbuild: ^0.27.0
   "@actions/core": ^3.0.0

@@ -49,10 +49,82 @@ export const ServerEnvSchema = RuntimeEnvSchema.extend(DatabaseEnvSchema.shape).
   StorageEnvSchema.shape,
 );
 
+/** 逗号分隔的 Origin 列表，每一项必须是 `https://host` 或本地开发的 `http://localhost:port` 这样的纯 Origin。 */
+const originList = z
+  .string()
+  .transform((s) =>
+    s
+      .split(",")
+      .map((x) => x.trim())
+      .filter((x) => x.length > 0),
+  )
+  .pipe(
+    z
+      .array(
+        z.string().refine((o) => {
+          try {
+            const u = new URL(o);
+            // 不接受通配符：白名单必须精确列出每个 Origin。
+            const plainHost = /^[a-z0-9.-]+$/.test(u.hostname);
+            return (
+              plainHost && u.origin === o && (u.protocol === "https:" || u.hostname === "localhost")
+            );
+          } catch {
+            return false;
+          }
+        }, "must be a bare origin such as https://www.char.pub"),
+      )
+      .min(1),
+  );
+
+/**
+ * 创作者登录（Better Auth）。第三方登录的 client id 与 secret 必须成对出现；
+ * 缺少的 provider 不启用。
+ */
+export const AuthEnvSchema = z
+  .object({
+    BETTER_AUTH_SECRET: z.string().min(32),
+    /** API 的外部地址，例如 https://api.char.pub；OAuth 回调地址由它推导。 */
+    BETTER_AUTH_URL: url,
+    /** 允许发起登录与写请求的前端 Origin，逗号分隔。 */
+    AUTH_TRUSTED_ORIGINS: originList,
+    GITHUB_CLIENT_ID: nonEmpty.optional(),
+    GITHUB_CLIENT_SECRET: nonEmpty.optional(),
+    DISCORD_CLIENT_ID: nonEmpty.optional(),
+    DISCORD_CLIENT_SECRET: nonEmpty.optional(),
+    GOOGLE_CLIENT_ID: nonEmpty.optional(),
+    GOOGLE_CLIENT_SECRET: nonEmpty.optional(),
+  })
+  .superRefine((env, ctx) => {
+    for (const p of ["GITHUB", "DISCORD", "GOOGLE"] as const) {
+      const id = env[`${p}_CLIENT_ID`];
+      const secret = env[`${p}_CLIENT_SECRET`];
+      if ((id === undefined) !== (secret === undefined)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [`${p}_CLIENT_${id === undefined ? "ID" : "SECRET"}`],
+          message: "client id and secret must be set together",
+        });
+      }
+    }
+  });
+
 export type DatabaseEnv = z.infer<typeof DatabaseEnvSchema>;
 export type MigrationEnv = z.infer<typeof MigrationEnvSchema>;
 export type StorageEnv = z.infer<typeof StorageEnvSchema>;
 export type ServerEnv = z.infer<typeof ServerEnvSchema>;
+export type AuthEnv = z.infer<typeof AuthEnvSchema>;
+
+/** 从环境变量得到已配置的第三方登录。 */
+export function authProvidersFromEnv(env: AuthEnv) {
+  const pair = (id: string | undefined, secret: string | undefined) =>
+    id && secret ? { clientId: id, clientSecret: secret } : undefined;
+  return {
+    github: pair(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET),
+    discord: pair(env.DISCORD_CLIENT_ID, env.DISCORD_CLIENT_SECRET),
+    google: pair(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET),
+  };
+}
 
 export class EnvError extends Error {
   constructor(readonly issues: { variable: string; message: string }[]) {
