@@ -860,3 +860,10 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 4. **安全响应头**包在源站校验的外层，被拒绝的请求（403）也带全部安全头。
 5. **像素上限**：图片元数据从文件头读取（不解码像素），超出像素上限时明确返回 `upload.too_many_pixels`；真正解码时仍强制上限。
 6. **已知限制**：`asset_meta` 以重新编码后的 WebP digest 为键；两张不同的原图重新编码后恰好得到相同字节时，扫描状态沿用先写入的那一条。实际只会发生在几乎相同的图片上，暂不处理。
+
+### D-149 Release source 与 Contribution 辅助接口的实现取值 — Accepted
+
+1. **`GET /v1/creations/@ns/name/releases/:label/source`** 返回 Release 对应 Revision 的 canonical 内容（从私有桶的 manifest 与 fragment 重建，加载时校验 digest），供贡献者作为提交的基线。可见性与读取 Release 完全一致：private 对无权限者 404，tombstoned 410，yanked 200 并带 warning。
+2. **缓存**：public 的 source 与 Release 详情一样使用 `public, max-age=60, s-maxage=300`，不做永久缓存。原因：下架只会从 CDN 清除内容寻址的对象，永久缓存的 API 响应会继续提供已下架的内容。private 为 `private, no-store`。
+3. **邀请名单**只有作者可见（沿用作者设置的权限，需要登录成员；只有 `creations:read` 的 Token 不能读），最多 1000 条。
+4. **Contribution 作者的展示**：登录用户附带显示名与个人 namespace，不返回邮箱；provenance 中仍只存用户 ID。访客的列表只包含自己提交的 Contribution。
