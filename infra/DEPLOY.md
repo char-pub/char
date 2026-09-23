@@ -37,6 +37,14 @@ railway config plan                   # 预览：应当只有新建，不应出�
 railway config apply                  # 创建 Postgres 与三个 service（需用户同意）
 ```
 
+apply 创建的 service 没有 GitHub 部署触发器，合并到 main 不会自动部署。apply 之后对每个 service 执行一次：
+
+```sh
+railway service source connect --repo char-pub/char --branch main --service api
+railway service source connect --repo char-pub/char --branch main --service admin
+railway service source connect --repo char-pub/char --branch main --service worker
+```
+
 project 只有 `production` 一个 environment。
 
 apply 之后、第一次部署之前：
