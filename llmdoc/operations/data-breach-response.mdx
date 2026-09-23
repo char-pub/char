@@ -1,0 +1,25 @@
+---
+description: "数据泄露遏制、私有对象误公开、影响评估、法务通知与日志证据"
+kind: guide
+code:
+  paths:
+    - "apps/server/src/storage/cas.ts"
+    - "apps/server/src/moderation/legal-crypto.ts"
+    - "apps/server/src/audit/audit.ts"
+relations:
+  requires:
+    - "operations/secret-rotation.mdx"
+    - "operations/takedown-and-evidence.mdx"
+  related:
+    - "operations/abuse-response.mdx"
+---
+
+# 数据泄露响应
+
+适用于未授权数据库/对象访问、private 内容被公开、凭据被利用或日志泄露个人数据。首小时按影响暂停 uploads、publish、signups 或全部写入，核验实际生效；协调 worker 的后台活动。轮换相关数据库、R2、身份凭据，法律加密 key 必须遵守历史密文迁移约束。误放 public 桶的对象需删除并清除 CDN，核验外部不可访问。
+
+保留受影响时间窗的 Railway、Cloudflare 和审计记录，校验审计链；证据保存在受控位置，不复制私有内容或个人数据进公开 Git。评估数据类别：邮箱/OAuth 身份、私有 Creation/Release、上传原件、法律申请人材料；法律材料还需确认加密 key 是否同时泄露。记录涉及用户数量、地区、开始与遏制时间。
+
+由 owner 与 legal 评估通知义务和受影响用户说明。既有响应预案把涉及风险的欧盟个人数据事件知悉后 72 小时监管通知、高风险用户通知列为响应时限，并要求评估美国各州规则；这是需结合运营主体和适用法复核的基线，不能把迁移旧预案当作本次法律确认。对用户说明发生了什么、影响范围和所需行动，不泄露调查材料。
+
+修复根因并增加能捕获原漏洞的授权/隔离回归，复核凭据撤销、对象/CDN 清除和队列恢复。保留时间线、影响与改进责任，由此形成的设计改变进入 DECISIONS 和对应 llmdoc owner。只换密钥或发通知不足以关闭事件。

@@ -1,0 +1,26 @@
+---
+description: "垃圾内容、DoS 与 kill switch 应急止损、源站封锁、功能开关逐项恢复"
+kind: guide
+code:
+  paths:
+    - "apps/server/src/ops/flags.ts"
+    - "apps/server/src/authz/authorize.ts"
+    - "apps/server/src/admin/routes/jobs.ts"
+    - "scripts/cf-rules.ts"
+relations:
+  requires:
+    - "operations/jobs-and-controls.mdx"
+  related:
+    - "operations/deploy-and-edge.mdx"
+    - "operations/emergency-access.mdx"
+---
+
+# 服务滥用、DoS 与运行开关
+
+先辨认账号、IP 哈希段、namespace 与 agent 来源，优先定向封禁、隐藏 Creation、拒绝 Contribution；来源分散时才暂停相应能力或收紧账号/namespace/IP/访客限流。封禁须核验会话与 Token 吊销。运行开关在 admin 填理由并审计，不以按钮显示推断所有进程已生效。
+
+能力开关包括 signups、uploads、publish、contributions、github_sync、guest_access 和 read_only。注意底层语义是 `enabled=false` 进入 disabled 集合，**read_only=false 才停止写入**。缓存正常每进程约五秒刷新，数据库读取失败会保留上次成功值；紧急处置须核验实际效果，不能保证故障时仍五秒生效。暂停 publish 后 pending 发布应延迟/重排并可恢复；GitHub webhook 接收验签与后台处理分属不同边界，停同步后需检查积压。
+
+DoS 时先区分 API 与静态资产流量，在 Cloudflare 使用针对路径的 WAF、认证路径限流或必要的 Under Attack 策略。边缘写入先审查计划，只修改受管规则，不覆盖同区无关配置；核验直连 Railway 源站返回 403。必要时停写以保住 CDN 公开读取，并检查 worker 是否仍产生需暂停的写入。
+
+恢复时逐项恢复能力，每项观察十分钟错误率与队列积压，确认积压可消化再继续；失败则回到已验证的止损状态，调查后再恢复。保留事件时间线、开关变更与恢复结论，事故记录不得暴露密钥或个人数据。

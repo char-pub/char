@@ -1,0 +1,26 @@
+---
+description: "CSAM 命中隔离、NCMEC 报告、证据保全和一次性下载、误报复核与不可逆下架"
+kind: guide
+code:
+  paths:
+    - "apps/server/src/moderation/csam.ts"
+    - "apps/server/src/admin/routes/csam-evidence.ts"
+relations:
+  requires:
+    - "operations/takedown-and-evidence.mdx"
+  related:
+    - "operations/abuse-response.mdx"
+    - "engineering/release-readiness.mdx"
+---
+
+# CSAM 命中处置
+
+适用于被动扫描通知、用户举报、员工发现或将来接入扫描器后的命中。不要打开、转发、截图或复制涉嫌内容，也不要发给同事确认；管理页面只展示元数据。trust_safety 可处置事件，证据能力限定 legal/owner。当前 noop 上传扫描器不构成自动检测保证；被动扫描通知必须指定值班人每日查看。
+
+1. 由有权员工按涉事 blob digest 标记（扫描流程也可从 upload 进入），隔离上传、锁定账号并吊销会话和 Token、写入 digest 黑名单及工单；已引用内容走 tombstone 级联。对象保全先于数据库事务，业务状态和审计同事务，分发对象删除与 CDN 清除还在事务之外；不能将整个流程视为跨数据库与 R2 的原子操作。
+2. 核验账号锁定、黑名单、证据保全、所有分发 URL 404 及清理任务最终状态。部分失败应保留事件并恢复相应步骤，不能把任务入队当完成。
+3. legal 按事件报告程序向 NCMEC CyberTipline 提交上传时间、可依法提供的账号上下文、内容哈希，并及时登记报告编号，核对系统记录的日期与保全期限。当前登记操作使用登记时刻作为 reportedAt 并计算 365 天期限，不能手工回填外部报告日期；两者不一致时交 legal 处置。既有运营基线要求实际知情后尽快报告、报告后受限保全一年，不向上传者透露妨碍调查的细节；运营主体和 legal 必须复核适用义务，迁移旧预案不等于法律复核完成。
+4. 仅向主管机关提交确需原件时，legal/owner 填理由并明确确认，获取五分钟内有效、绑定本人、一次性的下载票据。下载为 `application/octet-stream`、no-store 附件，禁止预览；签发与下载分别审计。只在受控设备保存和交付，按法务要求处置，不留个人电脑或共享盘。到期由专门证据清理流程处理，通用 CAS 回收不得提前删除证据。
+5. 检查同账号其他上传，批量滥用时暂停 uploads；记录发现渠道、处置时长与扫描/上传策略改进。
+
+误报由 legal 复核，解除 CSAM 用户锁定仍须四眼确认。已 tombstone 的 Release 不可恢复，不能承诺误报后直接恢复原发布；证据提前处置需法务决定。事故材料和报告编号保存在受控事件工单，不写入公开仓库。

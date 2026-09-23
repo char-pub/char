@@ -1,5 +1,5 @@
 ---
-description: "三个服务进程如何隔离公开 API 和管理员路由；为什么纯计算包不能做 IO；core、api、admin、worker 与浏览器的执行和权威边界"
+description: "产品范围与非目标：Creator first、三种创作入口、公开 Registry 和 Context IR；纯计算包与 API、admin、worker 的权威边界"
 kind: architecture
 code:
   paths:
@@ -16,6 +16,12 @@ relations:
 ---
 
 # 执行模型与权威边界
+
+char.pub 是面向 AI 创作的开放 Registry、协作网络与互操作层，优先服务不懂 Git 的创作者，同时支持技术作者/Agent、Runtime 消费者和运营审核。Native Web、CCv3/PNG 导入、GitHub/CLI/Action 收敛到同一个 Canonical Creation；Reference Edge、early binding 与稳定 fragment identity 支持组合并锁定不可变 Release；Context IR、CCv3 Loss Report、参考 Assembler、Preview 和 Diff 支持开放消费。公开 IR 与资产可匿名下载，聊天运行流量不经 Registry。
+
+v0 创作界面开放 Character、World、Lorebook；Relationship、Scenario、Persona、Style 以及 slots、late binding、params、override、visibility 的模型能力不意味着必须提供相应创作 UI。Preset 的完整 Canonical 结构仍待后续定义，参考 Assembler 使用默认布局。v0 包含 Native→Native Contribution，GitHub PR 展示与 Native→GitHub patch 延后。
+
+v0 不承担聊天平台、好感度/RPG/战斗、Workflow Engine、完整自主 Agent Framework、自建 Git、OAuth/OIDC Provider、Runtime Registry/Open in/Launch Intent、可执行插件、语义搜索或独立搜索引擎、Redis、付费镜像。可执行代码扩展与声明式 Creation 有不同信任域。真实第三方 Runtime 消费者是未来冻结 IR 的条件，不阻塞当前 v0-draft。
 
 仓库把可重现的内容语义放在 `packages/core`，把真实用户、存储、状态和外部服务放在 Registry。Core 不进行网络、数据库或文件 IO，能在 Node、浏览器和 Workers 中对同一输入给出相同结果。`packages/assembler` 消费解析好的 Context IR；浏览器预览可调用参考实现，但不能代替 Registry 的发布授权。
 

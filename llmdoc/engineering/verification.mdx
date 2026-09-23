@@ -15,6 +15,7 @@ code:
     - ".github/workflows/dependency-review.yml"
 relations:
   related:
+    - "engineering/working-agreements.mdx"
     - "interoperability/conformance.mdx"
     - "operations/deploy-and-edge.mdx"
 ---
@@ -28,3 +29,7 @@ relations:
 本地全栈验证可从服务启动和冒烟脚本进入，尤其要确认迁移、API、worker、前端与对象存储一起工作。测试结果应按实际运行范围报告：单测通过不能推断生产外部服务可用，draft conformance 通过不能推断多运行时语义已被人工认可。
 
 跨层 fixture 应由真实生产者生成，或先经过权威 schema 校验，避免手写对象和错误实现互相迎合。关键全栈验证必须检查消费端实际读到的字节：例如上传后刷新仍能读取私有预览，公开发布后公共 URL 确实返回图片；仅断言任务完成或数据库 active 不能证明分发链路可用。
+
+集成测试使用真实 Postgres 和 S3 兼容存储验证事务、权限、迁移与对象行为；外部 GitHub/OIDC/webhook 替身应真实计算 JWKS 签名或 HMAC，不能通过旁路授权来证明协议。时钟与 ID 注入让边界和重试可重现。fixture 使用合成或许可明确的数据，不使用真实非法材料或用户隐私；主站演练需要专门账号与仓库，结束清理。
+
+工作中执行与改动相称的检查，里程碑与最终验收运行 `pnpm ci:all`；CodeQL 和 dependency-review 属于独立 CI，不能把本地命令通过写成它们已执行。要求的检查失败、跳过或无法运行时保持验收待定。测试阈值的当前可执行值以配置为准，不能为了达标降低既定验收标准。开发过程与授权约定见 working-agreements，正式开放的剩余门槛见 release-readiness。

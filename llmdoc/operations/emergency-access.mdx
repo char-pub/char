@@ -1,0 +1,25 @@
+---
+description: "Cloudflare Access 或 owner 不可用时 break-glass 紧急访问、最小 SQL、审计与停止条件"
+kind: guide
+code:
+  paths:
+    - "apps/server/src/processes/bootstrap.ts"
+    - "apps/server/src/audit/audit.ts"
+    - "apps/server/src/db/schema/ops.ts"
+relations:
+  requires:
+    - "operations/admin-authority.mdx"
+  related:
+    - "operations/secret-rotation.mdx"
+    - "operations/abuse-response.mdx"
+---
+
+# 紧急访问与 break-glass
+
+仅在 Access 故障或 owner 无法使用常规入口、同时事件确实不能等待时启用。至少两名员工熟悉流程，应急凭据受控保存，不进入仓库；需相应 Railway 项目和 GitHub 组织权限。受控事件记录先写执行人、原因和预计窗口。
+
+优先恢复常规入口，或使用仍可验证身份的最小处置能力。私网访问 admin 也不能跳过 Access JWT；仓库没有内部封禁命令或审计工具 CLI，不应照抄旧方案中的虚构命令。
+
+若必须直接修数据库，以 owner 权限运行经审阅的最小事务运维脚本，并在同事务调用 `appendAudit`，保持 advisory lock 与连续哈希；不得随意手写 audit_log INSERT。功能开关的 updated_by 是既有执行主体 UUID，不是姓名字符串，还须更新 updated_at。`read_only=false` 才禁用写入。没有能验证权限、审计或回滚范围的脚本时停止，不用临时 SQL 绕过这些门槛。
+
+首次 owner 引导可用 `node dist/main.js bootstrap --owner <email>`，只针对已有注册用户且系统尚无 owner；不是已有 owner 的恢复后门。事件后撤销临时授权、轮换实际使用的应急凭据、校验审计链，记录常规路径为何失效及如何避免再次使用。

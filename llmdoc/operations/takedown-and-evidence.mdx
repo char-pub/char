@@ -3,6 +3,8 @@ description: "删除请求受理、账号删除与作品移除、法律队列加
 kind: architecture
 code:
   paths:
+    - "apps/web/src/routes/settings.tsx"
+    - "apps/web/src/routes/c.$ns.$name.settings.tsx"
     - "apps/server/src/api/routes/deletion-requests.ts"
     - "apps/server/src/moderation/legal-crypto.ts"
     - "apps/server/src/admin/routes/legal.ts"
@@ -22,6 +24,7 @@ relations:
     - "operations/admin-authority.mdx"
     - "content/upload-and-storage.mdx"
   related:
+    - "operations/csam-response.mdx"
     - "registry/reading.mdx"
 ---
 

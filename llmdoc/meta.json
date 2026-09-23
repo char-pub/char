@@ -76,6 +76,33 @@
     },
     "web/creator-experience.mdx": {
       "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
+    },
+    "operations/csam-response.mdx": {
+      "validatedRevision": null
+    },
+    "operations/legal-response.mdx": {
+      "validatedRevision": null
+    },
+    "operations/database-recovery.mdx": {
+      "validatedRevision": null
+    },
+    "operations/secret-rotation.mdx": {
+      "validatedRevision": null
+    },
+    "operations/emergency-access.mdx": {
+      "validatedRevision": null
+    },
+    "operations/abuse-response.mdx": {
+      "validatedRevision": null
+    },
+    "operations/data-breach-response.mdx": {
+      "validatedRevision": null
+    },
+    "engineering/release-readiness.mdx": {
+      "validatedRevision": null
+    },
+    "engineering/working-agreements.mdx": {
+      "validatedRevision": null
     }
   },
   "convergence": {

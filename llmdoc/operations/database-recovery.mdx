@@ -1,0 +1,33 @@
+---
+description: "Postgres 备份恢复演练、审计链核验、新实例切换与恢复后 CAS 对账"
+kind: guide
+code:
+  paths:
+    - ".railway/railway.ts"
+    - "apps/server/src/db/migrate.ts"
+    - "apps/server/src/audit/audit.ts"
+relations:
+  requires:
+    - "operations/deploy-and-edge.mdx"
+  related:
+    - "operations/emergency-access.mdx"
+    - "engineering/release-readiness.mdx"
+---
+
+# 数据库备份与恢复
+
+采用 Railway 自带 Postgres 备份，可用 pg_dump 手动导出；异供应商备份推迟，不把数据库备份混入内容 R2 桶。上线前必须完成一次恢复演练，之后每季度重复。启用备份不证明备份可恢复。
+
+## 演练
+
+1. 确认 production 备份启用，记录最近备份时间 T，在 T 附近以只读查询采集 releases、creations、audit_log、blobs 行数，以及最近五个 Release 的 id、semantic_digest。
+2. 审计链头使用 `SELECT id, hash FROM app.audit_log ORDER BY id DESC LIMIT 1`，不得用分别求 max(id)、max(hash) 的结果拼造链头。
+3. 从备份恢复到新的临时数据库，不覆盖生产。比对同一 T 时刻的基准，不能要求不断变化的当前生产计数与备份一致。
+4. 使用 `verifyAuditChain` 或具备授权的 `/v1/admin/audit/verify` 验证完整链；目前没有独立恢复验证 CLI。同时核对抽样 CAS 对象存在且可读，数据库完整不证明对象存储可用。
+5. 在受控演练记录保留 T、恢复耗时、数据/链/对象比对、执行人和结论，公开知识只引用不含敏感数据的验收结论。确认后清理临时资源；失败保持验收未完成并调查原因。
+
+## 真实恢复
+
+先通过运行控制停写，并暂停 worker 的业务写入；`read_only=false` 表示禁用写入，单独这个 flag 不是数据库全局冻结。恢复到新实例，核验数据与审计链后，以 owner 权限运行目标版本迁移。迁移成功才将 api、admin、worker 的 DATABASE_URL 一起切到同一新实例并部署；schema 或实例不一致时禁止放流。
+
+冒烟验证读写、任务与对象读取后再恢复正常写入。按 blobs 与 CAS 对账，备份后产生的对象可能仍在；如实记录 T 后丢失的事务和审计，不能伪造补链。复盘实际数据损失窗口与恢复耗时。创建、切换或删除线上资源前需取得相应授权。
