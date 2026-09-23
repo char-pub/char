@@ -57,7 +57,16 @@ describe("MatureSetting", () => {
     );
     await userEvent.click(await screen.findByRole("switch"));
     expect(onChange).toHaveBeenCalledWith({ show_mature: false });
-    expect(screen.queryByText("Are you 18 or older?")).toBeNull();
+    expect(screen.queryByText("Show mature and explicit creations?")).toBeNull();
+  });
+
+  it("says since when it is on", () => {
+    renderWithApp(
+      <MatureSetting enabled confirmedAt="2026-09-02T12:00:00.000Z" onChange={vi.fn()} />,
+    );
+    return expect(
+      screen.findByText("On since Sep 2, 2026 — you confirmed you're 18 or older."),
+    ).resolves.toBeTruthy();
   });
 });
 

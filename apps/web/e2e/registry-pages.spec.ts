@@ -136,13 +136,15 @@ test("turning mature content on needs the 18+ confirmation and is saved on the s
   const toggle = page.getByRole("switch", { name: "Show mature and explicit creations" });
   await expect(toggle).toHaveAttribute("aria-checked", "false");
   await toggle.click();
-  await expect(page.getByRole("alertdialog", { name: "Are you 18 or older?" })).toBeVisible();
+  await expect(
+    page.getByRole("alertdialog", { name: "Show mature and explicit creations?" }),
+  ).toBeVisible();
   const confirm = page.getByRole("button", { name: "Show mature content" });
   await expect(confirm).toBeDisabled();
   await page.getByLabel("I am 18 or older").check();
   await confirm.click();
   await expect(toggle).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByText(/You confirmed you are 18 or older on/)).toBeVisible();
+  await expect(page.getByText(/On since .+ you confirmed you're 18 or older/)).toBeVisible();
   expect(api.calls.find((c) => c.method === "PUT")?.body).toEqual({
     show_mature: true,
     confirm_adult: true,
