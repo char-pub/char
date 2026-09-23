@@ -43,6 +43,7 @@
     "dependency-cruiser": "catalog:",
     "fast-check": "catalog:",
     "lefthook": "catalog:",
+    "railway": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

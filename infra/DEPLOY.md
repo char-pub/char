@@ -18,29 +18,36 @@
 
 ## 2. Railway
 
-在 `Hushed Chat` workspace 中创建 project `char-pub`，两个 environment：`staging`、`production`。每个 environment：
+资源定义在 `.railway/railway.ts`（Railway 的 Infrastructure as Code）：一个 Postgres 16，加上同一个镜像（`apps/server/Dockerfile`）的三个 service。staging 与 production 共用这份定义，差别只在域名和桶名。`scripts/railway-config.test.ts` 检查每个进程拿到的变量与服务端实际读取的一致，且密钥都不以字面值出现。
 
-- Postgres（Railway 官方 `postgres-ssl` 镜像，locale 不能是 C）。production 开启备份，第一次部署时确认备份与 PITR 选项可用。
-- 三个 service，同一个镜像（`apps/server/Dockerfile`），不同的启动命令：
-  - `api`：`node dist/main.js api`，pre-deploy 命令 `node dist/main.js migrate`（owner 角色）；
-  - `admin`：`node dist/main.js admin`；
-  - `worker`：`node dist/main.js worker`，不绑定公网域名。
-- 应用角色：迁移前用 owner 连接执行一次 `CREATE ROLE charpub_app LOGIN PASSWORD '<生成的口令>'`，应用的 `DATABASE_URL` 使用这个角色，迁移用的 `DATABASE_MIGRATION_URL` 使用 owner。
-- 上线后移除 Railway 分配的 `*.up.railway.app` 域名，或者保证它同样要求 `X-Origin-Auth`（服务端已强制校验）。
-- 首次部署后执行一次引导（`railway run --service worker node dist/main.js bootstrap …`）：
-  - `bootstrap --system-actor`：创建自动处置使用的系统账号（ID 取 `SYSTEM_ACTOR_ID`）；
-  - 第一个员工用 GitHub 登录一次 www 之后，`bootstrap --owner <邮箱>` 把这个账号提升为 owner（只在还没有 owner 时有效）。之后的员工由 owner 在 admin 中管理，同时把邮箱加入 `STAFF_EMAILS` 与 Cloudflare Access 策略。
+- `api`：`node dist/main.js api`；每次部署前执行 `node dist/main.js migrate`（owner 角色），迁移失败则不部署。
+- `admin`：`node dist/main.js admin`。
+- `worker`：`node dist/main.js worker`，没有公网域名。
+- 密钥都是 `preserve()`：定义里只有变量名，值由人工在 Railway 中设置。变量名与含义见 `.env.example`。
 
-CLI（需要登录并选择 workspace）：
+步骤（创建 project、apply 都会产生费用或对外可见的资源，需要用户同意）：
 
 ```sh
-railway login                      # 已登录可跳过
-railway init --name char-pub       # 在 Hushed Chat workspace 下创建（需用户同意）
+railway login                         # 已登录可跳过
+railway init --name char-pub          # 在 Hushed Chat workspace 下创建 project（需用户同意）
 railway environment new staging
-railway add --database postgres
-railway variables --set KEY=VALUE  # 逐个设置，不要把值写进 shell 历史：可以用 --set-from-file
-railway up --service api           # 部署
+railway link                          # 选择 char-pub / staging
+railway config plan                   # 预览：应当只有新建，不应出现删除
+railway config apply                  # 创建 Postgres 与三个 service（需用户同意）
 ```
+
+apply 之后、第一次部署之前：
+
+- 应用角色：用 owner 连接执行一次 `CREATE ROLE charpub_app LOGIN PASSWORD '<生成的口令>'`，再把 api、admin、worker 的 `DATABASE_URL` 设为这个角色的连接串（迁移用的 `DATABASE_MIGRATION_URL` 已在定义中引用 Postgres 的 owner 连接串）。
+- 逐个设置其余密钥。不要把值写进 shell 历史：用 `railway variables --set-from-file` 或在控制台里填写。
+- 上线后移除 Railway 分配的 `*.up.railway.app` 域名，或者保证它同样要求 `X-Origin-Auth`（服务端已强制校验）。
+
+首次部署后执行一次引导（`railway run --service worker node dist/main.js bootstrap …`）：
+
+- `bootstrap --system-actor`：创建自动处置使用的系统账号（ID 取 `SYSTEM_ACTOR_ID`）；
+- 第一个员工用 GitHub 登录一次 www 之后，`bootstrap --owner <邮箱>` 把这个账号提升为 owner（只在还没有 owner 时有效）。之后的员工由 owner 在 admin 中管理，同时把邮箱加入 `STAFF_EMAILS` 与 Cloudflare Access 策略。
+
+production 开启 Postgres 备份，第一次部署时确认备份与 PITR 选项可用。
 
 ## 3. Cloudflare R2
 

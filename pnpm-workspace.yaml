@@ -76,6 +76,7 @@ catalog:
   fast-check: 4.10.2
   lefthook: 2.1.14
   playwright: 1.63.0
+  railway: ^3.11.0
   typescript: 6.0.3
   uuidv7: 1.2.1
   vitest: 4.1.11
