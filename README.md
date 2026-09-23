@@ -63,3 +63,4 @@ In the browser, render the widget with the matching testing site key `1x00000000
 ## License
 
 Code: [Apache-2.0](LICENSE). Specification and conformance suite: [CC-BY-4.0](spec/LICENSE).
+
