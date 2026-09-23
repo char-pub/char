@@ -842,3 +842,12 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 
 1. **规范歧义**：规范化时“值等于默认值的字段要省略”中的默认值，只指字段自身固定的默认值，不包括从其他字段继承来的值。AssetVariant 的 `license`、`rating` 缺省时继承 Creation 的值；如果作者显式写出与 Creation 相同的值，这个字段保留，digest 与省略时不同。原因：显式写出的值是作者对这个变体的独立声明，Creation 之后改了许可或评级，它也应该保持不变；而且如果省略与否取决于另一个字段的当前值，digest 就不再只由字段本身决定。现有一致性用例不受影响。
 2. **只允许 https 的 URL**（Release 的 http 来源、asset 外链 locator）在 zod 与导出的 JSON Schema 中一致：都要求以小写 `https://` 开头。大写的 `HTTPS://` 以前 zod 会接受，现在两边都拒绝，避免外部实现按 JSON Schema 校验时与服务端结论不同。
+
+### D-147 web 端 Contribution、访客与导入的实现取值 — Accepted
+
+1. **提交的基线**：贡献者在最新 public Release 的 canonical 内容上编辑，浏览器按 Release 的内容算出每个变更的 `base_digest`。请求里的 `sensitive` 只是为了满足请求格式，是否敏感由服务端判定。v0 的提交界面支持文本段落、评级与标签；依赖、资源与其他元数据的变更暂时没有界面（API 已支持）。
+2. **授权方式**：作品许可为 `LicenseRef-*` 时要求贡献者显式授权（`explicit_grant`），其余许可按同一许可授权（`inbound_equals_outbound`）。
+3. **审阅**：只有“会应用”的敏感变更需要逐项勾选，没有“全部接受”；提交时只发送勾选过的键。有冲突时不能接受；草稿在审阅期间被改时提示重新加载预览。
+4. **访客验证后的返回地址**存在 localStorage，只接受 `/c/` 开头的站内路径，不含任何凭据；验证链接中的 token 读出后立即从地址栏清除。构建时没有 `VITE_TURNSTILE_SITE_KEY` 就不提供访客入口。CSP 的 `script-src` 与 `frame-src` 放行 `https://challenges.cloudflare.com`。
+5. **导入向导**完全走服务端：上传原件 → 创建导入 → 轮询 → 展示 Import Report（被省略的字段只显示名字）→ 逐项确认评级、权利与许可 → 进入编辑器。需要确认的字段一律留空，由作者显式选择。web 不再依赖 `@char-pub/ccv3`。
+6. **署名**：authors 为空时显示发布者 `@namespace`。
