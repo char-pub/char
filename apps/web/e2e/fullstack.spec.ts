@@ -63,7 +63,8 @@ test("UC-1: create, publish and download a character in the browser", async ({
   await expect(visitor.getByRole("heading", { name: "Alice Courier" })).toBeVisible();
   await expect(visitor.getByText("Package for {{user}}! Sign here, please.")).toBeVisible();
   await expect(visitor.getByText(/cheerful courier who knows every alley/)).toBeVisible();
-  await expect(visitor.locator("header img")).toHaveCount(1);
+  // 作品头部的头像（顶栏的品牌 logo 不在 main 里）。
+  await expect(visitor.locator("main header img")).toHaveCount(1);
   await expect(visitor.getByRole("heading", { name: "Why this rating" })).toBeVisible();
   await expect(visitor.getByRole("button", { name: /1\.0\.0/ })).toBeVisible();
   await expect(visitor.getByRole("button", { name: "Sign in" })).toBeVisible();
@@ -74,7 +75,11 @@ test("UC-1: create, publish and download a character in the browser", async ({
 
   // 6. 下载 Context IR：API 重定向到内容寻址的公共对象。
   await visitor.goto(`/c/${ns}/alice-courier`);
-  const href = await visitor.getByRole("link", { name: "Context IR" }).getAttribute("href");
+  // 页脚也有一个指向 Context IR 规范的链接，所以只在页面内容里找下载链接。
+  const href = await visitor
+    .getByRole("main")
+    .getByRole("link", { name: "Context IR" })
+    .getAttribute("href");
   expect(href).toBe(`/v1/creations/@${ns}/alice-courier/releases/1.0.0/ir`);
   const res = await visitor.request.get(href ?? "");
   expect(res.ok()).toBe(true);
