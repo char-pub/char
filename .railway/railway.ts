@@ -133,6 +133,9 @@ export default defineRailway((ctx, project) => {
       STAFF_EMAILS: preserve(),
       ADMIN_ORIGINS: adminSpa,
       LEGAL_ENCRYPTION_KEY: preserve(),
+      // 可选：强制员工登出时一并吊销 Cloudflare Access 会话，两项同时设置或同时留空。
+      CF_ACCESS_ACCOUNT_ID: preserve(),
+      CF_ACCESS_API_TOKEN: preserve(),
     },
   });
 
