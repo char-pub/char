@@ -5,18 +5,27 @@
  *   node dist/main.js admin    admin API（只接受经过 Cloudflare Access 的请求）
  *   node dist/main.js worker   任务消费者，没有公网入口，只在本机端口提供健康检查
  *   node dist/main.js migrate  部署前的数据库迁移（owner 角色）
+ *   node dist/main.js bootstrap [--system-actor] [--owner <email>]  新环境的一次性引导
  *
  * 启动时校验环境变量，缺项直接退出，错误信息只包含变量名。
  */
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 
-export type ProcessKind = "api" | "admin" | "worker" | "migrate";
+export type ProcessKind = "api" | "admin" | "worker" | "migrate" | "bootstrap";
 
 export function parseProcessKind(argv: readonly string[]): ProcessKind {
   const kind = argv[2];
-  if (kind === "api" || kind === "admin" || kind === "worker" || kind === "migrate") return kind;
-  throw new Error(`usage: main.js <api|admin|worker|migrate> (got ${kind ?? "nothing"})`);
+  if (
+    kind === "api" ||
+    kind === "admin" ||
+    kind === "worker" ||
+    kind === "migrate" ||
+    kind === "bootstrap"
+  ) {
+    return kind;
+  }
+  throw new Error(`usage: main.js <api|admin|worker|migrate|bootstrap> (got ${kind ?? "nothing"})`);
 }
 
 async function main(): Promise<void> {
@@ -25,6 +34,11 @@ async function main(): Promise<void> {
   if (kind === "migrate") {
     const { migrateFromEnv } = await import("./processes/migrate.js");
     await migrateFromEnv();
+    return;
+  }
+  if (kind === "bootstrap") {
+    const { bootstrapFromArgs } = await import("./processes/bootstrap.js");
+    await bootstrapFromArgs(process.argv.slice(3));
     return;
   }
   const { startProcess } = await import("./processes/start.js");

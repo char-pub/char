@@ -27,6 +27,9 @@
   - `worker`：`node dist/main.js worker`，不绑定公网域名。
 - 应用角色：迁移前用 owner 连接执行一次 `CREATE ROLE charpub_app LOGIN PASSWORD '<生成的口令>'`，应用的 `DATABASE_URL` 使用这个角色，迁移用的 `DATABASE_MIGRATION_URL` 使用 owner。
 - 上线后移除 Railway 分配的 `*.up.railway.app` 域名，或者保证它同样要求 `X-Origin-Auth`（服务端已强制校验）。
+- 首次部署后执行一次引导（`railway run --service worker node dist/main.js bootstrap …`）：
+  - `bootstrap --system-actor`：创建自动处置使用的系统账号（ID 取 `SYSTEM_ACTOR_ID`）；
+  - 第一个员工用 GitHub 登录一次 www 之后，`bootstrap --owner <邮箱>` 把他提升为 owner（只在还没有 owner 时有效）。之后的员工由 owner 在 admin 中管理，同时把邮箱加入 `STAFF_EMAILS` 与 Cloudflare Access 策略。
 
 CLI（需要登录并选择 workspace）：
 
