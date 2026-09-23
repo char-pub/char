@@ -28,7 +28,8 @@
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
     "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm test:web && pnpm test:conformance && pnpm test:integration && pnpm build && pnpm check:action-dist && pnpm secrets",
     "prepare": "lefthook install || true",
-    "check:action-dist": "pnpm --filter @char-pub/publish-action build && git diff --exit-code -- actions/publish/dist"
+    "check:action-dist": "pnpm --filter @char-pub/publish-action build && git diff --exit-code -- actions/publish/dist",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

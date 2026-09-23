@@ -21,6 +21,7 @@
     "spec/conformance/runner/**/*.ts",
     "spec/conformance/scripts/**/*.ts",
     "spec/conformance/vitest.*.config.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "scripts/**/*.ts"
   ]
 }
