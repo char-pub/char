@@ -202,3 +202,10 @@
 - 修正 Access 策略（组织成员限制之前没有生效）、更正 admin 的 Access 变量；admin 与 admin SPA 上线。冒烟测试 6 项全部通过，勾选 M9-2、M9-3，证据见 [evidence/2026-09-23-production-deploy.md](evidence/2026-09-23-production-deploy.md)。
 - `bootstrap --owner shuaiqijianhao@qq.com` 与 `--system-namespace commons --member shuaiqijianhao@qq.com` 完成。
 - GitHub App 装在 `Disdjj/char-djj`（用户指定的测试仓库，不用 blog），下一步在其中做 M7-4 / E2E-4。
+
+### 2026-09-23 M7-4 与公开 IR 跨域
+
+- 在用户指定的测试仓库 `Disdjj/char-djj` 上完成真实 OIDC 发布：`@djj/char-djj-test@1.0.0`（tag v1.0.0）。首次运行暴露出每次 OIDC 发布都会失败的 digest 比对缺陷，修复合并为 PR #3（D-156）。反例：从不允许的分支发布被拒（`binding.ref_not_allowed`）。勾选 M7-4，见 [evidence/2026-09-23-m7-4-oidc-publish.md](evidence/2026-09-23-m7-4-oidc-publish.md)。
+- Railway 服务重新连接 GitHub 源后才会在合并时自动部署（部署指南已补充）。
+- 用户报告公开 IR 跨域失败：公开下载 302 到 assets 后浏览器 Origin 变为 `null`。public 桶 CORS 改为允许任何来源的只读请求，浏览器中复验通过。
+- 需要第二个账号的 E2E-4 反例（改名劫持、仓库转移冻结）按用户决定之后再测。
