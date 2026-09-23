@@ -214,6 +214,13 @@ async function writeArtifacts(
     // 公开发布时，Revision 的内容（fragment 与 manifest）也随之公开。
     for (const f of canonical.creation.fragments) await cas.copyToPublic(db, f.digest);
     await cas.copyToPublic(db, row.semanticDigest);
+    // Uploaded assets start private. Publish their mirrored bytes before exposing CDN URLs.
+    // Linked assets stay at their external source and must not be read from private CAS.
+    for (const digest of new Set(
+      resolved.ir.assets.filter((a) => a.availability === "mirrored").map((a) => a.digest),
+    )) {
+      await cas.copyToPublic(db, digest);
+    }
   }
 
   // 闭包中每个依赖的 fragment 都要登记，下架其中任何一个都能找到这个 Release。

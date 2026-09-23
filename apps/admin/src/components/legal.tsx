@@ -463,6 +463,24 @@ function LegalDetailDialog({
                   </div>
                 ) : null}
               </dd>
+              {l.requester.request ? (
+                <>
+                  <dt className="text-muted-foreground">Request</dt>
+                  <dd>
+                    {l.requester.request === "account_deletion"
+                      ? "Account deletion"
+                      : "Creation removal"}
+                  </dd>
+                  <dt className="text-muted-foreground">Account</dt>
+                  <dd>
+                    <UserText text={l.requester.user ?? l.requester.name} />
+                  </dd>
+                  <dt className="text-muted-foreground">Reason</dt>
+                  <dd className="whitespace-pre-wrap">
+                    <UserText text={l.requester.reason ?? ""} />
+                  </dd>
+                </>
+              ) : null}
               <dt className="text-muted-foreground">Received</dt>
               <dd>
                 <Time iso={l.received_at} />

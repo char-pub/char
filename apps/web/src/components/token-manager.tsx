@@ -2,6 +2,7 @@
  * 个人 Token：给 CLI、CI 与 Agent 使用。明文只在创建后显示一次，之后只能看到前缀。
  * Token 不能用来管理 Token 或修改账号设置，这些操作只能在浏览器里完成。
  */
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, KeyRound, Plus } from "lucide-react";
 import { useId, useState } from "react";
@@ -17,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -48,6 +50,7 @@ function TokenRow({ token, onRevoke }: { token: PersonalToken; onRevoke: () => v
       <div className="min-w-0 flex-1 space-y-0.5">
         <p className="flex flex-wrap items-baseline gap-x-2">
           <span className="text-sm font-semibold break-words">{token.name}</span>
+          {token.agent ? <Badge variant="outline">Agent</Badge> : null}
           <span className="font-mono text-xs text-text-3">{token.prefix}…</span>
         </p>
         <p className="font-mono text-xs break-words text-text-2">{token.scopes.join(" · ")}</p>
@@ -88,9 +91,11 @@ function CreateTokenDialog({
     (CreatedToken & { name: string; scopes: string[] }) | null
   >(null);
   const [copied, setCopied] = useState(false);
+  const [agent, setAgent] = useState(false);
 
   const create = useMutation({
-    mutationFn: () => client.createToken({ name: name.trim(), scopes, expires_in_days: days }),
+    mutationFn: () =>
+      client.createToken({ name: name.trim(), scopes, expires_in_days: days, agent }),
     onSuccess: (t) => {
       setCreated({ ...t, name: name.trim(), scopes: [...scopes] });
       void qc.invalidateQueries({ queryKey: TOKENS_KEY });
@@ -102,6 +107,7 @@ function CreateTokenDialog({
     onOpenChange(false);
     setCreated(null);
     setCopied(false);
+    setAgent(false);
     setName("");
     setDays(90);
     setScopes(["creations:read"]);
@@ -189,6 +195,17 @@ function CreateTokenDialog({
                   onChange={(e) => setDays(Math.min(365, Math.max(1, Number(e.target.value) || 1)))}
                 />
               </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id={`${ids.name}-agent`}
+                checked={agent}
+                onCheckedChange={(v) => setAgent(v === true)}
+              />
+              <label htmlFor={`${ids.name}-agent`} className="text-sm">
+                For an agent — contributions made with this token are always marked as
+                agent-written.
+              </label>
             </div>
             <fieldset className="space-y-2">
               <legend className="mb-2 text-sm font-semibold">Scopes</legend>

@@ -50605,9 +50605,17 @@ var ReleaseSummarySchema = external_exports.strictObject({
   status_reason: external_exports.string().optional(),
   semantic_digest: DigestSchema,
   effective_rating: RatingSchema,
-  created_at: external_exports.string()
+  created_at: external_exports.string(),
+  source: external_exports.object({
+    kind: external_exports.enum(["native", "github"]),
+    repository_id: external_exports.string().optional(),
+    commit: external_exports.string().optional(),
+    path: external_exports.string().optional()
+  }).optional(),
+  publisher: external_exports.object({ kind: external_exports.enum(["user", "github_actions"]), user: external_exports.string().optional() }).optional()
 });
 var CreationSummarySchema = external_exports.strictObject({
+  avatar_url: external_exports.string().optional(),
   id: external_exports.string(),
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
@@ -50628,6 +50636,7 @@ var CreationDetailSchema = CreationSummarySchema.extend({
   warning: external_exports.string().optional()
 });
 var DraftSchema = external_exports.strictObject({
+  unconfirmed_import: external_exports.string().optional(),
   version: external_exports.number().int().nonnegative(),
   working: external_exports.unknown(),
   base_revision_id: external_exports.string().nullable(),
@@ -50694,6 +50703,8 @@ var SourceBindingSchema = external_exports.strictObject({
 });
 var UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 var MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+var MAX_ASSET_BYTES = 8 * 1024 * 1024;
+var MAX_CARD_JSON_BYTES = 5 * 1024 * 1024;
 var CreateUploadRequestSchema = external_exports.strictObject({
   purpose: external_exports.enum(["asset", "import"]),
   content_type: external_exports.enum([...UPLOAD_TYPES, "application/json", "application/zip"]),
@@ -50786,6 +50797,8 @@ var PutDraftResponseSchema = external_exports.strictObject({
   )
 });
 var MyCreationSchema = external_exports.strictObject({
+  avatar_url: external_exports.string().optional(),
+  open_contributions: external_exports.number().int().nonnegative().optional(),
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema,
@@ -50841,6 +50854,8 @@ var ContributionAuthorSchema = external_exports.union([
   external_exports.strictObject({ guest_id: external_exports.string(), display_name: external_exports.string() })
 ]);
 var ContributionSummarySchema = external_exports.strictObject({
+  change_count: external_exports.number().int().nonnegative().optional(),
+  has_conflicts: external_exports.boolean().optional(),
   id: external_exports.string(),
   number: external_exports.number().int().positive(),
   title: external_exports.string(),

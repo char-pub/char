@@ -15,7 +15,11 @@ import { creations, githubInstallations, sourceBindings } from "../src/db/schema
 import { QUEUE_NAMES } from "../src/jobs/definitions.js";
 import { startGitHubWorkers } from "../src/processes/modules.js";
 import { normalizeEvent, SUBSCRIBED_EVENTS, type SubscribedEvent } from "../src/webhook/github.js";
-import { createGitHubHarness, type GitHubHarness } from "./github-harness.js";
+import {
+  createGitHubHarness,
+  type GitHubHarness,
+  grantRepositoryAccess,
+} from "./github-harness.js";
 import { createTestDatabase, type TestDatabase, testCas } from "./helpers.js";
 
 interface Definition {
@@ -110,6 +114,7 @@ beforeAll(async () => {
   t = await createTestDatabase();
   g = await createGitHubHarness(t, testCas());
   alice = await g.h.createUser("alice");
+  await grantRepositoryAccess(t, g, alice, ["186853002", "186853261"]);
   const me = g.h.as(alice);
   expect((await me.post("/v1/namespaces", { slug: "octo" })).status).toBe(201);
   for (const name of ["hello", "coders"]) {

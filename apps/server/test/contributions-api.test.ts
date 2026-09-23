@@ -346,6 +346,14 @@ describe("authorization", () => {
     // 列表：非成员只看到自己的，匿名看不到。
     const mine = await json(await h.asUser(contributor).get(`${path}/contributions`));
     expect((mine.items as unknown[]).length).toBeGreaterThan(0);
+    expect(mine.counts).toMatchObject({ open: expect.any(Number), withdrawn: expect.any(Number) });
+    const firstPage = await json(await h.asUser(contributor).get(`${path}/contributions?limit=1`));
+    expect(firstPage.counts).toEqual(mine.counts);
+    expect(
+      (mine.items as { has_conflicts?: boolean; change_count: number }[]).every(
+        (i) => i.change_count > 0 && i.has_conflicts === undefined,
+      ),
+    ).toBe(true);
     const anon = await json(await h.anonymous().get(`${path}/contributions`));
     expect(anon.items).toEqual([]);
   });

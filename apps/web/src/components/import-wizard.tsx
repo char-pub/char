@@ -5,8 +5,10 @@
  * 卡片很少写明归属与复用条件，所以评级、权利与许可必须由作者逐项选择，没有默认值可以
  * 直接跳过；在确认之前，导入生成的 Creation 不能发布。
  */
+
 import type { ImportStatus } from "@char-pub/contracts";
 import { NAME_RE, type Rating } from "@char-pub/core";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Check, FileJson, FileUp, Loader2 } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { AddressField, type Availability, useNameAvailability } from "@/components/address-field";
@@ -294,7 +296,7 @@ function UploadStep({
               <FileUp className="size-5" />
             </span>
             <p className="font-semibold">Choose a Character Card V2 or V3</p>
-            <p className="text-sm text-text-2">PNG, JSON or CHARX, up to 20 MB.</p>
+            <p className="text-sm text-text-2">PNG or CHARX up to 20 MiB; JSON up to 5 MiB.</p>
             <Button type="button" variant="outline" asChild>
               <label htmlFor={ids.file} className="cursor-pointer">
                 <FileUp aria-hidden /> Choose a file
@@ -329,7 +331,15 @@ function UploadStep({
   );
 }
 
-export function ImportWizard({ ns, onCreated }: { ns: string; onCreated: (name: string) => void }) {
+export function ImportWizard({
+  ns,
+  onCreated,
+  resume,
+}: {
+  ns: string;
+  onCreated: (name: string) => void;
+  resume?: string | undefined;
+}) {
   const client = useRegistry();
   const [file, setFile] = useState<File | null>(null);
   const [slug, setSlug] = useState("");
@@ -341,6 +351,25 @@ export function ImportWizard({ ns, onCreated }: { ns: string; onCreated: (name: 
   const ids = { file: useId(), slug: useId(), hint: useId(), report: useId(), confirm: useId() };
   const availability = useNameAvailability(ns, slug, !!file && !status);
 
+  const resumed = useQuery({
+    queryKey: ["import-resume", resume],
+    queryFn: async () => {
+      const done = await waitForImport(client, await client.importStatus(resume as string));
+      if (done.status !== "succeeded" || !done.creation) throw new Error("Import not ready");
+      if (!done.creation.startsWith(`@${ns}/`)) throw new Error("Namespace does not match");
+      const draft = await client.draft(ns, done.creation.split("/")[1] as string);
+      return { done, working: draft.working as { fragments?: { id: string; stable?: boolean }[] } };
+    },
+    enabled: !!resume,
+    retry: false,
+  });
+  useEffect(() => {
+    if (!resumed.data) return;
+    setStatus(resumed.data.done);
+    setUnstable(
+      (resumed.data.working.fragments ?? []).filter((f) => f.stable === false).map((f) => f.id),
+    );
+  }, [resumed.data]);
   const name = status?.creation?.split("/")[1] ?? slug;
 
   const start = async () => {
@@ -428,6 +457,31 @@ export function ImportWizard({ ns, onCreated }: { ns: string; onCreated: (name: 
     </p>
   ) : null;
 
+  if (resume && !status)
+    return (
+      <div className="space-y-3" role="status">
+        {resumed.isError ? (
+          <>
+            <p>
+              The import could not be loaded. It may still be processing, or you may not have
+              access.
+            </p>
+            <Button variant="outline" onClick={() => void resumed.refetch()}>
+              Try again
+            </Button>
+          </>
+        ) : (
+          <p>Loading your import…</p>
+        )}
+      </div>
+    );
+  if (status?.confirmed_at)
+    return (
+      <div className="space-y-3">
+        <p>This import is already confirmed.</p>
+        <Button onClick={() => onCreated(name)}>Open the editor</Button>
+      </div>
+    );
   const report = status?.report;
   if (!status || !report) {
     return (

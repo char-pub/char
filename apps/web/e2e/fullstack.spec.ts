@@ -48,6 +48,17 @@ test("UC-1: create, publish and download a character in the browser", async ({
   await expect(page.getByRole("button", { name: "Replace" })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("All changes saved")).toBeVisible({ timeout: 30_000 });
 
+  // Clear the in-memory upload preview: an unpublished avatar must load from authenticated storage.
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Avatar preview" })).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .getByRole("img", { name: "Avatar preview" })
+        .evaluate((img: HTMLImageElement) => img.naturalWidth),
+    )
+    .toBeGreaterThan(0);
+
   // 4. 在发布对话框里发布 1.0.0 并查看 Publish Report。
   await page.getByRole("button", { name: "Publish…" }).click();
   const dialog = page.getByRole("dialog");
@@ -69,6 +80,11 @@ test("UC-1: create, publish and download a character in the browser", async ({
   await expect(visitor.getByText(/cheerful courier who knows every alley/)).toBeVisible();
   // 作品头部的头像（顶栏的品牌 logo 不在 main 里）。
   await expect(visitor.locator("main header img")).toHaveCount(1);
+  const avatarResponse = await visitor.request.get(
+    `/v1/creations/@${ns}/alice-courier/releases/1.0.0/avatar`,
+  );
+  expect(avatarResponse.ok()).toBe(true);
+  expect(avatarResponse.headers()["content-type"]).toContain("image/webp");
   await expect(visitor.getByRole("heading", { name: "Why this rating" })).toBeVisible();
   await expect(
     visitor.getByRole("main").getByText(`@${ns}/alice-courier@1.0.0`, { exact: true }),

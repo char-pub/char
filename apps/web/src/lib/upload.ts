@@ -3,14 +3,14 @@
  * 对象存储，然后通知 API 进入处理队列（格式校验、去除元数据、安全扫描），等到 ready 后
  * 得到可以在 Creation 里引用的 blob。
  */
-import { UPLOAD_TYPES } from "@char-pub/contracts";
+import { MAX_ASSET_BYTES, UPLOAD_TYPES } from "@char-pub/contracts";
 import { sha256Bytes } from "@char-pub/core";
 import type { RegistryClient } from "./api";
 import type { BlobInfo } from "./draft";
 
 export const IMAGE_TYPES: readonly string[] = UPLOAD_TYPES;
 /** 头像等图片 asset 的大小上限。 */
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = MAX_ASSET_BYTES;
 
 export class UploadError extends Error {
   constructor(message: string) {
@@ -40,7 +40,7 @@ export async function uploadImage(
   if (!IMAGE_TYPES.includes(file.type)) {
     throw new UploadError("Use a PNG, JPEG, WebP or GIF image.");
   }
-  if (file.size > MAX_IMAGE_BYTES) throw new UploadError("Images can be at most 10 MB.");
+  if (file.size > MAX_IMAGE_BYTES) throw new UploadError("Images can be at most 8 MiB.");
   const bytes = new Uint8Array(await file.arrayBuffer());
   const target = await client.createUpload({
     purpose: "asset",

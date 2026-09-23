@@ -9,6 +9,7 @@
  */
 import { createHmac, randomUUID } from "node:crypto";
 import { createLocalJWKSet, exportJWK, generateKeyPair, type JWTPayload, SignJWT } from "jose";
+import { authAccount } from "../src/db/schema/index.js";
 import type { GitHubDeps } from "../src/github/deps.js";
 import { MemoryGitHubSource } from "../src/github/source.js";
 import { GITHUB_OIDC_ISSUER } from "../src/oidc/github.js";
@@ -16,6 +17,20 @@ import { githubApiModules } from "../src/processes/modules.js";
 import type { Cas } from "../src/storage/cas.js";
 import { type ApiHarness, createHarness } from "./api-harness.js";
 import type { TestDatabase } from "./helpers.js";
+
+export async function grantRepositoryAccess(
+  t: TestDatabase,
+  g: GitHubHarness,
+  uid: string,
+  repos: string[],
+  accountId = "4242",
+) {
+  await t.app.db
+    .insert(authAccount)
+    .values({ id: randomUUID(), userId: uid, providerId: "github", accountId })
+    .onConflictDoNothing();
+  for (const repo of repos) g.source.writers.add(`${repo}:${accountId}`);
+}
 
 export const AUDIENCE = "https://api.char.pub";
 export const WEBHOOK_PATH = "/v1/github/webhook";

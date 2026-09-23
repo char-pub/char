@@ -187,10 +187,27 @@ test("the owner sets who can contribute, invites by @namespace and resolves a fr
     action: "rebind",
   });
 
-  await expect(page.getByRole("link", { name: "Request removal…" })).toHaveAttribute(
-    "href",
-    "/policy#report",
-  );
+  api.on("POST /v1/me/deletion-requests", {
+    status: 202,
+    body: {
+      id: "request-1",
+      status: "received",
+      created_at: "2026-09-24T00:00:00Z",
+      subjects: ["cr_test"],
+    },
+  });
+  await page.getByRole("button", { name: "Request removal…" }).click();
+  const removal = page.getByRole("dialog", { name: "Request removal of @djj/alice?" });
+  await expect(removal.getByRole("button", { name: "Send request" })).toBeDisabled();
+  await removal.getByLabel("Reason").fill("Please remove this test creation.");
+  await removal.getByRole("checkbox").check();
+  await removal.getByRole("button", { name: "Send request" }).click();
+  await expect(removal.getByRole("status")).toContainText("Request received");
+  expect(api.calls.find((c) => c.path === "/v1/me/deletion-requests")?.body).toEqual({
+    creation: "@djj/alice",
+    reason: "Please remove this test creation.",
+    confirm: true,
+  });
 });
 
 test("someone else's creation has no settings: the address is a 404", async ({ page }) => {
@@ -268,5 +285,52 @@ test("a signed-in report about the whole creation explains a rate limit", async 
   await expect(dialog.getByRole("alert")).toContainText("Try again later");
   expect(api.calls.find((c) => c.path.endsWith("/reports"))?.body).toEqual({
     category: "copyright",
+  });
+});
+
+test("connects an installed repository using verified lookup results", async ({ page }) => {
+  const api = await setup(page, OWNER);
+  api.on(`GET ${BASE}/source-binding`, problem(404, "not_found"));
+  api.on(`GET ${BASE}/source-binding/connect`, {
+    body: { linked: true, installation_url: "https://github.com/apps/char-pub/installations/new" },
+  });
+  api.on(`POST ${BASE}/source-binding/lookup`, {
+    body: {
+      id: "123",
+      owner_id: "456",
+      full_name: "djj/card",
+      installation_id: "789",
+      default_branch: "trunk",
+    },
+  });
+  const binding = {
+    repository_id: "123",
+    repository_owner_id: "456",
+    installation_id: "789",
+    full_name: "djj/card",
+    path: "char.yaml",
+    tracked_ref: "refs/heads/trunk",
+    publish_refs: ["refs/tags/*"],
+    status: "active",
+  };
+  api.on(`POST ${BASE}/source-binding`, () => {
+    api.on(`GET ${BASE}/source-binding`, { body: binding });
+    return { status: 201, body: binding };
+  });
+  await page.goto("/c/djj/alice/settings");
+  const github = page.getByRole("region", { name: "Publish from GitHub" });
+  await github.getByLabel("Repository", { exact: true }).fill("https://github.com/djj/card");
+  await github.getByRole("button", { name: "Find repository" }).click();
+  await expect(github.getByLabel("Tracked branch")).toHaveValue("trunk");
+  await github.getByRole("button", { name: "Connect repository" }).click();
+  await expect(github.getByText("Active", { exact: true })).toBeVisible();
+  expect(
+    api.calls.find((c) => c.method === "POST" && c.path === `${BASE}/source-binding`)?.body,
+  ).toEqual({
+    installation_id: "789",
+    repository_id: "123",
+    path: "char.yaml",
+    tracked_ref: "refs/heads/trunk",
+    publish_refs: ["refs/tags/*"],
   });
 });

@@ -6,9 +6,14 @@ import { SignInRequired } from "@/components/sign-in-required";
 import { PageSkeleton } from "@/components/skeletons";
 import { useMe } from "@/lib/registry";
 
-export const Route = createFileRoute("/create/import")({ component: ImportRoute });
+export const Route = createFileRoute("/create/import")({
+  validateSearch: (s: Record<string, unknown>): { resume?: string } =>
+    typeof s.resume === "string" ? { resume: s.resume } : {},
+  component: ImportRoute,
+});
 
 function ImportRoute() {
+  const { resume } = Route.useSearch();
   const me = useMe();
   const navigate = useNavigate();
   if (me.isPending) return <PageSkeleton label="Loading" className="mx-auto max-w-4xl" />;
@@ -33,6 +38,8 @@ function ImportRoute() {
       {ns ? (
         <ImportWizard
           ns={ns}
+          resume={resume}
+          key={resume ?? "new"}
           onCreated={(name) => void navigate({ to: "/c/$ns/$name/edit", params: { ns, name } })}
         />
       ) : (

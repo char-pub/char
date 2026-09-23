@@ -1,17 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Trash2 } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useCreation } from "@/components/creation-context";
 import { FactCard } from "@/components/creation-facts";
 import { ContributionPolicySettings } from "@/components/creation-settings";
+import { DeletionRequestButton } from "@/components/deletion-request";
 import { SourceBindingSettings } from "@/components/source-binding";
 import { NotFound } from "@/components/states";
-import { buttonVariants } from "@/components/ui/button";
 
 export const Route = createFileRoute("/c/$ns/$name/settings")({ component: SettingsTab });
 
 /**
  * 作品设置，只有这个 namespace 的成员能进；其他人看到和不存在一样的 404。
- * 版本是永久的：作者只能 yank，彻底移除要请员工处理（目前先链接到内容政策页）。
+ * 版本是永久的：作者只能 yank，彻底移除通过请求表单交给员工审核。
  */
 function SettingsTab() {
   const c = useCreation();
@@ -28,9 +27,7 @@ function SettingsTab() {
           Releases are permanent. You can yank a version from the Versions tab, or ask us to remove
           it.
         </p>
-        <Link to="/policy" hash="report" className={buttonVariants({ variant: "destructive" })}>
-          <Trash2 aria-hidden /> Request removal…
-        </Link>
+        <DeletionRequestButton creation={c.detail.ref} />
       </FactCard>
     </div>
   );

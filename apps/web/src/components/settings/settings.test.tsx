@@ -72,11 +72,13 @@ describe("TokenManager", () => {
     const form = screen.getByRole("dialog", { name: "Create a token" });
     await userEvent.type(within(form).getByLabelText("Token name"), "laptop cli");
     await userEvent.click(within(form).getByLabelText(/Publish releases/));
+    await userEvent.click(within(form).getByLabelText(/For an agent/));
     await userEvent.click(within(form).getByRole("button", { name: "Create token" }));
     expect(createToken).toHaveBeenCalledWith({
       name: "laptop cli",
       scopes: ["creations:read", "releases:publish"],
       expires_in_days: 90,
+      agent: true,
     });
     const created = await screen.findByRole("dialog", { name: "Token created" });
     expect(within(created).getByText(`cp_pat_${"a".repeat(43)}`)).toBeTruthy();

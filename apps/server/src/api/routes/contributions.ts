@@ -38,7 +38,7 @@ import {
   isCharError,
   normalizeValue,
 } from "@char-pub/core";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
@@ -63,6 +63,7 @@ import {
   type ContributionRow,
   changeOf,
   changeRow,
+  contributionCounts,
   guestNamesOf,
   isInvited,
   listContributions,
@@ -369,10 +370,45 @@ export function register(app: Hono<Env>): void {
         ...(before !== undefined ? { beforeNumber: before } : {}),
         limit: q.data.limit,
       });
+      const counts = await contributionCounts(c.var.services.db, ctx.creation.id, {
+        ...(q.data.agent ? { agent: q.data.agent === "true" } : {}),
+        ...(!member && p.kind === "user" ? { authorUserId: p.user_id } : {}),
+        ...(p.kind === "guest" ? { authorGuestId: p.guest_id } : {}),
+      });
+      const changes = rows.length
+        ? await c.var.services.db
+            .select()
+            .from(contributionChanges)
+            .where(
+              inArray(
+                contributionChanges.contributionId,
+                rows.map((r) => r.id),
+              ),
+            )
+            .orderBy(contributionChanges.position)
+        : [];
+      const grouped = new Map<string, unknown[]>();
+      for (const change of changes) {
+        const items = grouped.get(change.contributionId) ?? [];
+        items.push(changeOf(change));
+        grouped.set(change.contributionId, items);
+      }
+      const draft = member ? await loadDraft(c.var.services.db, ctx.creation.id) : null;
+      c.header("cache-control", "private, no-store");
       const last = rows.at(-1);
       const names = await authorNamesOf(c.var.services.db, rows);
       return c.json({
-        items: rows.map((r) => summaryJson(r, names)),
+        counts,
+        items: rows.map((r) => {
+          const changes = grouped.get(r.id) ?? [];
+          const preview =
+            member && r.status === "open" ? previewJson(tryMerge(draft?.working, changes)) : null;
+          return {
+            ...summaryJson(r, names),
+            change_count: changes.length,
+            ...(preview ? { has_conflicts: !preview.mergeable } : {}),
+          };
+        }),
         next_cursor: rows.length === q.data.limit && last ? String(last.number) : null,
       });
     },

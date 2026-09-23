@@ -8,7 +8,7 @@
  * 3. 轮询导入状态，拿到 Import Report；
  * 4. 作者显式确认评级、权利与许可之后才能发布。
  */
-import { MAX_UPLOAD_BYTES } from "@char-pub/contracts";
+import { MAX_CARD_JSON_BYTES, MAX_UPLOAD_BYTES } from "@char-pub/contracts";
 import { sha256Bytes } from "@char-pub/core";
 import type { ImportStatus, RegistryClient } from "./api";
 import { UploadError } from "./upload";
@@ -57,10 +57,13 @@ export async function uploadCard(
   file: Blob,
   opts: { pollMs?: number; maxPolls?: number } = {},
 ): Promise<string> {
-  if (file.size > MAX_UPLOAD_BYTES) throw new UploadError("Cards can be at most 20 MB.");
+  if (file.size > MAX_UPLOAD_BYTES) throw new UploadError("Cards can be at most 20 MiB.");
   const bytes = new Uint8Array(await file.arrayBuffer());
   const type = sniffCardType(bytes);
   if (!type) throw new UploadError("This file is not a PNG, JSON or CHARX character card.");
+  if (type === "application/json" && file.size > MAX_CARD_JSON_BYTES) {
+    throw new UploadError("JSON cards can be at most 5 MiB.");
+  }
   const target = await client.createUpload({
     purpose: "import",
     content_type: type,

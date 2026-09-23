@@ -118,15 +118,21 @@ describe("ContributionPolicySettings", () => {
 });
 
 describe("SourceBindingSettings", () => {
-  it("only explains GitHub publishing when nothing is bound", async () => {
+  it("offers installation and verified repository lookup when nothing is bound", async () => {
     renderWithApp(
       <SourceBindingSettings ns="djj" name="alice" />,
-      fakeClient({ sourceBinding: async () => null }),
+      fakeClient({
+        sourceBinding: async () => null,
+        githubConnection: async () => ({
+          linked: true,
+          installation_url: "https://github.com/apps/char-pub/installations/new",
+        }),
+      }),
     );
     const card = await screen.findByRole("region", { name: "Publish from GitHub" });
-    expect(await within(card).findByText(/char.pub GitHub App/)).toBeTruthy();
-    expect(within(card).queryByRole("textbox")).toBeNull();
-    expect(within(card).queryByRole("button")).toBeNull();
+    expect(await within(card).findByRole("link", { name: /Install or configure/ })).toBeTruthy();
+    expect(within(card).getByLabelText("Repository")).toBeTruthy();
+    expect(within(card).getByRole("button", { name: "Find repository" })).toBeTruthy();
   });
 
   it("shows why a frozen binding is paused and lets the owner keep the repository", async () => {
@@ -161,6 +167,10 @@ describe("SourceBindingSettings", () => {
       <SourceBindingSettings ns="djj" name="alice" />,
       fakeClient({
         sourceBinding: async () => (bound ? BINDING : null),
+        githubConnection: async () => ({
+          linked: true,
+          installation_url: "https://github.com/apps/char-pub/installations/new",
+        }),
         unbindSource: async (...args) => {
           bound = false;
           return unbindSource(...args);
@@ -172,6 +182,6 @@ describe("SourceBindingSettings", () => {
     const confirm = await screen.findByRole("alertdialog", { name: "Unbind djj/alice-character?" });
     await userEvent.click(within(confirm).getByRole("button", { name: "Unbind" }));
     await waitFor(() => expect(unbindSource).toHaveBeenCalledWith("djj", "alice"));
-    expect(await within(card).findByText(/No repository is connected/)).toBeTruthy();
+    expect(await within(card).findByRole("button", { name: "Find repository" })).toBeTruthy();
   });
 });

@@ -2,16 +2,13 @@
 
 ## Current state
 
-- Goal：按 `DECISIONS.md` 与 `spec/` 从头实现 char.pub v0，包括成熟选型、架构、安全、admin 控制和单元测试（2026-09-22 用户提出）。用户已通过 `/goal` 授权持续执行 LOOP，并允许用 subagent / workflow 加速。
+- Goal：完成 char.pub v0；本轮按用户“先把功能实现”的指示，补齐 web 重设计后留下的功能缺口。
 - Package：`docs/goals/v0/`
-- Status：**实现中；已推送到 `char-pub/char`，staging 资源已部分创建**。用户授权后 force push 覆盖了远端（原内容备份在本地 ref `refs/backup/char-pub-char-old-prototype`，91b0fec）。
-- Current work：
-  - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA；Admin SPA（全部接口接入）；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、Registry 写路径与发布 worker、admin 业务路由（四眼、法律请求、员工）、CCv3 导出 worker、bootstrap 命令、GitHub webhook / Source binding / OIDC 发布 / 同步与对账、Contribution API、经验证访客（Turnstile + 邮箱）、CCv3 导入 API 与 worker；单镜像五命令；runbooks；部署指南；冒烟测试脚本。
-  - 并行 subagent：服务端测试缺口（M4-2、M4-3 lint 规则、M4-6、M7-1、M7-2、M7-2b、M9-1）与默认作者；web 的 Contribution 审阅 UI（M8-4）、访客验证页、导入向导改走服务端；admin 后端缺口（锁定上传、namespace 转让、反通知、隔离证据访问、案件与审计导出、强制登出、访客管理页）。
-  - 下一步：合并正在进行的 subagent 结果 → 完整回归 → 一致性用例人工审阅 → 等用户授权后推送与部署 staging。
-- Acceptance：已勾选 17 条（M1-4、M2-3、M2-4、M3-1、M3-4、M4-1、M4-4、M4-5、M5-1～M5-5、M6-1～M6-3、M7-3），证据见 [evidence/2026-09-22-dod-local-audit.md](evidence/2026-09-22-dod-local-audit.md)。M2-1、M2-2、M3-2、M3-3 等待一致性用例的人工接受；M0-1 / M0-2 需要 CI 运行记录（依赖 B-10）。
-- Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
-- 等待用户：一致性用例审阅与接受；复核 D-126 / D-129 / D-130；决定 D-135 第 1 条（CCv3 导入的默认 rights）；授权 force push、组织设置、staging 资源、OAuth App 与 GitHub App 创建。
+- Status：主站已上线，web 重设计已合并（PR #5）。本轮功能补齐在本地验证，尚未推送或部署；不再维护 staging。
+- Current work：GitHub App 安装与仓库绑定、删除申请及后台详情、导入确认恢复、草稿与列表头像、贡献统计和冲突标记、发布来源与 Agent Token 已实现；全量回归已通过，知识同步收尾中。
+- Acceptance：DOD 当前 35 条已勾选、22 条未勾选。本轮不代替人工审阅或主站验收，不新增验收勾选。
+- Remaining：一致性用例与界面/runbook 人工审阅、主站端到端验收（包含第二账号的 GitHub 转移/改名反例）、备份恢复演练、commons 种子库、npm 发布、公开开放确认。具体依赖见 DOD / DOR。
+- 等待用户：运营主体名称和公开联系邮箱尚未确定（2026-09-24 用户答复）；政策页面明确保留待补项。部署和对外发布依照 LOOP 单独授权。
 
 ## Evidence and decision history
 
@@ -220,3 +217,13 @@
 - **接口缺字段、这次没做的**：搜索结果与我的作品没有头像（卡片用类型色加首字母）；Release 没有来源与发布者字段；贡献列表没有各状态数量、变更数与冲突标记；Token 列表不显示 Agent 标记；web 不能新建 GitHub 绑定（缺 GitHub App 安装流程）；“请求删除”暂时链接到 `/policy`；未发布过的头像换设备后无法预览。
 - **原有的不一致，未改**：web 限制头像 10 MB，security.md 写的是 8 MiB，服务端对上传统一只限 20 MB；导入后未确认就去发布（`publish.import_unconfirmed`）时，web 上没有回到导入确认的入口。
 - M8-3 的截图（`evidence/m8/`）是重设计之前的样子，人工审阅前需要重新截取。
+
+### 2026-09-24 补齐用户侧功能
+
+- 完成 GitHub App 安装入口、账号关联、仓库查找与绑定表单；查找、绑定、转移后重绑定都校验当前登录账号关联的 GitHub 数字身份和仓库写入权限，拒绝仅凭 installation/repository ID 绑定他人仓库。
+- 删除入口改为提交申请、回执与本人状态列表，接入既有法律请求队列；请求正文加密，管理后台可查看申请人、类型与理由。提交申请不会立即删除账号或作品。
+- 导入中断后可从编辑器返回确认向导；评级、权利和许可继续要求显式选择。前端限制统一为图片 8 MiB、JSON 5 MiB、PNG/CHARX 20 MiB（服务端原本已有该区分，上一条记录“统一只限 20 MB”不准确）。
+- 草稿头像通过鉴权接口获取本人已处理上传的签名地址，支持页面刷新；搜索和我的作品展示头像。修复公开发布 worker 漏复制镜像图片到公共存储的缺陷。
+- 贡献列表补充各状态数量、变更数与仅成员可见的当前冲突标记；我的作品显示待处理贡献数；版本列表显示来源与发布者摘要；Token 创建和列表支持 Agent 标记。
+- Verification：本地完整浏览器流程 3 项通过（创建/上传/刷新/发布/匿名读取、导入确认/发布/导出、贡献 rebase 与敏感变更确认）。`pnpm ci:all` 全部通过：单元 1247、web/admin 组件 176、一致性 103（另有 81 项既存 todo 等人工接受）、服务端集成及单元 1364、web e2e 57、admin e2e 107；lint、类型、依赖、构建、Action dist 一致性、gitleaks 均通过。
+- Remaining：本轮尚未部署；运营主体及联系邮箱待用户确定。此前人工审阅、主站验收、备份恢复和发布任务维持待办。

@@ -5,7 +5,7 @@
  * - 刚上传的图片用本地的 blob URL（只在这个浏览器里，不经过网络）；同一次会话里按 digest
  *   记住它，重新加载草稿后还能显示；
  * - 已经发布过的头像从最新 public 版本的 Context IR 里找同一个 digest 的公共地址；
- * - 两者都没有时（例如换了设备，头像还没发布过）显示占位图，说明发布后才有公共预览。
+ * - 没有本地或已发布预览时，向草稿接口申请本人上传图片的短期读取地址，换设备后仍可预览。
  */
 import { useQuery } from "@tanstack/react-query";
 import { ImageIcon, ImageUp, Loader2, X } from "lucide-react";
@@ -54,7 +54,21 @@ export function AvatarField({
   const published = digest
     ? ir.data?.assets.find((a) => a.digest === digest && a.url)?.url
     : undefined;
-  const src = uploading ?? local ?? published;
+  const privatePreview = useQuery({
+    queryKey: [...keys.draft(ns, name), "avatar", digest],
+    queryFn: () => client.draftAvatar(ns, name),
+    enabled: !!digest && !local && !published,
+    retry: false,
+    staleTime: 60_000,
+    refetchInterval: 240_000,
+  });
+  const src =
+    uploading ??
+    local ??
+    published ??
+    (privatePreview.data && privatePreview.data.digest === digest
+      ? privatePreview.data.url
+      : undefined);
 
   useEffect(
     () => () => {
@@ -91,7 +105,7 @@ export function AvatarField({
         ) : digest ? (
           <span className="flex flex-col items-center gap-1 px-2 text-center text-[0.65rem] leading-tight">
             <ImageIcon aria-hidden className="size-5" />
-            Preview after publishing
+            Preview unavailable
           </span>
         ) : (
           <span className="flex flex-col items-center gap-1 text-xs">
@@ -142,7 +156,7 @@ export function AvatarField({
         ) : null}
       </div>
       <p className="text-[0.7rem] leading-snug text-text-3">
-        PNG, JPEG, WebP or GIF, up to 10 MB. Checked before it's published.
+        PNG, JPEG, WebP or GIF, up to 8 MiB. Checked before it's published.
       </p>
       {error ? (
         <p role="alert" className="text-xs text-danger">

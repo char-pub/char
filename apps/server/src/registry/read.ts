@@ -217,6 +217,27 @@ export function releaseSummary(r: ReleaseRow): ReleaseSummary {
     effective_rating: r.effectiveRating ?? "general",
     created_at: r.createdAt.toISOString(),
   };
+  const source = r.source as {
+    provider?: string;
+    repository_id?: string;
+    commit?: string;
+    path?: string;
+  } | null;
+  out.source =
+    source?.provider === "github"
+      ? {
+          kind: "github",
+          ...(typeof source.repository_id === "string"
+            ? { repository_id: source.repository_id }
+            : {}),
+          ...(typeof source.commit === "string" ? { commit: source.commit } : {}),
+          ...(typeof source.path === "string" ? { path: source.path } : {}),
+        }
+      : { kind: "native" };
+  out.publisher =
+    typeof r.publishedBy === "string"
+      ? { kind: "user", user: r.publishedBy }
+      : { kind: "github_actions" };
   if (r.statusReason) out.status_reason = r.statusReason;
   return out;
 }

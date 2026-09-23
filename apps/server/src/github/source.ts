@@ -16,7 +16,21 @@ export const MAX_SOURCE_FILE_BYTES = 2 * 1024 * 1024;
 const COMMIT_RE = /^[0-9a-f]{40}$/;
 
 /** 读取仓库文件的最小接口。测试中用内存实现替代。 */
+export interface RepositoryChoice {
+  id: string;
+  owner_id: string;
+  full_name: string;
+  installation_id: string;
+  default_branch: string;
+}
 export interface GitHubSource {
+  installationUrl?(): Promise<string>;
+  lookupRepository?(fullName: string): Promise<RepositoryChoice | null>;
+  canManageRepository?(
+    installationId: string,
+    repositoryId: string,
+    accountId: string,
+  ): Promise<boolean>;
   /** 在 commit 上读取文件内容。文件不存在时返回 null。 */
   readFile(input: {
     installation_id: string;
@@ -56,6 +70,84 @@ export class GitHubAppSource implements GitHubSource {
     private readonly request: RequestFn = defaultRequest,
   ) {
     this.auth = createAppAuth({ appId: creds.appId, privateKey: creds.privateKey, request });
+  }
+
+  async installationUrl(): Promise<string> {
+    const auth = await this.auth({ type: "app" });
+    const { data } = await this.request("GET /app", {
+      headers: { authorization: `Bearer ${auth.token}` },
+    });
+    const slug = (data as { slug?: string }).slug;
+    if (!slug || !/^[a-z0-9-]+$/i.test(slug)) throw new Error("GitHub App slug is missing");
+    return `https://github.com/apps/${slug}/installations/new`;
+  }
+
+  async lookupRepository(fullName: string): Promise<RepositoryChoice | null> {
+    const [owner, repo] = fullName.split("/");
+    const auth = await this.auth({ type: "app" });
+    try {
+      const installation = await this.request("GET /repos/{owner}/{repo}/installation", {
+        owner: owner ?? "",
+        repo: repo ?? "",
+        headers: { authorization: `Bearer ${auth.token}` },
+      });
+      const installationId = String(installation.data.id);
+      const token = await this.token(installationId);
+      const { data } = await this.request("GET /repos/{owner}/{repo}", {
+        owner: owner ?? "",
+        repo: repo ?? "",
+        headers: { authorization: `Bearer ${token}` },
+      });
+      return {
+        id: String(data.id),
+        owner_id: String(data.owner.id),
+        full_name: data.full_name,
+        installation_id: installationId,
+        default_branch: data.default_branch,
+      };
+    } catch (e) {
+      if ((e as { status?: number }).status === 404) return null;
+      throw e;
+    }
+  }
+
+  async canManageRepository(
+    installationId: string,
+    repositoryId: string,
+    accountId: string,
+  ): Promise<boolean> {
+    const token = await this.token(installationId);
+    const headers = { authorization: `Bearer ${token}` };
+    try {
+      const user = await this.request("GET /user/{account_id}", {
+        account_id: Number(accountId),
+        headers,
+      });
+      if (String(user.data.id) !== accountId) return false;
+      const repo = await this.request("GET /repositories/{repository_id}", {
+        repository_id: Number(repositoryId),
+        headers,
+      });
+      if (String(repo.data.id) !== repositoryId) return false;
+      const [owner, name] = repo.data.full_name.split("/");
+      const { data } = await this.request(
+        "GET /repos/{owner}/{repo}/collaborators/{username}/permission",
+        {
+          owner: owner ?? "",
+          repo: name ?? "",
+          username: user.data.login,
+          headers,
+        },
+      );
+      // Check the numeric identity again: a concurrent rename must never authorize a different user.
+      return (
+        String(data.user?.id) === accountId &&
+        ["admin", "write", "maintain"].includes(data.permission)
+      );
+    } catch (e) {
+      if ([403, 404].includes((e as { status?: number }).status ?? 0)) return false;
+      throw e;
+    }
   }
 
   private async token(installationId: string): Promise<string> {
@@ -119,6 +211,23 @@ export class GitHubAppSource implements GitHubSource {
 
 /** 内存实现：测试与本地开发使用。 */
 export class MemoryGitHubSource implements GitHubSource {
+  readonly writers = new Set<string>();
+  async installationUrl() {
+    return "https://github.com/apps/char-pub-test/installations/new";
+  }
+  async lookupRepository(fullName: string): Promise<RepositoryChoice | null> {
+    for (const [installationId, repos] of this.repos) {
+      const repo = repos.find((r) => r.full_name.toLowerCase() === fullName.toLowerCase());
+      if (repo) return { ...repo, installation_id: installationId, default_branch: "main" };
+    }
+    return null;
+  }
+  async canManageRepository(installationId: string, repositoryId: string, accountId: string) {
+    return (
+      (this.repos.get(installationId) ?? []).some((r) => r.id === repositoryId) &&
+      this.writers.has(`${repositoryId}:${accountId}`)
+    );
+  }
   readonly files = new Map<string, Uint8Array>();
   readonly repos = new Map<string, { id: string; owner_id: string; full_name: string }[]>();
 

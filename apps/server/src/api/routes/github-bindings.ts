@@ -10,16 +10,17 @@
  * 列出它能访问的仓库），不接受客户端提供的值：否则任何人都可以声称自己拥有某个仓库。
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
-import { sourceBindings } from "../../db/schema/index.js";
+import { externalIdentities, sourceBindings } from "../../db/schema/index.js";
 import { bindingForCreation, bindingJson, installationActive } from "../../github/bindings.js";
 import type { GitHubDeps } from "../../github/deps.js";
 import { bindRepository, resolveFrozenBinding } from "../../github/events.js";
 import { normalizeRepoPath } from "../../github/source.js";
 import { problem } from "../../http/middleware.js";
+import { hit } from "../../ops/rate-limit.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
 import { lookupCreation } from "../../registry/lookup.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
@@ -63,9 +64,68 @@ async function authorizeManage(c: AppContext) {
   return { action: "creation.manage_source" as const, resource: ctx.resource, loaded: ctx };
 }
 
+async function githubIdentity(c: AppContext): Promise<string | null> {
+  const [identity] = await c.var.services.db
+    .select({ id: externalIdentities.providerSubject })
+    .from(externalIdentities)
+    .where(
+      and(
+        eq(externalIdentities.userId, userIdOf(c.var.principal)),
+        eq(externalIdentities.provider, "github"),
+      ),
+    )
+    .limit(1);
+  return identity?.id && /^[1-9][0-9]{0,19}$/.test(identity.id) ? identity.id : null;
+}
+async function canBind(c: AppContext, gh: GitHubDeps, installation: string, repository: string) {
+  const identity = await githubIdentity(c);
+  return (
+    !!identity && !!(await gh.source.canManageRepository?.(installation, repository, identity))
+  );
+}
 export function bindingsModule(gh: GitHubDeps): (app: Hono<Env>) => void {
   return (app) => {
     const base = `${CREATION_PATH}/source-binding`;
+    route(app, {
+      method: "get",
+      path: `${base}/connect`,
+      authorize: authorizeManage,
+      handler: async (c) => {
+        if (!gh.source.installationUrl) return problem(c, 503, "github.unavailable");
+        c.header("cache-control", "private, no-store");
+        return c.json({
+          installation_url: await gh.source.installationUrl(),
+          linked: !!(await githubIdentity(c)),
+        });
+      },
+    });
+    route(app, {
+      method: "post",
+      path: `${base}/lookup`,
+      authorize: authorizeManage,
+      body: z.strictObject({
+        repository: z
+          .string()
+          .regex(/^[a-zA-Z0-9-]+\/[a-zA-Z0-9_.-]+$/)
+          .max(200),
+      }),
+      handler: async (c, { body }) => {
+        c.header("cache-control", "private, no-store");
+        if (!(await githubIdentity(c))) return problem(c, 403, "github.identity_required");
+        const rate = await hit(
+          c.var.services.db,
+          `github-lookup:${userIdOf(c.var.principal)}`,
+          { windowSeconds: 60, max: 20 },
+          c.var.services.clock.now(),
+        );
+        if (!rate.allowed) return problem(c, 429, "rate_limited");
+        if (!gh.source.lookupRepository) return problem(c, 503, "github.unavailable");
+        const repo = await gh.source.lookupRepository(body.repository);
+        // Do not disclose installation IDs or private repository metadata before checking the user.
+        if (!repo || !(await canBind(c, gh, repo.installation_id, repo.id))) return notFound(c);
+        return c.json(repo);
+      },
+    });
 
     route(app, {
       method: "post",
@@ -96,6 +156,14 @@ export function bindingsModule(gh: GitHubDeps): (app: Hono<Env>) => void {
             422,
             "github.repository_not_accessible",
             "the GitHub App installation cannot access this repository",
+          );
+        }
+        if (!(await canBind(c, gh, body.installation_id, repo.id))) {
+          return problem(
+            c,
+            403,
+            "github.repository_forbidden",
+            "a linked GitHub account with write access is required",
           );
         }
         const tracked = body.tracked_ref ?? "refs/heads/main";
@@ -150,6 +218,9 @@ export function bindingsModule(gh: GitHubDeps): (app: Hono<Env>) => void {
               "github.repository_not_accessible",
               "the GitHub App installation can no longer access this repository; bind a new repository instead",
             );
+          }
+          if (!(await canBind(c, gh, b.installationId.toString(), repo.id))) {
+            return problem(c, 403, "github.repository_forbidden");
           }
           newOwner = repo.owner_id;
         }

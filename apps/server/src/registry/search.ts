@@ -224,6 +224,7 @@ export async function searchCreations(
       effective_rating: effectiveRatingOf(r.effectiveRating ?? c.rating, c.forcedRating),
       tags: c.tags,
       latest_release: releaseSummary(r),
+      avatar_url: `/v1/creations/@${slug}/${c.name}/releases/${encodeURIComponent(r.label)}/avatar`,
     };
     if (c.summary !== null) s.summary = c.summary as CreationSummary["display_name"];
     return s;

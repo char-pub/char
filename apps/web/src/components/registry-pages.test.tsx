@@ -124,113 +124,131 @@ describe("ImportWizard", () => {
     },
   };
 
-  it("imports through the registry, shows omitted field names only and requires explicit choices", async () => {
-    const report = {
-      container: "json" as const,
-      format: "ccv3",
-      spec: "chara_card_v3",
-      spec_version: "3.0",
-      source_digest: `sha256:${"a".repeat(64)}` as const,
-      mappings: [{ from: "data.description", to: "fragments[description]" }],
-      omitted_policy_fields: [
-        { field: "system_prompt", value: SECRET },
-        { field: "post_history_instructions", value: `${SECRET}-PHI` },
-      ],
-      placeholders: [],
-      lorebook: [],
-      assets: [],
-      dropped: [],
-      needs_confirmation: ["meta.rating", "meta.rights", "meta.license"] as const,
-      warnings: [],
-    };
-    const status = {
-      import: "imp_01j00000000000000000000000",
-      status: "succeeded" as const,
-      creation: "@writer/mira",
-      needs_confirmation: ["meta.rating", "meta.rights", "meta.license"] as (
-        | "meta.rating"
-        | "meta.rights"
-        | "meta.license"
-      )[],
-      confirmed_at: null,
-      report: { ...report, needs_confirmation: [...report.needs_confirmation] },
-      created_at: "2026-09-22T12:00:00.000Z",
-    };
-    const createUpload = vi.fn(async () => ({
-      upload: "0199a000-0000-7000-8000-000000000001",
-      put_url: "https://uploads.example.test/x",
-      headers: {},
-      expires_at: "2026-09-22T12:10:00.000Z",
-    }));
-    const createImport = vi.fn(async () => status);
-    const confirmImport = vi.fn(async () => ({
-      ...status,
-      confirmed_at: "2026-09-22T12:01:00.000Z",
-    }));
-    const onCreated = vi.fn();
-    const client = fakeClient({
-      createUpload,
-      putUpload: async () => {},
-      completeUpload: async () => ({ upload: "u", status: "ready" as const }),
-      createImport,
-      draft: async () => ({
-        version: 1,
-        working: {
-          fragments: [{ id: "lore-1", stable: false }],
-          meta: {
-            rating: "general",
-            rights: "original",
-            license: "LicenseRef-All-Rights-Reserved",
+  it.each([false, true])(
+    "imports or resumes (%s), hides omitted field values and requires explicit choices",
+    async (resume) => {
+      const report = {
+        container: "json" as const,
+        format: "ccv3",
+        spec: "chara_card_v3",
+        spec_version: "3.0",
+        source_digest: `sha256:${"a".repeat(64)}` as const,
+        mappings: [{ from: "data.description", to: "fragments[description]" }],
+        omitted_policy_fields: [
+          { field: "system_prompt", value: SECRET },
+          { field: "post_history_instructions", value: `${SECRET}-PHI` },
+        ],
+        placeholders: [],
+        lorebook: [],
+        assets: [],
+        dropped: [],
+        needs_confirmation: ["meta.rating", "meta.rights", "meta.license"] as const,
+        warnings: [],
+      };
+      const status = {
+        import: "imp_01j00000000000000000000000",
+        status: "succeeded" as const,
+        creation: "@writer/mira",
+        needs_confirmation: ["meta.rating", "meta.rights", "meta.license"] as (
+          | "meta.rating"
+          | "meta.rights"
+          | "meta.license"
+        )[],
+        confirmed_at: null,
+        report: { ...report, needs_confirmation: [...report.needs_confirmation] },
+        created_at: "2026-09-22T12:00:00.000Z",
+      };
+      const createUpload = vi.fn(async () => ({
+        upload: "0199a000-0000-7000-8000-000000000001",
+        put_url: "https://uploads.example.test/x",
+        headers: {},
+        expires_at: "2026-09-22T12:10:00.000Z",
+      }));
+      const createImport = vi.fn(async () => status);
+      const confirmImport = vi.fn(async () => ({
+        ...status,
+        confirmed_at: "2026-09-22T12:01:00.000Z",
+      }));
+      const onCreated = vi.fn();
+      const client = fakeClient({
+        createUpload,
+        putUpload: async () => {},
+        completeUpload: async () => ({ upload: "u", status: "ready" as const }),
+        createImport,
+        importStatus: async () => status,
+        draft: async () => ({
+          version: 1,
+          working: {
+            fragments: [{ id: "lore-1", stable: false }],
+            meta: {
+              rating: "general",
+              rights: "original",
+              license: "LicenseRef-All-Rights-Reserved",
+            },
           },
+          base_revision_id: null,
+          updated_at: "2026-09-22T12:00:00.000Z",
+        }),
+        confirmImport,
+        // 地址可用性检查：没人用过这个地址。
+        creation: async () => {
+          throw new ApiError(404, "not_found");
         },
-        base_revision_id: null,
-        updated_at: "2026-09-22T12:00:00.000Z",
-      }),
-      confirmImport,
-      // 地址可用性检查：没人用过这个地址。
-      creation: async () => {
-        throw new ApiError(404, "not_found");
-      },
-    });
-    renderWithApp(<ImportWizard ns="writer" onCreated={onCreated} />, client);
-    const file = new File([JSON.stringify(card)], "Mira.json", { type: "application/json" });
-    await userEvent.upload(await screen.findByLabelText("Character card"), file);
-    expect((screen.getByLabelText("Address") as HTMLInputElement).value).toBe("mira");
-    await userEvent.click(screen.getByRole("button", { name: "Read the card" }));
-
-    const omitted = await screen.findByRole("list", { name: "Omitted fields" });
-    expect(within(omitted).getByText("system_prompt")).toBeTruthy();
-    expect(within(omitted).getByText("post_history_instructions")).toBeTruthy();
-    expect(document.body.textContent).not.toContain(SECRET);
-    expect(screen.getByText("lore-1")).toBeTruthy();
-    expect(createUpload).toHaveBeenCalledWith(
-      expect.objectContaining({ purpose: "import", content_type: "application/json" }),
-    );
-    expect(createImport).toHaveBeenCalledWith({
-      upload: "0199a000-0000-7000-8000-000000000001",
-      namespace: "writer",
-      name: "mira",
-    });
-
-    const confirm = screen.getByRole("button", { name: "Save and open the editor" });
-    expect((confirm as HTMLButtonElement).disabled).toBe(true);
-    // 三项都没有预选，页面说明还差什么。
-    expect(screen.getByText("Choose a rating, the rights and a license to continue.")).toBeTruthy();
-    for (const r of screen.getAllByRole("radio"))
-      expect((r as HTMLInputElement).checked).toBe(false);
-    await userEvent.click(screen.getByRole("radio", { name: /^General/ }));
-    await userEvent.click(screen.getByRole("radio", { name: /^Original/ }));
-    expect((confirm as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("Choose a license to continue.")).toBeTruthy();
-    await userEvent.selectOptions(screen.getByLabelText("License"), "CC-BY-4.0");
-    await userEvent.click(confirm);
-    await waitFor(() => expect(onCreated).toHaveBeenCalledWith("mira"));
-    expect(confirmImport).toHaveBeenCalledWith("imp_01j00000000000000000000000", {
-      rating: "general",
-      rights: "original",
-      license: "CC-BY-4.0",
-    });
-  });
+      });
+      renderWithApp(
+        <ImportWizard
+          ns="writer"
+          onCreated={onCreated}
+          resume={resume ? status.import : undefined}
+        />,
+        client,
+      );
+      if (!resume) {
+        const file = new File([JSON.stringify(card)], "Mira.json", { type: "application/json" });
+        await userEvent.upload(await screen.findByLabelText("Character card"), file);
+        expect((screen.getByLabelText("Address") as HTMLInputElement).value).toBe("mira");
+        await userEvent.click(screen.getByRole("button", { name: "Read the card" }));
+      }
+      const omitted = await screen.findByRole("list", { name: "Omitted fields" });
+      expect(within(omitted).getByText("system_prompt")).toBeTruthy();
+      expect(within(omitted).getByText("post_history_instructions")).toBeTruthy();
+      expect(document.body.textContent).not.toContain(SECRET);
+      expect(screen.getByText("lore-1")).toBeTruthy();
+      if (!resume) {
+        expect(createUpload).toHaveBeenCalledWith(
+          expect.objectContaining({ purpose: "import", content_type: "application/json" }),
+        );
+        expect(createImport).toHaveBeenCalledWith({
+          upload: "0199a000-0000-7000-8000-000000000001",
+          namespace: "writer",
+          name: "mira",
+        });
+      } else {
+        expect(createImport).not.toHaveBeenCalled();
+        expect(createUpload).not.toHaveBeenCalled();
+      }
+      const confirm = screen.getByRole("button", { name: "Save and open the editor" });
+      expect((confirm as HTMLButtonElement).disabled).toBe(true);
+      // 三项都没有预选，页面说明还差什么。
+      expect(
+        screen.getByText("Choose a rating, the rights and a license to continue."),
+      ).toBeTruthy();
+      for (const r of screen.getAllByRole("radio"))
+        expect((r as HTMLInputElement).checked).toBe(false);
+      await userEvent.click(screen.getByRole("radio", { name: /^General/ }));
+      await userEvent.click(screen.getByRole("radio", { name: /^Original/ }));
+      expect((confirm as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByText("Choose a license to continue.")).toBeTruthy();
+      await userEvent.selectOptions(screen.getByLabelText("License"), "CC-BY-4.0");
+      await userEvent.click(confirm);
+      await waitFor(() => expect(onCreated).toHaveBeenCalledWith("mira"));
+      expect(confirmImport).toHaveBeenCalledWith("imp_01j00000000000000000000000", {
+        rating: "general",
+        rights: "original",
+        license: "CC-BY-4.0",
+      });
+    },
+  );
 });
 
 describe("Editor", () => {
