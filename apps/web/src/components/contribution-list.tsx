@@ -1,39 +1,46 @@
 /**
- * 作品的 Contribution 列表：可以按状态和是否由 Agent 提交过滤；Agent 提交的条目有醒目的
- * 标记。作品的成员看到全部，其他登录用户和访客只看到自己提交的。
+ * 作品的 Contributions 标签页：顶部一条开放度说明（谁能提修改、接受后只进草稿），下面是按状态
+ * 和提交者类型筛选的列表。作品的成员看到全部，其他登录用户和访客只看到自己提交的，匿名
+ * 读者看不到任何条目。
  *
- * 成员还可以在这里设置谁可以提交（所有人 / 登录用户 / 受邀用户 / 关闭）并管理邀请名单。
+ * 开放度和邀请名单在作品的 Settings 标签里设置，这里只给所有者一个入口。
  */
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Bot } from "lucide-react";
-import { useId, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Bot,
+  ChevronRight,
+  GitMerge,
+  GitPullRequestArrow,
+  GitPullRequestClosed,
+  Lock,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
+import type * as React from "react";
+import { useState } from "react";
+import { SignInButton } from "@/components/sign-in";
+import { ListSkeleton } from "@/components/skeletons";
+import { EmptyState, ErrorState, NotFound } from "@/components/states";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   type ContributionPolicy,
+  type ContributionQuery,
   type ContributionStatus,
   type ContributionSummary,
   isApiError,
 } from "@/lib/api";
-import { keys, useRegistry } from "@/lib/registry";
+import { keys, useGuest, useMe, useRegistry } from "@/lib/registry";
+import { cn } from "@/lib/utils";
 import { UserText } from "./user-content";
-
-const selectClass =
-  "h-9 rounded-sm border border-input bg-card px-2 text-sm focus-visible:outline-2 focus-visible:outline-seal";
 
 export const STATUS_LABEL: Record<ContributionStatus, string> = {
   open: "Open",
   accepted: "Accepted",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
-};
-
-const STATUS_CLASS: Record<ContributionStatus, string> = {
-  open: "border-seal text-seal",
-  accepted: "border-moss text-moss",
-  rejected: "border-rule text-muted-foreground",
-  withdrawn: "border-rule text-muted-foreground",
 };
 
 export const POLICY_LABEL: Record<ContributionPolicy, string> = {
@@ -43,32 +50,61 @@ export const POLICY_LABEL: Record<ContributionPolicy, string> = {
   closed: "Nobody (closed)",
 };
 
-export function StatusStamp({ status }: { status: ContributionStatus }) {
-  return <span className={`stamp ${STATUS_CLASS[status]}`}>{STATUS_LABEL[status]}</span>;
-}
+/** 说明条里“现在谁能提修改”的句子。 */
+const POLICY_SENTENCE: Record<ContributionPolicy, string> = {
+  anyone: "Anyone can suggest changes, including verified guests.",
+  "signed-in": "Signed-in users can suggest changes.",
+  invited: "Only invited users can suggest changes.",
+  closed: "This creation is not accepting contributions right now.",
+};
 
-/** Agent 提交的 Contribution 的标记。 */
-export function AgentStamp() {
+/** 状态图标的颜色：open 绿、accepted 紫（已合并）、rejected 红、withdrawn 灰。 */
+const STATUS_ICON: Record<
+  ContributionStatus,
+  { icon: React.ComponentType<{ className?: string }>; className: string }
+> = {
+  open: { icon: GitPullRequestArrow, className: "text-success" },
+  accepted: { icon: GitMerge, className: "text-purple-text" },
+  rejected: { icon: GitPullRequestClosed, className: "text-danger" },
+  withdrawn: { icon: GitPullRequestClosed, className: "text-text-3" },
+};
+
+export function StatusIcon({
+  status,
+  className,
+}: {
+  status: ContributionStatus;
+  className?: string;
+}) {
+  const s = STATUS_ICON[status];
+  const Icon = s.icon;
   return (
-    <span
-      className="stamp border-amber bg-amber-soft text-foreground"
-      title="Submitted by an agent"
-    >
-      <Bot aria-hidden className="size-3" /> agent
+    <span className={cn("inline-flex shrink-0", s.className, className)}>
+      <Icon aria-hidden className="size-4" />
+      <span className="sr-only">{STATUS_LABEL[status]}</span>
     </span>
   );
 }
 
+/** Agent 提交的 Contribution 的标记：用 Agent Token 提交的一律带这个标记，客户端改不掉。 */
+export function AgentBadge() {
+  return (
+    <Badge variant="purple" title="Submitted with an agent token or marked as written by an agent">
+      <Bot aria-hidden /> Agent
+    </Badge>
+  );
+}
+
 /**
- * 提交者的显示文字。当前用户（登录用户或访客）显示“you”；访客显示自己填写的名字；
- * 登录用户显示显示名与 namespace，都没有时才退回用户 ID。
+ * 提交者的显示文字。当前用户（登录用户或访客）显示 “you”；访客一律写成 “guest · 名字”，
+ * 不能看起来像登录用户；登录用户显示显示名与 namespace，都没有时才退回用户 ID。
  */
 export function authorLabel(
   author: ContributionSummary["author"],
   me?: { user?: string | undefined; guest?: string | undefined },
 ) {
   if ("guest_id" in author) {
-    return author.guest_id === me?.guest ? "you" : `${author.display_name} (guest)`;
+    return author.guest_id === me?.guest ? "you" : `guest · ${author.display_name}`;
   }
   if (author.user === me?.user) return "you";
   if (author.display_name && author.namespace)
@@ -76,265 +112,301 @@ export function authorLabel(
   return author.display_name ?? author.namespace ?? `user ${author.user}`;
 }
 
+/** “3 days ago” 这类相对时间；超过一个月显示日期。 */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return iso;
+  const s = Math.round((now - t) / 1000);
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  if (s < 60) return "just now";
+  if (s < 3600) return rtf.format(-Math.floor(s / 60), "minute");
+  if (s < 86_400) return rtf.format(-Math.floor(s / 3600), "hour");
+  if (s < 30 * 86_400) return rtf.format(-Math.floor(s / 86_400), "day");
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 type AgentFilter = "all" | "agent" | "human";
+
+const STATUSES = Object.keys(STATUS_LABEL) as ContributionStatus[];
+
+/** 列表的一行：状态图标、标题（整行可点）、Agent 标记、编号、提交者、时间。 */
+function ContributionRow({
+  ns,
+  name,
+  c,
+  me,
+}: {
+  ns: string;
+  name: string;
+  c: ContributionSummary;
+  me: { user?: string | undefined; guest?: string | undefined };
+}) {
+  return (
+    <li className="relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-2/60 sm:px-5">
+      <StatusIcon status={c.status} className="mt-0.5" />
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Link
+            to="/c/$ns/$name/contributions/$number"
+            params={{ ns, name, number: String(c.number) }}
+            className="font-semibold break-words text-text outline-none after:absolute after:inset-0 after:rounded-[inherit] focus-visible:after:ring-[3px] focus-visible:after:ring-ring/40"
+          >
+            <UserText text={c.title} />
+          </Link>
+          {c.agent ? <AgentBadge /> : null}
+        </div>
+        <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-3">
+          <span className="font-mono">#{c.number}</span>
+          <span>
+            by <UserText text={authorLabel(c.author, me)} />
+          </span>
+          <span aria-hidden>·</span>
+          <time dateTime={c.created_at} title={new Date(c.created_at).toLocaleString()}>
+            {timeAgo(c.created_at)}
+          </time>
+        </p>
+      </div>
+      <ChevronRight aria-hidden className="mt-0.5 size-4 shrink-0 text-text-3" />
+    </li>
+  );
+}
 
 export function ContributionList({
   ns,
   name,
   meId,
   guestId,
+  member = false,
 }: {
   ns: string;
   name: string;
   meId?: string | undefined;
   /** 以访客身份查看时的访客 ID：只会列出这个访客自己提交的。 */
   guestId?: string | undefined;
+  /** 作品成员看到全部提交，空状态的说法不同。 */
+  member?: boolean;
 }) {
   const client = useRegistry();
-  const ids = { status: useId(), agent: useId() };
-  const [status, setStatus] = useState<ContributionStatus | "">("open");
+  const [status, setStatus] = useState<ContributionStatus>("open");
   const [agent, setAgent] = useState<AgentFilter>("all");
-  const q = {
-    status: status || undefined,
+  const q: ContributionQuery = {
+    status,
     agent: agent === "all" ? undefined : agent === "agent",
   };
-  const list = useQuery({
-    queryKey: keys.contributions(ns, name, q),
-    queryFn: () => client.contributions(ns, name, q),
+  // 用单独的键：其他地方可能用普通查询读同一个列表（例如标签上的数量），两种缓存结构不能混用。
+  const list = useInfiniteQuery({
+    queryKey: [...keys.contributions(ns, name, q), "pages"],
+    queryFn: ({ pageParam }) => client.contributions(ns, name, { ...q, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
   });
+  const items = list.data?.pages.flatMap((p) => p.items) ?? [];
+  const me = { user: meId, guest: guestId };
 
   return (
-    <section aria-labelledby="contrib-list" className="space-y-4">
-      <div className="flex flex-wrap items-end gap-4">
-        <h2 id="contrib-list" className="mr-auto text-2xl">
-          Contributions
-        </h2>
-        <div className="space-y-1">
-          <label htmlFor={ids.status} className="block text-xs text-muted-foreground">
-            Status
-          </label>
-          <select
-            id={ids.status}
-            className={selectClass}
-            value={status}
-            onChange={(e) => setStatus(e.target.value as ContributionStatus | "")}
-          >
-            <option value="">All</option>
-            {(Object.keys(STATUS_LABEL) as ContributionStatus[]).map((s) => (
-              <option key={s} value={s}>
+    <section aria-label="Contribution list" className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <fieldset className="inline-flex max-w-full min-w-0 flex-wrap gap-1 rounded-md bg-surface-2 p-1">
+          <legend className="sr-only">Status</legend>
+          {STATUSES.map((s) => {
+            const active = s === status;
+            return (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setStatus(s)}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1.5 rounded-sm px-3 text-sm font-medium text-text-2 transition-colors outline-none hover:text-text focus-visible:ring-[3px] focus-visible:ring-ring/40",
+                  active && "bg-surface text-text",
+                )}
+              >
                 {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <label htmlFor={ids.agent} className="block text-xs text-muted-foreground">
-            Submitted by
-          </label>
-          <select
-            id={ids.agent}
-            className={selectClass}
-            value={agent}
-            onChange={(e) => setAgent(e.target.value as AgentFilter)}
-          >
-            <option value="all">People and agents</option>
-            <option value="human">People only</option>
-            <option value="agent">Agents only</option>
-          </select>
-        </div>
+                {/* 接口不返回各状态的总数：只在当前筛选上显示已经读到的条数。 */}
+                {active && list.isSuccess ? (
+                  <span className="text-xs text-text-3 tabular-nums">
+                    {items.length}
+                    {list.hasNextPage ? "+" : ""}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </fieldset>
+        <NativeSelect
+          aria-label="Submitted by"
+          className="w-auto min-w-48"
+          value={agent}
+          onChange={(e) => setAgent(e.target.value as AgentFilter)}
+        >
+          <option value="all">People and agents</option>
+          <option value="human">People</option>
+          <option value="agent">Agents</option>
+        </NativeSelect>
       </div>
 
       {list.isPending ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <ListSkeleton rows={3} label="Loading contributions…" />
       ) : list.isError ? (
-        <p role="alert" className="text-sm text-seal">
-          The contributions could not be loaded.
-        </p>
-      ) : list.data.items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No contributions match these filters.</p>
+        <ErrorState
+          title="The contributions could not be loaded"
+          error={list.error}
+          onRetry={() => void list.refetch()}
+        />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={GitPullRequestArrow}
+          title={`No ${STATUS_LABEL[status].toLowerCase()} contributions`}
+          description={
+            agent !== "all"
+              ? "Nothing matches these filters."
+              : member
+                ? "When someone proposes a change, it shows up here for you to review."
+                : "Contributions you submit to this creation show up here."
+          }
+          action={
+            agent !== "all" ? (
+              <Button variant="outline" onClick={() => setAgent("all")}>
+                Show people and agents
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
-        <ul aria-label="Contributions" className="divide-y divide-rule border-y border-rule">
-          {list.data.items.map((c) => (
-            <li key={c.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3">
-              <span className="font-mono text-xs text-muted-foreground">#{c.number}</span>
-              <Link
-                to="/c/$ns/$name/contributions/$number"
-                params={{ ns, name, number: String(c.number) }}
-                className="font-medium underline-offset-4 hover:underline"
+        <>
+          <ul
+            aria-label="Contributions"
+            className="divide-y divide-border overflow-hidden rounded-lg border bg-surface"
+          >
+            {items.map((c) => (
+              <ContributionRow key={c.id} ns={ns} name={name} c={c} me={me} />
+            ))}
+          </ul>
+          {list.hasNextPage ? (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                disabled={list.isFetchingNextPage}
+                onClick={() => void list.fetchNextPage()}
               >
-                <UserText text={c.title} />
-              </Link>
-              <StatusStamp status={c.status} />
-              {c.agent ? <AgentStamp /> : null}
-              <span className="basis-full text-xs text-muted-foreground">
-                by <UserText text={authorLabel(c.author, { user: meId, guest: guestId })} /> ·{" "}
-                {new Date(c.created_at).toLocaleDateString()}
-              </span>
-            </li>
-          ))}
-        </ul>
+                {list.isFetchingNextPage ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );
 }
 
-/** 作者设置：谁可以提交 Contribution，以及 invited 模式下的邀请名单。 */
-export function ContributionSettings({
+/**
+ * 标签页顶部的说明条：现在谁能提修改、接受的修改只进草稿不会自动发布。所有者看到开放度
+ * 设置的入口，其他人在可以提交时看到 “Propose a change”。
+ */
+export function ContributionPolicyNote({
   ns,
   name,
   policy,
+  member,
+  canPropose,
 }: {
   ns: string;
   name: string;
   policy: ContributionPolicy;
+  member: boolean;
+  canPropose: boolean;
 }) {
+  const draftNote =
+    policy === "closed"
+      ? null
+      : member
+        ? "Accepted changes go into your draft — nothing is published until you publish."
+        : "Accepted changes go into the author's draft — nothing is published until they publish.";
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border bg-surface px-4 py-3 sm:px-5">
+      <Users aria-hidden className="size-4 shrink-0 text-text-3" />
+      <p className="min-w-0 flex-1 text-sm text-text-2">
+        {POLICY_SENTENCE[policy]}
+        {draftNote ? ` ${draftNote}` : null}
+      </p>
+      {member ? (
+        // 作品设置页（开放度、邀请名单）由作品外框提供；它进入路由树之前先用普通链接。
+        <a
+          href={`/c/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/settings`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          <SlidersHorizontal aria-hidden /> Who can contribute
+        </a>
+      ) : canPropose ? (
+        <Link
+          to="/c/$ns/$name/contributions/new"
+          params={{ ns, name }}
+          className={buttonVariants({ size: "sm" })}
+        >
+          <GitPullRequestArrow aria-hidden /> Propose a change
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/** Contributions 标签页的全部内容（作品头部和标签栏由外框提供）。 */
+export function ContributionsTab({ ns, name }: { ns: string; name: string }) {
   const client = useRegistry();
-  const qc = useQueryClient();
-  const ids = { policy: useId(), user: useId() };
-  const [value, setValue] = useState<ContributionPolicy>(policy);
-  const [saved, setSaved] = useState<string | null>(null);
-  const [user, setUser] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const invites = useQuery({
-    queryKey: keys.contributionInvites(ns, name),
-    queryFn: () => client.contributionInvites(ns, name),
-    enabled: value === "invited",
+  const me = useMe();
+  const guest = useGuest(!me.isPending && !me.data);
+  const detail = useQuery({
+    queryKey: [...keys.creation(ns, name), me.data?.id ?? null],
+    queryFn: () => client.creation(ns, name),
+    enabled: !me.isPending,
   });
-  const refreshInvites = () =>
-    qc.invalidateQueries({ queryKey: keys.contributionInvites(ns, name) });
 
-  const save = async () => {
-    setError(null);
-    setSaved(null);
-    try {
-      await client.setContributionPolicy(ns, name, value);
-      setSaved("Saved.");
-      await qc.invalidateQueries({ queryKey: keys.creation(ns, name) });
-    } catch {
-      setError("The setting could not be saved.");
-    }
-  };
-
-  const invite = async () => {
-    setError(null);
-    const id = user.trim();
-    try {
-      await client.invite(ns, name, id);
-      setUser("");
-      await refreshInvites();
-    } catch (e) {
-      setError(
-        isApiError(e, "contribution.invite_unknown_user")
-          ? "No user has this ID."
-          : "The invitation could not be saved.",
-      );
-    }
-  };
-
-  const uninvite = async (id: string) => {
-    setError(null);
-    try {
-      await client.uninvite(ns, name, id);
-      await refreshInvites();
-    } catch {
-      setError("The invitation could not be removed.");
-    }
-  };
+  if (me.isPending || detail.isPending) {
+    return <ListSkeleton rows={3} label="Loading contributions…" />;
+  }
+  if (detail.isError) {
+    return isApiError(detail.error) && detail.error.status === 404 ? (
+      <NotFound what={`@${ns}/${name}`} level={2} />
+    ) : (
+      <ErrorState
+        title="This creation could not be loaded"
+        error={detail.error}
+        onRetry={() => void detail.refetch()}
+      />
+    );
+  }
+  const d = detail.data;
+  const member = !!me.data && me.data.namespace === ns;
+  const canPropose =
+    !member && d.contribution_policy !== "closed" && d.latest_release !== undefined;
 
   return (
-    <section aria-labelledby="contrib-settings" className="catalog-card space-y-4 p-5 pl-8">
-      <h2 id="contrib-settings" className="font-display text-xl">
-        Who can contribute
-      </h2>
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1">
-          <label htmlFor={ids.policy} className="block text-sm">
-            Accept contributions from
-          </label>
-          <select
-            id={ids.policy}
-            className={selectClass}
-            value={value}
-            onChange={(e) => setValue(e.target.value as ContributionPolicy)}
-          >
-            {(Object.keys(POLICY_LABEL) as ContributionPolicy[]).map((p) => (
-              <option key={p} value={p}>
-                {POLICY_LABEL[p]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button type="button" size="sm" onClick={() => void save()} disabled={value === policy}>
-          Save
-        </Button>
-        {saved ? (
-          <span role="status" className="text-sm text-muted-foreground">
-            {saved}
-          </span>
-        ) : null}
-      </div>
-
-      {value === "invited" ? (
-        <div className="space-y-2">
-          <label htmlFor={ids.user} className="block text-sm">
-            Invite a user by ID
-          </label>
-          <div className="flex gap-2">
-            <Input
-              id={ids.user}
-              value={user}
-              placeholder="usr_…"
-              className="max-w-xs font-mono"
-              onChange={(e) => setUser(e.target.value)}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={!/^usr_[0-9a-z]{26}$/.test(user.trim())}
-              onClick={() => void invite()}
-            >
-              Invite
-            </Button>
-          </div>
-          {invites.isError ? (
-            <p role="alert" className="text-sm text-seal">
-              The invitation list could not be loaded.
-            </p>
-          ) : invites.data && invites.data.items.length > 0 ? (
-            <ul aria-label="Invited users" className="space-y-1 text-sm">
-              {invites.data.items.map((i) => (
-                <li key={i.user} className="flex flex-wrap items-center gap-2">
-                  {/* 只显示 @namespace：服务端不返回 OAuth 显示名，它可能是真名。 */}
-                  {i.namespace ? (
-                    <UserText text={i.namespace} />
-                  ) : (
-                    <span className="text-muted-foreground">Unknown user</span>
-                  )}
-                  <span className="font-mono text-xs text-muted-foreground">{i.user}</span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    aria-label={`Remove ${i.namespace ?? i.user}`}
-                    onClick={() => void uninvite(i.user)}
-                  >
-                    Remove
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          ) : invites.data ? (
-            <p className="text-sm text-muted-foreground">Nobody is invited yet.</p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {error ? (
-        <p role="alert" className="text-sm text-seal">
-          {error}
-        </p>
-      ) : null}
-    </section>
+    <div className="space-y-5">
+      <ContributionPolicyNote
+        ns={ns}
+        name={name}
+        policy={d.contribution_policy}
+        member={member}
+        canPropose={canPropose}
+      />
+      {me.data ? (
+        <ContributionList ns={ns} name={name} meId={me.data.id} member={member} />
+      ) : guest.data ? (
+        <ContributionList ns={ns} name={name} guestId={guest.data.guest.id} />
+      ) : guest.isPending ? (
+        <ListSkeleton rows={2} label="Loading contributions…" />
+      ) : (
+        <EmptyState
+          icon={Lock}
+          title="Contributions are private"
+          description="Only the author and the person who submitted a contribution can see it. Sign in to see yours."
+          action={<SignInButton variant="outline" />}
+        />
+      )}
+    </div>
   );
 }
