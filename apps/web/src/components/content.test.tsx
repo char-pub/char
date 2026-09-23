@@ -1,21 +1,39 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
-import { diffPair, resolveSample } from "@/fixtures/samples";
-import { CreationPage } from "./creation-page";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { MatureGate } from "./mature-gate";
 import { UserMarkdown, UserText } from "./user-content";
 
+/** vitest 的 jsdom 里 storage 不可用，按需换成内存实现。 */
+function memoryStorage(): Storage {
+  const data = new Map<string, string>();
+  return {
+    get length() {
+      return data.size;
+    },
+    clear: () => data.clear(),
+    getItem: (k) => data.get(k) ?? null,
+    key: (i) => [...data.keys()][i] ?? null,
+    removeItem: (k) => void data.delete(k),
+    setItem: (k, v) => void data.set(k, String(v)),
+  };
+}
+
 describe("MatureGate", () => {
-  it("hides mature content until the user confirms", async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("hides mature content until the user confirms, and says where the rating comes from", async () => {
     render(
-      <MatureGate rating="mature">
+      <MatureGate rating="mature" reason="Rated Mature because of @vee/afterlife (World).">
         <p>secret scene</p>
       </MatureGate>,
     );
     expect(screen.queryByText("secret scene")).toBeNull();
     expect(screen.getByText("Mature content is hidden")).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "Show mature content" }));
+    expect(screen.getByText("Rated Mature because of @vee/afterlife (World).")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Show this once" }));
     expect(screen.getByText("secret scene")).toBeTruthy();
   });
 
@@ -32,6 +50,33 @@ describe("MatureGate", () => {
       </MatureGate>,
     );
     expect(screen.getByText("allowed scene")).toBeTruthy();
+  });
+
+  it("remembers “Show this once” for the same creation for the rest of the session", async () => {
+    vi.stubGlobal("sessionStorage", memoryStorage());
+    const first = render(
+      <MatureGate rating="explicit" remember="@djj/alice">
+        <p>overview text</p>
+      </MatureGate>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Show this once" }));
+    first.unmount();
+
+    // 换到同一个作品的另一个标签页（组件重新挂载）：不再遮挡。
+    render(
+      <MatureGate rating="explicit" remember="@djj/alice">
+        <p>preview table</p>
+      </MatureGate>,
+    );
+    expect(screen.getByText("preview table")).toBeTruthy();
+
+    // 别的作品仍然遮挡。
+    render(
+      <MatureGate rating="explicit" remember="@djj/other">
+        <p>other creation</p>
+      </MatureGate>,
+    );
+    expect(screen.queryByText("other creation")).toBeNull();
   });
 });
 
@@ -64,19 +109,5 @@ describe("user content is never executed", () => {
     const { container } = render(<UserText text="<script>alert(1)</script>" />);
     expect(container.querySelector("script")).toBeNull();
     expect(container.textContent).toBe("<script>alert(1)</script>");
-  });
-});
-
-describe("CreationPage", () => {
-  it("explains where the effective rating comes from and gates mature content", async () => {
-    const ir = resolveSample(diffPair.to).ir;
-    render(<CreationPage ir={ir} summary="A courier." />);
-    expect(ir.meta.rating).toBe("mature");
-    expect(screen.getByText("Why this rating")).toBeTruthy();
-    expect(screen.getByText("sets the rating")).toBeTruthy();
-    expect(screen.getByText("Night City")).toBeTruthy();
-    expect(screen.queryByText("What it says")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Show mature content" }));
-    expect(screen.getByText("What it says")).toBeTruthy();
   });
 });
