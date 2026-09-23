@@ -1,0 +1,119 @@
+ref: "@commons/weather-and-seasons"
+type: lorebook
+display_name:
+  en: Weather and Seasons
+  zh-Hans: 天气与季节
+summary:
+  en: A setting-neutral lorebook describing weather, seasons and how they change travel, work and mood, for any world with ordinary climate.
+  zh-Hans: 与具体设定无关的通用世界书，描述天气与季节，以及它们如何影响出行、劳作和心情，适用于任何气候寻常的世界。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: weather/rain
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Steady rain slows travel, turns dirt roads to mud and keeps people indoors. Taverns and shops fill up, and conversations turn to complaints about leaking roofs. A light spring rain is welcomed by farmers; a cold autumn rain is not welcomed by anyone.
+    activation:
+      mode: keyword
+      keys: [rain, raining, rainy]
+  - id: weather/storm
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Thunderstorms bring sudden wind, heavy rain and lightning. Sensible travelers find shelter away from lone trees and high ground. Animals grow restless before a storm arrives, and experienced farmers read the signs in their herds.
+    activation:
+      mode: keyword
+      keys: [storm, thunder, lightning, thunderstorm]
+  - id: weather/fog
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Fog muffles sound and hides landmarks. Travelers keep to known paths and call out to each other. In coastal places fog can roll in within minutes, and ships ring bells to warn one another.
+    activation:
+      mode: keyword
+      keys: [fog, mist, foggy]
+  - id: weather/snow
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Fresh snow makes the world quiet and bright. Deep snow closes roads, and travel by foot becomes slow and tiring. Children build forts and slide down hills, while adults worry about firewood and whether the roof will hold.
+    activation:
+      mode: keyword
+      keys: [snow, snowing, snowfall, blizzard]
+  - id: weather/heat
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        In hot weather people work early and late and rest through the middle of the day. Water becomes precious, tempers run short and the shade of a tree becomes the most popular place in town. Heat that lasts for weeks can ruin crops.
+    activation:
+      mode: keyword
+      keys: [heat, hot, heatwave, sweltering]
+  - id: weather/wind
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A strong wind rattles shutters, scatters market stalls and makes sailing fast but dangerous. Millers welcome it. Many places have a name for their usual wind and stories about what it brings.
+    activation:
+      mode: keyword
+      keys: [wind, windy, gale, breeze]
+  - id: seasons/spring
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Spring is the season of planting, mud and new growth. Days lengthen, animals give birth and people open their windows for the first time in months. Many cultures celebrate the first warm day with a festival.
+    activation:
+      mode: keyword
+      keys: [spring, springtime]
+  - id: seasons/summer
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Summer brings long days, hard work in the fields and evenings spent outdoors. Travel is easiest in summer, so roads and inns are busiest. Midsummer is a common time for fairs, weddings and games.
+    activation:
+      mode: keyword
+      keys: [summer, midsummer, summertime]
+  - id: seasons/autumn
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Autumn is harvest time. Everyone who can work helps bring in the crops, and communities hold harvest feasts when the work is done. Leaves turn, nights cool and people begin preparing for winter by storing food and fuel.
+    activation:
+      mode: keyword
+      keys: [autumn, fall, harvest season]
+  - id: seasons/winter
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Winter is a time of short days, cold nights and stored food. Work slows, families gather around the fire and stories are told. Midwinter festivals of light and gift-giving help people through the darkest part of the year.
+    activation:
+      mode: keyword
+      keys: [winter, midwinter, wintertime]
+  - id: time/dawn-and-dusk
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Dawn and dusk are the busiest times for travelers and animals. At dawn, markets open and bakers finish their first loaves. At dusk, lamps are lit, shops close and people head home or to the tavern.
+    activation:
+      mode: keyword
+      keys: [dawn, dusk, sunrise, sunset]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [generic, weather, seasons, atmosphere]
+  rating: general
+  rights: original
+  license: CC0-1.0

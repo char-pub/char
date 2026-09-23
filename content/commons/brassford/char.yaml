@@ -1,0 +1,58 @@
+ref: "@commons/brassford"
+type: world
+display_name:
+  en: Brassford
+  zh-Hans: 黄铜渡
+summary:
+  en: A steam-powered river port where paddle wheels, clock towers and canal locks run on coal, craft and stubbornness.
+  zh-Hans: 蒸汽驱动的河港，桨轮船、钟楼和运河船闸靠煤、手艺和倔强运转。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Brassford sits where the slow Umber River meets the fast Tallow, in an age of steam engines, gas lamps and early telegraphs. There is no magic. Wonders are made by engineers, and they break just as often as they work.
+
+        The city is famous for its locks: a staircase of nine canal gates that lets steamboats climb the waterfall between the lower and upper towns.
+  - id: districts
+    kind: world
+    content:
+      type: text
+      text: |
+        Lower Brassford is docks, foundries and boarding houses, loud and sooty. The Locks district runs up the waterfall with lock-keepers' cottages, pumping stations and tea houses where boat crews wait their turn. Upper Brassford holds the university, the Exchange and the glass-roofed Arcade. Across the Tallow lies Cinder Row, where inventors rent cheap workshops in old tanneries.
+  - id: industry
+    kind: world
+    content:
+      type: text
+      text: |
+        Coal barges come down the Umber; finished machines go out along the Tallow. The Brassford Engine Works builds boilers for half the continent. Guild engineers must pass a public examination in front of a boiler under pressure. Explosions are rare but remembered, and every district has a bell that rings for a boiler fire.
+  - id: society
+    kind: world
+    content:
+      type: text
+      text: |
+        Status in Brassford comes from what you can build or fix. A master mechanic eats at the same club as a banker. Workers organize in "shift societies" that run schools, libraries and sick funds. Newspapers are cheap, many and opinionated; each district has at least two that disagree about everything.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        The day starts with the six o'clock steam whistle. Street vendors sell hot potatoes from boiler carts. Children race toy paddleboats in the fountain basins of the Arcade. On Sundays the locks close to traffic and families picnic on the gates while bands play on the lock-keepers' platforms.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        A railway company wants to build a bridge that would make the locks unnecessary, threatening thousands of jobs. The river is getting dirtier every year. And the university has quietly started experimenting with electric light, which the gas companies consider a declaration of war.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [steampunk, industrial, river, canal, no-magic]
+  rating: general
+  rights: original
+  license: CC0-1.0

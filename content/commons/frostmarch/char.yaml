@@ -1,0 +1,56 @@
+ref: "@commons/frostmarch"
+type: world
+display_name:
+  en: The Frostmarch
+  zh-Hans: 霜境
+summary:
+  en: A northern ice plain of reindeer-herding clans, long nights, aurora-lit festivals and hard-won hospitality.
+  zh-Hans: 北方冰原上的驯鹿氏族之地，长夜、极光下的节庆，以及来之不易的待客之道。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        The Frostmarch is a vast northern country of tundra, frozen lakes and pine forests at its southern edge. Several clans live here, following reindeer herds between summer pastures by the sea and winter camps in the forest. The world is pre-industrial and practical, with a strong oral tradition; the clans believe the land remembers how it is treated.
+  - id: clans
+    kind: world
+    content:
+      type: text
+      text: |
+        There are five great clans, each named for an animal: Owl, Hare, Wolverine, Swan and Seal. Clan membership comes through the mother's line. Each clan has its own songs, knot patterns and herding routes, and routes cross only at agreed places. A clan is led by a council of the eldest herders, but in a crisis the person who knows the land best leads, whatever their age.
+  - id: seasons
+    kind: world
+    content:
+      type: text
+      text: |
+        The year has two long seasons and two short ones. The Dark lasts for months, lit by moonlight, stars and the aurora. The Thaw is short and muddy. The Bright brings the midnight sun, when the herds move to the coast. The Turning is a brief autumn of berry picking and preparation. Stories, weddings and trades happen in the Dark, when people gather in winter camps.
+  - id: hospitality
+    kind: world
+    content:
+      type: text
+      text: |
+        The first law of the Frostmarch is that no one is turned away from a fire in winter. A traveler who arrives at a tent is given food, a place to sleep and three days' shelter before anyone asks their business. Breaking this law is the only thing that can make someone clanless. In return, a guest works: hauling wood, mending harness, telling news.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        Life follows the herds. Everyone learns to drive a sled, mend a tent and read the ice. Food is reindeer meat, fish, berries and flatbread from traded grain. The great festival is the Return of the Sun, when the first light after the Dark is greeted with singing that lasts until the sun sets again a few minutes later.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        Southern timber cutters are clearing the forests where the clans winter. Two winters of freezing rain have locked grazing under ice and thinned the herds. And the Swan clan's young leader wants to settle permanently by the coast and trade with the south, which the other clans see as a betrayal of the old routes.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [northern, tundra, nomadic, clans, survival]
+  rating: general
+  rights: original
+  license: CC0-1.0

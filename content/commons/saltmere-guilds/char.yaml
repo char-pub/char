@@ -1,0 +1,128 @@
+ref: "@commons/saltmere-guilds"
+type: lorebook
+display_name:
+  en: Saltmere Guilds and Offices
+  zh-Hans: 盐沼港的行会与官署
+summary:
+  en: The seven chartered guilds of Saltmere, the Tide Watch, the tidewrights and the institutions that keep the harbor city running.
+  zh-Hans: 盐沼港七大特许行会、潮汐巡夜队、潮术师，以及维持港城运转的各类机构。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: guilds/pilots
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Pilots' Guild guides every ship through the shifting sandbars of Saltmere harbor. Only a guild pilot may bring a hull larger than a fishing boat past the breakwater. Pilots wear a blue sash and are paid by the draft of the ship, which makes them rich and resented in equal measure.
+    activation:
+      mode: keyword
+      keys: [Pilots' Guild, pilot, pilots]
+  - id: guilds/chandlers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Chandlers' Guild supplies ships with rope, sailcloth, lamp oil, biscuits and every small thing a voyage needs. Their taverns on the Terraces are the city's social heart, and their guild speaker traditionally hosts the Council's midwinter dinner.
+    activation:
+      mode: keyword
+      keys: [Chandlers' Guild, chandler, chandlers]
+  - id: guilds/weighers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Weighers' Guild keeps the official scales and measures of the harbor. Every cargo landed in Saltmere is weighed on a Weigher's scale and taxed by that weight. Tampering with a sealed scale is one of the few crimes punished by exile.
+    activation:
+      mode: keyword
+      keys: [Weighers' Guild, weigher, weighers, harbor scale]
+  - id: guilds/ropewalkers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Ropewalkers' Guild twists the city's rope in long sheds called ropewalks, some of them three hundred paces long. Ropewalkers are known for their strength, their work songs and their habit of settling arguments with a tug-of-war.
+    activation:
+      mode: keyword
+      keys: [Ropewalkers' Guild, ropewalker, ropewalk]
+  - id: guilds/shipwrights
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Shipwrights' Guild builds and repairs hulls in the yards along the eastern shore. It is the largest and most ambitious guild and is pushing the Council to dredge a deeper channel so that bigger ships can be built and launched.
+    activation:
+      mode: keyword
+      keys: [Shipwrights' Guild, shipwright, shipyard]
+  - id: guilds/salters
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Salters' Guild runs the evaporation pans on the marsh edge and preserves fish for export. Salt was the city's first wealth, and the Salters still claim the oldest charter, a point they raise at every Council meeting.
+    activation:
+      mode: keyword
+      keys: [Salters' Guild, salter, salt pans]
+  - id: guilds/lamplighters
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Lamplighters' Guild keeps the lighthouse on Gull Rock, lights the city's streets and publishes the official tide tables. Because they control the calendar, they are quietly one of the most powerful guilds, though they insist they only keep the lights on.
+    activation:
+      mode: keyword
+      keys: [Lamplighters' Guild, lamplighter, tide tables, Gull Rock]
+  - id: harbor-council
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Harbor Council meets in the Crown every seventh tide-day. Each guild sends one speaker, and five votes carry a decision. Sessions are public, and citizens may bring petitions if a guild speaker agrees to present them.
+    activation:
+      mode: keyword
+      keys: [Harbor Council, council, guild speaker]
+  - id: tide-watch
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Tide Watch keeps order in Saltmere. Its officers carry lanterns and short staves rather than swords, and they work in pairs. Most arrests end with a fine paid in coin or in labor on the breakwater. The Watch captain answers to the whole Council, not to any guild.
+    activation:
+      mode: keyword
+      keys: [Tide Watch, watch officer, watchman]
+  - id: tidewrights
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Tidewrights are Saltmere's licensed practitioners of weather-craft. A working takes hours of chanting and careful preparation, and it can only nudge what the weather would almost do anyway — thicken a fog, soften a squall. Every working must be entered in the Harbor Ledger. Only four licensed tidewrights are still alive.
+    activation:
+      mode: keyword
+      keys: [tidewright, tidewrights, weather-craft]
+  - id: fog-callers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Fog-callers are unlicensed weather-workers who live in the reed marshes outside the walls. Some are frauds, some are genuinely skilled, and all of them are technically breaking the law. Fishermen quietly pay them before a hard voyage.
+    activation:
+      mode: keyword
+      keys: [fog-caller, fog-callers, reed marshes]
+  - id: harbor-ledger
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Harbor Ledger is the great record book kept in the Lamplighters' tower. It lists every ship's arrival, every cargo weight and every licensed working of weather-craft. Old volumes are kept in a salt-proof vault, and scholars pay for the right to read them.
+    activation:
+      mode: keyword
+      keys: [Harbor Ledger, ledger]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [fantasy, low-magic, harbor, guilds, factions]
+  rating: general
+  rights: original
+  license: CC0-1.0

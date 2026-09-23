@@ -1,0 +1,119 @@
+ref: "@commons/taverns-and-markets"
+type: lorebook
+display_name:
+  en: Taverns, Inns and Markets
+  zh-Hans: 酒馆、客栈与集市
+summary:
+  en: A setting-neutral lorebook of common tavern, inn and market customs that any fantasy or historical world can reuse.
+  zh-Hans: 与具体设定无关的通用世界书，收录酒馆、客栈和集市的常见习俗，任何奇幻或历史世界都可以复用。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: tavern/common-room
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The common room is the heart of a tavern: a large hall with long tables, a hearth and a counter where drinks are poured. Regulars have their usual seats and newcomers are expected to ask before sitting at a full table. The best seat, near the fire, belongs to whoever has been coming the longest.
+    activation:
+      mode: keyword
+      keys: [common room, tavern, taproom]
+  - id: tavern/keeper
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A tavern keeper knows everyone's business and repeats very little of it. Keepers settle small quarrels, hold messages for travelers and keep a slate of who owes what. Crossing a well-liked keeper is a quick way to become unwelcome in every tavern in town.
+    activation:
+      mode: keyword
+      keys: [tavern keeper, innkeeper, barkeep]
+  - id: tavern/house-rules
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Most taverns share a few unwritten rules: pay for the first round before asking questions, no weapons drawn indoors, and whoever breaks a mug pays for two. Singing is welcome after dark but not before.
+    activation:
+      mode: keyword
+      keys: [house rules, tavern rules]
+  - id: inn/rooms
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Inns offer three kinds of rooms: a private room with a lock, a shared room with several beds, and a place on the common room floor after closing for those with little coin. Stabling is charged separately. Breakfast is usually included; supper rarely is.
+    activation:
+      mode: keyword
+      keys: [inn room, lodging, inn, room for the night]
+  - id: inn/notice-board
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Almost every inn has a notice board by the door with job offers, lost-and-found notes, travel companions wanted, and warnings about roads. Reading the board is the fastest way to learn what is happening in a town.
+    activation:
+      mode: keyword
+      keys: [notice board, job board, notices]
+  - id: market/market-day
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Market day comes once or twice a week. Farmers arrive before dawn to claim the best spots, and the square fills with stalls by sunrise. Prices are highest in the morning and lowest just before the stalls close, when sellers would rather not carry goods home.
+    activation:
+      mode: keyword
+      keys: [market day, market, market square]
+  - id: market/haggling
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Haggling is expected in most markets. The first price named is rarely the real one. It is polite to start by praising the goods, rude to walk away in the middle of a bargain, and customary to seal a deal with a handshake or a small extra gift from the seller.
+    activation:
+      mode: keyword
+      keys: [haggling, bargain, haggle, price]
+  - id: market/weights
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A market warden checks that scales and measures are honest, often by testing them against a sealed set kept at the town hall. A seller caught with false weights may be fined, lose their stall, or be made to stand beside a sign describing their offense.
+    activation:
+      mode: keyword
+      keys: [market warden, scales, false weights]
+  - id: food/tavern-fare
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Tavern food is simple and filling: stew from a pot that is never quite empty, bread, cheese, roasted roots and whatever the kitchen bought at market that morning. The stew is cheapest; asking what is in it is considered bad luck.
+    activation:
+      mode: keyword
+      keys: [stew, tavern food, supper]
+  - id: entertainment/storytellers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Wandering storytellers and musicians perform in common rooms for food, a bed and whatever coins the audience throws. A good storyteller can fill a tavern on a quiet night, and keepers compete to have the best ones stay.
+    activation:
+      mode: keyword
+      keys: [storyteller, musician, minstrel, bard]
+  - id: entertainment/games
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Common tavern games include dice, cards, darts and a board game played with pegs that every region claims to have invented. Friendly wagers are normal; games played for high stakes are usually moved to a back room by the keeper.
+    activation:
+      mode: keyword
+      keys: [dice, cards, darts, tavern games]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [generic, fantasy, historical, tavern, market]
+  rating: general
+  rights: original
+  license: CC0-1.0

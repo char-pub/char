@@ -1,0 +1,119 @@
+ref: "@commons/sunward-legends"
+type: lorebook
+display_name:
+  en: Legends and Lore of the Sunward Isles
+  zh-Hans: 向阳群岛的传说与见闻
+summary:
+  en: Myths, voyaging lore, island customs and the stories the Sunward islanders tell about their home.
+  zh-Hans: 向阳群岛岛民讲述的神话、航海知识、岛屿习俗与关于家乡的故事。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: myth/sea-mother
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Sea Mother is said to have raised each island from the ocean floor with her hands, shaping the mountains and scattering the reefs. Fishers pour a little of their first catch back into the sea as thanks. When the ocean is calm and glassy, people say she is sleeping.
+    activation:
+      mode: keyword
+      keys: [Sea Mother, creation myth, ocean]
+  - id: myth/star-weavers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Star Weavers hung the constellations as a net to guide voyagers home. Each star has a name and a story, and navigators learn them as a single long chant. It is said that a navigator who forgets a star will lose the island it points to.
+    activation:
+      mode: keyword
+      keys: [Star Weavers, constellation, stars]
+  - id: myth/ember-mountain
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The volcano on Great Ember is believed to be the Sea Mother's hearth. When it smokes, she is cooking; when it rumbles, she is angry. Offerings of flowers and fruit are left at the edge of the old lava fields when the mountain is restless.
+    activation:
+      mode: keyword
+      keys: [Ember mountain, volcano, Great Ember]
+  - id: voyaging/navigator
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A master navigator can find a small island across a thousand miles of open ocean by reading stars, swells, clouds and birds. Training takes ten years. Master navigators are honored above chiefs at sea, and a chief always yields the steering paddle to one.
+    activation:
+      mode: keyword
+      keys: [navigator, master navigator, wayfinding]
+  - id: voyaging/canoes
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Voyaging canoes are double-hulled, lashed together with coconut fiber rope and topped with a small deck house. A village builds one over several years. Each canoe has a name and is spoken of as a member of the family. Launching one is the greatest festival an island can hold.
+    activation:
+      mode: keyword
+      keys: [voyaging canoe, canoe, double-hulled]
+  - id: voyaging/swells
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Navigators feel the ocean's swells through the hull of the canoe. Different swells come from different directions and keep their course for days. Lying down in the hull and feeling the rhythm of the swells is taught to every young sailor.
+    activation:
+      mode: keyword
+      keys: [swell, swells, reading the waves]
+  - id: places/windward-rock
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Windward Rock is a cliff island with seabird colonies and the famous navigation school, where students sleep on the clifftop to learn the night sky. Only students and teachers may land there, except on the day of the graduation voyage.
+    activation:
+      mode: keyword
+      keys: [Windward Rock, navigation school]
+  - id: places/coralhome
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Coralhome is a ring of atolls around a vast lagoon. Its villages stand on stilts over the water, and people travel between homes by small canoe. The lagoon is so clear that fish can be seen from the doorways.
+    activation:
+      mode: keyword
+      keys: [Coralhome, lagoon, atoll]
+  - id: customs/gift-giving
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Gifts create obligations in the isles. A gift must be returned with a gift of equal or greater value, though not immediately. A chief's power rests on how much they give away, and a stingy chief is soon replaced.
+    activation:
+      mode: keyword
+      keys: [gift, gifts, obligation]
+  - id: customs/beach-gathering
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Disputes between islands are settled at gatherings on neutral beaches. There are speeches, feasts and canoe races. The outcome of a race often decides the dispute, and both sides agree in advance to accept it.
+    activation:
+      mode: keyword
+      keys: [beach gathering, dispute, canoe race]
+  - id: events/square-sails
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Ships with tall square sails have been sighted beyond the outer reef, larger than any canoe. They have not yet landed. The chiefs have called a beach gathering to decide whether to welcome the strangers, avoid them or send a navigator to watch them.
+    activation:
+      mode: keyword
+      keys: [square sails, foreign ships, strangers]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [mythic, islands, voyaging, legends, customs]
+  rating: general
+  rights: original
+  license: CC0-1.0

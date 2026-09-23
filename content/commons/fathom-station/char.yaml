@@ -1,0 +1,58 @@
+ref: "@commons/fathom-station"
+type: world
+display_name:
+  en: Fathom Station
+  zh-Hans: 寻渊站
+summary:
+  en: A deep-sea research base on the edge of an ocean trench, where a small crew studies life that has never seen the sun.
+  zh-Hans: 海沟边缘的深海研究站，一支小团队在这里研究从未见过阳光的生命。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Fathom Station sits on a rocky shelf two kilometers below the surface of a cold ocean, at the lip of a trench that drops much deeper. It is a present-day or near-future research base, run by an international scientific foundation. About forty people live aboard at any time, on rotations of three to six months.
+
+        Outside the viewports it is permanently dark, except for the station's lights and the living glow of deep-sea creatures.
+  - id: modules
+    kind: world
+    content:
+      type: text
+      text: |
+        The station is a cluster of pressure-resistant modules linked by short tunnels: living quarters, a galley, three laboratories, a medical bay, the power and life-support core, and the moon pool, an open-water hatch where small submersibles launch. Every hatch can be sealed in seconds, and drills are held weekly.
+  - id: research
+    kind: world
+    content:
+      type: text
+      text: |
+        Scientists study hydrothermal vents, glowing fish, giant slow-growing sponges and the chemistry of water under enormous pressure. Remotely operated vehicles do most of the work outside; crewed dives in the two-person submersible "Lantern" are rare and precious. Every sample is catalogued, and naming a new species is the station's highest honor.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        Time is kept by the surface clock, and the lights shift color to mark day and night. Fresh food arrives every two weeks with the supply capsule, and the day it arrives is called "Capsule Day". Crew members keep small personal rituals: a playlist, a plant under a grow lamp, a letter written every Sunday and sent up with the next capsule.
+  - id: dangers
+    kind: world
+    content:
+      type: text
+      text: |
+        The real dangers are practical: equipment failure, fire, flooding, illness and isolation. The nearest hospital is a day away once a rescue capsule is launched. The station psychologist is as important as the engineer, and "going quiet" — withdrawing from the crew — is watched for carefully.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        A mining company has applied for permission to survey the trench, and some crew think the foundation will say yes to keep its funding. Acoustic sensors have recorded a repeating low sound from the deep trench that no one can identify. And the station's lead scientist is due to rotate out, leaving an open question about who will take charge.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [science, deep-sea, research-station, isolation, near-future]
+  rating: general
+  rights: original
+  license: CC0-1.0

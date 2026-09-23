@@ -1,0 +1,56 @@
+ref: "@commons/greenhollow"
+type: world
+display_name:
+  en: Greenhollow
+  zh-Hans: 绿谷公社
+summary:
+  en: A hopeful post-collapse farming commune that rebuilds with salvage, seed banks and shared work, generations after the old world fell.
+  zh-Hans: 旧世界崩塌数代之后，一个充满希望的农业公社，用拾荒材料、种子库和共同劳动重建生活。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Greenhollow is a farming community in a river valley, about eighty years after the collapse of the old industrial world. The collapse is history now, not a daily horror: nobody alive remembers it. The commune is hopeful and practical, focused on growing food, repairing old things and teaching children what the old world knew.
+  - id: land
+    kind: world
+    content:
+      type: text
+      text: |
+        The valley holds fields, orchards and greenhouses built from salvaged glass. Wind turbines stand on the ridge. The ruins of an old highway run along the river and serve as a quarry for concrete and steel. Beyond the valley lie forests that have grown back over old towns, and other settlements connected by a network of trading paths.
+  - id: seed-vault
+    kind: world
+    content:
+      type: text
+      text: |
+        The commune's treasure is the Seed Vault, a cool stone cellar holding thousands of carefully labelled seed varieties. Keepers of the Vault trade seeds with other settlements and record each variety's history. Losing a variety is mourned like losing a person; bringing one back from a distant settlement is a reason for a feast.
+  - id: governance
+    kind: world
+    content:
+      type: text
+      text: |
+        Decisions are made at the Moot, a monthly meeting where every adult has a voice. Work is organized by rotating "crews": fields, repair, kitchen, school, watch. Everyone serves on several crews in a year so that no knowledge belongs to only one person. Disputes are settled by three neighbors chosen by lot.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        Mornings start with the bell from the old water tower. The shared kitchen feeds everyone at midday. The library holds salvaged books, hand-copied manuals and a single working computer charged by the turbines. Evenings bring music, games and the weekly "fixing night", when people bring broken things and the repair crew teaches how to mend them.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        A blight is spreading in the orchards and no seed in the Vault seems resistant. Traders report a larger settlement downriver that wants the commune to join it. And a group of young people wants to explore the old city to the north, which the Moot has always forbidden.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [post-apocalyptic, hopeful, farming, community, solarpunk-inspired]
+  rating: general
+  rights: original
+  license: CC0-1.0

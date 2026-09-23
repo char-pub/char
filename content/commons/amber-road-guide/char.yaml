@@ -1,0 +1,128 @@
+ref: "@commons/amber-road-guide"
+type: lorebook
+display_name:
+  en: A Traveler's Guide to the Amber Road
+  zh-Hans: 琥珀商路旅行指南
+summary:
+  en: Oasis towns, the Well-Keepers, caravan customs, desert hazards and trade goods along the Amber Road.
+  zh-Hans: 琥珀商路沿线的绿洲小镇、守井人、驼队习俗、沙漠险情与贸易货物。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: places/qadira
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Qadira is the largest oasis on the Amber Road, with covered bazaars, a public library and a hundred wells. Caravans rest here for a week before the long crossing of the dune sea. Its Governor is elected by the merchant houses every five years.
+    activation:
+      mode: keyword
+      keys: [Qadira, bazaar, oasis city]
+  - id: places/nine-stones
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Nine Stones is the smallest stop on the road: a single deep well, a caravanserai and the Hamid family, who have kept both for three centuries. Travelers leave a small stone on the wall around the well to say they arrived safely; the wall is now taller than a camel.
+    activation:
+      mode: keyword
+      keys: [Nine Stones, caravanserai, Hamid]
+  - id: places/salt-pans
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The salt pans are flat white plains where nothing grows. The glare can blind a careless traveler, so guides wear veils of dark gauze. Salt cutters work the pans in the cool months and sell slabs to passing caravans.
+    activation:
+      mode: keyword
+      keys: [salt pans, salt flats, salt cutters]
+  - id: order/well-keepers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Well-Keepers wear undyed wool and carry a copper cup on a cord. They repair wells, clean cisterns and keep records of water levels. Anyone may join by serving a year at a remote cistern. Keepers take no side in any quarrel, and harming one is considered an offense against the whole road.
+    activation:
+      mode: keyword
+      keys: [Well-Keeper, Well-Keepers, keeper, cistern]
+  - id: order/water-law
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Water Law is the oldest rule of the road. No one may be refused a drink at a well. No weapon may be drawn within sight of a well. A traveler who fouls a well must repair it with their own hands. Every culture along the road honors these three rules, even when their kings are at war.
+    activation:
+      mode: keyword
+      keys: [Water Law, law of the well, drink]
+  - id: caravan/master
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A caravan master leads the caravan and has the final word on when to move, where to camp and who may join. The position is hired, not inherited. A master's reputation depends on how many people and animals arrive safely, and the best masters keep careful logs.
+    activation:
+      mode: keyword
+      keys: [caravan master, master, caravan leader]
+  - id: caravan/guides
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Guides find the way across the dunes by reading stars, the color and ripple of the sand and the behavior of the camels. A guide never draws a map; routes are memorized as chants. Apprentices walk the road with a guide for seven crossings before leading alone.
+    activation:
+      mode: keyword
+      keys: [guide, guides, route chant]
+  - id: caravan/songs
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Every caravan has its own marching song, used to keep a steady pace at night. Singing another caravan's song is a friendly challenge; singing it badly is an insult. When two caravans meet, they trade songs as well as goods.
+    activation:
+      mode: keyword
+      keys: [caravan song, marching song, song]
+  - id: hazards/long-wind
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Long Wind is the season of sandstorms, lasting about six weeks. Most caravans wait it out in the oasis towns. A storm can bury a trail in an hour. Travelers caught in one lie down behind their kneeling camels and cover their faces until it passes.
+    activation:
+      mode: keyword
+      keys: [Long Wind, sandstorm, storm]
+  - id: hazards/mirage
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Mirages are common on the gravel plains, showing lakes that are not there. Guides teach that a real oasis always has birds. Chasing a mirage has killed more travelers than bandits ever have.
+    activation:
+      mode: keyword
+      keys: [mirage, heat haze]
+  - id: trade/goods
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Westbound caravans carry salt, spices, dyed cloth and glass beads. Eastbound caravans carry grain, wool, copper and paper. Amber resin, which gave the road its name, is now rare and used mostly for incense at weddings.
+    activation:
+      mode: keyword
+      keys: [trade goods, spices, amber, cargo]
+  - id: customs/hospitality
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        In the oasis towns, a guest is offered three small cups of sweet mint tea. Accepting the first is polite, the second is friendly, and the third means you intend to do business. Refusing all three is a clear sign of distrust.
+    activation:
+      mode: keyword
+      keys: [mint tea, three cups, hospitality]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [desert, trade, travel, customs, guide]
+  rating: general
+  rights: original
+  license: CC0-1.0

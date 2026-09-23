@@ -1,0 +1,128 @@
+ref: "@commons/brassford-engines"
+type: lorebook
+display_name:
+  en: Brassford Engines and Institutions
+  zh-Hans: 黄铜渡的机器与机构
+summary:
+  en: Steam engines, canal locks, guild examinations, newspapers and the rival companies of Brassford.
+  zh-Hans: 黄铜渡的蒸汽机、运河船闸、行会考试、报纸，以及互相竞争的公司。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: places/nine-locks
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Nine Locks carry boats up the Tallow Falls between Lower and Upper Brassford. Passage takes about two hours, and boats wait in a queue marked by numbered brass tokens. Each lock has its own keeper, and the keeper of the Ninth Lock is traditionally the city's chief lock-keeper.
+    activation:
+      mode: keyword
+      keys: [Nine Locks, lock, locks, lock-keeper]
+  - id: places/engine-works
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Brassford Engine Works is the city's largest employer, a sprawl of foundries and assembly halls in Lower Brassford. It builds boilers, pumps and paddle engines. Its founder's statue stands at the gate, holding a wrench instead of a sword.
+    activation:
+      mode: keyword
+      keys: [Engine Works, foundry, Brassford Engine Works]
+  - id: places/arcade
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Arcade is a glass-roofed shopping street in Upper Brassford, heated by steam pipes under the floor. It holds clockmakers, tailors, a famous toy shop and a fountain where children race clockwork boats.
+    activation:
+      mode: keyword
+      keys: [Arcade, glass-roofed, toy shop]
+  - id: places/cinder-row
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Cinder Row is a street of old tanneries across the Tallow, now rented cheaply to inventors. Its workshops produce brilliant machines and frequent small fires. The Row has its own volunteer fire crew, which is proud of never having lost a building.
+    activation:
+      mode: keyword
+      keys: [Cinder Row, inventor, inventors, workshop]
+  - id: tech/boilers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Brassford boilers are rated by pressure and fitted with a brass safety valve that whistles when the pressure is too high. Every boiler must be inspected yearly and carry a stamped inspection plate. An unstamped boiler can be seized by the city.
+    activation:
+      mode: keyword
+      keys: [boiler, boilers, safety valve]
+  - id: tech/telegraph
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A telegraph line runs along the Tallow to the coast, and a single office in Upper Brassford sends messages at a price per word. Merchants use a private code book to save money. Telegraph boys in green caps deliver incoming messages across the city.
+    activation:
+      mode: keyword
+      keys: [telegraph, telegram, telegraph office]
+  - id: tech/electric-light
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The university has built an experimental electric lamp powered by a dynamo in its basement. It lights one lecture hall. The gas companies have sent lawyers, the newspapers have sent reporters, and crowds gather every evening to watch it switch on.
+    activation:
+      mode: keyword
+      keys: [electric light, dynamo, electricity]
+  - id: society/guild-exam
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        To become a guild engineer, a candidate must operate and shut down a boiler under pressure in front of an examining board and a public audience. Failing is common; failing badly is remembered. Passing earns a brass pin shaped like a gear.
+    activation:
+      mode: keyword
+      keys: [guild exam, examination, guild engineer, brass pin]
+  - id: society/shift-societies
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Shift societies are workers' associations that run schools, libraries, sick funds and funerals for their members. Each is named after the shift its founders worked, such as the Night Bell Society or the Dawn Whistle Society. They also organize strikes when needed.
+    activation:
+      mode: keyword
+      keys: [shift society, shift societies, union]
+  - id: society/newspapers
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Brassford has more newspapers than bakeries. The Upper Courier is serious and expensive; the Lock Crier is cheap and full of scandal; the Cinder Spark is written by inventors and mostly about arguments between inventors. Each district has a paper that disagrees with the others.
+    activation:
+      mode: keyword
+      keys: [newspaper, Courier, Lock Crier, Cinder Spark]
+  - id: events/railway-bridge
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Northern Railway Company plans a bridge over the Tallow Falls that would let trains bypass the locks. Supporters say it would bring prosperity; the lock-keepers and boat crews say it would destroy their livelihood. Public meetings about the bridge often end in shouting.
+    activation:
+      mode: keyword
+      keys: [railway, bridge, Northern Railway]
+  - id: customs/lock-sunday
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        On Sundays the locks close to traffic. Families picnic on the lock gates, bands play on the keepers' platforms and children are allowed to turn the smallest lock wheel under supervision. It is the one day the city is quiet enough to hear the falls.
+    activation:
+      mode: keyword
+      keys: [Lock Sunday, Sunday, picnic]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [steampunk, technology, institutions, industrial]
+  rating: general
+  rights: original
+  license: CC0-1.0

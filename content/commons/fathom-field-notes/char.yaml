@@ -1,0 +1,128 @@
+ref: "@commons/fathom-field-notes"
+type: lorebook
+display_name:
+  en: Fathom Station Field Notes
+  zh-Hans: 寻渊站考察笔记
+summary:
+  en: Deep-sea creatures, station equipment, safety drills and crew routines recorded aboard Fathom Station.
+  zh-Hans: 寻渊站上记录的深海生物、站内设备、安全演练与船员日常。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: life/lantern-eels
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Lantern eels are thin, glowing fish about as long as an arm. They gather in hundreds around the station's outer lights and pulse in waves of blue. Crew members count them each evening; a sudden drop in numbers usually comes before a change in the currents.
+    activation:
+      mode: keyword
+      keys: [lantern eel, lantern eels, glowing fish]
+  - id: life/vent-gardens
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The vent gardens are clusters of tube worms, white crabs and shrimp living around hot springs on the trench wall. They live on chemicals from the vents rather than sunlight. The nearest vent field, called Kettle, is a twenty-minute drive by remote vehicle.
+    activation:
+      mode: keyword
+      keys: [vent garden, hydrothermal vent, tube worms, Kettle]
+  - id: life/glass-sponges
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Glass sponges grow on the rocky shelf around the station. Some are estimated to be thousands of years old. Touching one with a vehicle arm is forbidden, and any damage must be reported to the lead scientist the same day.
+    activation:
+      mode: keyword
+      keys: [glass sponge, sponges, ancient sponge]
+  - id: equipment/lantern
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        "Lantern" is the station's two-person crewed submersible, a bright orange sphere with a single wide viewport. A dive lasts up to eight hours. Pilots must log fifty hours on the simulator before their first real dive, and every dive is watched live from the control room.
+    activation:
+      mode: keyword
+      keys: [Lantern submersible, submersible, crewed dive]
+  - id: equipment/rovs
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Remotely operated vehicles, called "rovers" by the crew, do most of the outside work. Each is tethered to the station by a long cable and has arms, cameras and sample boxes. The three rovers are named Nib, Pebble and Old Stubborn.
+    activation:
+      mode: keyword
+      keys: [ROV, rover, rovers, Nib, Pebble, Old Stubborn]
+  - id: places/moon-pool
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The moon pool is an open hatch to the sea in the floor of the lowest module. Air pressure keeps the water from rising. Submersibles and divers leave and return through it. The pool glows faintly at night when curious fish swim up into the light.
+    activation:
+      mode: keyword
+      keys: [moon pool, hatch, dive bay]
+  - id: safety/drills
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Safety drills are held every week at an unannounced time: fire, flooding, loss of power or a medical emergency. Every crew member knows their muster point by heart. The station record for sealing all hatches is forty-one seconds.
+    activation:
+      mode: keyword
+      keys: [drill, safety drill, muster point]
+  - id: safety/rescue-capsule
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The rescue capsule can carry twelve people to the surface in about four hours. It has never been used in an emergency. Crew members take turns inspecting it and are allowed to leave one small personal item inside, "in case".
+    activation:
+      mode: keyword
+      keys: [rescue capsule, evacuation, escape pod]
+  - id: routine/capsule-day
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Every two weeks a supply capsule is lowered from the ship above with fresh food, mail and parts. Capsule Day is the station's favorite day: the galley bakes bread, letters are handed out and everyone gathers to watch the capsule light appear out of the dark.
+    activation:
+      mode: keyword
+      keys: [Capsule Day, supply capsule, mail]
+  - id: routine/going-quiet
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        "Going quiet" is the crew's term for a person withdrawing from others under the stress of isolation. The station psychologist checks in with everyone weekly, and anyone may ask for a "surface call" with family at no cost. Looking after each other is considered part of the job.
+    activation:
+      mode: keyword
+      keys: [going quiet, psychologist, isolation]
+  - id: mystery/low-sound
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        For eight months, the station's hydrophones have recorded a slow, repeating low sound from the deep trench, about once every nineteen hours. It could be a geological process, a large animal or an echo of something mechanical. No explanation has yet fit all the data.
+    activation:
+      mode: keyword
+      keys: [low sound, hydrophone, the sound]
+  - id: people/lead-scientist
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The lead scientist runs research priorities and has the final say on sampling, though the station chief has the final say on safety. The current lead scientist is due to rotate to the surface at the end of the season, and several crew members hope to take the post.
+    activation:
+      mode: keyword
+      keys: [lead scientist, station chief]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [science, deep-sea, research, equipment, routine]
+  rating: general
+  rights: original
+  license: CC0-1.0

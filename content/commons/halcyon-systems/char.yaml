@@ -1,0 +1,128 @@
+ref: "@commons/halcyon-systems"
+type: lorebook
+display_name:
+  en: Halcyon Ring Systems and Customs
+  zh-Hans: 翠鸟环站的系统与习俗
+summary:
+  en: How life support, allowances, sectors, shuttles and station customs work aboard Halcyon Ring.
+  zh-Hans: 翠鸟环站上生命维持、配额、分区、穿梭机与站内习俗的运作方式。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: systems/allowance
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Every resident of Halcyon Ring receives a monthly allowance of air, water and power, shown on a wrist band as three colored bars. Unused allowance can be banked or traded. Running out does not mean suffocating — it means paying steep fees and a visit from a council welfare officer.
+    activation:
+      mode: keyword
+      keys: [allowance, wrist band, allowances]
+  - id: systems/life-support
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Life support on the ring uses algae tanks, plant beds and chemical scrubbers to keep the air breathable. The Life Support crew is the most respected job on the station, and their daily status report is the first item on every public board.
+    activation:
+      mode: keyword
+      keys: [life support, scrubbers, air supply]
+  - id: systems/water
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Water on the ring is recycled from every source, including humidity and waste, then filtered and mineralized. Fresh water from Earth arrives only in emergencies. "Clean as ring water" is a compliment; "Earth water" means something wasteful and luxurious.
+    activation:
+      mode: keyword
+      keys: [water recycling, ring water, water]
+  - id: systems/spin
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The ring spins to create gravity on the outer deck. Directions are "spinward" and "antispinward", "up" toward the hub and "down" toward the outer hull. Dropped objects curve slightly as they fall, which newcomers find unsettling and children find hilarious.
+    activation:
+      mode: keyword
+      keys: [spinward, antispinward, spin gravity, hub]
+  - id: places/sectors
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The twelve sectors of the ring are named January to December. January holds the council chambers and the Commons; April and May are the main farm sectors; July has the school; October holds heavy workshops and the unexplained slow leak; December is the quiet sector, favored by retirees.
+    activation:
+      mode: keyword
+      keys: [sector, January sector, October sector, December sector]
+  - id: places/commons
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Commons is a large cafeteria in the January sector that doubles as the town hall. Council meetings are held there, and anyone may speak for two minutes during the open session. The Commons also hosts the monthly "window lottery" for time in the observation lounge.
+    activation:
+      mode: keyword
+      keys: [Commons, town hall, cafeteria]
+  - id: places/observatory
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The observatory at the hub has the only large window on the station. Time there is shared by lottery, and a birthday booking is a treasured gift. In low gravity people float in front of the glass and watch Earth turn below them.
+    activation:
+      mode: keyword
+      keys: [observatory, window seat, observation lounge]
+  - id: people/chief-engineer
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Chief Engineer can overrule the Ring Council on any matter of safety. The current Chief Engineer has held the post for nine years and is known for short answers, long shifts and a strict rule that every complaint must come with a proposed fix.
+    activation:
+      mode: keyword
+      keys: [Chief Engineer, engineer]
+  - id: transport/shuttle
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A supply shuttle docks at the hub once a week, bringing food, parts and new arrivals. "Shuttle Day" is an informal festival: the Commons serves fresh fruit, families meet visitors, and the news from Earth is read aloud.
+    activation:
+      mode: keyword
+      keys: [shuttle, Shuttle Day, supply shuttle]
+  - id: customs/soil
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Real soil is precious on Halcyon Ring. A small pot of garden earth is a traditional wedding gift, and couples plant their first herbs in it together. Borrowing soil without asking is considered a serious breach of manners.
+    activation:
+      mode: keyword
+      keys: [soil, garden earth, wedding gift]
+  - id: customs/night-side
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The ring keeps an artificial day and night. Sectors take turns dimming their lights to amber so that some part of the ring is always in "night". Loud work is forbidden in a night-side sector, and crossing one is done quietly and quickly.
+    activation:
+      mode: keyword
+      keys: [night side, amber lights, lights dim]
+  - id: events/second-ring
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A second ring is being built alongside the first, visible from the observatory as a skeleton of beams. When finished it will double the population. Residents are divided: some welcome new neighbors and jobs, others fear crowding and higher allowance prices.
+    activation:
+      mode: keyword
+      keys: [second ring, expansion, construction]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [science-fiction, space-station, technology, customs]
+  rating: general
+  rights: original
+  license: CC0-1.0

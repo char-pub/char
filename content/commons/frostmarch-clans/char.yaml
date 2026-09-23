@@ -1,0 +1,128 @@
+ref: "@commons/frostmarch-clans"
+type: lorebook
+display_name:
+  en: Clans and Seasons of the Frostmarch
+  zh-Hans: 霜境的氏族与季节
+summary:
+  en: The five clans of the Frostmarch, their herds, seasons, festivals, laws of hospitality and survival lore.
+  zh-Hans: 霜境五大氏族的驯鹿群、季节、节庆、待客律法与求生知识。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: clans/owl
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Owl clan are the keepers of stories and the calendar. Their elders memorize the history of every clan back forty generations. Owl knots are tied in patterns of three, and Owl herders are said to be able to find their way in the Dark by starlight alone.
+    activation:
+      mode: keyword
+      keys: [Owl clan, Owl]
+  - id: clans/hare
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Hare clan are the fastest sled drivers and the best trappers. They move camp more often than any other clan and are known for quick wit and practical jokes. A Hare wedding lasts one night instead of three, "because there is work to do".
+    activation:
+      mode: keyword
+      keys: [Hare clan, Hare]
+  - id: clans/wolverine
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Wolverine clan hold the harshest northern routes and are famous for stubbornness and loyalty. They never abandon a stranded sled. Other clans joke that a Wolverine will argue with a blizzard and win.
+    activation:
+      mode: keyword
+      keys: [Wolverine clan, Wolverine]
+  - id: clans/swan
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Swan clan summer by the coast and trade most with the southern merchants. Their young leader wants to build a permanent settlement at the river mouth. The other clans respect the Swans but worry they are forgetting the old routes.
+    activation:
+      mode: keyword
+      keys: [Swan clan, Swan]
+  - id: clans/seal
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Seal clan live partly on the sea ice, fishing and hunting through breathing holes. They keep fewer reindeer than other clans and more dogs. Seal boat-builders make the finest skin boats in the north.
+    activation:
+      mode: keyword
+      keys: [Seal clan, Seal]
+  - id: seasons/the-dark
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Dark is the long winter when the sun does not rise for many weeks. It is the season of gatherings, weddings, trading and storytelling in the winter camps. People keep time by the moon and by the tent fire, which is never allowed to go out.
+    activation:
+      mode: keyword
+      keys: [the Dark, winter, polar night]
+  - id: seasons/the-bright
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Bright is summer, when the sun never sets. The herds move to the coastal pastures to escape the insects, and people sleep whenever they are tired. It is a season of hard work and little sleep, remembered fondly in songs sung during the Dark.
+    activation:
+      mode: keyword
+      keys: [the Bright, summer, midnight sun]
+  - id: festivals/return-of-the-sun
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Return of the Sun marks the first sunrise after the Dark. Everyone climbs the nearest hill to greet it with singing. The sun appears for only a few minutes, and the singing continues until it sets again. Then the feasting begins.
+    activation:
+      mode: keyword
+      keys: [Return of the Sun, sunrise, festival]
+  - id: law/hospitality
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        No one may be turned away from a fire in winter. A traveler receives food, shelter and three days' rest before anyone asks their business. In return, a guest helps with the work of the camp. Breaking this law is the only offense that can make a person clanless.
+    activation:
+      mode: keyword
+      keys: [hospitality, guest, fire law, clanless]
+  - id: herds/reindeer
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Reindeer give the clans meat, milk, hides, antler and transport. Each herder knows every animal by sight, and ear-notch patterns mark which family a reindeer belongs to. A herd that scatters in a storm is gathered by all clans together, and animals are returned by their marks.
+    activation:
+      mode: keyword
+      keys: [reindeer, herd, ear-notch]
+  - id: survival/reading-ice
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Children learn to read ice before they learn to count. Grey ice is thin, blue ice is strong, and white ice with bubbles must be tested. A herder testing a lake taps ahead with a long staff and listens for the sound it makes.
+    activation:
+      mode: keyword
+      keys: [ice, thin ice, reading ice]
+  - id: craft/knots
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Each clan has its own knot patterns, used on harness, tents and clothing. A knot can say who made it and for whom. Gifts are tied with the giver's clan knot, and untying it carefully rather than cutting it is a sign of respect.
+    activation:
+      mode: keyword
+      keys: [knot, knots, knot pattern]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [northern, clans, seasons, survival, customs]
+  rating: general
+  rights: original
+  license: CC0-1.0

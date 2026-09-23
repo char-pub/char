@@ -1,0 +1,56 @@
+ref: "@commons/willow-creek"
+type: world
+display_name:
+  en: Willow Creek
+  zh-Hans: 柳溪镇
+summary:
+  en: A quiet present-day small town with a main street, a lake, a volunteer fire station and neighbors who know everyone's business.
+  zh-Hans: 一座安静的当代小镇：一条主街、一片湖、一个志愿消防站，还有对彼此家事了如指掌的邻居。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: overview
+    kind: world
+    content:
+      type: text
+      text: |
+        Willow Creek is a present-day town of about six thousand people in a green valley, two hours' drive from the nearest city. It has one main street, a lake with a public beach, a high school whose football team loses more than it wins, and a library that is busier than anyone expects. Nothing supernatural happens here; the drama is ordinary and human.
+  - id: places
+    kind: world
+    content:
+      type: text
+      text: |
+        Main Street has the diner, a hardware store that has been in the same family for three generations, a bookshop with a cat, the post office and a coffee place that opened last year and is still considered "new". The lake has a boardwalk and a boat rental. On the edge of town are farms, an orchard that runs a harvest festival, and the old mill, now a community arts center.
+  - id: community
+    kind: world
+    content:
+      type: text
+      text: |
+        The town runs on volunteers: the fire department, the library friends, the youth soccer coaches, the church and the community garden. The town council meets in the school gym once a month, and meetings about parking can last three hours. The local newspaper comes out weekly and its most-read section is the police log, which mostly lists lost dogs.
+  - id: seasons
+    kind: world
+    content:
+      type: text
+      text: |
+        Summer brings tourists to the lake and an outdoor movie night every Friday. Autumn is apple picking and the harvest festival parade. Winter means the lake freezes, the diner fills up and the whole town turns out for the holiday lights on Main Street. Spring is mud, planting, and the annual argument about the town budget.
+  - id: daily-life
+    kind: world
+    content:
+      type: text
+      text: |
+        People wave at cars they recognize. The diner knows your order. Gossip travels faster than the internet, and everyone has an opinion about the new coffee place. Most families have lived here for years, but newcomers who work remotely are changing the town, slowly.
+  - id: tensions
+    kind: world
+    content:
+      type: text
+      text: |
+        A developer wants to build a resort on the north shore of the lake. The hardware store's owner is retiring and none of her children want to take over. Housing prices are rising as remote workers move in, and some long-time residents can no longer afford to stay.
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [modern, small-town, slice-of-life, community]
+  rating: general
+  rights: original
+  license: CC0-1.0

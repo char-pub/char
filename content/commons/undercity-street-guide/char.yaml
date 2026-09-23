@@ -1,0 +1,128 @@
+ref: "@commons/undercity-street-guide"
+type: lorebook
+display_name:
+  en: Undercity Street Guide
+  zh-Hans: 下城街头指南
+summary:
+  en: Markets, lanterns, repair culture, slang and places of the Neon Undercity of Veradis.
+  zh-Hans: 维拉迪斯霓虹下城的市场、灯守、维修文化、俚语与去处。
+authors:
+  - name: char.pub commons
+fragments:
+  - id: people/lanterns
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A lantern is an elected neighbor who keeps a block's mesh network running, settles small disputes and knows who needs help. Lanterns serve for a year and can be re-elected. They wear a small light on their collar so neighbors can find them in a crowd.
+    activation:
+      mode: keyword
+      keys: [lantern, lanterns, block lantern]
+  - id: tech/mesh
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The mesh is a patchwork of small radio relays that residents install on balconies and signs. It carries messages between blocks without passing through the corporate networks above. It is slow, unreliable and deeply loved.
+    activation:
+      mode: keyword
+      keys: [mesh, mesh network, relay]
+  - id: places/fourth-deck-market
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Fourth Deck Market fills an old parking structure with hundreds of stalls selling parts, clothes, food and repairs. Stalls are rented by the hour, and the rent board at the entrance changes prices with the crowd. The city's renewal plan would demolish it.
+    activation:
+      mode: keyword
+      keys: [Fourth Deck Market, market, stalls]
+  - id: places/the-deep
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Deep is the old street level of the city, dim and damp, where pumping stations keep groundwater out of the foundations. A few thousand people live there by choice. It has the quietest streets in Veradis and the best mushroom farms.
+    activation:
+      mode: keyword
+      keys: [the Deep, street level, pumping station]
+  - id: places/the-rim
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The Rim is the highest level of the Undercity, just below the Tenth Deck. Warm, filtered air blows down from the upper city's vents, and delivery drones land on its platforms. Apartments at the Rim cost three times as much as those in the Lanes.
+    activation:
+      mode: keyword
+      keys: [the Rim, Tenth Deck, drone platform]
+  - id: culture/repair
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        In the Undercity nothing is thrown away. Repair stalls fix phones, drones, fans, prosthetic hands and anything else with a battery. A good repairer is respected like a doctor. The saying "it's not broken, it's waiting" is painted on many stall shutters.
+    activation:
+      mode: keyword
+      keys: [repair, repairer, repair stall, fix]
+  - id: culture/credit-circles
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Credit circles are groups of neighbors who pool a little money each week and take turns receiving the whole pot. They help people start a stall or pay a medical bill without going to a corporate lender. Missing a payment to a circle is a serious social failure.
+    activation:
+      mode: keyword
+      keys: [credit circle, credit circles, savings]
+  - id: food/noodle-carts
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Noodle carts are everywhere in the Lanes, each with a regular crowd and a secret broth. The most famous, a cart called Midnight Bowl, has moved to a new corner every night for twenty years; finding it is a game in itself.
+    activation:
+      mode: keyword
+      keys: [noodle cart, noodles, Midnight Bowl]
+  - id: slang/common
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Common Undercity slang includes "topside" for the upper city, "going vertical" for moving up in life, "sparks" for money, "flicker" for a lie, and "dark block" for a block whose network is down. A person who helps without being asked is called "lit".
+    activation:
+      mode: keyword
+      keys: [slang, topside, sparks, flicker]
+  - id: places/rooftop-gardens
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        Rooftop gardens grow on the abandoned upper surfaces of old buildings trapped under the decks. They are lit by salvaged grow lamps and tended by volunteers. Herbs, chili peppers and tomatoes from the gardens are shared through the block lanterns.
+    activation:
+      mode: keyword
+      keys: [rooftop garden, grow lamps, herbs]
+  - id: events/renewal-plan
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        The city's renewal plan for the Fourth Deck promises "modern housing and green space". Residents believe it means the market will be cleared and rents will triple. The lanterns are organizing public meetings and a petition that has passed forty thousand signatures.
+    activation:
+      mode: keyword
+      keys: [renewal plan, renewal, petition]
+  - id: events/missing-lantern
+    kind: knowledge
+    content:
+      type: text
+      text: |-
+        A well-known lantern from the Fifth Deck disappeared from the mesh three weeks ago. Their stall is closed and their relay is dark. Some say they moved topside, others that they found something the upper city did not want found.
+    activation:
+      mode: keyword
+      keys: [missing lantern, disappeared, Fifth Deck]
+provenance:
+  # AI-assisted draft, pending human review before publishing.
+  authored_by_agent: true
+meta:
+  default_locale: en
+  tags: [cyberpunk-inspired, urban, community, slang, guide]
+  rating: general
+  rights: original
+  license: CC0-1.0
