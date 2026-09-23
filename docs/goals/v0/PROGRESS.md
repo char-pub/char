@@ -6,9 +6,9 @@
 - Package：`docs/goals/v0/`
 - Status：**实现中（M0～M8 的本地实现大部分完成）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
 - Current work：
-  - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA；Admin SPA（全部接口接入）；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、Registry 写路径与发布 worker、admin 业务路由（四眼、法律请求、员工）、CCv3 导出 worker、bootstrap 命令、GitHub webhook / Source binding / OIDC 发布 / 同步与对账、Contribution API；单镜像五命令；runbooks；部署指南；冒烟测试脚本。
-  - 并行 subagent：web 接 Registry API（含 `/v1/me` 与全栈 E2E）。
-  - 下一步：Contribution 审阅 UI（M8-4）、访客验证（Turnstile + 邮箱）、服务端导入 API → 一致性用例人工审阅 → 等用户授权后部署 staging。
+  - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA；Admin SPA（全部接口接入）；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、Registry 写路径与发布 worker、admin 业务路由（四眼、法律请求、员工）、CCv3 导出 worker、bootstrap 命令、GitHub webhook / Source binding / OIDC 发布 / 同步与对账、Contribution API、经验证访客（Turnstile + 邮箱）、CCv3 导入 API 与 worker；单镜像五命令；runbooks；部署指南；冒烟测试脚本。
+  - 并行 subagent：web 接 Registry API（含 `/v1/me` 与全栈 E2E）；Admin SPA 的 Playwright 与权限矩阵测试；服务端遗留项（定期清理、导入死信、admin 停用访客、本地 Mailpit）。
+  - 下一步：web 的导入向导、访客验证页、Contribution 审阅 UI（M8-4）；`pnpm dev` 一键本地环境（M0-4）→ 一致性用例人工审阅 → 等用户授权后部署 staging。
 - Acceptance：DOD 条目尚未打勾。M0-1 / M0-2 本地检查已通过，但验收要求 CI 运行记录，需等首次推送后才能取得（依赖 B-10）。
 - Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
 - 等待用户：一致性用例审阅与接受；复核 D-126 / D-129 / D-130；决定 D-135 第 1 条（CCv3 导入的默认 rights）；授权 force push、组织设置、staging 资源、OAuth App 与 GitHub App 创建。
@@ -114,3 +114,10 @@
 - Verification：`pnpm test` 1085 个通过；集成测试 534 个通过（25 个文件）；`pnpm lint` / `pnpm typecheck` / `pnpm deps` 通过。
 - Decisions：D-139（admin 路由）、D-140（GitHub Source 与 OIDC 发布）、D-141（Contribution API）。
 - 尚不能打勾：M7-4 需要真实 GitHub App（B-3）；M8 还缺 Contribution 审阅 UI 与访客验证入口。
+
+### 2026-09-22 经验证访客、CCv3 导入 API
+
+- Work：合并经验证访客（subagent：Turnstile 校验、SMTP 验证邮件、访客会话 cookie，替换测试专用的访客头）与 CCv3 导入（subagent：`POST/GET /v1/imports`、导入确认、import worker，卡片中的图片走普通上传的处理与扫描）。迁移分别为 0008、0009（导入分支用 drizzle-kit 重新生成，SQL 与原分支一致）。
+- 发现并修复：Contribution 合并后 Action 打包产物没有重新生成，`ci:all` 的产物检查失败；已重建，并在 pre-commit 增加产物检查（用一次会改变产物的改动验证能拦截）。新旧产物对同一项目 dry-run 得到相同的 semantic digest。
+- Verification：`pnpm ci:all` 在合并前的 main 上除产物检查外全部通过（单测 1042、web / admin 43、一致性 103 通过 / 81 todo、集成 + server 单测 1015、build），产物修复后单独复跑通过；合并后 `pnpm test` 1118 个通过，集成测试 564 个通过（27 个文件），lint / typecheck / deps / `check:action-dist` 通过。
+- Decisions：D-142（CCv3 导入）、D-143（经验证访客）。
