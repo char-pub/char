@@ -159,3 +159,8 @@
 - 发现并修复：Railway 定义里 `OIDC_AUDIENCE` 是字面值，而 GitHub 集成的其余变量尚未设置，“要么全配、要么全不配”的检查让 api 与 worker 拒绝启动。改为 `preserve()`，并在定义的测试中禁止这类分组里出现字面值（先确认新测试在旧定义上失败）。
 - 结果：api、worker、postgres 为 Online；api 的 pre-deploy 迁移完成（11 个迁移）。在 api 容器内验证：`/healthz` 200；不带 `X-Origin-Auth` 的 `/v1/search` 返回 403 `origin.forbidden`，带正确值返回 200。在 worker 上执行 `bootstrap --system-actor`，写入系统账号与审计记录。admin 因缺少 Cloudflare Access 的三个变量而未启动，符合预期。
 - 仍需用户：Cloudflare Access 应用（`CF_ACCESS_TEAM_DOMAIN`、`CF_ACCESS_AUD`、`STAFF_EMAILS`）；自定义域名的 DNS、Transform Rule、WAF；OAuth App；GitHub App；Turnstile；SMTP。
+
+### 2026-09-23 M0 的 CI 证据
+
+- 四次推送的 ci（check + dev-env）、codeql、scorecard 全部成功；`check` 在 runner 上跑完整的 `pnpm ci:all`，`dev-env` 在全新 runner 上跑 README 的本地开发步骤。据此勾选 M0-1、M0-4。见 [evidence/2026-09-23-m0-ci.md](evidence/2026-09-23-m0-ci.md)。
+- M0-2 暂不勾选：用探测 PR（#1，已关闭）触发依赖审查，失败原因是仓库没有开启 Dependency graph；Renovate 只有配置，组织没有安装 App。都需要用户修改仓库或组织设置。

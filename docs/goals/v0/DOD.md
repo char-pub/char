@@ -19,10 +19,10 @@
 
 ### M0 仓库与工程基线
 
-- [ ] **M0-1** monorepo 骨架（pnpm workspace、TS project references、Vitest、lint、依赖边界规则）就绪；`pnpm ci:all` 在空实现上通过。验证：CI 运行记录。
+- [x] **M0-1** monorepo 骨架（pnpm workspace、TS project references、Vitest、lint、依赖边界规则）就绪；`pnpm ci:all` 在空实现上通过。验证：CI 运行记录。
 - [ ] **M0-2** 公开仓库安全基线：`LICENSE`（Apache-2.0）、`spec/LICENSE`（CC-BY-4.0）、`SECURITY.md`、`CODEOWNERS`、Renovate、CodeQL、依赖审查、gitleaks（CI + pre-commit）；所有 workflow 声明 `permissions: contents: read`，第三方 Action 固定到 SHA。验证：CI 记录 + 文件审阅。覆盖：SC-14。
 - [ ] **M0-3** 组织与仓库设置：组织强制 2FA（这也是 Admin MFA 的前提，D-120），开启 secret scanning 与 push protection，`main` 分支保护。验证：`gh api` 输出。前置：用户授权修改组织设置（DOR B-4）。覆盖：SC-12、SC-14。
-- [ ] **M0-4** 本地一键环境 `docker compose up`（Postgres 16 + MinIO）加 `pnpm dev`，README 写明步骤。验证：在干净机器上按步骤跑一遍。
+- [x] **M0-4** 本地一键环境 `docker compose up`（Postgres 16 + MinIO）加 `pnpm dev`，README 写明步骤。验证：在干净机器上按步骤跑一遍。
 
 ### M1 Core：标识符、canonical、digest、schema
 
