@@ -20,6 +20,18 @@ export async function ensureSystemActor(db: Db, id: string, now: Date): Promise<
   return db.transaction(async (tx) => {
     const [existing] = await tx.select().from(authUser).where(eq(authUser.id, id)).limit(1);
     if (existing) return false;
+    // 系统账号的邮箱已被另一个 ID 占用，说明 SYSTEM_ACTOR_ID 改过。不能悄悄换成新账号，
+    // 否则历史处置记录与之后的记录会指向两个不同的执行者。
+    const [other] = await tx
+      .select({ id: authUser.id })
+      .from(authUser)
+      .where(eq(authUser.email, SYSTEM_ACTOR_EMAIL))
+      .limit(1);
+    if (other) {
+      throw new Error(
+        `bootstrap.system_actor_mismatch: ${SYSTEM_ACTOR_EMAIL} already belongs to ${other.id}; set SYSTEM_ACTOR_ID to that id`,
+      );
+    }
     await tx.insert(authUser).values({
       id,
       email: SYSTEM_ACTOR_EMAIL,
