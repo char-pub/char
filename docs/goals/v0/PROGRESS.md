@@ -189,3 +189,9 @@
 - 自定义域名 `api.char.pub`、`admin-api.char.pub`：DNS 记录经 Cloudflare API 创建，Railway 同步 ACTIVE。`assets.char.pub` 绑定 public 桶。web 部署到 `www.char.pub`。`bootstrap --system-actor` 完成。
 - 冒烟测试：web 与 api 4 项通过；admin 2 项等 Cloudflare Access。边缘防护：直连源站 403、伪造头无效、方法白名单生效、公共资源 CORS 只放行 www。详见 [evidence/2026-09-23-production-deploy.md](evidence/2026-09-23-production-deploy.md)。
 - 仍需用户：Cloudflare Access 应用（admin 与 admin SPA）；GitHub OAuth App（登录）；GitHub App（Source 与 OIDC 发布）；SMTP（访客验证）；Dependency graph、Renovate、secret scanning / push protection、分支保护、组织 2FA（M0-2、M0-3）；M8-3 截图与一致性用例的人工审阅。
+
+### 2026-09-23 品牌 logo
+
+- 引入 `char-pub/brand-assets` 作为子模块（`vendor/brand-assets`，固定在 4cec283）。web 与 admin 的顶栏、页脚标志改为品牌几何（线条用 `currentColor`，浅色为 Ink、深色为 White）；favicon、ico 与 Apple touch icon 由 Vite 插件从子模块提供，仓库不保存副本，子模块缺失时构建直接报错并提示命令。CI 拉取子模块。按用户要求，配色与字体暂不改动。
+- 已部署到 `www.char.pub`，三个图标地址 200；该提交的 ci / codeql / scorecard 通过。
+- 清理：所有 subagent 已结束，只保留主 worktree；main 的上游改为 `github/main`。
