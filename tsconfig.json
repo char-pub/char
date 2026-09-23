@@ -8,6 +8,7 @@
     { "path": "packages/cli" },
     { "path": "apps/server" },
     { "path": "apps/web" },
+    { "path": "apps/admin" },
     { "path": "actions/publish" }
   ]
 }
