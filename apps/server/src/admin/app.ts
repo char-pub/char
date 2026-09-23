@@ -100,6 +100,7 @@ export function adminRoute<B extends z.ZodType | undefined>(
   const list = REGISTERED.get(app) ?? [];
   list.push(spec as AdminRouteSpec<z.ZodType | undefined>);
   REGISTERED.set(app, list);
+  // biome-ignore lint/plugin: 这里就是 adminRoute() 本身：先校验员工身份、能力与操作理由，再调用处理函数。
   app[spec.method](spec.path, async (c) => {
     const staff = c.var.staff;
     const isWrite = spec.method !== "get";
@@ -147,8 +148,10 @@ export interface AdminOptions {
 export function createAdmin(opts: AdminOptions): Hono<AdminEnv> {
   const app = new Hono<AdminEnv>();
   app.use(requestId(() => opts.services.ids.uuid()));
-  if (opts.originSecrets.length > 0) app.use(originAuth({ secrets: opts.originSecrets }));
+  // 安全响应头放在最外层，被源站校验拒绝的响应也带上。
   app.use(apiSecurityHeaders());
+  if (opts.originSecrets.length > 0) app.use(originAuth({ secrets: opts.originSecrets }));
+  // biome-ignore lint/plugin: 健康检查不读取任何数据，给负载均衡与部署探针使用。
   app.get("/healthz", (c) => c.json({ ok: true }));
   // admin SPA 与 admin-api 在不同的子域名：只对白名单中的 Origin 放行跨域请求，并允许携带
   // Access 的 cookie。预检请求在这里直接返回，不经过 Access JWT 校验（预检不带 cookie）。

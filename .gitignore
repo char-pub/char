@@ -4,6 +4,8 @@ dist/
 .env
 .env.*
 !.env.example
+# pnpm dev 生成的本地密钥与状态
+.dev/
 .DS_Store
 coverage/
 .wrangler/

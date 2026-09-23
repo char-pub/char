@@ -4,8 +4,34 @@
  * 被省略的策略字段（例如卡片里的 system prompt）只显示字段名，绝不显示内容：
  * 这些内容会改写模型行为，不属于作品本身，它们只留在作者自己的原件里。
  */
-import type { ImportReport as Report } from "@char-pub/ccv3";
+import type { ImportReport as Report } from "@char-pub/contracts";
 import type { ReactNode } from "react";
+
+interface LoreEntry {
+  index: number;
+  activation: string;
+  notes: string[];
+}
+
+interface Placeholder {
+  placeholder: string;
+  location: string;
+}
+
+function asLore(e: Record<string, unknown>): LoreEntry {
+  return {
+    index: typeof e.index === "number" ? e.index : -1,
+    activation: typeof e.activation === "string" ? e.activation : "",
+    notes: Array.isArray(e.notes) ? e.notes.filter((n): n is string => typeof n === "string") : [],
+  };
+}
+
+function asPlaceholder(p: Record<string, unknown>): Placeholder {
+  return {
+    placeholder: typeof p.placeholder === "string" ? p.placeholder : "",
+    location: typeof p.location === "string" ? p.location : "",
+  };
+}
 
 function Section({
   title,
@@ -32,7 +58,8 @@ export function ImportReport({
   report: Report;
   unstable: readonly string[];
 }) {
-  const droppedLore = report.lorebook.filter((e) => e.activation === "dropped");
+  const droppedLore = report.lorebook.map(asLore).filter((e) => e.activation === "dropped");
+  const placeholders = report.placeholders.map(asPlaceholder);
   const skippedAssets = report.assets.filter((a) => !a.imported);
   return (
     <section className="space-y-6" aria-label="Import report">
@@ -120,9 +147,9 @@ export function ImportReport({
         </ul>
       </Section>
 
-      <Section title="Macros kept as text" empty={report.placeholders.length === 0}>
+      <Section title="Macros kept as text" empty={placeholders.length === 0}>
         <ul className="space-y-1 font-mono text-xs">
-          {report.placeholders.map((p) => (
+          {placeholders.map((p) => (
             <li key={`${p.location}:${p.placeholder}`}>
               {p.placeholder} <span className="text-muted-foreground">in {p.location}</span>
             </li>

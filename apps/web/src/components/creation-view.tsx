@@ -8,7 +8,7 @@
  */
 import type { ContextIR, Rating } from "@char-pub/core";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Pencil } from "lucide-react";
+import { AlertTriangle, GitPullRequestArrow, Pencil } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import type { CreationDetail, Dependent, ReleaseDetail } from "@/lib/api";
 import { localized, parseRef } from "@/lib/text";
@@ -101,15 +101,26 @@ export function CreationView(p: CreationViewProps) {
             <h1 className="text-5xl">
               <UserText text={title} />
             </h1>
-            {p.canEdit ? (
-              <Link
-                to="/c/$ns/$name/edit"
-                params={{ ns: p.ns, name: p.name }}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                <Pencil aria-hidden /> Edit
-              </Link>
-            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {p.canEdit || detail.latest_release ? (
+                <Link
+                  to="/c/$ns/$name/contributions"
+                  params={{ ns: p.ns, name: p.name }}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <GitPullRequestArrow aria-hidden /> Contributions
+                </Link>
+              ) : null}
+              {p.canEdit ? (
+                <Link
+                  to="/c/$ns/$name/edit"
+                  params={{ ns: p.ns, name: p.name }}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <Pencil aria-hidden /> Edit
+                </Link>
+              ) : null}
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <RatingBadge rating={rating} />

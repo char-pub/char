@@ -49,6 +49,7 @@ catalog:
   "@aws-sdk/s3-request-presigner": ^3.0.0
   "@hono/node-server": ^2.0.0
   "@octokit/webhooks-methods": ^6.0.0
+  "@octokit/webhooks-examples": ^7.6.0
   "@testcontainers/minio": ^12.0.0
   "@testcontainers/postgresql": ^12.0.0
   "@types/pg": ^8.0.0

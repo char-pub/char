@@ -87,6 +87,7 @@ export function route<B extends z.ZodType | undefined, R>(
   app: Hono<Env>,
   spec: RouteSpec<B, R>,
 ): void {
+  // biome-ignore lint/plugin: 这里就是 route() 本身：先执行 spec.authorize，通过后才调用处理函数。
   app[spec.method](spec.path, async (c) => {
     const auth = await spec.authorize(c);
     if (auth instanceof Response) return auth;

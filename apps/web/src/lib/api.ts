@@ -7,12 +7,22 @@
  * 凭据只存在于 HttpOnly cookie 中，前端代码既读不到也不保存任何 token。
  */
 import {
+  type ConfirmImportRequestSchema,
+  ContributionDetailSchema,
+  type ContributionInvite,
+  ContributionInvitesResponseSchema,
+  type ContributionSettingsRequestSchema,
+  ContributionSummarySchema,
+  type CreateContributionRequestSchema,
   CreateTokenResponseSchema,
   CreateUploadResponseSchema,
   CreationDetailSchema,
   CreationSummarySchema,
   DependentSchema,
   DraftSchema,
+  GuestSessionResponseSchema,
+  GuestVerificationResponseSchema,
+  ImportStatusSchema,
   type Me,
   MeSchema,
   MyCreationsResponseSchema,
@@ -20,6 +30,8 @@ import {
   PublishResponseSchema,
   PutDraftResponseSchema,
   ReleaseDetailSchema,
+  type ReleaseSource,
+  ReleaseSourceSchema,
   RevisionSchema,
   type TOKEN_SCOPES,
   UploadStatusSchema,
@@ -78,6 +90,47 @@ export type PutDraftResponse = z.infer<typeof PutDraftResponseSchema>;
 export type Revision = z.infer<typeof RevisionSchema>;
 export type UploadStatus = z.infer<typeof UploadStatusSchema>;
 export type CreateUploadResponse = z.infer<typeof CreateUploadResponseSchema>;
+export const ContributionsPageSchema = pageOf(ContributionSummarySchema);
+export type ContributionsPage = z.infer<typeof ContributionsPageSchema>;
+export type ContributionSummary = z.infer<typeof ContributionSummarySchema>;
+export type ContributionDetail = z.infer<typeof ContributionDetailSchema>;
+export type ContributionStatus = ContributionSummary["status"];
+export type ContributionPolicy = z.infer<typeof ContributionSettingsRequestSchema>["policy"];
+export type NewContribution = z.input<typeof CreateContributionRequestSchema>;
+export type GuestSession = z.infer<typeof GuestSessionResponseSchema>;
+export type ImportStatus = z.infer<typeof ImportStatusSchema>;
+export type ImportConfirmation = z.infer<typeof ConfirmImportRequestSchema>;
+
+export const SubmittedContributionSchema = z.object({
+  id: z.string(),
+  number: z.number().int(),
+  status: z.string(),
+  agent: z.boolean(),
+  sensitive_keys: z.array(z.string()),
+});
+export type SubmittedContribution = z.infer<typeof SubmittedContributionSchema>;
+
+export const AcceptedContributionSchema = z.object({
+  status: z.literal("accepted"),
+  revision: z.string(),
+  semantic_digest: z.string(),
+  applied: z.array(z.string()),
+  already_applied: z.array(z.string()),
+});
+export type AcceptedContribution = z.infer<typeof AcceptedContributionSchema>;
+
+/**
+ * 一个 Release 的来源（`ReleaseSource`）：它对应的 Revision 与 canonical 形式的 Creation。
+ * 贡献者在这份内容上修改，变更里的 `base_digest` 按它计算。
+ */
+export type { ContributionInvite, ReleaseSource };
+
+export interface ContributionQuery {
+  status?: ContributionStatus | undefined;
+  agent?: boolean | undefined;
+  cursor?: string | undefined;
+}
+
 export type {
   CreationDetail,
   CreationSummary,
@@ -160,11 +213,55 @@ export interface RegistryClient {
   putUpload(target: CreateUploadResponse, body: Blob): Promise<void>;
   completeUpload(id: string): Promise<UploadStatus>;
   upload(id: string): Promise<UploadStatus>;
+
+  /** 成员看到全部 Contribution；其他登录用户只看到自己提交的。 */
+  contributions(ns: string, name: string, q?: ContributionQuery): Promise<ContributionsPage>;
+  contribution(ns: string, name: string, number: number): Promise<ContributionDetail>;
+  /** Release 的 Revision 与 canonical 内容，作为提交 Contribution 的基线。 */
+  releaseSource(ns: string, name: string, label: string): Promise<ReleaseSource>;
+  submitContribution(
+    ns: string,
+    name: string,
+    body: NewContribution,
+  ): Promise<SubmittedContribution>;
+  /** `confirmSensitive` 逐项列出作者确认过的敏感变更键。 */
+  acceptContribution(
+    ns: string,
+    name: string,
+    number: number,
+    confirmSensitive: string[],
+  ): Promise<AcceptedContribution>;
+  rejectContribution(ns: string, name: string, number: number, reason: string): Promise<void>;
+  withdrawContribution(ns: string, name: string, number: number): Promise<void>;
+  setContributionPolicy(ns: string, name: string, policy: ContributionPolicy): Promise<void>;
+  /** 邀请名单（只有作者能读取）。 */
+  contributionInvites(ns: string, name: string): Promise<{ items: ContributionInvite[] }>;
+  invite(ns: string, name: string, user: string): Promise<void>;
+  uninvite(ns: string, name: string, user: string): Promise<void>;
+
+  /** 当前的访客会话；没有时为 null。 */
+  guestMe(): Promise<GuestSession | null>;
+  requestGuestVerification(body: {
+    email: string;
+    display_name: string;
+    turnstile_token: string;
+  }): Promise<{ expires_in: number }>;
+  confirmGuest(token: string): Promise<GuestSession>;
+  guestSignOut(): Promise<void>;
+
+  /** 导入一个已上传的角色卡（purpose 为 import），在 namespace 下生成新的 Creation 草稿。 */
+  createImport(body: { upload: string; namespace: string; name: string }): Promise<ImportStatus>;
+  importStatus(id: string): Promise<ImportStatus>;
+  confirmImport(id: string, body: ImportConfirmation): Promise<ImportStatus>;
 }
 
 /** 路径中的 `@ns/name` 片段。 */
 export function creationPath(ns: string, name: string): string {
   return `/v1/creations/@${encodeURIComponent(ns)}/${encodeURIComponent(name)}`;
+}
+
+export function contributionsPath(ns: string, name: string): string {
+  return `${creationPath(ns, name)}/contributions`;
 }
 
 /** IR 的下载地址（浏览器直接打开，由 API 302 到内容寻址的对象）。 */
@@ -341,5 +438,70 @@ export function createRegistryClient(
         body: {},
       }),
     upload: (id) => json(UploadStatusSchema, "GET", `/v1/uploads/${encodeURIComponent(id)}`),
+
+    contributions(ns, name, q = {}) {
+      const p = new URLSearchParams({ limit: "50" });
+      if (q.status) p.set("status", q.status);
+      if (q.agent !== undefined) p.set("agent", String(q.agent));
+      if (q.cursor) p.set("cursor", q.cursor);
+      return json(ContributionsPageSchema, "GET", `${contributionsPath(ns, name)}?${p}`);
+    },
+    contribution: (ns, name, n) =>
+      json(ContributionDetailSchema, "GET", `${contributionsPath(ns, name)}/${n}`),
+    releaseSource: (ns, name, label) =>
+      json(ReleaseSourceSchema, "GET", `${release(ns, name, label)}/source`),
+    submitContribution: (ns, name, body) =>
+      json(SubmittedContributionSchema, "POST", contributionsPath(ns, name), { body }),
+    acceptContribution: (ns, name, n, confirm) =>
+      json(AcceptedContributionSchema, "POST", `${contributionsPath(ns, name)}/${n}/accept`, {
+        body: { confirm_sensitive: confirm },
+      }),
+    async rejectContribution(ns, name, n, reason) {
+      await send("POST", `${contributionsPath(ns, name)}/${n}/reject`, { body: { reason } });
+    },
+    async withdrawContribution(ns, name, n) {
+      await send("POST", `${contributionsPath(ns, name)}/${n}/withdraw`);
+    },
+    async setContributionPolicy(ns, name, policy) {
+      await send("PUT", `${creationPath(ns, name)}/contribution-settings`, { body: { policy } });
+    },
+    contributionInvites: (ns, name) =>
+      json(
+        ContributionInvitesResponseSchema,
+        "GET",
+        `${creationPath(ns, name)}/contribution-invites`,
+      ),
+    async invite(ns, name, user) {
+      await send("POST", `${creationPath(ns, name)}/contribution-invites`, { body: { user } });
+    },
+    async uninvite(ns, name, user) {
+      await send(
+        "DELETE",
+        `${creationPath(ns, name)}/contribution-invites/${encodeURIComponent(user)}`,
+      );
+    },
+
+    async guestMe() {
+      try {
+        return await json(GuestSessionResponseSchema, "GET", "/v1/guests/me");
+      } catch (e) {
+        if (isApiError(e) && e.status === 401) return null;
+        throw e;
+      }
+    },
+    requestGuestVerification: (body) =>
+      json(GuestVerificationResponseSchema, "POST", "/v1/guests/verification", { body }),
+    confirmGuest: (token) =>
+      json(GuestSessionResponseSchema, "POST", "/v1/guests/verification/confirm", {
+        body: { token },
+      }),
+    async guestSignOut() {
+      await send("DELETE", "/v1/guests/session");
+    },
+
+    createImport: (body) => json(ImportStatusSchema, "POST", "/v1/imports", { body }),
+    importStatus: (id) => json(ImportStatusSchema, "GET", `/v1/imports/${encodeURIComponent(id)}`),
+    confirmImport: (id, body) =>
+      json(ImportStatusSchema, "POST", `/v1/imports/${encodeURIComponent(id)}/confirm`, { body }),
   };
 }

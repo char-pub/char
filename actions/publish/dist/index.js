@@ -48002,6 +48002,7 @@ var AssetRefSchema = external_exports.string().regex(
 );
 var DecimalIdSchema = external_exports.string().regex(/^[1-9][0-9]{0,19}$/);
 var GitCommitSchema = external_exports.string().regex(/^[0-9a-f]{40}$/);
+var HttpsUrlSchema = external_exports.url({ protocol: /^https$/ }).regex(/^https:\/\//);
 var SourceLocatorSchema = external_exports.discriminatedUnion("provider", [
   external_exports.strictObject({
     provider: external_exports.literal("github"),
@@ -48009,7 +48010,7 @@ var SourceLocatorSchema = external_exports.discriminatedUnion("provider", [
     commit: GitCommitSchema,
     path: external_exports.string().min(1)
   }),
-  external_exports.strictObject({ provider: external_exports.literal("http"), url: external_exports.url({ protocol: /^https$/ }) })
+  external_exports.strictObject({ provider: external_exports.literal("http"), url: HttpsUrlSchema })
 ]);
 var BlobRefSchema = external_exports.strictObject({
   digest: DigestSchema,
@@ -50813,7 +50814,11 @@ var MergePreviewSchema = external_exports.strictObject({
   reason: external_exports.enum(["diverged", "slot_missing"]).optional()
 });
 var ContributionAuthorSchema = external_exports.union([
-  external_exports.strictObject({ user: external_exports.string() }),
+  external_exports.strictObject({
+    user: external_exports.string(),
+    display_name: external_exports.string().optional(),
+    namespace: external_exports.string().optional()
+  }),
   external_exports.strictObject({ guest_id: external_exports.string(), display_name: external_exports.string() })
 ]);
 var ContributionSummarySchema = external_exports.strictObject({
@@ -50927,6 +50932,23 @@ var ConfirmImportRequestSchema = external_exports.strictObject({
   rating: RatingSchema,
   rights: external_exports.enum(["original", "fan-work", "licensed"]),
   license: SpdxExpressionSchema
+});
+var ReleaseSourceSchema = external_exports.strictObject({
+  revision: external_exports.string(),
+  semantic_digest: DigestSchema,
+  creation: external_exports.unknown(),
+  /** Release 被 yank 时附带的提示。 */
+  warning: external_exports.string().optional()
+});
+var ContributionInvitesResponseSchema = external_exports.strictObject({
+  items: external_exports.array(
+    external_exports.strictObject({
+      user: external_exports.string(),
+      display_name: external_exports.string().nullable(),
+      namespace: external_exports.string().nullable(),
+      invited_at: external_exports.string()
+    })
+  )
 });
 
 // src/run.ts

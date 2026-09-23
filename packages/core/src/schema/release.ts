@@ -18,6 +18,7 @@ import {
   FragmentSchema,
   GitCommitSchema,
   GuestAuthorSchema,
+  HttpsUrlSchema,
   JSONValueSchema,
   LabelSchema,
   ProvenanceSchema,
@@ -64,7 +65,7 @@ export const SourceRecordSchema = z.discriminatedUnion("provider", [
   }),
   z.strictObject({
     provider: z.literal("http"),
-    url: z.url({ protocol: /^https$/ }),
+    url: HttpsUrlSchema,
     fetched_at: TimestampSchema,
   }),
 ]);

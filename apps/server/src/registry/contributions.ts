@@ -19,12 +19,15 @@ import { type AuditActor, appendAudit } from "../audit/audit.js";
 import type { Principal } from "../authz/authorize.js";
 import type { Db, Executor, Tx } from "../db/client.js";
 import {
+  authUser,
   contributionChanges,
   contributionInvites,
   contributions,
   creationDrafts,
   creations,
   guests,
+  namespaceMembers,
+  namespaces,
   revisionFragments,
   revisions,
 } from "../db/schema/index.js";
@@ -137,14 +140,78 @@ export async function guestNamesOf(
   return new Map(found.map((g) => [g.id, g.name]));
 }
 
-export function summaryJson(row: ContributionRow, guestNames?: ReadonlyMap<string, string>) {
+/** 对外展示的用户信息：显示名与个人 namespace。不包含邮箱。 */
+export interface UserDisplay {
+  display_name: string;
+  namespace: string | null;
+}
+
+/** 按用户 ID 查显示名与个人 namespace（`@slug`）。 */
+export async function userDisplaysOf(
+  db: Executor,
+  userIds: readonly string[],
+): Promise<Map<string, UserDisplay>> {
+  const ids = [...new Set(userIds)];
+  if (ids.length === 0) return new Map();
+  const users = await db
+    .select({ id: authUser.id, name: authUser.name })
+    .from(authUser)
+    .where(inArray(authUser.id, ids));
+  const owned = await db
+    .select({ userId: namespaceMembers.userId, slug: namespaces.slug })
+    .from(namespaceMembers)
+    .innerJoin(namespaces, eq(namespaces.id, namespaceMembers.namespaceId))
+    .where(
+      and(
+        inArray(namespaceMembers.userId, ids),
+        eq(namespaceMembers.role, "owner"),
+        eq(namespaces.kind, "user"),
+      ),
+    );
+  const slugs = new Map(owned.map((o) => [o.userId, `@${o.slug}`]));
+  return new Map(
+    users.map((u) => [u.id, { display_name: u.name, namespace: slugs.get(u.id) ?? null }]),
+  );
+}
+
+/** 列表与详情展示作者需要的名字：访客的显示名、登录用户的显示名与 namespace。 */
+export interface AuthorNames {
+  guests: ReadonlyMap<string, string>;
+  users: ReadonlyMap<string, UserDisplay>;
+}
+
+export async function authorNamesOf(
+  db: Executor,
+  rows: readonly ContributionRow[],
+): Promise<AuthorNames> {
+  const userIds = rows.flatMap((r) => (r.authorUserId ? [r.authorUserId] : []));
+  const [guestNames, users] = await Promise.all([
+    guestNamesOf(db, rows),
+    userDisplaysOf(db, userIds),
+  ]);
+  return { guests: guestNames, users };
+}
+
+/** 展示用的作者：在 `authorOf` 的基础上，登录用户附带显示名与 namespace。 */
+function authorDisplay(row: ContributionRow, names?: AuthorNames) {
+  const author = authorOf(row, names?.guests);
+  if (!("user" in author) || !row.authorUserId) return author;
+  const u = names?.users.get(row.authorUserId);
+  return {
+    ...author,
+    ...(u ? { display_name: u.display_name } : {}),
+    ...(u?.namespace ? { namespace: u.namespace } : {}),
+  };
+}
+
+export function summaryJson(row: ContributionRow, names?: AuthorNames) {
   return {
     id: encodeId("contribution", row.id),
     number: row.number,
     title: row.title,
     status: row.status,
     agent: row.agent,
-    author: authorOf(row, guestNames),
+    author: authorDisplay(row, names),
     base_revision: encodeId("revision", row.baseRevisionId),
     created_at: row.createdAt.toISOString(),
     decided_at: row.decidedAt?.toISOString() ?? null,
@@ -184,6 +251,8 @@ export interface ListFilter {
   agent?: boolean;
   /** 只列出这个用户提交的（非成员查看时使用）。 */
   authorUserId?: string;
+  /** 只列出这个访客提交的（访客查看时使用）。 */
+  authorGuestId?: string;
   beforeNumber?: number;
   limit: number;
 }
@@ -193,6 +262,7 @@ export async function listContributions(db: Executor, creationId: string, f: Lis
   if (f.status) conds.push(eq(contributions.status, f.status));
   if (f.agent !== undefined) conds.push(eq(contributions.agent, f.agent));
   if (f.authorUserId) conds.push(eq(contributions.authorUserId, f.authorUserId));
+  if (f.authorGuestId) conds.push(eq(contributions.authorGuestId, f.authorGuestId));
   if (f.beforeNumber !== undefined) conds.push(lt(contributions.number, f.beforeNumber));
   return db
     .select()

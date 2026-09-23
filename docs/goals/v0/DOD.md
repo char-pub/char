@@ -26,9 +26,9 @@
 
 ### M1 Core：标识符、canonical、digest、schema
 
-- [ ] **M1-1** 标识符语法与解析（namespace / name / label / fragment_id / creation_ref / local_ref / full_ref），含所有边界用例。验证：表驱动单元测试。依据：canonical-model §2、D-115。
+- [x] **M1-1** 标识符语法与解析（namespace / name / label / fragment_id / creation_ref / local_ref / full_ref），含所有边界用例。验证：表驱动单元测试。依据：canonical-model §2、D-115。
 - [ ] **M1-2** Canonical Model 的 zod schema 覆盖 canonical-model §3～§13 的全部类型，包括 v0 只有模型的类型；导出 JSON Schema 到 `spec/schema/`。验证：单元测试 + schema 快照审阅。覆盖：SC-1。
-- [ ] **M1-3** canonicalize：NFC、行尾归一、省略默认值、JCS；`fragment.digest` 与 `semantic_digest` 按 canonical-model §14 计算；输出 `sha256:<hex>`。验证：单元测试 + fast-check 性质测试（键序、缩进、默认值、NFC 等价输入得到相同 digest）。覆盖：SC-2。
+- [x] **M1-3** canonicalize：NFC、行尾归一、省略默认值、JCS；`fragment.digest` 与 `semantic_digest` 按 canonical-model §14 计算；输出 `sha256:<hex>`。验证：单元测试 + fast-check 性质测试（键序、缩进、默认值、NFC 等价输入得到相同 digest）。覆盖：SC-2。
 - [x] **M1-4** `char check` 规则：未知占位符、`{{{{` 转义、只能 override `stable: true` 的 target、各类型的最小要求（§3.1）、必需 slot。验证：单元测试。覆盖：SC-4 的一部分。
 
 ### M2 Core：Resolver、Context IR、发布校验、Diff、Contribution 合并
@@ -49,11 +49,11 @@
 ### M4 服务端基础
 
 - [x] **M4-1** 数据库 schema 与迁移（architecture §5）：应用使用非 owner 角色；`audit_log` 对应用只有 INSERT / SELECT 权限。验证：集成测试（UPDATE / DELETE 被拒）。覆盖：SC-12。
-- [ ] **M4-2** Better Auth：GitHub / Discord / Google 登录；`__Host-` cookie；Origin 白名单；封禁后立即吊销全部会话和 Token；个人 Token（只存哈希，带 scope）。验证：集成测试。覆盖：SC-9、SC-12。
-- [ ] **M4-3** 集中式授权 `authorize()`，并用 lint 规则保证每个路由都经过它；自动生成越权测试矩阵（他人资源、匿名访问 → 404 / 403）。验证：安全测试。覆盖：SC-9、UC-7。
+- [x] **M4-2** Better Auth：GitHub / Discord / Google 登录；`__Host-` cookie；Origin 白名单；封禁后立即吊销全部会话和 Token；个人 Token（只存哈希，带 scope）。验证：集成测试。覆盖：SC-9、SC-12。
+- [x] **M4-3** 集中式授权 `authorize()`，并用 lint 规则保证每个路由都经过它；自动生成越权测试矩阵（他人资源、匿名访问 → 404 / 403）。验证：安全测试。覆盖：SC-9、UC-7。
 - [x] **M4-4** CAS 存储层：写入前重算哈希；按 public / private 分桶；只签发短期 URL；worker 负责把对象复制到 public 桶。验证：集成测试（MinIO）。覆盖：SC-9。
 - [x] **M4-5** pg-boss 任务：业务写入与入队在同一事务内（或采用 outbox）；任务幂等（`singletonKey`）；失败重试与死信。验证：集成测试（中途失败时两边都不落库或都落库）。
-- [ ] **M4-6** 源站校验中间件、安全响应头、请求体上限、应用内限流（存储在 Postgres）、kill switch 中间件。验证：集成测试。覆盖：SC-15、UC-10。
+- [x] **M4-6** 源站校验中间件、安全响应头、请求体上限、应用内限流（存储在 Postgres）、kill switch 中间件。验证：集成测试。覆盖：SC-15、UC-10。
 
 ### M5 Registry 功能
 
@@ -71,9 +71,9 @@
 
 ### M7 GitHub Source、CLI 与 Action
 
-- [ ] **M7-1** GitHub App 的 webhook：验签、按 delivery 去重、入队；Source Binding 按数字 ID 绑定；定期对账。验证：集成测试（用录制的 payload）。覆盖：SC-10。
-- [ ] **M7-2** OIDC 发布（security §4.4 的 10 条清单）：校验 iss / aud / 签名 / exp / jti / event_name，commit 必须等于 `sha`；按 `repository_id` + `repository_owner_id` + ref 匹配 binding；未安装 App 时拒绝（D-117）；Registry 在该 commit 重新读取源码并重算 digest。验证：本地 JWKS 表驱动测试，覆盖改名劫持、`pull_request_target`、重放、摘要不一致等反例。覆盖：SC-10、UC-4。
-- [ ] **M7-2b** 仓库 transfer 后 binding 冻结（D-118）：冻结期间发布被拒并通知作者；作者确认后可以重新绑定或换用新仓库；全程写审计。验证：集成测试（用录制的 `repository.transferred` payload 和对账场景）。覆盖：SC-10、UC-4。
+- [x] **M7-1** GitHub App 的 webhook：验签、按 delivery 去重、入队；Source Binding 按数字 ID 绑定；定期对账。验证：集成测试（用录制的 payload）。覆盖：SC-10。
+- [x] **M7-2** OIDC 发布（security §4.4 的 10 条清单）：校验 iss / aud / 签名 / exp / jti / event_name，commit 必须等于 `sha`；按 `repository_id` + `repository_owner_id` + ref 匹配 binding；未安装 App 时拒绝（D-117）；Registry 在该 commit 重新读取源码并重算 digest。验证：本地 JWKS 表驱动测试，覆盖改名劫持、`pull_request_target`、重放、摘要不一致等反例。覆盖：SC-10、UC-4。
+- [x] **M7-2b** 仓库 transfer 后 binding 冻结（D-118）：冻结期间发布被拒并通知作者；作者确认后可以重新绑定或换用新仓库；全程写审计。验证：集成测试（用录制的 `repository.transferred` payload 和对账场景）。覆盖：SC-10、UC-4。
 - [x] **M7-3** `char` CLI：init / check --fix（生成稳定 ID 并写回）/ build / preview / login（个人 Token）/ publish。验证：CLI 集成测试。覆盖：SC-1。
 - [ ] **M7-4** `char-pub/publish` Action：在 staging 上用一个真实测试仓库完成一次发布。验证：Action 运行记录 + Registry 查询。前置：DOR B-3。覆盖：UC-4。
 
@@ -87,7 +87,7 @@
 
 ### M9 Admin 后端、安全加固与部署
 
-- [ ] **M9-1** admin 进程：只挂载 admin 路由；校验 Access JWT；员工会话与角色（MFA 由 Access 与组织 2FA 保证，D-120）；四眼确认；哈希链审计与校验工具。验证：集成测试（角色矩阵自动生成用例）+ 在公开 api 上访问 admin 路由返回 404。覆盖：SC-12、UC-8、UC-10。
+- [x] **M9-1** admin 进程：只挂载 admin 路由；校验 Access JWT；员工会话与角色（MFA 由 Access 与组织 2FA 保证，D-120）；四眼确认；哈希链审计与校验工具。验证：集成测试（角色矩阵自动生成用例）+ 在公开 api 上访问 admin 路由返回 404。覆盖：SC-12、UC-8、UC-10。
 - [ ] **M9-2** 部署 staging（Railway 的 staging environment、Workers Static Assets、R2 staging 桶、Access、WAF、Transform Rule、Turnstile，以及 Cloudflare CSAM Scanning Tool），冒烟测试通过。验证：`scripts/smoke.ts` 输出。前置：DOR B-1、B-5、B-6。覆盖：SC-15。
 - [ ] **M9-3** 边缘防护核验：直接访问源站（不经 Cloudflare）被拒；admin-api 不经 Access 被拒；限流生效。验证：curl 记录。覆盖：SC-15、T15。
 - [ ] **M9-4** 开启 Railway Postgres 备份，并完成一次恢复演练（把备份恢复到一个新实例，比对行数和样本数据）。验证：演练记录。前置：DOR B-1。覆盖：SC-15、UC-13。

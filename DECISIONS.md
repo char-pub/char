@@ -725,7 +725,7 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 1. **不启用 Better Auth 的 admin 插件**：它会在公开 API 上挂出冒充用户、改角色、删除用户等接口，与“公开 api 进程不挂载任何管理功能”相冲突。封禁由服务端的 `banUser` 完成（同一事务内标记封禁、删除全部会话、吊销全部个人 Token、写审计），另用 session 创建钩子阻止已封禁用户建立新会话；封禁到期后自动恢复。这取代了 DOR 中“用 admin 插件管理封禁字段”的写法。
 2. **`__Host-` cookie**：Better Auth 只会自动加 `__Secure-` 前缀，所以关闭自动前缀，把 `__Host-charpub.` 直接写进 cookie 名字（会话 cookie 为 `__Host-charpub.session`），并强制 Secure、HttpOnly、SameSite=Lax、Path=/、无 Domain。
 3. **登录限流**存在独立的 `auth_rate_limit` 表（Better Auth 的格式），与应用自己的 `rate_limits` 分开。客户端 IP 取 `cf-connecting-ip`。
-4. **不启用密码登录**；自动关联账号要求本地邮箱已验证；OAuth token 加密入库；显式开启 Origin 与 CSRF 检查（Better Auth 在测试环境默认跳过）。
+4. **不启用密码登录**；~~自动关联账号要求本地邮箱已验证~~（被 D-148 第 1 条取代：不做隐式关联）；OAuth token 加密入库；显式开启 Origin 与 CSRF 检查（Better Auth 在测试环境默认跳过）。
 5. **数据最小化**：session 的 ip_address 列保留但不写入。
 6. user id 使用 UUIDv7（`advanced.database.generateId`）。
 
@@ -827,7 +827,7 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 5. **编辑器第一层**除名字、头像等字段外，还有一个“正文”字段（角色的 Description、世界的 About this world、世界书的第一条条目），因为每种类型至少需要一个对应的 fragment，不通过检查的草稿服务端不保存。自动保存 800ms 防抖，带 If-Match；遇到 409 停止自动保存并提示重新加载。
 6. **发布**：Idempotency-Key 按（revision、label、visibility）生成，重试时复用；Publish Report 每秒轮询一次，最多 90 次。
 7. **成人内容的直接链接**：搜索与浏览在服务端过滤；直接打开 mature / explicit 作品的链接时，由前端先遮挡，用户确认后才显示。读取接口本身不拦截，因为 public IR 本来就放在 CDN 上，拦截接口起不到作用。
-8. **默认作者**：新建 Creation 时，初始草稿的 `authors` 为创建者（显示名，没有则用 `@namespace`），作者之后可以修改；导入的草稿保留卡片中的作者。authors 为空时，作品页显示发布者 `@namespace`。
+8. **默认作者**：新建 Creation 时，初始草稿的 `authors` 为创建者（署名取法见 D-148 第 3 条），作者之后可以修改；导入的草稿保留卡片中的作者。authors 为空时，作品页显示发布者 `@namespace`。
 9. **CSP**：`connect-src` 包含 API、`assets` / `staging-assets` 域名和 R2 账号端点（部署前用通配，拿到账号端点后收窄）；头像只显示首字母，不为第三方头像放开 `img-src`。
 
 ### D-145 定期清理、导入失败处理、admin 访客管理、本地邮件的实现取值 — Accepted
@@ -837,3 +837,33 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 3. **admin 访客管理**：`GET /v1/admin/guests`（最新在前，按状态与显示名过滤）、`GET /v1/admin/guests/:id`、`POST …/disable`、`POST …/enable`。需要操作理由，所需能力与封禁用户相同；写处置记录与审计；停用时在同一事务中删除该访客的全部会话；重复停用不产生新记录。响应中没有邮箱，也没有邮箱 HMAC。
 4. **Turnstile 测试密钥**：Cloudflare 公开的“始终通过”测试密钥返回的结果只在 `NODE_ENV=development` 时被接受（跳过 hostname 与 action 检查），其他环境一律按 `testing-key` 拒绝，防止生产误配测试密钥后校验失效。
 5. **本地邮件**：docker compose 加入 Mailpit（SMTP 127.0.0.1:51025，Web UI / API 127.0.0.1:58025）；本地访客验证的配置写在 README，`.env.example` 不包含测试密钥。
+
+### D-146 继承值不参与默认值省略；https URL 的校验 — Accepted（待用户复核）
+
+1. **规范歧义**：规范化时“值等于默认值的字段要省略”中的默认值，只指字段自身固定的默认值，不包括从其他字段继承来的值。AssetVariant 的 `license`、`rating` 缺省时继承 Creation 的值；如果作者显式写出与 Creation 相同的值，这个字段保留，digest 与省略时不同。原因：显式写出的值是作者对这个变体的独立声明，Creation 之后改了许可或评级，它也应该保持不变；而且如果省略与否取决于另一个字段的当前值，digest 就不再只由字段本身决定。现有一致性用例不受影响。
+2. **只允许 https 的 URL**（Release 的 http 来源、asset 外链 locator）在 zod 与导出的 JSON Schema 中一致：都要求以小写 `https://` 开头。大写的 `HTTPS://` 以前 zod 会接受，现在两边都拒绝，避免外部实现按 JSON Schema 校验时与服务端结论不同。
+
+### D-147 web 端 Contribution、访客与导入的实现取值 — Accepted
+
+1. **提交的基线**：贡献者在最新 public Release 的 canonical 内容上编辑，浏览器按 Release 的内容算出每个变更的 `base_digest`。请求里的 `sensitive` 只是为了满足请求格式，是否敏感由服务端判定。v0 的提交界面支持文本段落、评级与标签；依赖、资源与其他元数据的变更暂时没有界面（API 已支持）。
+2. **授权方式**：作品许可为 `LicenseRef-*` 时要求贡献者显式授权（`explicit_grant`），其余许可按同一许可授权（`inbound_equals_outbound`）。
+3. **审阅**：只有“会应用”的敏感变更需要逐项勾选，没有“全部接受”；提交时只发送勾选过的键。有冲突时不能接受；草稿在审阅期间被改时提示重新加载预览。
+4. **访客验证后的返回地址**存在 localStorage，只接受 `/c/` 开头的站内路径，不含任何凭据；验证链接中的 token 读出后立即从地址栏清除。构建时没有 `VITE_TURNSTILE_SITE_KEY` 就不提供访客入口。CSP 的 `script-src` 与 `frame-src` 放行 `https://challenges.cloudflare.com`。
+5. **导入向导**完全走服务端：上传原件 → 创建导入 → 轮询 → 展示 Import Report（被省略的字段只显示名字）→ 逐项确认评级、权利与许可 → 进入编辑器。需要确认的字段一律留空，由作者显式选择。web 不再依赖 `@char-pub/ccv3`。
+6. **署名**：authors 为空时显示发布者 `@namespace`。
+
+### D-148 账号关联、路由授权规则、默认署名与安全响应头 — Accepted
+
+1. **OAuth 不做隐式账号关联**（纠正 D-136 第 4 条）：用另一个登录方式登录时，即使邮箱相同、且邮箱已验证，也不会并入已有账号；第二种登录方式只能由已登录用户显式关联。原因：security 设计对账号接管的防护要求关闭按邮箱的隐式关联，D-136 的写法与之不符，实现时写成了“邮箱已验证就自动关联”。集成测试验证：打开隐式关联时，攻击者的第三方账号会被并入受害者账号。
+2. **路由授权规则**：`apps/server/src` 中所有 HTTP 路由必须通过 `route()`（admin 为 `adminRoute()`）注册，由 Biome 的 GritQL 插件在 `pnpm lint` 中强制。规则按调用形状识别（不依赖变量名），测试文件除外；少数合法例外（辅助函数本身、健康检查、Better Auth 挂载点、CORS）用 `biome-ignore lint/plugin` 标注理由，例外清单由测试逐文件核对。
+3. **默认署名**用创建者的个人 namespace（`@name`）加用户 ID，不使用登录提供方给的显示名。原因：显示名可能是真实姓名，而署名会随 Release 永久公开；作者想署真名可以自己修改。
+4. **安全响应头**包在源站校验的外层，被拒绝的请求（403）也带全部安全头。
+5. **像素上限**：图片元数据从文件头读取（不解码像素），超出像素上限时明确返回 `upload.too_many_pixels`；真正解码时仍强制上限。
+6. **已知限制**：`asset_meta` 以重新编码后的 WebP digest 为键；两张不同的原图重新编码后恰好得到相同字节时，扫描状态沿用先写入的那一条。实际只会发生在几乎相同的图片上，暂不处理。
+
+### D-149 Release source 与 Contribution 辅助接口的实现取值 — Accepted
+
+1. **`GET /v1/creations/@ns/name/releases/:label/source`** 返回 Release 对应 Revision 的 canonical 内容（从私有桶的 manifest 与 fragment 重建，加载时校验 digest），供贡献者作为提交的基线。可见性与读取 Release 完全一致：private 对无权限者 404，tombstoned 410，yanked 200 并带 warning。
+2. **缓存**：public 的 source 与 Release 详情一样使用 `public, max-age=60, s-maxage=300`，不做永久缓存。原因：下架只会从 CDN 清除内容寻址的对象，永久缓存的 API 响应会继续提供已下架的内容。private 为 `private, no-store`。
+3. **邀请名单**只有作者可见（沿用作者设置的权限，需要登录成员；只有 `creations:read` 的 Token 不能读），最多 1000 条。
+4. **Contribution 作者的展示**：登录用户附带显示名与个人 namespace，不返回邮箱；provenance 中仍只存用户 ID。访客的列表只包含自己提交的 Contribution。

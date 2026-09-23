@@ -7,7 +7,14 @@ import { OPEN_CREATION_TYPES } from "@char-pub/core";
 import { and, eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { appendAudit } from "../../audit/audit.js";
-import { creationDrafts, creationRedirects, creations } from "../../db/schema/index.js";
+import type { Db } from "../../db/client.js";
+import {
+  creationDrafts,
+  creationRedirects,
+  creations,
+  namespaceMembers,
+  namespaces,
+} from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
 import { initialDraft } from "../../registry/drafts.js";
@@ -59,6 +66,7 @@ export function register(app: Hono<Env>): void {
         ref,
         type: body.type,
         display_name: body.display_name,
+        author: { name: `@${await authorHandle(db, ns, userId)}`, user: encodeId("user", userId) },
       });
       await db.transaction(async (tx) => {
         await tx.insert(creations).values({
@@ -82,4 +90,19 @@ export function register(app: Hono<Env>): void {
       return c.json({ id: encodeId("creation", id), ref, type: body.type }, 201);
     },
   });
+}
+
+/**
+ * 默认作者署名用的公开名字：新建者的个人 namespace。不使用登录提供方给的显示名，因为那可能是
+ * 真实姓名，而署名会随 Release 永久公开；作者想署真名可以自己在编辑器里改。
+ */
+async function authorHandle(db: Db, ns: { slug: string; kind: string }, userId: string) {
+  if (ns.kind === "user") return ns.slug;
+  const [own] = await db
+    .select({ slug: namespaces.slug })
+    .from(namespaceMembers)
+    .innerJoin(namespaces, eq(namespaces.id, namespaceMembers.namespaceId))
+    .where(and(eq(namespaceMembers.userId, userId), eq(namespaces.kind, "user")))
+    .limit(1);
+  return own?.slug ?? ns.slug;
 }

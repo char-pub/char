@@ -5,23 +5,25 @@
  * 草稿伪装成另一个 Creation。`ref` 总是使用 namespace 的当前名字，namespace 改名后
  * 下一次保存就会更新。
  */
-import type { CreationType, LocalizedText } from "@char-pub/core";
+import type { AttributionAuthor, CreationType, LocalizedText } from "@char-pub/core";
 
 /**
  * 新建 Creation 时的草稿。许可默认“保留所有权利”：作者本人可以发布，别人不能再分发，
- * 这是在作者做出选择之前最保守的默认值。
+ * 这是在作者做出选择之前最保守的默认值。作者默认是新建它的用户，作者可以在编辑器里修改。
  */
 export function initialDraft(input: {
   id: string;
   ref: string;
   type: CreationType;
   display_name: LocalizedText;
+  author: AttributionAuthor;
 }): Record<string, unknown> {
   return {
     id: input.id,
     ref: input.ref,
     type: input.type,
     display_name: input.display_name,
+    authors: [input.author],
     fragments: [],
     meta: {
       default_locale: "en",

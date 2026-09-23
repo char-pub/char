@@ -40,7 +40,7 @@ services:
       retries: 30
 
   minio-init:
-    image: quay.io/minio/mc:latest
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
       minio:
         condition: service_healthy
@@ -49,7 +49,8 @@ services:
       mc alias set local http://minio:9000 charpub_local charpub_local_secret &&
       for b in public private uploads evidence; do mc mb --ignore-existing local/charpub-local-$$b; done &&
       mc anonymous set download local/charpub-local-public &&
-      mc ilm rule add --expire-days 1 local/charpub-local-uploads || true
+      (mc ilm rule ls local/charpub-local-uploads >/dev/null 2>&1 ||
+       mc ilm rule add --expire-days 1 local/charpub-local-uploads)
       "
 
   # 访客验证邮件等都发到这里：SMTP 在 127.0.0.1:51025，网页界面与 API 在 http://127.0.0.1:58025。

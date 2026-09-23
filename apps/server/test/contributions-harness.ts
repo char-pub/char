@@ -9,6 +9,7 @@
 import { uuidv7 } from "uuidv7";
 import type { Services } from "../src/api/app.js";
 import { register as contributions } from "../src/api/routes/contributions.js";
+import { register as read } from "../src/api/routes/read.js";
 import { REGISTRY_WRITE_MODULES } from "../src/api/routes/write.js";
 import { createApi } from "../src/api/server.js";
 import { createGuestSession, GUEST_COOKIE, randomGuestToken } from "../src/auth/guest.js";
@@ -29,7 +30,7 @@ export interface ContributionHarness extends ApiHarness {
   createGuest(guestId: string, name: string): Promise<void>;
   /**
    * 新建一个作品并发出第一个 Revision。每个账号只能拥有一个个人 namespace，所以每次都新建
-   * 一个 owner；返回 owner、作品路径与 Revision ID。
+   * 一个 owner；返回 owner、作品路径与 Revision ID。第一个 Release 是 public 的 0.1.0。
    */
   setupCreation(
     ns: string,
@@ -68,7 +69,8 @@ export async function createContributionHarness(
     originSecrets: [],
     allowedOrigins: [ORIGIN],
     sessionPrincipal,
-    modules: [...REGISTRY_WRITE_MODULES, contributions],
+    // 与生产环境的模块顺序一致：读取接口（包括 Release 的源内容）也挂载上。
+    modules: [...REGISTRY_WRITE_MODULES, read, contributions],
   });
 
   const requester = (auth: Record<string, string>): Requester => {

@@ -158,7 +158,10 @@ describe("UC-4: publishing from GitHub with OIDC", () => {
   });
 
   it("publishes the bound repository at the token's commit", async () => {
-    const r = await publishFrom(REPO, SHA1, "1.0.0", { key: "uc4-key-0001" });
+    const r = await publishFrom(REPO, SHA1, "1.0.0", {
+      key: "uc4-key-0001",
+      claims: { jti: "uc4-jti-0001" },
+    });
     expect(r.status).toBe(202);
     const out = await json(r);
     expect(out).toMatchObject({ state: "pending", idempotent: false });
@@ -173,13 +176,21 @@ describe("UC-4: publishing from GitHub with OIDC", () => {
       commit: SHA1,
       path: PATH,
     });
-    expect(row?.publishedBy).toMatchObject({
+    // 发布者记录保存发布时需要追溯的全部 claim，且只保存这些（不保存 sub 与仓库名这类可变信息）。
+    const full = `${REPO.owner_login}/${REPO.name}`;
+    expect(row?.publishedBy).toEqual({
       oidc: {
         repository_id: REPO.id,
         repository_owner_id: REPO.owner_id,
         sha: SHA1,
         ref: "refs/heads/main",
+        workflow_ref: `${full}/.github/workflows/publish.yml@refs/heads/main`,
+        job_workflow_ref: `${full}/.github/workflows/publish.yml@refs/heads/main`,
+        run_id: "5001",
+        run_attempt: "1",
+        actor_id: "4242",
         event_name: "push",
+        jti: "uc4-jti-0001",
       },
     });
     // Registry 自己在那个 commit 上读取并构建：Release 的 digest 就是 Action 上报的那个。

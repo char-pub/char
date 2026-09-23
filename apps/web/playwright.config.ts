@@ -17,5 +17,7 @@ export default defineConfig({
     url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Cloudflare 公开文档中的 Turnstile 测试 site key（总是通过）；测试里的脚本本身也被替身替换。
+    env: { VITE_TURNSTILE_SITE_KEY: "1x00000000000000000000AA" },
   },
 });
