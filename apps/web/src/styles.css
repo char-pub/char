@@ -68,6 +68,8 @@
   /* 危险操作、错误、Mature / Explicit 评级。 */
   --danger: #dc2626;
   --danger-soft: #fde8e8;
+  /* 红色实心（最终的危险操作按钮、Explicit 徽章）上的文字。 */
+  --on-danger: #ffffff;
   /* 成功、General 评级。 */
   --success: #15803d;
   --success-soft: #e3f4e8;
@@ -138,6 +140,8 @@
 
   --danger: #f87171;
   --danger-soft: #3b1f23;
+  /* 深色主题的红色更浅，白字对比度不够，改用 Ink。 */
+  --on-danger: #0f172a;
   --success: #4ade80;
   --success-soft: #1b3326;
   --warning: #fbbf24;
@@ -175,6 +179,7 @@
   --color-blue-text: var(--blue-text);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-on-danger: var(--on-danger);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
