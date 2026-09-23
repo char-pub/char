@@ -22,9 +22,9 @@ describe("json diff", () => {
     expect(diffRows(null, null)).toEqual([]);
   });
 
-  it("renders values as text", () => {
+  it("renders values as text", async () => {
     renderWithApi(<JsonDiff before={null} after={{ note: "<script>alert(1)</script>" }} />);
-    expect(screen.getByText('"<script>alert(1)</script>"')).toBeTruthy();
+    expect(await screen.findByText('"<script>alert(1)</script>"')).toBeTruthy();
     expect(document.querySelector("script")).toBeNull();
   });
 });

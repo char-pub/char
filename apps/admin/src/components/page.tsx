@@ -1,11 +1,12 @@
 /**
- * 页面框架的小组件：页面标题、错误与空状态、用户内容。
+ * 页面框架的小组件：页面标题、权限门槛、错误与空状态、用户内容。
  */
 import { AlertTriangle } from "lucide-react";
 import type * as React from "react";
 import { type ReactNode, useId } from "react";
 import { Input } from "@/components/ui/input";
-import { ApiError } from "@/lib/api";
+import { ApiError, type StaffCapability } from "@/lib/api";
+import { useMe } from "@/lib/context";
 
 /** 带标签的输入框：label 通过 htmlFor 关联到输入框。 */
 export function Field({
@@ -44,7 +45,16 @@ export function PageHeader({
   );
 }
 
-/** 这个页面依赖的后端接口还没有实现，当前显示的是 mock 数据或空结果。 */
+/**
+ * 受限页面：当前员工不具备其中任一能力时显示无权限提示，不渲染页面内容。
+ * 这只是界面上的提示，真正的拒绝由后端完成。
+ */
+export function Restricted({ any, children }: { any: StaffCapability[]; children: ReactNode }) {
+  const { me, can } = useMe();
+  if (!me) return null;
+  if (!any.some(can)) return <ErrorNote error={new ApiError(403, "admin.forbidden")} />;
+  return <>{children}</>;
+}
 
 export function ErrorNote({ error }: { error: unknown }) {
   const code =

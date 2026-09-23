@@ -10,7 +10,7 @@ export default defineProject({
   test: {
     name: "admin",
     root: fileURLToPath(new URL(".", import.meta.url)),
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "test/**/*.test.ts"],
     environment: "happy-dom",
     setupFiles: ["./src/test/setup.ts"],
   },

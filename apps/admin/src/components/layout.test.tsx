@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { OWNER_ME, VIEWER_ME } from "@/lib/mock-api";
 import { renderWithApi } from "@/test/render";
 import { StaffBar } from "./layout";
-import { CsamPage, LegalPage } from "./operations";
+import { CsamPage, LegalPage } from "./legal";
 
 describe("staff bar", () => {
   it("always shows the staff email, roles and the audit notice", async () => {

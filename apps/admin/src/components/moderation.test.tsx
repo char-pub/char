@@ -16,7 +16,7 @@ describe("tombstone four-eyes flow", () => {
       now: () => NOW,
       otherEligibleStaff,
     });
-    const subject = screen.getByLabelText(/Subject/);
+    const subject = await screen.findByLabelText(/Subject/);
     await user.clear(subject);
     await user.type(subject, "@commons/night-city#world");
     await user.click(screen.getByRole("button", { name: "Preview impact" }));
@@ -55,7 +55,7 @@ describe("tombstone four-eyes flow", () => {
   it("legal reason codes require selecting a legal request", async () => {
     const user = userEvent.setup();
     renderWithApi(<TombstonePage />, { me: OWNER_ME, now: () => NOW });
-    await user.click(screen.getByRole("button", { name: "Preview impact" }));
+    await user.click(await screen.findByRole("button", { name: "Preview impact" }));
     const preview = await screen.findByRole("region", { name: "Impact preview" });
     await user.type(within(preview).getByLabelText(/Reason/), "DMCA notice verified");
     await user.click(within(preview).getByRole("checkbox"));
