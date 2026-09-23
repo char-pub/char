@@ -54,6 +54,8 @@ spec/conformance/
 
 覆盖率只是底线，不作为目标。对安全关键模块，每个 PR 都要附上被拒绝路径的测试。
 
+门槛写在根目录 `vitest.config.ts` 的 `coverage.thresholds` 中，按文件组检查：`pnpm test:unit` 检查 packages 的各组，`pnpm test:integration` 检查 `apps/server` 的各组，任何一组不达标命令即失败（`pnpm ci:all` 包含这两个命令）。
+
 ---
 
 ## 4. 测试数据与环境
