@@ -20,12 +20,8 @@ function SettingsTab() {
   }
   return (
     <div className="max-w-3xl space-y-4">
-      <ContributionPolicySettings
-        key={c.detail.contribution_policy}
-        ns={c.ns}
-        name={c.name}
-        policy={c.detail.contribution_policy}
-      />
+      {/* 不按 policy 重新挂载：保存后刷新作品数据时，正在输入的邀请不能被清空。 */}
+      <ContributionPolicySettings ns={c.ns} name={c.name} policy={c.detail.contribution_policy} />
       <SourceBindingSettings ns={c.ns} name={c.name} />
       <FactCard id="settings-danger" title="Danger zone" className="space-y-3 px-6 py-5">
         <p className="-mt-2 text-sm text-text-2">

@@ -5,6 +5,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useId, useMemo, useState } from "react";
 import { z } from "zod";
 import { irQuery, useCreation, useReleaseLabels } from "@/components/creation-context";
+import { matureReason } from "@/components/creation-facts";
 import { DiffView, TokenDelta } from "@/components/diff-view";
 import { MatureGate } from "@/components/mature-gate";
 import { isAdultRating } from "@/components/rating";
@@ -83,6 +84,8 @@ function VersionsTab() {
   const choose = (side: CompareSide, label: string) =>
     void navigate({ search: (prev) => ({ ...prev, [side]: label }) });
   const worst = [relOf(from), relOf(to)].find((r) => r && isAdultRating(r.effective_rating));
+  // 遮挡卡片说明评级来源：用成人评级那一边的 IR。
+  const adultIR = [toIR.data, fromIR.data].find((ir) => ir && isAdultRating(ir.meta.rating));
 
   let body: ReactNode;
   if (available.length < 2) {
@@ -124,6 +127,7 @@ function VersionsTab() {
         rating={worst?.effective_rating ?? "general"}
         allowed={c.allowMature}
         remember={c.detail.ref}
+        reason={adultIR ? matureReason(adultIR) : undefined}
         signedIn={!!c.me}
       >
         <DiffView diff={diff} from={fromIR.data} to={toIR.data} showTokens={false} />
