@@ -151,3 +151,11 @@
 - Railway：在 `Hushed Chat` 创建 project `char-pub`（6b80b92a-…）与 environment `staging`，按用户看过的 plan（4 项新建，无修改或删除）apply `.railway/railway.ts`。模板创建的 Postgres 是 18.6，用户决定全面改用 18；在 18 上重跑集成测试 1292 个、全栈 E2E 3 个、`pnpm dev` 冒烟全部通过，apply 后再次 plan 显示已同步。创建 `charpub_app` 角色（口令在本机生成、经 stdin 传入，不进 git 与日志），设置了三个进程的 `DATABASE_URL` 以及本地可生成的密钥（会话签名、源站校验、法律加密、系统账号 ID），本地副本保存在仓库之外的 `~/.charpub-secrets/`（权限 0600）。
 - R2：创建 `charpub-staging-{public,private,uploads,evidence}`；uploads 1 天过期；public、private、uploads 的 CORS 按 `infra/r2/` 设置；`r2.dev` 保持关闭。
 - 尚缺（需要用户）：R2 S3 API token（当前 wrangler 登录没有创建 API token 的权限）；Cloudflare zone 写权限（DNS、Transform Rule、WAF）；Access 应用；Turnstile widget（wrangler 有 `challenge-widgets.write`，可以代为创建）；OAuth App；GitHub App；SMTP 服务商。在这些值设置之前，三个进程因缺少 S3 变量而无法启动（启动日志只列出缺少的变量名）。
+
+### 2026-09-22 staging：进程上线
+
+- 用户在控制台创建 R2 的 S3 凭证（范围为四个 staging 桶）。我从仓库根目录的临时文件把它移到仓库外的 `~/.charpub-secrets/`，没有进入 git；从本机实测 public / private / evidence 三个桶读写删除正常。uploads 桶从本机的 TLS 握手被本地网络重置（本机 DNS 解析到 198.18.x 的代理地址，只有这个主机名被拦）；从 Railway 容器内访问同一个主机名正常，所以不是凭证或桶的问题。
+- 经 stdin 把 S3 凭证与 endpoint 写入 api、admin、worker。
+- 发现并修复：Railway 定义里 `OIDC_AUDIENCE` 是字面值，而 GitHub 集成的其余变量尚未设置，“要么全配、要么全不配”的检查让 api 与 worker 拒绝启动。改为 `preserve()`，并在定义的测试中禁止这类分组里出现字面值（先确认新测试在旧定义上失败）。
+- 结果：api、worker、postgres 为 Online；api 的 pre-deploy 迁移完成（11 个迁移）。在 api 容器内验证：`/healthz` 200；不带 `X-Origin-Auth` 的 `/v1/search` 返回 403 `origin.forbidden`，带正确值返回 200。在 worker 上执行 `bootstrap --system-actor`，写入系统账号与审计记录。admin 因缺少 Cloudflare Access 的三个变量而未启动，符合预期。
+- 仍需用户：Cloudflare Access 应用（`CF_ACCESS_TEAM_DOMAIN`、`CF_ACCESS_AUD`、`STAFF_EMAILS`）；自定义域名的 DNS、Transform Rule、WAF；OAuth App；GitHub App；Turnstile；SMTP。
