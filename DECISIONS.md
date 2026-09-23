@@ -829,3 +829,11 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 7. **成人内容的直接链接**：搜索与浏览在服务端过滤；直接打开 mature / explicit 作品的链接时，由前端先遮挡，用户确认后才显示。读取接口本身不拦截，因为 public IR 本来就放在 CDN 上，拦截接口起不到作用。
 8. **默认作者**：新建 Creation 时，初始草稿的 `authors` 为创建者（显示名，没有则用 `@namespace`），作者之后可以修改；导入的草稿保留卡片中的作者。authors 为空时，作品页显示发布者 `@namespace`。
 9. **CSP**：`connect-src` 包含 API、`assets` / `staging-assets` 域名和 R2 账号端点（部署前用通配，拿到账号端点后收窄）；头像只显示首字母，不为第三方头像放开 `img-src`。
+
+### D-145 定期清理、导入失败处理、admin 访客管理、本地邮件的实现取值 — Accepted
+
+1. **定期清理**：worker 每小时运行一次清理任务，删除过期的访客验证记录与访客会话、过期的 OIDC jti、超过 30 天的 webhook 投递记录（只用于去重；GitHub 只能重投最近的事件）、超过最长限流窗口的限流计数，以及一天内没有请求的 Better Auth 限流行。按主键分批删除，每批最多 1000 行、每张表每次最多 100 批，剩下的留给下一次；每次运行写一行结构化日志，不写审计。
+2. **导入重试用尽**：最后一次尝试失败时，把导入标记为 failed（`import.internal_error`），保留原件，任务照常进入死信。不在死信队列上挂处理器，因为它会消费死信任务，admin 就无法再重投。只有 `internal_error` 的失败可以被重投恢复；卡片本身的问题（解析失败等）是终态。已知限制：最后一次尝试如果超时或 worker 进程退出，导入仍会停在 processing，从死信重投可以恢复。
+3. **admin 访客管理**：`GET /v1/admin/guests`（最新在前，按状态与显示名过滤）、`GET /v1/admin/guests/:id`、`POST …/disable`、`POST …/enable`。需要操作理由，所需能力与封禁用户相同；写处置记录与审计；停用时在同一事务中删除该访客的全部会话；重复停用不产生新记录。响应中没有邮箱，也没有邮箱 HMAC。
+4. **Turnstile 测试密钥**：Cloudflare 公开的“始终通过”测试密钥返回的结果只在 `NODE_ENV=development` 时被接受（跳过 hostname 与 action 检查），其他环境一律按 `testing-key` 拒绝，防止生产误配测试密钥后校验失效。
+5. **本地邮件**：docker compose 加入 Mailpit（SMTP 127.0.0.1:51025，Web UI / API 127.0.0.1:58025）；本地访客验证的配置写在 README，`.env.example` 不包含测试密钥。
