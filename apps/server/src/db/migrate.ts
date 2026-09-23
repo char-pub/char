@@ -26,6 +26,9 @@ export const MIGRATIONS_SCHEMA = "migrations";
 /** 只允许追加的表：应用角色只有 INSERT / SELECT。 */
 export const APPEND_ONLY_TABLES = ["audit_log"] as const;
 
+/** 记录可以更新状态但永不删除的表：应用角色没有 DELETE / TRUNCATE。 */
+export const NO_DELETE_TABLES = ["csam_incidents"] as const;
+
 export interface MigrateOptions {
   /** owner 角色连接串。 */
   connectionString: string;
@@ -90,6 +93,10 @@ async function grantAppRole(db: ReturnType<typeof createDatabase>["db"], role: s
   for (const t of APPEND_ONLY_TABLES) {
     const table = sql.identifier(t);
     await db.execute(sql`REVOKE UPDATE, DELETE, TRUNCATE ON app.${table} FROM ${r}`);
+  }
+  for (const t of NO_DELETE_TABLES) {
+    const table = sql.identifier(t);
+    await db.execute(sql`REVOKE DELETE, TRUNCATE ON app.${table} FROM ${r}`);
   }
   // pg-boss：应用只做入队、取任务、完成 / 失败这类数据操作，以及调用它的函数。
   await db.execute(sql`GRANT USAGE ON SCHEMA ${b} TO ${r}`);

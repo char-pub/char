@@ -156,6 +156,71 @@ export class Cas {
     return { digest, key, size: input.bytes.byteLength, uploaded };
   }
 
+  /** 读取 uploads 桶中的原件（按 staging key）。原件没有内容校验，由调用方重算哈希。 */
+  async getUpload(key: string): Promise<Uint8Array> {
+    assertStagingKey(key);
+    try {
+      const out = await this.config.client.send(
+        new GetObjectCommand({ Bucket: this.bucketName("uploads"), Key: key }),
+      );
+      if (!out.Body) throw new CasError("cas.not_found", key);
+      return await out.Body.transformToByteArray();
+    } catch (err) {
+      if (isNotFound(err)) throw new CasError("cas.not_found", key);
+      throw err;
+    }
+  }
+
+  /** 删除 uploads 桶中的原件。对象不存在时视为成功。 */
+  async deleteUpload(key: string): Promise<void> {
+    assertStagingKey(key);
+    await this.config.client.send(
+      new DeleteObjectCommand({ Bucket: this.bucketName("uploads"), Key: key }),
+    );
+  }
+
+  /**
+   * 从 public / private 桶删除一个可分发副本，并在 `blobs` 中取消对应的标记。
+   * 不会删除 evidence 桶中的对象。
+   */
+  async deleteBlob(db: Executor, bucket: "public" | "private", digest: string): Promise<void> {
+    await this.config.client.send(
+      new DeleteObjectCommand({ Bucket: this.bucketName(bucket), Key: casKey(digest) }),
+    );
+    await db
+      .update(blobs)
+      .set(
+        bucket === "public"
+          ? { inPublic: false, updatedAt: sql`now()` }
+          : { inPrivate: false, updatedAt: sql`now()` },
+      )
+      .where(sql`${blobs.digest} = ${digest}`);
+  }
+
+  /**
+   * 写入证据保全对象。evidence 桶只写不读（读取只能经 admin 的 legal 角色），不签发 URL，
+   * 也不登记到 `blobs` / `blob_refs`，GC 看不到它们。key 由内容 digest 派生，重复写入幂等。
+   */
+  async putEvidence(
+    bytes: Uint8Array,
+    mediaType: string,
+  ): Promise<{ key: string; digest: string }> {
+    const digest = sha256Bytes(bytes);
+    const key = `evidence/${casKey(digest)}`;
+    if (!(await this.exists("evidence", key))) {
+      await this.config.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName("evidence"),
+          Key: key,
+          Body: bytes,
+          ContentType: mediaType,
+          ContentLength: bytes.byteLength,
+        }),
+      );
+    }
+    return { key, digest };
+  }
+
   /** 读取对象内容，并校验内容与 key 相符。 */
   async getBlob(bucket: Exclude<Bucket, "uploads">, digest: string): Promise<Uint8Array> {
     const key = casKey(digest);
@@ -208,9 +273,7 @@ export class Cas {
         `signed PUT ttl must be 1..${MAX_SIGNED_PUT_SECONDS}s`,
       );
     }
-    if (!/^staging\/[0-9a-z_-]+$/.test(input.key)) {
-      throw new CasError("cas.bucket_not_allowed", "upload keys must live under staging/");
-    }
+    assertStagingKey(input.key);
     return getSignedUrl(
       this.config.client,
       new PutObjectCommand({
@@ -285,6 +348,13 @@ async function recordBlob(
         updatedAt: sql`now()`,
       },
     });
+}
+
+/** uploads 桶中的对象只能位于 `staging/` 下。 */
+function assertStagingKey(key: string): void {
+  if (!/^staging\/[0-9a-z_-]+$/.test(key)) {
+    throw new CasError("cas.bucket_not_allowed", "upload keys must live under staging/");
+  }
 }
 
 function isNotFound(err: unknown): boolean {
