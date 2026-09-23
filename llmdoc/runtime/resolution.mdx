@@ -1,0 +1,26 @@
+---
+description: "Resolver dependency graph, exact Release locks, diamond conflicts, bindings, overrides and deterministic Context IR"
+kind: architecture
+code:
+  paths:
+    - "spec/context-ir-v0.md"
+    - "packages/core/src/schema/ir.ts"
+    - "packages/core/src/resolve/index.ts"
+    - "packages/core/src/resolve/graph.ts"
+    - "packages/core/src/resolve/env.ts"
+    - "packages/core/src/resolve/render.ts"
+    - "packages/core/src/template.ts"
+relations:
+  requires:
+    - "model/canonical-identity.mdx"
+  related:
+    - "interoperability/conformance.mdx"
+---
+
+# Resolver 与 Context IR
+
+Resolver 从根 Release 和精确锁定的依赖快照构造 Context IR。第一阶段沿 Reference Edge 建立引用实例：同一 Release 可以从不同路径引入，但同一 Creation 在整张图中只能对应一个 Release。冲突报告两条路径；环、超深图和过多实例会失败。pin 的 semantic digest 必须与重新计算的内容一致。tombstone 直接失败，yank 保留警告。
+
+第二阶段处理 bindings、params、fragment override、模板和渲染顺序。Creation 的 Creative Truth 不能被运行时 Preset 或 Session 改写。early slot 在解析时固定；late slot 留待会话组装，不能在发布前假装已得到具体值。IR 同时保留 origin 和锁定信息，使下游 Diff、导出和审计能够解释内容来源。
+
+给定同一组规范化输入与明确的依赖快照，输出应确定；任何通过“latest”漂移的解析都不能作为 Release 的构建依据。规范描述公共语义，`resolve` 是当前执行实现；改变其排序、错误或 provenance 时应审阅跨运行时 conformance。

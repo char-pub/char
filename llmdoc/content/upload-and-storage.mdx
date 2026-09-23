@@ -1,0 +1,25 @@
+---
+description: "R2 四类桶、内容寻址 CAS、签名上传、图片净化、ready 状态与 CSAM 扫描边界"
+kind: architecture
+code:
+  paths:
+    - "apps/server/src/storage/cas.ts"
+    - "apps/server/src/upload/pipeline.ts"
+    - "apps/server/src/upload/image.ts"
+    - "apps/server/src/upload/csam.ts"
+    - "apps/server/src/api/routes/uploads.ts"
+    - "apps/server/src/worker/upload.ts"
+    - "apps/web/src/lib/upload.ts"
+    - "infra/r2/cors-public.json"
+relations:
+  related:
+    - "operations/takedown-and-evidence.mdx"
+---
+
+# 内容寻址存储与上传
+
+存储把公开分发、私有内容、待处理上传和证据分在不同权限边界。客户端只取得短期、受范围限制的上传 URL；获得 URL 或完成 PUT 不代表资产已获准引用。worker 重新读取对象，核对 digest、类型和像素限制，对图片重编码并清除元数据，再把结果写入 CAS。只有 `ready` 资产能进入发布内容，`processing`、`rejected` 和 `quarantined` 都不能被当作可用资源。
+
+公开 URL 与私有签名读取具有不同可见性。原始上传、导入原件和隔离证据不能经公共桶暴露；清理和保留周期要在成功迁移、引用关系及审计需求之后执行，不能仅凭上传完成删除原件。
+
+当前 worker 组装注入的是 `noopScanner`，因此不能声称上线前自动 CSAM 扫描已经成为发布保证。实际命中、举报或下架由独立处置流程承担；把真实扫描器接入时要重新审阅 quarantine 到 ready 的状态转换。

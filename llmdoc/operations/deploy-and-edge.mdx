@@ -1,0 +1,31 @@
+---
+description: "Railway 三进程部署、迁移顺序、Cloudflare Workers Static Assets、源站校验、受管规则与冒烟恢复"
+kind: guide
+code:
+  paths:
+    - ".railway/railway.ts"
+    - "apps/server/src/db/migrate.ts"
+    - "apps/web/wrangler.jsonc"
+    - "apps/admin/wrangler.jsonc"
+    - "scripts/cf-rules.ts"
+    - "scripts/smoke.ts"
+    - "infra/cloudflare/origin-auth.json"
+    - "infra/cloudflare/waf-custom.json"
+    - "infra/cloudflare/ratelimit.json"
+    - "apps/web/public/_headers"
+    - "apps/admin/public/_headers"
+relations:
+  requires:
+    - "execution-model.mdx"
+  related:
+    - "operations/admin-authority.mdx"
+    - "engineering/verification.mdx"
+---
+
+# 部署与边缘变更
+
+服务端同一镜像部署为公开 API、管理 API 和 worker，前端与管理前端使用 Cloudflare Workers Static Assets。部署前先完成代码门禁与数据库迁移；迁移使用 owner 权限，应用使用最小权限角色。迁移失败时停止放流，不能让新进程在旧 schema 上继续运行。三个进程分别校验所需密钥和 Origin，管理 API 还依赖 Access；单主站域名、CORS、源站共享头和 R2 桶权限共同形成信任边界。
+
+修改边缘规则先检查计划差异与 dry run，只变更由 `charpub_` 标识的受管规则，不能批量覆盖同区其他规则。保密值只经环境或凭据机制传入，不写进日志、仓库或变更说明。公开资产重定向后的 Origin 可能变化，因此公共桶的 CORS 与上传桶不能套用同一策略。
+
+放流后按 API、管理入口、worker 健康和关键读写路径做冒烟；失败时先判定是迁移、配置、边缘路由还是业务任务，再按可回滚范围恢复。创建公开资源、变更收费配置或执行实际边缘写入前，应把具体变更与风险交给用户确认。当前资源名和命令以部署配置与脚本为准。

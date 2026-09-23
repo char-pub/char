@@ -1,0 +1,30 @@
+---
+description: "GitHub App 绑定、webhook 同步、仓库转移冻结、Action OIDC 身份与服务端重读 commit 发布"
+kind: architecture
+code:
+  paths:
+    - "actions/publish/action.yml"
+    - "actions/publish/src/run.ts"
+    - "apps/server/src/github/bindings.ts"
+    - "apps/server/src/github/events.ts"
+    - "apps/server/src/github/load-source.ts"
+    - "apps/server/src/webhook/github.ts"
+    - "apps/server/src/worker/github.ts"
+    - "apps/server/src/oidc/github.ts"
+    - "apps/server/src/api/routes/github-webhook.ts"
+    - "apps/server/src/api/routes/oidc-publish.ts"
+relations:
+  requires:
+    - "registry/publishing.mdx"
+    - "authoring/cli-workflow.mdx"
+  related:
+    - "identity/public-authorization.mdx"
+---
+
+# GitHub 来源与发布信任链
+
+GitHub App 绑定使用不可复用的数字仓库及 owner 身份，不能只靠可改名的仓库路径。转移或所有者不一致时冻结来源，待重新确认后再恢复。webhook 验证原始请求字节的 HMAC，按 delivery 去重；push 同步来源状态，不自动发布 Release。
+
+Publish Action 在允许的 push、workflow_dispatch 或 release 工作流中计算本地摘要并申请 OIDC token；PR 事件不得取得发布路径。OIDC 证明的是受约束的仓库工作流身份、ref、sha、事件和 token 新鲜度，不证明运行的 Action 源码一定可信。Registry 校验这些声明和重放标识后，用 GitHub App 权限在该 commit 重新读取源文件，按同一项目解析算法重算 digest。Action 提交的摘要只是比对值，不是最终内容权威。
+
+来源验证成功后进入普通 Revision 与异步发布流程，仍接受 Registry 的权限、依赖、资产和黑名单检查。修改 Action 与服务端任一侧算法时需共同验证 digest 一致和失败重试。

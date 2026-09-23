@@ -1,0 +1,23 @@
+---
+description: "@commons 示例内容的离线检查、依赖 pin、人工权利审校、系统 namespace 发布门槛"
+kind: guide
+code:
+  paths:
+    - "content/commons/README.md"
+    - "content/commons/REVIEW.md"
+    - "scripts/commons-check.ts"
+    - "content/commons/examples/wren-the-harbor-guide/char.yaml"
+    - "content/commons/saltmere/char.yaml"
+relations:
+  requires:
+    - "model/publish-integrity.mdx"
+    - "registry/publishing.mdx"
+---
+
+# @commons 内容审校与发布
+
+`@commons` 是系统 namespace 的候选公共内容，当前仓库中的示例尚未发布。离线 `commons:check` 检查结构、依赖 pin 和发布规则，只说明机器可复现的输入通过检查，不代表权利、内容和运营审校已经完成。示例角色的精确 digest 会随所依赖内容变化，不能把旧 digest 当作永久常量。
+
+发布前先固定每条依赖到精确 Release，重新计算内容，再逐项完成权利、内容和运营签名。缺任一人工审校时停在候选状态。系统 namespace 由 worker bootstrap 建立，并给 curator 所需维护能力；最终仍通过普通 Registry API 创建 Revision 和 Release，接受同样的许可、资产、闭包与黑名单检查。
+
+如果依赖或正文变化，原有审校结论必须重新对照变化范围；不能凭之前的离线检查结果跳过人工签名。具体候选清单和当前 digest 以内容文件与检查输出为准。

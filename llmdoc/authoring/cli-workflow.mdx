@@ -1,0 +1,24 @@
+---
+description: "char.yaml project parsing, include sandbox, deterministic check --fix, conditional draft update and publish retries"
+kind: guide
+code:
+  paths:
+    - "packages/cli/src/bin.ts"
+    - "packages/cli/src/project.ts"
+    - "packages/cli/src/commands.ts"
+    - "packages/cli/src/remote.ts"
+    - "packages/cli/test/remote.test.ts"
+relations:
+  requires:
+    - "model/canonical-identity.mdx"
+    - "registry/http-contract.mdx"
+    - "registry/publishing.mdx"
+---
+
+# 本地作者与 CLI 发布流程
+
+`char.yaml` 是作者输入，CLI 将其与 include 文件读成 Creation，再调用 Core 做规范化、静态检查和 digest 计算。include 不能越出项目边界；`check --fix` 写回稳定标识时应保持可重复运行，不让格式整理改变语义身份。CLI 的本地成功只说明输入满足其可见规则，Registry 仍要重验动态状态。
+
+远端发布先取草稿当前版本，带 `If-Match` 更新，生成 Revision，再以同一幂等键请求发布。冲突意味着远端已有其他编辑，不能直接覆盖；请求超时后应先查结果并沿用原 key。Release 是否 active 由异步 Registry 流程决定，CLI 不应把接受请求当成构建完成。
+
+修改项目解析时核对路径安全与规范化 digest；修改远端流程时核对共享 HTTP 契约、并发冲突与重试行为。

@@ -1,0 +1,25 @@
+---
+description: "Better Auth OAuth 创作者会话、个人 Token、访客邮箱 HMAC、Turnstile 和可选配置的身份边界"
+kind: architecture
+code:
+  paths:
+    - "apps/server/src/auth/better-auth.ts"
+    - "apps/server/src/auth/guest.ts"
+    - "apps/server/src/auth/turnstile.ts"
+    - "apps/server/src/auth/tokens.ts"
+    - "apps/server/src/api/routes/guests.ts"
+    - "apps/server/src/api/routes/tokens.ts"
+    - "apps/web/src/lib/auth.ts"
+    - "apps/web/src/components/guest.tsx"
+relations:
+  requires:
+    - "identity/public-authorization.mdx"
+---
+
+# 创作者与访客身份
+
+创作者通过 API 域名上的 HttpOnly 会话 cookie 或受限个人 Token 访问能力；封禁与权限变更要在请求时生效，不能依赖前端缓存。OAuth 的同邮箱账户不自动合并，身份关联须由明确操作完成，避免把可变邮箱当作账户所有权证明。
+
+访客验证与创作者登录是不同能力。访客用邮件验证和 HMAC 保护的凭据建立有限会话，不能据此获得创作者 Token、namespace 或管理权限。Turnstile 按表单 action 和允许的 hostname 校验，token 不能在访客验证与匿名举报之间复用。没有完整配置访客服务时，相关接口显式返回 503；已登录用户和有效访客可使用各自允许的举报路径。
+
+浏览器可以呈现登录和验证状态，但真实主体和能力必须由服务端重新解析。修改身份实现时复核 public API 路由、Token scope 与资源级授权。

@@ -1,0 +1,25 @@
+---
+description: "新增 API 路由怎样做授权；公共 API principal、route 授权门禁、资源权限、私有资源 404、scope 与 Origin 校验"
+kind: architecture
+code:
+  paths:
+    - "apps/server/src/api/server.ts"
+    - "apps/server/src/api/app.ts"
+    - "apps/server/src/authz/authorize.ts"
+    - "apps/server/src/http/middleware.ts"
+    - "apps/server/src/api/routes-guard.test.ts"
+    - "apps/server/test/api-access.test.ts"
+relations:
+  requires:
+    - "registry/http-contract.mdx"
+  related:
+    - "identity/creator-and-guest.mdx"
+---
+
+# 公共 API 授权
+
+公开 API 在请求进入业务处理前完成源站与 Origin 检查、身份解析和路由声明约束。路由必须通过统一注册门禁声明所需能力；遗漏授权不是默认放行。对于资源级规则，先加载受保护对象，再用集中授权函数判断主体、作用域、所有权及可见性。浏览器角色显示和客户端 schema 校验都不能代替该判断。
+
+匿名访问不可见私有资源时返回 404，避免存在性探测；身份缺失、已认证但能力不足、功能暂不可用分别使用协议约定的 401、403、503 语义。可见性优先于功能开关和 Token scope 的错误显示，不能让不同错误泄露私有资源是否存在。个人 Token、会话与其他 principal 进入同一资源授权边界，但各自能力来源不同。
+
+添加新路由时，同时核对注册门禁和资源加载后的判定，并用匿名、越权和功能关闭情形验证失败状态。
