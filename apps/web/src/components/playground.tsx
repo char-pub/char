@@ -22,12 +22,9 @@ export function Playground({ samples }: { samples: Sample[] }) {
   }, [sample]);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[15rem_1fr]">
+    <div className="grid gap-8 lg:grid-cols-[16rem_1fr]">
       <section aria-labelledby="pg-sources" className="space-y-3">
-        <h2
-          id="pg-sources"
-          className="font-mono text-xs uppercase tracking-wider text-muted-foreground"
-        >
+        <h2 id="pg-sources" className="text-xs font-semibold tracking-wider text-text-3 uppercase">
           Creation
         </h2>
         <fieldset className="space-y-2">
@@ -38,8 +35,10 @@ export function Playground({ samples }: { samples: Sample[] }) {
               <label
                 key={s.id}
                 className={cn(
-                  "catalog-card block cursor-pointer p-3 pl-7 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-seal",
-                  active ? "border-seal bg-seal-soft/60" : "hover:bg-muted",
+                  "block cursor-pointer rounded-lg border p-3 transition-colors has-[:focus-visible]:border-ring has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/30",
+                  active
+                    ? "border-primary bg-primary-soft"
+                    : "bg-surface hover:border-border-strong hover:bg-surface-2",
                 )}
               >
                 <input
@@ -50,8 +49,8 @@ export function Playground({ samples }: { samples: Sample[] }) {
                   className="sr-only"
                   onChange={() => setSampleId(s.id)}
                 />
-                <span className="block font-display text-base leading-tight">{s.title}</span>
-                <span className="mt-1 block text-xs text-muted-foreground">{s.description}</span>
+                <span className="block text-sm leading-snug font-semibold">{s.title}</span>
+                <span className="mt-1 block text-xs text-text-2">{s.description}</span>
               </label>
             );
           })}
@@ -72,18 +71,20 @@ export function Playground({ samples }: { samples: Sample[] }) {
 
 function IrFacts({ ir }: { ir: ContextIR }) {
   return (
-    <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 border-t border-rule pt-3 text-xs">
-      <dt className="text-muted-foreground">Root</dt>
-      <dd className="font-mono">{ir.root.ref}</dd>
-      <dt className="text-muted-foreground">Rating</dt>
+    <dl className="grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-1.5 rounded-lg border bg-surface p-3 text-xs">
+      <dt className="text-text-2">Root</dt>
+      <dd className="truncate font-mono" title={ir.root.ref}>
+        {ir.root.ref}
+      </dd>
+      <dt className="text-text-2">Rating</dt>
       <dd>
         <RatingBadge rating={ir.meta.rating} />
       </dd>
-      <dt className="text-muted-foreground">Fragments</dt>
+      <dt className="text-text-2">Fragments</dt>
       <dd className="font-mono">{ir.fragments.length}</dd>
-      <dt className="text-muted-foreground">Dependencies</dt>
+      <dt className="text-text-2">Dependencies</dt>
       <dd className="font-mono">{Math.max(ir.graph.nodes.length - 1, 0)}</dd>
-      <dt className="text-muted-foreground">Lock</dt>
+      <dt className="text-text-2">Lock</dt>
       <dd className="truncate font-mono" title={ir.lock_digest}>
         {ir.lock_digest.slice(0, 19)}…
       </dd>

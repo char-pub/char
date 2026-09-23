@@ -29,7 +29,7 @@ describe("SearchResults", () => {
     const link = within(list).getByRole("link", { name: "Night City" });
     expect(link.getAttribute("href")).toBe("/c/djj/night-city");
     expect(within(list).getByText("Mature")).toBeTruthy();
-    expect(within(list).getByRole("link", { name: "#cyberpunk" })).toBeTruthy();
+    expect(within(list).getByRole("link", { name: "cyberpunk" })).toBeTruthy();
   });
 
   it("explains an empty result", async () => {

@@ -19,6 +19,7 @@ import { Route as CreateImportRouteImport } from './routes/create.import'
 import { Route as GuestVerifyRouteImport } from './routes/guest.verify'
 import { Route as PlaygroundIndexRouteImport } from './routes/playground.index'
 import { Route as PlaygroundDiffRouteImport } from './routes/playground.diff'
+import { Route as CNsIndexRouteImport } from './routes/c.$ns.index'
 import { Route as CNsNameRouteImport } from './routes/c.$ns.$name'
 import { Route as CNsNameDiffRouteImport } from './routes/c.$ns.$name_.diff'
 import { Route as CNsNameEditRouteImport } from './routes/c.$ns.$name_.edit'
@@ -77,6 +78,11 @@ const PlaygroundDiffRoute = PlaygroundDiffRouteImport.update({
   path: '/playground/diff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CNsIndexRoute = CNsIndexRouteImport.update({
+  id: '/c/$ns/',
+  path: '/c/$ns/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CNsNameRoute = CNsNameRouteImport.update({
   id: '/c/$ns/$name',
   path: '/c/$ns/$name',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/': typeof CNsIndexRoute
   '/c/$ns/$name/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name/edit': typeof CNsNameEditRoute
   '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/create': typeof CreateIndexRoute
   '/playground': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns': typeof CNsIndexRoute
   '/c/$ns/$name/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name/edit': typeof CNsNameEditRoute
   '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/': typeof CNsIndexRoute
   '/c/$ns/$name_/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name_/edit': typeof CNsNameEditRoute
   '/c/$ns/$name_/preview': typeof CNsNamePreviewRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/'
     | '/c/$ns/$name/diff'
     | '/c/$ns/$name/edit'
     | '/c/$ns/$name/preview'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/playground'
     | '/c/$ns/$name'
+    | '/c/$ns'
     | '/c/$ns/$name/diff'
     | '/c/$ns/$name/edit'
     | '/c/$ns/$name/preview'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/'
     | '/c/$ns/$name_/diff'
     | '/c/$ns/$name_/edit'
     | '/c/$ns/$name_/preview'
@@ -245,6 +257,7 @@ export interface RootRouteChildren {
   CreateIndexRoute: typeof CreateIndexRoute
   PlaygroundIndexRoute: typeof PlaygroundIndexRoute
   CNsNameRoute: typeof CNsNameRoute
+  CNsIndexRoute: typeof CNsIndexRoute
   CNsNameDiffRoute: typeof CNsNameDiffRoute
   CNsNameEditRoute: typeof CNsNameEditRoute
   CNsNamePreviewRoute: typeof CNsNamePreviewRoute
@@ -325,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlaygroundDiffRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$ns/': {
+      id: '/c/$ns/'
+      path: '/c/$ns'
+      fullPath: '/c/$ns/'
+      preLoaderRoute: typeof CNsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/c/$ns/$name': {
       id: '/c/$ns/$name'
       path: '/c/$ns/$name'
@@ -389,6 +409,7 @@ const rootRouteChildren: RootRouteChildren = {
   CreateIndexRoute: CreateIndexRoute,
   PlaygroundIndexRoute: PlaygroundIndexRoute,
   CNsNameRoute: CNsNameRoute,
+  CNsIndexRoute: CNsIndexRoute,
   CNsNameDiffRoute: CNsNameDiffRoute,
   CNsNameEditRoute: CNsNameEditRoute,
   CNsNamePreviewRoute: CNsNamePreviewRoute,

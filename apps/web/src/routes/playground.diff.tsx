@@ -1,6 +1,7 @@
 import { estimateCounter } from "@char-pub/assembler";
 import { diffContextIR } from "@char-pub/core";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useMemo } from "react";
 import { DiffView } from "@/components/diff-view";
 import { diffPair, locksOf, resolveSample } from "@/fixtures/samples";
@@ -18,17 +19,20 @@ function DiffPage() {
     [],
   );
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
+    <div className="space-y-8">
+      <header className="space-y-2">
         <Link
           to="/playground"
-          className="text-sm text-muted-foreground underline underline-offset-4"
+          className="inline-flex items-center gap-1.5 text-sm text-text-2 underline-offset-4 hover:text-text hover:underline"
         >
-          ← Playground
+          <ArrowLeft aria-hidden className="size-3.5" /> Playground
         </Link>
         <h1 className="text-4xl">Context diff</h1>
-        <p className="font-mono text-sm text-muted-foreground">
-          {diffPair.from.title} <span className="text-seal">→</span> {diffPair.to.title}
+        <p className="flex flex-wrap items-center gap-2 font-mono text-sm text-text-2">
+          <span>{diffPair.from.title}</span>
+          <ArrowRight aria-hidden className="size-3.5 text-text-3" />
+          <span className="sr-only">to</span>
+          <span>{diffPair.to.title}</span>
         </p>
       </header>
       <DiffView diff={diff} />

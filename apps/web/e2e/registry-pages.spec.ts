@@ -104,8 +104,11 @@ test("browse hides mature content by default and says how to change it", async (
   api.on("GET /v1/search", { body: { items: [SEARCH_ITEM], next_cursor: null } });
 
   await page.goto("/browse?q=alice");
-  await expect(page.getByText("Mature and explicit creations are hidden")).toBeVisible();
-  await expect(page.getByRole("link", { name: "settings" })).toBeVisible();
+  await expect(page.getByText("Mature and explicit creations are hidden.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Change in settings" })).toHaveAttribute(
+    "href",
+    "/settings",
+  );
   const results = page.getByRole("list", { name: "Search results" });
   await expect(results.getByRole("link", { name: "Alice" })).toBeVisible();
   await expect(results.getByText("Teen")).toBeVisible();
