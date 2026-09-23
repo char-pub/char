@@ -175,3 +175,10 @@
   - 创建 `char.pub staging` 与 `char.pub production` 两个 Turnstile widget，secret 存在本机 `~/.charpub-secrets/`，不进仓库。
 - 冒烟测试：web、api 相关 4 项全部通过；admin 相关 2 项等 Cloudflare Access。
 - 未解决：页面被插入 Cloudflare Web Analytics 的 beacon 脚本，被 CSP 拦下（只有一条控制台报错）。zone 的 RUM 已关闭，账户下的 Web Analytics 站点里也没有 char.pub，来源尚未查明。
+
+### 2026-09-23 改为单一主站
+
+- 用户决定不设 staging（D-155）。删除 Railway 的 staging environment（4 个服务与数据库，删除前确认只有系统账号、没有作品与 Release）、四个 staging R2 桶（删除前确认为空）与其自定义域名、web 的 staging Worker、staging 的 DNS 记录与 Turnstile widget、本机的 staging 密钥文件。
+- 仓库改为单一主站：Railway 定义只针对 production（其他 environment 直接报错）；R2 桶名 `charpub-*`；Cloudflare 规则只含主站主机名（已 `cf:rules --apply` 并复核）；web / admin 的 wrangler 与 CSP、冒烟测试默认目标、DOD / 部署指南 / 设计文档 / runbook 都已改写。`pnpm test` 1307、`pnpm test:e2e` web 23 / admin 107 通过。
+- production 的 Railway plan：4 项新建、无修改与删除，**等待用户同意后 apply**。
+- 需要用户：为新的 `charpub-*` 桶重新创建 R2 S3 凭证（桶在 apply 之后创建）；Cloudflare Access 应用；OAuth App；GitHub App；SMTP。

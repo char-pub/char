@@ -908,3 +908,11 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 3. **限流参数**：`/v1/auth/*`，按 IP 与数据中心计数，10 秒内 20 次，超出阻断 10 秒（Free 套餐允许的最短窗口与时长）。应用内另有按账号、namespace、IP 哈希与访客的限流，边缘规则只挡最粗的滥用。
 4. **Turnstile**：为 char.pub 单独创建两个 widget（`char.pub staging` 只允许 `staging.char.pub`，`char.pub production` 只允许 `www.char.pub`，模式 managed），不复用账户里已有的 widget，因为它的 secret 可能已被其他项目使用。
 5. **调用方式**：Cloudflare 的写操作经由 tool-bridge 的 Cloudflare API 工具执行，本机不保存 Cloudflare token；R2 的对象与自定义域名仍用 wrangler。
+
+### D-155 v0 只有一个线上主站，不设 staging — Accepted（用户决定，2026-09-23）
+
+1. **决定**：初期不维护单独的 staging 环境，只有一个主站（`www` / `api` / `admin` / `admin-api` / `assets.char.pub`），减少费用和需要同步的配置。这取代 D-114 中的 staging 域名规划，以及 D-150 第 2 条中创建 staging 资源的授权。
+2. **做法**：staging 里还没有任何用户数据（只有迁移与系统账号，四个桶为空），所以删除后按 production 重建，而不是改名沿用：Railway 删除 `staging` environment，只用 `production`；R2 桶名不再带环境名（`charpub-public` 等）；Cloudflare 规则、Turnstile widget、DNS 记录、web Worker 与 staging 专用的本机密钥一并删除。
+3. **上线前的验证**：没有 staging 之后，依靠 CI 全量回归、本地 `pnpm dev` 与全栈端到端测试，以及 Railway 部署前自动迁移、迁移失败不部署。在主站上的端到端演练使用测试账号、测试仓库与合成数据，结束后清理。
+4. **防止误操作**：Railway 定义在 `production` 以外的 environment 中执行时直接报错（有测试覆盖）。以后如果需要预发布环境，必须使用与主站完全独立的凭证。
+5. **验收条目**：DOD 中“在 staging 上”的条目改为“在主站上”；M9-6 改为主站正式对外开放前的最终确认。已勾选的条目不受影响。

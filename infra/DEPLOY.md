@@ -141,11 +141,11 @@ Rules → Transform Rules → Modify Request Header：
 ```sh
 # web：API 地址默认就是 https://api.char.pub，只需要传入 Turnstile 的 site key。
 VITE_TURNSTILE_SITE_KEY=<site key> pnpm --filter @char-pub/web build
-cd apps/web && wrangler deploy --env production     # 需用户同意
+cd apps/web && wrangler deploy                    # 需用户同意
 
 # admin：按当前域名选择 admin-api，不需要构建变量。
 pnpm --filter @char-pub/admin build
-cd apps/admin && wrangler deploy --env production   # 需用户同意
+cd apps/admin && wrangler deploy                  # 需用户同意
 ```
 
 `apps/web/wrangler.jsonc` 与 `apps/admin/wrangler.jsonc` 已配置 SPA fallback 与自定义域名（deploy 时自动绑定并创建 DNS 记录）；安全响应头由各自的 `public/_headers` 下发。admin 的两个域名都放在 Cloudflare Access 之后。
