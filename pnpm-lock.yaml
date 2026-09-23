@@ -617,6 +617,9 @@ importers:
       '@char-pub/assembler':
         specifier: workspace:*
         version: link:../assembler
+      '@char-pub/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@char-pub/core':
         specifier: workspace:*
         version: link:../core
