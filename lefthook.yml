@@ -7,3 +7,7 @@ pre-commit:
     - name: biome
       glob: "*.{js,ts,tsx,jsx,json,jsonc,css}"
       run: pnpm exec biome check --no-errors-on-unmatched {staged_files}
+    - name: action-dist
+      # Action 的打包产物随仓库提交；改动被打进 bundle 的源码后必须一起提交重新生成的 dist。
+      glob: "{packages/core,packages/contracts,packages/cli,actions/publish}/**/*.ts"
+      run: pnpm check:action-dist >/dev/null || { echo "actions/publish/dist 已过期：重新生成后请 git add actions/publish/dist"; exit 1; }
