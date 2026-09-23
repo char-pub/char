@@ -36,6 +36,7 @@ export const QUEUE_NAMES = {
   auditAnchor: "audit.anchor",
   searchIndex: "search.index",
   uploadExpire: "upload.expire",
+  maintenanceCleanup: "maintenance.cleanup",
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

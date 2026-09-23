@@ -4,6 +4,7 @@ import type { AdminEnv } from "../app.js";
 import { registerAudit, registerFlags } from "../ops-routes.js";
 import { registerContent } from "./content.js";
 import { registerCsam } from "./csam.js";
+import { registerGuests } from "./guests.js";
 import { registerJobs } from "./jobs.js";
 import { registerLegal } from "./legal.js";
 import { registerMe } from "./me.js";
@@ -22,6 +23,7 @@ export function adminModules(legalKey: Uint8Array): ((app: Hono<AdminEnv>) => vo
     registerContent,
     registerTombstone,
     registerUsers,
+    registerGuests,
     registerNamespaces,
     registerCsam,
     registerLegal(legalKey),

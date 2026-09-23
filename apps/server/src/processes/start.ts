@@ -28,6 +28,7 @@ import {
   guestConfigFromEnv,
   originSecretsFromEnv,
   parseEnv,
+  RuntimeEnvSchema,
   ServerEnvSchema,
 } from "../env.js";
 import type { GitHubDeps } from "../github/deps.js";
@@ -154,6 +155,7 @@ function githubFromEnv(): GitHubDeps | null {
  */
 function guestsFromEnv(webOrigins: readonly string[]): GuestServices | null {
   const cfg = guestConfigFromEnv(parseEnv(GuestEnvSchema));
+  const { NODE_ENV } = parseEnv(RuntimeEnvSchema);
   if (!cfg) {
     process.stdout.write("guest verification is not configured; guest routes return 503\n");
     return null;
@@ -163,6 +165,8 @@ function guestsFromEnv(webOrigins: readonly string[]): GuestServices | null {
       secret: cfg.turnstileSecret,
       allowedHostnames: webOrigins.map((o) => new URL(o).hostname),
       action: GUEST_TURNSTILE_ACTION,
+      // 本地开发可以用 Cloudflare 的测试密钥；其他环境收到测试密钥的结果一律拒绝。
+      allowTestingKeys: NODE_ENV === "development",
     }),
     email: new SmtpEmailSender(cfg.smtpUrl, cfg.emailFrom),
     hasher: new GuestHasher(cfg.hmacKey),
