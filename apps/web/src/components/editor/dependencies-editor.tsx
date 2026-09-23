@@ -1,197 +1,182 @@
 /**
  * 依赖：这个作品建立在哪些已发布的作品之上（例如角色所在的世界）。每个依赖都锁定到
  * 一个精确的 Release（Release ID + semantic digest），上游之后的更新不会悄悄改变它。
+ *
+ * 每一行显示依赖的类型颜色、关系词、ref、锁定的版本和用法（Core / Recommended），版本和用法
+ * 可以直接改；新依赖通过下方的搜索添加。
  */
-import { type CheckDiagnostic, NAME_RE, type ReferenceEdge } from "@char-pub/core";
-import { Plus, Trash2 } from "lucide-react";
-import { useId, useState } from "react";
+import type { CheckDiagnostic, ReferenceEdge } from "@char-pub/core";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { isApiError } from "@/lib/api";
+import { NativeSelect } from "@/components/ui/native-select";
 import { getReferences, nextId, setReferences, type Working } from "@/lib/draft";
-import { useRegistry } from "@/lib/registry";
 import { parseRef } from "@/lib/text";
+import {
+  DependencyPicker,
+  lookupError,
+  MODE_LABEL,
+  TypeDot,
+  useDependencyDetail,
+} from "./dependency-picker";
 import { DiagnosticList, diagnosticsFor } from "./diagnostics";
 
-const selectClass =
-  "h-9 rounded-sm border border-input bg-card px-2 text-sm focus-visible:outline-2 focus-visible:outline-seal";
+/** 关系词的展示形式：`lives_in` → “lives in”，没有写时是 “uses”。 */
+export function relText(r: ReferenceEdge): string {
+  return r.rel ? r.rel.replace(/_/g, " ") : "uses";
+}
 
-function pinText(r: ReferenceEdge): string {
-  if (!r.pin) return "not pinned";
-  return "follow" in r.pin ? "follows latest (pinned on publish)" : `locked to ${r.pin.release}`;
+/** 折叠时的一行摘要，例如 “Lives in @cyberpunk/night-city · knows about @cyberpunk/corps”。 */
+export function dependenciesSummary(w: Working): string {
+  const refs = getReferences(w);
+  if (refs.length === 0) return "None yet — build on a world or a lorebook";
+  const text = refs.map((r) => `${relText(r)} ${String(r.use)}`).join(" · ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+const FOLLOW = "follow";
+
+function DependencyRow({
+  edge,
+  onChange,
+  onRemove,
+  diagnostics,
+}: {
+  edge: ReferenceEdge;
+  onChange: (next: ReferenceEdge) => void;
+  onRemove: () => void;
+  diagnostics: readonly CheckDiagnostic[];
+}) {
+  const use = String(edge.use);
+  const target = parseRef(use);
+  const detail = useDependencyDetail(target);
+  const releases = detail.data?.releases ?? [];
+  const pinned = edge.pin && "release" in edge.pin ? edge.pin.release : null;
+  const current = releases.find((r) => r.id === pinned);
+  // 可选的版本：可用的 Release，加上当前锁定的那个（即使它后来被 yank 了）。
+  const options = releases.filter((r) => r.status === "active" || r.id === pinned);
+  const value = pinned ?? (edge.pin ? FOLLOW : "");
+
+  return (
+    <li className="space-y-1.5 rounded-lg bg-surface-2 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <TypeDot type={detail.data?.type} />
+        <span className="flex min-w-0 flex-1 items-baseline gap-2">
+          <span className="shrink-0 text-sm text-text-2">{relText(edge)}</span>
+          <span className="truncate font-mono text-sm">{use}</span>
+        </span>
+        <NativeSelect
+          size="sm"
+          className="w-32 font-mono sm:w-36"
+          aria-label={`Version of ${use}`}
+          value={value}
+          disabled={!detail.data}
+          onChange={(e) => {
+            const r = releases.find((x) => x.id === e.target.value);
+            if (r)
+              onChange({ ...edge, pin: { release: r.id, semantic_digest: r.semantic_digest } });
+          }}
+        >
+          {value === "" ? <option value="">Pick a version</option> : null}
+          {value === FOLLOW ? <option value={FOLLOW}>latest</option> : null}
+          {pinned && !current ? <option value={pinned}>locked</option> : null}
+          {options.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.label}
+              {r.status === "yanked" ? " (yanked)" : ""}
+              {r.visibility === "private" ? " (private)" : ""}
+            </option>
+          ))}
+        </NativeSelect>
+        <NativeSelect
+          size="sm"
+          className="w-40"
+          aria-label={`How ${use} is used`}
+          value={edge.mode}
+          onChange={(e) => onChange({ ...edge, mode: e.target.value as ReferenceEdge["mode"] })}
+        >
+          <option value="intrinsic">{MODE_LABEL.intrinsic}</option>
+          <option value="default">{MODE_LABEL.default}</option>
+        </NativeSelect>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`Remove ${use}`}
+          onClick={onRemove}
+        >
+          <X aria-hidden />
+        </Button>
+      </div>
+      {detail.isError ? <p className="text-xs text-danger">{lookupError(detail.error)}</p> : null}
+      {current?.status === "yanked" ? (
+        <p className="text-xs text-warning">
+          This version was yanked{current.status_reason ? `: ${current.status_reason}` : ""}. It
+          still works, but pick another one if you can.
+        </p>
+      ) : null}
+      {value === FOLLOW ? (
+        <p className="text-xs text-text-2">Follows the latest release until you publish.</p>
+      ) : null}
+      <DiagnosticList items={diagnostics} />
+    </li>
+  );
 }
 
 export function DependenciesEditor({
+  self,
   working,
   update,
   diagnostics,
 }: {
+  /** 自己的 ref（`@ns/name`），搜索结果里不出现。 */
+  self: string;
   working: Working;
   update: (fn: (w: Working) => Working) => void;
   diagnostics: readonly CheckDiagnostic[];
 }) {
-  const client = useRegistry();
   const refs = getReferences(working);
-  const [use, setUse] = useState("");
-  const [label, setLabel] = useState("");
-  const [mode, setMode] = useState<ReferenceEdge["mode"]>("default");
-  const [rel, setRel] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const ids = { use: useId(), label: useId(), mode: useId(), rel: useId() };
-
-  const add = async () => {
-    setError(null);
-    const target = parseRef(use.trim());
-    if (!target) {
-      setError("Use the form @namespace/name.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const detail = await client.creation(target.ns, target.name);
-      const chosen = label.trim() || detail.latest_release?.label;
-      if (!chosen) {
-        setError("That creation has no public release to depend on yet.");
-        return;
-      }
-      const release = await client.release(target.ns, target.name, chosen);
-      if (release.status !== "active") {
-        setError(`${chosen} is ${release.status}; choose another version.`);
-        return;
-      }
-      const base = NAME_RE.test(target.name) ? target.name : "dep";
-      const edge: ReferenceEdge = {
-        id: nextId(
-          refs.map((r) => r.id),
-          base.slice(0, 64),
-        ),
-        use: `@${target.ns}/${target.name}`,
-        pin: { release: release.id, semantic_digest: release.semantic_digest },
-        mode,
-        ...(rel.trim() ? { rel: rel.trim() } : {}),
-      };
-      update((w) => setReferences(w, [...getReferences(w), edge]));
-      setUse("");
-      setLabel("");
-      setRel("");
-    } catch (e) {
-      setError(
-        isApiError(e) && e.status === 404
-          ? "No such creation or version, or it is not public."
-          : isApiError(e) && e.status === 410
-            ? "That version was removed."
-            : "Could not look it up. Try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const replace = (i: number, next: ReferenceEdge | null) =>
+    update((w) => {
+      const list = [...getReferences(w)];
+      if (next) list[i] = next;
+      else list.splice(i, 1);
+      return setReferences(w, list);
+    });
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Depend on published creations — the world your character lives in, a shared lorebook. Each
-        dependency is locked to an exact release.
+      <p className="text-sm text-text-2">
+        Build on published creations: the world your character lives in, a shared lorebook. Each
+        dependency is locked to an exact release, so later changes upstream never reach you by
+        surprise.
       </p>
       {refs.length > 0 ? (
-        <ul className="divide-y divide-rule border-y border-rule">
+        <ul className="space-y-2" aria-label="Dependencies">
           {refs.map((r, i) => (
-            <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span>
-                <span className="block font-mono text-sm">{String(r.use)}</span>
-                <span className="block font-mono text-xs text-muted-foreground">
-                  #{r.id} · {r.mode}
-                  {r.rel ? ` · ${r.rel}` : ""} · {pinText(r)}
-                </span>
-                <DiagnosticList items={diagnosticsFor(diagnostics, `references[${r.id}]`)} />
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  update((w) =>
-                    setReferences(
-                      w,
-                      getReferences(w).filter((_, j) => j !== i),
-                    ),
-                  )
-                }
-              >
-                <Trash2 aria-hidden /> Remove
-              </Button>
-            </li>
+            <DependencyRow
+              key={r.id}
+              edge={r}
+              onChange={(next) => replace(i, next)}
+              onRemove={() => replace(i, null)}
+              diagnostics={diagnosticsFor(diagnostics, `references[${r.id}]`, String(r.use))}
+            />
           ))}
         </ul>
       ) : null}
-
-      <div className="grid gap-3 sm:grid-cols-[1fr_7rem_9rem_8rem_auto] sm:items-end">
-        <div className="space-y-1">
-          <label htmlFor={ids.use} className="text-xs">
-            Creation
-          </label>
-          <Input
-            id={ids.use}
-            className="font-mono"
-            placeholder="@namespace/name"
-            value={use}
-            onChange={(e) => setUse(e.target.value)}
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor={ids.label} className="text-xs">
-            Version
-          </label>
-          <Input
-            id={ids.label}
-            className="font-mono"
-            placeholder="latest"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor={ids.mode} className="text-xs">
-            Relationship
-          </label>
-          <select
-            id={ids.mode}
-            className={`${selectClass} w-full`}
-            value={mode}
-            onChange={(e) => setMode(e.target.value as ReferenceEdge["mode"])}
-          >
-            <option value="default">default (replaceable)</option>
-            <option value="intrinsic">intrinsic (part of it)</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <label htmlFor={ids.rel} className="text-xs">
-            Label (optional)
-          </label>
-          <Input
-            id={ids.rel}
-            className="font-mono"
-            placeholder="lives_in"
-            value={rel}
-            maxLength={32}
-            onChange={(e) => setRel(e.target.value.toLowerCase())}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={busy || !use.trim()}
-          onClick={() => void add()}
-        >
-          <Plus aria-hidden /> Add
-        </Button>
-      </div>
-      {error ? (
-        <p role="alert" className="text-xs text-seal">
-          {error}
-        </p>
-      ) : null}
+      <DependencyPicker
+        self={self}
+        taken={refs.map((r) => String(r.use))}
+        onAdd={(edge, base) =>
+          update((w) => {
+            const list = getReferences(w);
+            const id = nextId(
+              list.map((r) => r.id),
+              base.slice(0, 64),
+            );
+            return setReferences(w, [...list, { id, ...edge }]);
+          })
+        }
+      />
     </div>
   );
 }

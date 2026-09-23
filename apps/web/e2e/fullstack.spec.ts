@@ -48,12 +48,16 @@ test("UC-1: create, publish and download a character in the browser", async ({
   await expect(page.getByRole("button", { name: "Replace" })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("All changes saved")).toBeVisible({ timeout: 30_000 });
 
-  // 4. 发布 1.0.0 并查看 Publish Report。
-  await expect(page.getByLabel("Version")).toHaveValue("1.0.0");
-  await page.getByRole("button", { name: "Publish" }).click();
-  await expect(page.getByText("Published 1.0.0")).toBeVisible({ timeout: 90_000 });
-  await expect(page.getByRole("region", { name: "Publish report" })).toBeVisible();
-  await page.getByRole("link", { name: "Open the creation page" }).click();
+  // 4. 在发布对话框里发布 1.0.0 并查看 Publish Report。
+  await page.getByRole("button", { name: "Publish…" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel("Version label")).toHaveValue("1.0.0");
+  await dialog.getByRole("button", { name: "Publish 1.0.0" }).click();
+  await expect(dialog.getByRole("heading", { name: "Published 1.0.0" })).toBeVisible({
+    timeout: 90_000,
+  });
+  await expect(dialog.getByRole("region", { name: "Publish report" })).toBeVisible();
+  await dialog.getByRole("link", { name: "View release" }).click();
   await expect(page).toHaveURL(new RegExp(`/c/${ns}/alice-courier`));
 
   // 5. 匿名访问作品页。

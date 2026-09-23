@@ -1,21 +1,28 @@
 /**
  * 第一次创作前注册个人 namespace（作品地址 `@namespace/name` 的前半部分）。
- * 每个账号只能有一个个人 namespace；保留名与已被占用的名字由服务端拒绝。
+ * 每个账号只能有一个个人 namespace；保留名与已被占用的名字由服务端拒绝。以后可以在设置里
+ * 改名，旧地址会一直跳转到新名字，所以这里不需要一次想好。
  */
 import { NAMESPACE_RE } from "@char-pub/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AtSign } from "lucide-react";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { fieldClass } from "@/components/ui/input";
 import { isApiError } from "@/lib/api";
 import { keys, useRegistry } from "@/lib/registry";
 import { slugify } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
-const ERRORS: Record<string, string> = {
-  "namespace.taken": "That name is already taken.",
-  "namespace.reserved": "That name is reserved. Pick another one.",
-  "namespace.limit": "Your account already has a personal namespace.",
-};
+/** 服务端拒绝时的说明；`slug` 是提交时的名字。 */
+function errorText(e: unknown, slug: string): string {
+  if (isApiError(e, "namespace.taken")) return `@${slug} is already taken. Try another name.`;
+  if (isApiError(e, "namespace.reserved")) return `@${slug} is reserved. Try another name.`;
+  if (isApiError(e, "namespace.limit")) {
+    return "Your account already has a personal @name. Reload the page to continue with it.";
+  }
+  return "Could not register the name. Try again.";
+}
 
 export function NamespaceSetup({ suggestion }: { suggestion: string }) {
   const client = useRegistry();
@@ -24,55 +31,76 @@ export function NamespaceSetup({ suggestion }: { suggestion: string }) {
   const id = useId();
   const valid = NAMESPACE_RE.test(slug);
   const create = useMutation({
-    mutationFn: () => client.createNamespace(slug),
+    mutationFn: (s: string) => client.createNamespace(s),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.me }),
   });
-  const error = create.error
-    ? ((isApiError(create.error) && ERRORS[create.error.code]) ??
-      "Could not register the name. Try again.")
-    : null;
+  // 改了名字之后旧的错误就不再适用。
+  const error =
+    create.error && create.variables === slug ? errorText(create.error, create.variables) : null;
+  const formatError =
+    slug !== "" && !valid
+      ? "Use up to 39 lowercase letters, digits and hyphens; start and end with a letter or digit."
+      : null;
+  const message = error ?? formatError;
 
   return (
-    <section className="catalog-card max-w-xl space-y-4 p-6 pl-8" aria-labelledby={`${id}-h`}>
-      <h2 id={`${id}-h`} className="font-display text-2xl">
-        First, choose your name on char.pub
-      </h2>
-      <p className="text-sm text-muted-foreground">
-        Your creations live under <span className="font-mono">@name/…</span>. Use lowercase letters,
-        digits and hyphens. You can rename it later; old links keep working.
-      </p>
+    <section
+      aria-labelledby={`${id}-h`}
+      className="mx-auto w-full max-w-xl space-y-5 rounded-lg border bg-surface p-6"
+    >
+      <div className="space-y-2">
+        <h2 id={`${id}-h`} className="text-xl font-bold tracking-tight">
+          First, choose your name on char.pub
+        </h2>
+        <p className="text-sm text-text-2">
+          It's the start of every address you publish, like{" "}
+          <span className="font-mono text-text">@{slug || "rin"}/alice</span>. You can rename it
+          later in Settings; old links keep working.
+        </p>
+      </div>
       <form
-        className="flex flex-wrap items-end gap-3"
+        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          if (valid) create.mutate();
+          if (valid) create.mutate(slug);
         }}
       >
-        <div className="min-w-56 flex-1 space-y-1">
-          <label htmlFor={id} className="text-sm">
+        <div className="space-y-1.5">
+          <label htmlFor={id} className="text-sm font-medium">
             Namespace
           </label>
-          <div className="flex items-center gap-1">
-            <span className="font-mono text-muted-foreground">@</span>
-            <Input
+          <div
+            className={cn(
+              fieldClass,
+              "flex h-9 items-stretch overflow-hidden p-0 font-mono has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-ring/25",
+              message && "border-danger",
+            )}
+          >
+            <span className="flex items-center border-r bg-surface-2 px-3 text-text-3">@</span>
+            <input
               id={id}
               value={slug}
               maxLength={39}
               autoComplete="off"
-              aria-invalid={slug !== "" && !valid}
+              spellCheck={false}
+              aria-invalid={!!message}
+              aria-describedby={message ? `${id}-err` : undefined}
+              className="min-w-0 flex-1 bg-transparent px-3 outline-none"
               onChange={(e) => setSlug(e.target.value.toLowerCase())}
             />
           </div>
+          {message ? (
+            <p id={`${id}-err`} role="alert" className="text-xs text-danger">
+              {message}
+            </p>
+          ) : (
+            <p className="text-xs text-text-3">Lowercase letters, digits and hyphens.</p>
+          )}
         </div>
         <Button type="submit" disabled={!valid || create.isPending}>
-          Register @{slug || "name"}
+          <AtSign aria-hidden /> Register @{slug || "name"}
         </Button>
       </form>
-      {error ? (
-        <p role="alert" className="text-sm text-seal">
-          {error}
-        </p>
-      ) : null}
     </section>
   );
 }

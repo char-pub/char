@@ -1,105 +1,154 @@
 /**
  * 头像：选择图片后走上传流程（申请上传 → 直传对象存储 → 服务端处理），完成后写进草稿。
- * 预览用本地的 blob URL；发布后作品页从公共 CDN 显示。
+ *
+ * 预览总是显示真实的图片：
+ * - 刚上传的图片用本地的 blob URL（只在这个浏览器里，不经过网络）；同一次会话里按 digest
+ *   记住它，重新加载草稿后还能显示；
+ * - 已经发布过的头像从最新 public 版本的 Context IR 里找同一个 digest 的公共地址；
+ * - 两者都没有时（例如换了设备，头像还没发布过）显示占位图，说明发布后才有公共预览。
  */
-import { ImageUp, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ImageIcon, ImageUp, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { type BlobInfo, getAvatar, setAvatar, type Working } from "@/lib/draft";
-import { useRegistry } from "@/lib/registry";
+import { keys, useRegistry } from "@/lib/registry";
 import { IMAGE_TYPES, UploadError, uploadImage } from "@/lib/upload";
 
+/** 本次会话里上传过的图片：digest → blob URL。页面关闭时浏览器会回收它们。 */
+const localPreviews = new Map<string, string>();
+
+function digestOf(w: Working): string | undefined {
+  const v = getAvatar(w)?.variants[0];
+  return v?.blob.digest;
+}
+
 export function AvatarField({
+  ns,
+  name,
   working,
   update,
+  latestLabel,
 }: {
+  ns: string;
+  name: string;
   working: Working;
   update: (fn: (w: Working) => Working) => void;
+  latestLabel?: string | undefined;
 }) {
   const client = useRegistry();
   const input = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
+  const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const current = getAvatar(working);
-  useEffect(() => () => (preview ? URL.revokeObjectURL(preview) : undefined), [preview]);
+  const digest = digestOf(working);
+  const local = digest ? localPreviews.get(digest) : undefined;
+
+  // 已发布的头像：只在没有本地预览时去读最新版本的 IR。
+  const ir = useQuery({
+    queryKey: keys.ir(ns, name, latestLabel ?? ""),
+    queryFn: () => client.getIR(ns, name, latestLabel ?? ""),
+    enabled: !!digest && !local && !!latestLabel,
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const published = digest
+    ? ir.data?.assets.find((a) => a.digest === digest && a.url)?.url
+    : undefined;
+  const src = uploading ?? local ?? published;
+
+  useEffect(
+    () => () => {
+      // 上传失败或组件卸载时，只回收没有记进 localPreviews 的临时预览。
+      if (uploading && ![...localPreviews.values()].includes(uploading)) {
+        URL.revokeObjectURL(uploading);
+      }
+    },
+    [uploading],
+  );
 
   const pick = async (file: File) => {
     setError(null);
-    setStatus("uploading");
-    setPreview(URL.createObjectURL(file));
+    const url = typeof URL.createObjectURL === "function" ? URL.createObjectURL(file) : null;
+    setUploading(url ?? "");
     try {
       const blob: BlobInfo = await uploadImage(client, file);
+      if (url) localPreviews.set(blob.digest, url);
       update((w) => setAvatar(w, blob));
-      setStatus("idle");
     } catch (e) {
-      setStatus("error");
-      setPreview(null);
       setError(e instanceof UploadError ? e.message : "The upload failed. Try again.");
+    } finally {
+      setUploading(null);
     }
   };
 
+  const busy = uploading !== null;
   return (
     <fieldset className="space-y-2">
-      <legend className="text-sm">Avatar</legend>
-      <div className="flex items-center gap-4">
-        <div className="flex size-20 items-center justify-center overflow-hidden rounded-sm border border-rule bg-muted text-xs text-muted-foreground">
-          {preview ? (
-            <img src={preview} alt="" className="size-full object-cover" />
-          ) : current ? (
-            <span className="px-1 text-center font-mono text-[0.65rem]">image set</span>
-          ) : (
-            <span>none</span>
-          )}
-        </div>
-        <div className="space-y-1">
-          <input
-            ref={input}
-            type="file"
-            accept={IMAGE_TYPES.join(",")}
-            className="sr-only"
-            aria-label="Choose an avatar image"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void pick(f);
-              e.target.value = "";
-            }}
-          />
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={status === "uploading"}
-              onClick={() => input.current?.click()}
-            >
-              <ImageUp aria-hidden />
-              {status === "uploading" ? "Uploading…" : current ? "Replace" : "Upload"}
-            </Button>
-            {current ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setPreview(null);
-                  update((w) => setAvatar(w, null));
-                }}
-              >
-                <X aria-hidden /> Remove
-              </Button>
-            ) : null}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            PNG, JPEG, WebP or GIF, up to 10 MB. Images are checked before they are published.
-          </p>
-          {error ? (
-            <p role="alert" className="text-xs text-seal">
-              {error}
-            </p>
-          ) : null}
-        </div>
+      <legend className="sr-only">Avatar</legend>
+      <div className="relative flex size-26 items-center justify-center overflow-hidden rounded-lg border bg-surface-2 text-text-3">
+        {src ? (
+          <img src={src} alt="Avatar preview" className="size-full object-cover" />
+        ) : digest ? (
+          <span className="flex flex-col items-center gap-1 px-2 text-center text-[0.65rem] leading-tight">
+            <ImageIcon aria-hidden className="size-5" />
+            Preview after publishing
+          </span>
+        ) : (
+          <span className="flex flex-col items-center gap-1 text-xs">
+            <ImageIcon aria-hidden className="size-6" />
+            No avatar
+          </span>
+        )}
+        {busy ? (
+          <span className="absolute inset-0 flex items-center justify-center bg-surface/70">
+            <Loader2 aria-hidden className="size-5 animate-spin text-text-2" />
+          </span>
+        ) : null}
       </div>
+      <input
+        ref={input}
+        type="file"
+        accept={IMAGE_TYPES.join(",")}
+        className="sr-only"
+        aria-label="Choose an avatar image"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void pick(f);
+          e.target.value = "";
+        }}
+      />
+      <div className="flex flex-wrap items-center gap-x-2">
+        <Button
+          type="button"
+          variant="link"
+          size="xs"
+          className="h-auto px-0"
+          disabled={busy}
+          onClick={() => input.current?.click()}
+        >
+          <ImageUp aria-hidden />
+          {busy ? "Uploading…" : digest ? "Replace" : "Upload"}
+        </Button>
+        {digest && !busy ? (
+          <Button
+            type="button"
+            variant="link"
+            size="xs"
+            className="h-auto px-0 text-text-2"
+            onClick={() => update((w) => setAvatar(w, null))}
+          >
+            <X aria-hidden /> Remove
+          </Button>
+        ) : null}
+      </div>
+      <p className="text-[0.7rem] leading-snug text-text-3">
+        PNG, JPEG, WebP or GIF, up to 10 MB. Checked before it's published.
+      </p>
+      {error ? (
+        <p role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      ) : null}
     </fieldset>
   );
 }
