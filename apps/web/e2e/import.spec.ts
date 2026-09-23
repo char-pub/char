@@ -109,12 +109,16 @@ test("imports a card through the registry and requires explicit choices", async 
     content_type: "image/png",
   });
 
-  const confirm = page.getByRole("button", { name: "Confirm and open the editor" });
+  const confirm = page.getByRole("button", { name: "Save and open the editor" });
   await expect(confirm).toBeDisabled();
-  await page.getByLabel("Rating").selectOption("teen");
-  await page.getByLabel("Rights").selectOption("fan-work");
+  await expect(
+    page.getByText("Choose a rating, the rights and a license to continue."),
+  ).toBeVisible();
+  await page.getByRole("radio", { name: /^Teen/ }).check();
+  await page.getByRole("radio", { name: /^Fan work/ }).check();
   await expect(confirm).toBeDisabled();
-  await page.getByLabel("License").selectOption("CC-BY-4.0");
+  await expect(page.getByText("Choose a license to continue.")).toBeVisible();
+  await page.getByLabel("License", { exact: true }).selectOption("CC-BY-4.0");
   await confirm.click();
   await expect(page).toHaveURL(/\/c\/writer\/mira\/edit$/);
   expect(api.calls.find((c) => c.path.endsWith("/confirm"))?.body).toEqual({

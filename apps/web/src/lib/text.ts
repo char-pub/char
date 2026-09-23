@@ -22,6 +22,23 @@ export function formatDate(iso: string): string {
     : d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
+/** “3 days ago” 这类相对时间；超过一个月显示日期。 */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return iso;
+  const s = Math.round((now - t) / 1000);
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  if (s < 60) return "just now";
+  if (s < 3600) return rtf.format(-Math.floor(s / 60), "minute");
+  if (s < 86_400) return rtf.format(-Math.floor(s / 3600), "hour");
+  if (s < 30 * 86_400) return rtf.format(-Math.floor(s / 86_400), "day");
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /** 从显示名推导 URL 用的 slug：小写 ASCII、数字与连字符；推导不出时返回空字符串。 */
 export function slugify(text: string, max = 64): string {
   return text

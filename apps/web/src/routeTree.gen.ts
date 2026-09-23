@@ -12,19 +12,24 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as MeRouteImport } from './routes/me'
+import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CreateIndexRouteImport } from './routes/create.index'
 import { Route as CreateImportRouteImport } from './routes/create.import'
 import { Route as GuestVerifyRouteImport } from './routes/guest.verify'
 import { Route as PlaygroundIndexRouteImport } from './routes/playground.index'
 import { Route as PlaygroundDiffRouteImport } from './routes/playground.diff'
+import { Route as CNsIndexRouteImport } from './routes/c.$ns.index'
 import { Route as CNsNameRouteImport } from './routes/c.$ns.$name'
+import { Route as CNsNameIndexRouteImport } from './routes/c.$ns.$name.index'
+import { Route as CNsNamePreviewRouteImport } from './routes/c.$ns.$name.preview'
+import { Route as CNsNameSettingsRouteImport } from './routes/c.$ns.$name.settings'
+import { Route as CNsNameVersionsRouteImport } from './routes/c.$ns.$name.versions'
 import { Route as CNsNameDiffRouteImport } from './routes/c.$ns.$name_.diff'
 import { Route as CNsNameEditRouteImport } from './routes/c.$ns.$name_.edit'
-import { Route as CNsNamePreviewRouteImport } from './routes/c.$ns.$name_.preview'
-import { Route as CNsNameContributionsIndexRouteImport } from './routes/c.$ns.$name_.contributions.index'
-import { Route as CNsNameContributionsNumberRouteImport } from './routes/c.$ns.$name_.contributions.$number'
-import { Route as CNsNameContributionsNewRouteImport } from './routes/c.$ns.$name_.contributions.new'
+import { Route as CNsNameContributionsIndexRouteImport } from './routes/c.$ns.$name.contributions.index'
+import { Route as CNsNameContributionsNumberRouteImport } from './routes/c.$ns.$name.contributions.$number'
+import { Route as CNsNameContributionsNewRouteImport } from './routes/c.$ns.$name.contributions.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,6 +44,11 @@ const BrowseRoute = BrowseRouteImport.update({
 const MeRoute = MeRouteImport.update({
   id: '/me',
   path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolicyRoute = PolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -71,10 +81,35 @@ const PlaygroundDiffRoute = PlaygroundDiffRouteImport.update({
   path: '/playground/diff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CNsIndexRoute = CNsIndexRouteImport.update({
+  id: '/c/$ns/',
+  path: '/c/$ns/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CNsNameRoute = CNsNameRouteImport.update({
   id: '/c/$ns/$name',
   path: '/c/$ns/$name',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CNsNameIndexRoute = CNsNameIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CNsNameRoute,
+} as any)
+const CNsNamePreviewRoute = CNsNamePreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => CNsNameRoute,
+} as any)
+const CNsNameSettingsRoute = CNsNameSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => CNsNameRoute,
+} as any)
+const CNsNameVersionsRoute = CNsNameVersionsRouteImport.update({
+  id: '/versions',
+  path: '/versions',
+  getParentRoute: () => CNsNameRoute,
 } as any)
 const CNsNameDiffRoute = CNsNameDiffRouteImport.update({
   id: '/c/$ns/$name_/diff',
@@ -86,43 +121,43 @@ const CNsNameEditRoute = CNsNameEditRouteImport.update({
   path: '/c/$ns/$name/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CNsNamePreviewRoute = CNsNamePreviewRouteImport.update({
-  id: '/c/$ns/$name_/preview',
-  path: '/c/$ns/$name/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CNsNameContributionsIndexRoute =
   CNsNameContributionsIndexRouteImport.update({
-    id: '/c/$ns/$name_/contributions/',
-    path: '/c/$ns/$name/contributions/',
-    getParentRoute: () => rootRouteImport,
+    id: '/contributions/',
+    path: '/contributions/',
+    getParentRoute: () => CNsNameRoute,
   } as any)
 const CNsNameContributionsNumberRoute =
   CNsNameContributionsNumberRouteImport.update({
-    id: '/c/$ns/$name_/contributions/$number',
-    path: '/c/$ns/$name/contributions/$number',
-    getParentRoute: () => rootRouteImport,
+    id: '/contributions/$number',
+    path: '/contributions/$number',
+    getParentRoute: () => CNsNameRoute,
   } as any)
 const CNsNameContributionsNewRoute = CNsNameContributionsNewRouteImport.update({
-  id: '/c/$ns/$name_/contributions/new',
-  path: '/c/$ns/$name/contributions/new',
-  getParentRoute: () => rootRouteImport,
+  id: '/contributions/new',
+  path: '/contributions/new',
+  getParentRoute: () => CNsNameRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/me': typeof MeRoute
+  '/policy': typeof PolicyRoute
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
   '/playground/diff': typeof PlaygroundDiffRoute
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
-  '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name': typeof CNsNameRouteWithChildren
+  '/c/$ns/': typeof CNsIndexRoute
+  '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
+  '/c/$ns/$name/settings': typeof CNsNameSettingsRoute
+  '/c/$ns/$name/versions': typeof CNsNameVersionsRoute
   '/c/$ns/$name/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name/edit': typeof CNsNameEditRoute
-  '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
+  '/c/$ns/$name/': typeof CNsNameIndexRoute
   '/c/$ns/$name/contributions/$number': typeof CNsNameContributionsNumberRoute
   '/c/$ns/$name/contributions/new': typeof CNsNameContributionsNewRoute
   '/c/$ns/$name/contributions/': typeof CNsNameContributionsIndexRoute
@@ -131,16 +166,20 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/me': typeof MeRoute
+  '/policy': typeof PolicyRoute
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
   '/playground/diff': typeof PlaygroundDiffRoute
   '/create': typeof CreateIndexRoute
   '/playground': typeof PlaygroundIndexRoute
-  '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns': typeof CNsIndexRoute
+  '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
+  '/c/$ns/$name/settings': typeof CNsNameSettingsRoute
+  '/c/$ns/$name/versions': typeof CNsNameVersionsRoute
   '/c/$ns/$name/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name/edit': typeof CNsNameEditRoute
-  '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
+  '/c/$ns/$name': typeof CNsNameIndexRoute
   '/c/$ns/$name/contributions/$number': typeof CNsNameContributionsNumberRoute
   '/c/$ns/$name/contributions/new': typeof CNsNameContributionsNewRoute
   '/c/$ns/$name/contributions': typeof CNsNameContributionsIndexRoute
@@ -150,19 +189,24 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
   '/me': typeof MeRoute
+  '/policy': typeof PolicyRoute
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
   '/playground/diff': typeof PlaygroundDiffRoute
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
-  '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name': typeof CNsNameRouteWithChildren
+  '/c/$ns/': typeof CNsIndexRoute
+  '/c/$ns/$name/preview': typeof CNsNamePreviewRoute
+  '/c/$ns/$name/settings': typeof CNsNameSettingsRoute
+  '/c/$ns/$name/versions': typeof CNsNameVersionsRoute
   '/c/$ns/$name_/diff': typeof CNsNameDiffRoute
   '/c/$ns/$name_/edit': typeof CNsNameEditRoute
-  '/c/$ns/$name_/preview': typeof CNsNamePreviewRoute
-  '/c/$ns/$name_/contributions/$number': typeof CNsNameContributionsNumberRoute
-  '/c/$ns/$name_/contributions/new': typeof CNsNameContributionsNewRoute
-  '/c/$ns/$name_/contributions/': typeof CNsNameContributionsIndexRoute
+  '/c/$ns/$name/': typeof CNsNameIndexRoute
+  '/c/$ns/$name/contributions/$number': typeof CNsNameContributionsNumberRoute
+  '/c/$ns/$name/contributions/new': typeof CNsNameContributionsNewRoute
+  '/c/$ns/$name/contributions/': typeof CNsNameContributionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,6 +214,7 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/me'
+    | '/policy'
     | '/settings'
     | '/create/import'
     | '/guest/verify'
@@ -177,9 +222,13 @@ export interface FileRouteTypes {
     | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/'
+    | '/c/$ns/$name/preview'
+    | '/c/$ns/$name/settings'
+    | '/c/$ns/$name/versions'
     | '/c/$ns/$name/diff'
     | '/c/$ns/$name/edit'
-    | '/c/$ns/$name/preview'
+    | '/c/$ns/$name/'
     | '/c/$ns/$name/contributions/$number'
     | '/c/$ns/$name/contributions/new'
     | '/c/$ns/$name/contributions/'
@@ -188,16 +237,20 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/me'
+    | '/policy'
     | '/settings'
     | '/create/import'
     | '/guest/verify'
     | '/playground/diff'
     | '/create'
     | '/playground'
-    | '/c/$ns/$name'
+    | '/c/$ns'
+    | '/c/$ns/$name/preview'
+    | '/c/$ns/$name/settings'
+    | '/c/$ns/$name/versions'
     | '/c/$ns/$name/diff'
     | '/c/$ns/$name/edit'
-    | '/c/$ns/$name/preview'
+    | '/c/$ns/$name'
     | '/c/$ns/$name/contributions/$number'
     | '/c/$ns/$name/contributions/new'
     | '/c/$ns/$name/contributions'
@@ -206,6 +259,7 @@ export interface FileRouteTypes {
     | '/'
     | '/browse'
     | '/me'
+    | '/policy'
     | '/settings'
     | '/create/import'
     | '/guest/verify'
@@ -213,31 +267,33 @@ export interface FileRouteTypes {
     | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/'
+    | '/c/$ns/$name/preview'
+    | '/c/$ns/$name/settings'
+    | '/c/$ns/$name/versions'
     | '/c/$ns/$name_/diff'
     | '/c/$ns/$name_/edit'
-    | '/c/$ns/$name_/preview'
-    | '/c/$ns/$name_/contributions/$number'
-    | '/c/$ns/$name_/contributions/new'
-    | '/c/$ns/$name_/contributions/'
+    | '/c/$ns/$name/'
+    | '/c/$ns/$name/contributions/$number'
+    | '/c/$ns/$name/contributions/new'
+    | '/c/$ns/$name/contributions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrowseRoute: typeof BrowseRoute
   MeRoute: typeof MeRoute
+  PolicyRoute: typeof PolicyRoute
   SettingsRoute: typeof SettingsRoute
   CreateImportRoute: typeof CreateImportRoute
   GuestVerifyRoute: typeof GuestVerifyRoute
   PlaygroundDiffRoute: typeof PlaygroundDiffRoute
   CreateIndexRoute: typeof CreateIndexRoute
   PlaygroundIndexRoute: typeof PlaygroundIndexRoute
-  CNsNameRoute: typeof CNsNameRoute
+  CNsNameRoute: typeof CNsNameRouteWithChildren
+  CNsIndexRoute: typeof CNsIndexRoute
   CNsNameDiffRoute: typeof CNsNameDiffRoute
   CNsNameEditRoute: typeof CNsNameEditRoute
-  CNsNamePreviewRoute: typeof CNsNamePreviewRoute
-  CNsNameContributionsNumberRoute: typeof CNsNameContributionsNumberRoute
-  CNsNameContributionsNewRoute: typeof CNsNameContributionsNewRoute
-  CNsNameContributionsIndexRoute: typeof CNsNameContributionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -261,6 +317,13 @@ declare module '@tanstack/react-router' {
       path: '/me'
       fullPath: '/me'
       preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policy': {
+      id: '/policy'
+      path: '/policy'
+      fullPath: '/policy'
+      preLoaderRoute: typeof PolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -305,12 +368,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlaygroundDiffRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$ns/': {
+      id: '/c/$ns/'
+      path: '/c/$ns'
+      fullPath: '/c/$ns/'
+      preLoaderRoute: typeof CNsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/c/$ns/$name': {
       id: '/c/$ns/$name'
       path: '/c/$ns/$name'
       fullPath: '/c/$ns/$name'
       preLoaderRoute: typeof CNsNameRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/c/$ns/$name/': {
+      id: '/c/$ns/$name/'
+      path: '/'
+      fullPath: '/c/$ns/$name/'
+      preLoaderRoute: typeof CNsNameIndexRouteImport
+      parentRoute: typeof CNsNameRoute
+    }
+    '/c/$ns/$name/preview': {
+      id: '/c/$ns/$name/preview'
+      path: '/preview'
+      fullPath: '/c/$ns/$name/preview'
+      preLoaderRoute: typeof CNsNamePreviewRouteImport
+      parentRoute: typeof CNsNameRoute
+    }
+    '/c/$ns/$name/settings': {
+      id: '/c/$ns/$name/settings'
+      path: '/settings'
+      fullPath: '/c/$ns/$name/settings'
+      preLoaderRoute: typeof CNsNameSettingsRouteImport
+      parentRoute: typeof CNsNameRoute
+    }
+    '/c/$ns/$name/versions': {
+      id: '/c/$ns/$name/versions'
+      path: '/versions'
+      fullPath: '/c/$ns/$name/versions'
+      preLoaderRoute: typeof CNsNameVersionsRouteImport
+      parentRoute: typeof CNsNameRoute
     }
     '/c/$ns/$name_/diff': {
       id: '/c/$ns/$name_/diff'
@@ -326,54 +424,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CNsNameEditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/c/$ns/$name_/preview': {
-      id: '/c/$ns/$name_/preview'
-      path: '/c/$ns/$name/preview'
-      fullPath: '/c/$ns/$name/preview'
-      preLoaderRoute: typeof CNsNamePreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/c/$ns/$name_/contributions/': {
-      id: '/c/$ns/$name_/contributions/'
-      path: '/c/$ns/$name/contributions'
+    '/c/$ns/$name/contributions/': {
+      id: '/c/$ns/$name/contributions/'
+      path: '/contributions'
       fullPath: '/c/$ns/$name/contributions/'
       preLoaderRoute: typeof CNsNameContributionsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CNsNameRoute
     }
-    '/c/$ns/$name_/contributions/$number': {
-      id: '/c/$ns/$name_/contributions/$number'
-      path: '/c/$ns/$name/contributions/$number'
+    '/c/$ns/$name/contributions/$number': {
+      id: '/c/$ns/$name/contributions/$number'
+      path: '/contributions/$number'
       fullPath: '/c/$ns/$name/contributions/$number'
       preLoaderRoute: typeof CNsNameContributionsNumberRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CNsNameRoute
     }
-    '/c/$ns/$name_/contributions/new': {
-      id: '/c/$ns/$name_/contributions/new'
-      path: '/c/$ns/$name/contributions/new'
+    '/c/$ns/$name/contributions/new': {
+      id: '/c/$ns/$name/contributions/new'
+      path: '/contributions/new'
       fullPath: '/c/$ns/$name/contributions/new'
       preLoaderRoute: typeof CNsNameContributionsNewRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CNsNameRoute
     }
   }
 }
+
+interface CNsNameRouteChildren {
+  CNsNamePreviewRoute: typeof CNsNamePreviewRoute
+  CNsNameSettingsRoute: typeof CNsNameSettingsRoute
+  CNsNameVersionsRoute: typeof CNsNameVersionsRoute
+  CNsNameIndexRoute: typeof CNsNameIndexRoute
+  CNsNameContributionsNumberRoute: typeof CNsNameContributionsNumberRoute
+  CNsNameContributionsNewRoute: typeof CNsNameContributionsNewRoute
+  CNsNameContributionsIndexRoute: typeof CNsNameContributionsIndexRoute
+}
+
+const CNsNameRouteChildren: CNsNameRouteChildren = {
+  CNsNamePreviewRoute: CNsNamePreviewRoute,
+  CNsNameSettingsRoute: CNsNameSettingsRoute,
+  CNsNameVersionsRoute: CNsNameVersionsRoute,
+  CNsNameIndexRoute: CNsNameIndexRoute,
+  CNsNameContributionsNumberRoute: CNsNameContributionsNumberRoute,
+  CNsNameContributionsNewRoute: CNsNameContributionsNewRoute,
+  CNsNameContributionsIndexRoute: CNsNameContributionsIndexRoute,
+}
+
+const CNsNameRouteWithChildren =
+  CNsNameRoute._addFileChildren(CNsNameRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrowseRoute: BrowseRoute,
   MeRoute: MeRoute,
+  PolicyRoute: PolicyRoute,
   SettingsRoute: SettingsRoute,
   CreateImportRoute: CreateImportRoute,
   GuestVerifyRoute: GuestVerifyRoute,
   PlaygroundDiffRoute: PlaygroundDiffRoute,
   CreateIndexRoute: CreateIndexRoute,
   PlaygroundIndexRoute: PlaygroundIndexRoute,
-  CNsNameRoute: CNsNameRoute,
+  CNsNameRoute: CNsNameRouteWithChildren,
+  CNsIndexRoute: CNsIndexRoute,
   CNsNameDiffRoute: CNsNameDiffRoute,
   CNsNameEditRoute: CNsNameEditRoute,
-  CNsNamePreviewRoute: CNsNamePreviewRoute,
-  CNsNameContributionsNumberRoute: CNsNameContributionsNumberRoute,
-  CNsNameContributionsNewRoute: CNsNameContributionsNewRoute,
-  CNsNameContributionsIndexRoute: CNsNameContributionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

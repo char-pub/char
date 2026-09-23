@@ -1,13 +1,17 @@
 /**
  * Cloudflare Turnstile：访客验证前的人机校验。
  *
- * 脚本按需加载（显式渲染模式），只在访客验证表单出现时才请求 challenges.cloudflare.com。
- * 服务端要求 widget 的 action 是 `guest_verification`，并校验 hostname。site key 来自
- * 构建时的 `VITE_TURNSTILE_SITE_KEY`；没有配置时前端不提供访客验证入口。
+ * 脚本按需加载（显式渲染模式），只在需要人机校验的表单出现时才请求 challenges.cloudflare.com。
+ * 服务端按表单校验 widget 的 action（访客验证是 `guest_verification`，匿名举报是 `report`，
+ * 两边的 token 不能混用），并校验 hostname。site key 来自构建时的 `VITE_TURNSTILE_SITE_KEY`；
+ * 没有配置时前端不提供访客验证入口，匿名用户也不能举报（提示登录）。
  */
 const SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 export const TURNSTILE_ACTION = "guest_verification";
+
+/** 匿名举报表单的 widget action。 */
+export const REPORT_TURNSTILE_ACTION = "report";
 
 export const TURNSTILE_SITE_KEY: string | undefined =
   (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || undefined;

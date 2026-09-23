@@ -1,54 +1,34 @@
 /**
- * 草稿编辑器。第一层只有名字、简介、问候语和头像；“More options”里是 fragment、
- * 关键词激活、依赖与元信息。修改会自动保存；草稿在别处被改过时提示重新加载。
+ * 草稿编辑器：整页工作区。
+ *
+ * - 顶部编辑栏：返回、标题、`@ns/name · draft based on …`、保存状态、Preview context（有已发布
+ *   版本时）和 Publish… 主按钮；
+ * - 左侧第一层 “The basics”（头像、名字、正文、简介、问候语），下面是 “More options” 的四个
+ *   折叠区；
+ * - 右侧常驻检查栏 “Before you publish” 和 “Next release”，窄屏时排到表单下方。
+ *
+ * 修改会自动保存；草稿在别处被改过时停止自动保存，提示重新加载或复制自己的版本。
  */
+import type { ReleaseSummary } from "@char-pub/contracts";
 import type { CreationType } from "@char-pub/core";
-import { ChevronDown, ChevronRight, CloudCheck, CloudOff, Loader2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, GitCompareArrows, Rocket, ScanEye } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Container } from "@/components/layout";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { toast } from "@/components/ui/sonner";
 import type { Draft } from "@/lib/api";
-import { getFragments, getName, getReferences, MAIN_FRAGMENT, type Working } from "@/lib/draft";
+import { getFragments, getName, getReferences, type Working } from "@/lib/draft";
+import { suggestLabel } from "@/lib/publish";
 import { useRegistry } from "@/lib/registry";
-import { type SaveState, useDraftEditor } from "@/lib/use-draft-editor";
+import { useDraftEditor } from "@/lib/use-draft-editor";
+import { ANCHOR, mainFragmentId, type SectionKey, scrollToAnchor, type Target } from "./anchors";
 import { BasicsFields } from "./basics-fields";
-import { DependenciesEditor } from "./dependencies-editor";
+import { buildChecks, ChecksPanel, NextRelease } from "./checks-panel";
 import { DiagnosticList } from "./diagnostics";
-import { FragmentsEditor } from "./fragments-editor";
-import { MetaEditor } from "./meta-editor";
-import { PublishPanel } from "./publish-panel";
-
-function SaveStatus({ state }: { state: SaveState }) {
-  const text =
-    state.kind === "saved"
-      ? state.at
-        ? "All changes saved"
-        : "Draft loaded"
-      : state.kind === "dirty"
-        ? "Unsaved changes"
-        : state.kind === "saving"
-          ? "Saving…"
-          : state.kind === "conflict"
-            ? "Not saved — changed elsewhere"
-            : state.kind === "invalid"
-              ? "Not saved — fix the errors below"
-              : state.message;
-  const Icon =
-    state.kind === "saving"
-      ? Loader2
-      : state.kind === "saved" || state.kind === "dirty"
-        ? CloudCheck
-        : CloudOff;
-  return (
-    <p
-      className="flex items-center gap-1.5 text-sm text-muted-foreground"
-      aria-live="polite"
-      data-save-state={state.kind}
-    >
-      <Icon aria-hidden className={`size-4 ${state.kind === "saving" ? "animate-spin" : ""}`} />
-      {text}
-    </p>
-  );
-}
+import { MoreOptions } from "./more-options";
+import { PublishDialog } from "./publish-panel";
+import { SaveStatus } from "./save-status";
 
 export function ConflictNotice({
   onReload,
@@ -62,15 +42,17 @@ export function ConflictNotice({
     <div
       role="alertdialog"
       aria-labelledby="conflict-h"
-      className="catalog-card space-y-2 p-5 pl-8"
+      aria-describedby="conflict-d"
+      className="space-y-3 rounded-xl border border-danger/40 bg-danger-soft p-5"
     >
-      <h2 id="conflict-h" className="font-display text-lg">
+      <h2 id="conflict-h" className="flex items-center gap-2 font-bold text-danger">
+        <GitCompareArrows aria-hidden className="size-4" />
         This draft was changed somewhere else
       </h2>
-      <p className="text-sm text-muted-foreground">
+      <p id="conflict-d" className="text-sm text-text">
         Someone — maybe you, in another tab — saved a newer version. Your latest edits here were not
-        saved. Reload to continue from the newer version; copy your version first if you want to
-        keep it.
+        saved, and saving is paused. Reload to continue from the newer version; copy your version
+        first if you want to keep it.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button
@@ -84,7 +66,15 @@ export function ConflictNotice({
         </Button>
         <Button
           variant="outline"
-          onClick={() => void navigator.clipboard?.writeText(JSON.stringify(working, null, 2))}
+          onClick={() => {
+            const text = JSON.stringify(working, null, 2);
+            void navigator.clipboard
+              ?.writeText(text)
+              .then(() => toast.success("Copied your version to the clipboard."))
+              .catch(() =>
+                toast.error("Couldn't copy. Select the text in another editor instead."),
+              );
+          }}
         >
           Copy my version
         </Button>
@@ -95,17 +85,26 @@ export function ConflictNotice({
 
 /**
  * 草稿里是否已经用到了第一层之外的内容：除第一层的正文之外还有其他 fragment，或者有依赖。
- * 用到了就默认展开“More options”，否则只显示第一层。正文本身也是一个 fragment，不能计入，
- * 否则每个能保存的草稿都会默认展开。
+ * 正文本身也是一个 fragment，不能计入，否则每个能保存的草稿都会被当成“用到了”。
  */
 export function hasAdvanced(w: Working, type: CreationType): boolean {
-  const main = MAIN_FRAGMENT[type];
-  const fragments = getFragments(w);
-  const mainId =
-    fragments.find((f) => f.id === main?.id)?.id ??
-    fragments.find((f) => f.kind === main?.kind)?.id;
-  const others = fragments.filter((f) => f.id !== mainId);
+  const mainId = mainFragmentId(w, type);
+  const others = getFragments(w).filter((f) => f.id !== mainId);
   return others.length > 0 || getReferences(w).length > 0;
+}
+
+/** 默认展开已经有内容的折叠区：其他段落、依赖。评级、许可和语言默认收起。 */
+function initialSections(w: Working, type: CreationType): Set<SectionKey> {
+  const open = new Set<SectionKey>();
+  const mainId = mainFragmentId(w, type);
+  if (getFragments(w).some((f) => f.id !== mainId)) open.add("passages");
+  if (getReferences(w).length > 0) open.add("dependencies");
+  return open;
+}
+
+/** 最新的一个版本（任意可见性），编辑栏里说明草稿基于哪个版本。 */
+function newestRelease(releases: readonly ReleaseSummary[]): ReleaseSummary | undefined {
+  return [...releases].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 }
 
 export function Editor({
@@ -114,119 +113,166 @@ export function Editor({
   type,
   draft,
   existingLabels,
+  releases = [],
+  latestPublicLabel,
 }: {
   ns: string;
   name: string;
   type: CreationType;
   draft: Draft;
   existingLabels: readonly string[];
+  releases?: readonly ReleaseSummary[];
+  /** 最新的 public 版本：Preview context 和已发布头像的预览用它。 */
+  latestPublicLabel?: string | undefined;
 }) {
   const client = useRegistry();
   const ed = useDraftEditor(client, ns, name, draft);
-  const [more, setMore] = useState(() => hasAdvanced(draft.working as Working, type));
+  const [open, setOpen] = useState(() => initialSections(draft.working as Working, type));
+  const [publishOpen, setPublishOpen] = useState(false);
   const errors = ed.state.kind === "invalid" ? ed.state.diagnostics : [];
   const diagnostics = [...errors, ...ed.warnings];
+  const references = getReferences(ed.working);
+  const displayName = getName(ed.working).trim();
+  const newest = newestRelease(releases);
   const blocked =
     ed.state.kind === "conflict"
       ? "Reload the draft before publishing."
       : ed.state.kind === "invalid"
         ? "Fix the errors in the draft before publishing."
-        : getName(ed.working).trim() === ""
+        : displayName === ""
           ? "Give it a name before publishing."
           : null;
+  const checks = buildChecks({
+    type,
+    working: ed.working,
+    state: ed.state,
+    warnings: ed.warnings,
+    references,
+  });
+
+  const toggle = (key: SectionKey) =>
+    setOpen((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const locate = (t: Target) => {
+    const section = t.section;
+    if (section) setOpen((s) => new Set(s).add(section));
+    scrollToAnchor(t.anchor);
+  };
 
   return (
-    <div className="max-w-4xl space-y-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-sm text-muted-foreground">
-            @{ns}/{name} · {type}
-          </p>
-          <h1 className="text-4xl">Edit {getName(ed.working) || name}</h1>
-        </div>
-        <SaveStatus state={ed.state} />
-      </header>
-
-      {ed.state.kind === "conflict" ? (
-        <ConflictNotice onReload={ed.reload} working={ed.working} />
-      ) : null}
-
-      {ed.state.kind === "invalid" ? (
-        <div role="alert" className="space-y-2 rounded-sm border border-seal/60 p-4">
-          <p className="text-sm font-medium text-seal">
-            Not saved yet — the registry only keeps drafts that pass its checks.
-            {errors.length === 0 && ed.state.message ? ` ${ed.state.message}` : ""}
-          </p>
-          <DiagnosticList items={errors} />
-        </div>
-      ) : null}
-
-      <section aria-labelledby="basics-h" className="space-y-4">
-        <h2 id="basics-h" className="text-2xl">
-          The basics
-        </h2>
-        <BasicsFields
-          type={type}
-          working={ed.working}
-          update={ed.update}
-          diagnostics={diagnostics}
-        />
-      </section>
-
-      <section className="space-y-6">
-        <button
-          type="button"
-          aria-expanded={more}
-          className="flex items-center gap-1 font-display text-xl"
-          onClick={() => setMore((m) => !m)}
-        >
-          {more ? <ChevronDown aria-hidden /> : <ChevronRight aria-hidden />} More options
-        </button>
-        {more ? (
-          <div className="space-y-10">
-            <section aria-labelledby="frag-h" className="space-y-3">
-              <h3 id="frag-h" className="text-xl">
-                Fragments
-              </h3>
-              <FragmentsEditor
-                type={type}
-                working={ed.working}
-                update={ed.update}
-                diagnostics={diagnostics}
-              />
-            </section>
-            <section aria-labelledby="deps-h" className="space-y-3">
-              <h3 id="deps-h" className="text-xl">
-                Dependencies
-              </h3>
-              <DependenciesEditor
-                working={ed.working}
-                update={ed.update}
-                diagnostics={diagnostics}
-              />
-            </section>
-            <section aria-labelledby="meta-h" className="space-y-3">
-              <h3 id="meta-h" className="text-xl">
-                Rating, license and more
-              </h3>
-              <MetaEditor working={ed.working} update={ed.update} diagnostics={diagnostics} />
-            </section>
+    <div className="flex flex-1 flex-col">
+      <div className="sticky top-0 z-30 border-b bg-surface">
+        <Container className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+          <Link
+            to="/c/$ns/$name"
+            params={{ ns, name }}
+            aria-label="Back to the creation page"
+            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+          >
+            <ArrowLeft aria-hidden />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-bold tracking-tight">
+              Editing {displayName || name}
+            </h1>
+            <p className="truncate font-mono text-xs text-text-3">
+              @{ns}/{name} · {newest ? `draft based on ${newest.label}` : "not published yet"}
+            </p>
           </div>
-        ) : null}
-        {ed.warnings.length > 0 ? (
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Warnings</p>
-            <DiagnosticList items={ed.warnings} />
+          <SaveStatus state={ed.state} />
+          <div className="flex items-center gap-2">
+            {latestPublicLabel ? (
+              <Link
+                to="/c/$ns/$name/preview"
+                params={{ ns, name }}
+                search={{ v: latestPublicLabel }}
+                className={buttonVariants({ variant: "outline" })}
+              >
+                <ScanEye aria-hidden /> Preview context
+              </Link>
+            ) : null}
+            <Button onClick={() => setPublishOpen(true)}>
+              <Rocket aria-hidden /> Publish…
+            </Button>
           </div>
-        ) : null}
-      </section>
+        </Container>
+      </div>
 
-      <PublishPanel
+      <Container className="grid flex-1 gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8 lg:py-8">
+        <div className="min-w-0 space-y-6">
+          {ed.state.kind === "conflict" ? (
+            <ConflictNotice onReload={ed.reload} working={ed.working} />
+          ) : null}
+          {ed.state.kind === "invalid" ? (
+            <div role="alert" className="space-y-2 rounded-xl bg-warning-soft p-4">
+              <p className="text-sm font-medium text-warning">
+                Not saved yet — the registry only keeps drafts that pass its checks.
+                {errors.length === 0 && ed.state.message ? ` ${ed.state.message}` : ""}
+              </p>
+              <DiagnosticList items={errors} />
+            </div>
+          ) : null}
+
+          <section
+            aria-labelledby="basics-h"
+            className="space-y-6 rounded-xl border bg-surface p-5 sm:p-7"
+          >
+            <div className="space-y-1">
+              <h2 id="basics-h" className="text-xl font-bold tracking-tight">
+                The basics
+              </h2>
+              <p className="text-sm text-text-2">Enough to publish. Everything else is optional.</p>
+            </div>
+            <BasicsFields
+              ns={ns}
+              name={name}
+              type={type}
+              working={ed.working}
+              update={ed.update}
+              diagnostics={diagnostics}
+              latestLabel={latestPublicLabel}
+            />
+          </section>
+
+          <MoreOptions
+            self={`@${ns}/${name}`}
+            type={type}
+            working={ed.working}
+            update={ed.update}
+            diagnostics={diagnostics}
+            open={open}
+            onToggle={toggle}
+          />
+        </div>
+
+        <aside aria-label="Checks" className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <ChecksPanel items={checks} onLocate={locate} />
+          <NextRelease
+            ns={ns}
+            name={name}
+            suggested={suggestLabel(existingLabels)}
+            latest={newest}
+          />
+        </aside>
+      </Container>
+
+      <PublishDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
         ns={ns}
         name={name}
+        displayName={displayName}
         existingLabels={existingLabels}
+        basedOn={newest?.label}
         flush={ed.flush}
         blocked={blocked}
+        warnings={ed.warnings}
+        references={references}
+        onOpenDependencies={() => locate({ anchor: ANCHOR.dependencies, section: "dependencies" })}
       />
     </div>
   );

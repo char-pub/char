@@ -922,3 +922,15 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 1. **问题**：第一次在主站用真实 GitHub Action 做 OIDC 发布时，一律返回 `publish.source_digest_mismatch`。char.yaml 通常不写内部 Creation ID，Action 在 CI 里用 CLI 由 ref 派生的占位 ID 计算 semantic digest；Registry 重新读取源文件后用真实 ID 计算，两者必然不同。集成测试的“Action 上报值”也借用了 Registry 的计算方式，所以没有发现。
 2. **修复**：Registry 读取源文件时同时按 Action 的算法（不替换 ID）算出 `reported_digest`，只用它与 Action 上报的值比对；存入 Revision 与 Release 的内容仍然使用真实 ID。防护不变：比对的仍是 Registry 自己在 OIDC token 指定的 commit 上读取的内容，Action 上报的值只用于尽早发现不一致。
 3. **回归测试**：用 Action 实际调用的 `buildLocal` 构建同一份源文件，断言它的 digest 等于 `reported_digest`（修复前失败）；集成测试改为按 Action 的方式计算上报值，并分别校验 Release 的 digest 与上报值。
+
+### D-157 web 重新设计：信息架构、品牌视觉与配套接口 — Accepted（用户决定，2026-09-23）
+
+1. **范围**：重组信息架构、换成品牌视觉、统一组件，同时补上服务端已支持但 web 没有入口的功能（yank、作者主页、GitHub 绑定状态、namespace 改名、移动端导航、全局搜索），以及服务端缺的接口（公开举报、贡献拒绝理由、按 @namespace 邀请、搜索按 namespace 过滤）。设计依据是 `docs/design/web.md` 与 `docs/design/web.pen`。
+2. **视觉**：向 `vendor/brand-assets` 对齐，取代 2026-09-23 “配色与字体暂不改动”的要求。浅色为主：Sand 底、Ink 文字，深色用 Night；主操作是橙底配 Ink 文字（橙底白字对比度不够）；危险操作用单独的红色，不再和强调色混用。品牌的三个节点色固定对应作品类型：Character 橙、World 紫、Lorebook 蓝，卡片、徽章、依赖列表、token 占比条都按这个规则着色。字体换成 Plus Jakarta Sans 与 JetBrains Mono，用 `@fontsource` 自托管，因为 CSP 不允许第三方字体。logo、字标与 lockup 直接引用子模块文件，不在仓库里复制。
+3. **作品页结构**：作品的公开页面收进一个外框（头部加标签页 Overview / Context preview / Versions / Contributions / Settings）。版本对比并入 Versions，旧的 `/diff` 重定向过去。贡献开放度与邀请只在 Settings 标签里设置，编辑器不再提供这个入口；草稿里的 `contribution_policy` 字段原样保留。作者主页是 `/c/$ns`。
+4. **界面语言**：只做英文，排版给中日文留出长度和换行空间，以后再接 i18n。
+5. **主题**：浅色 / 深色 / 跟随系统三态，默认跟随系统。为避免首屏闪烁，用一个同源外链脚本在渲染前设置主题（CSP 不允许 inline script）。
+6. **邀请名单只显示 @namespace**：按 @namespace 邀请之后，作品所有者可以邀请任何有个人 namespace 的人，而 OAuth 显示名可能是真名，所以邀请名单不再返回 `display_name`，与“默认署名不用 OAuth 显示名”的规则一致（D-148 第 3 条）。
+7. **公开举报**：`POST …/reports`（作品）与 `POST …/releases/:label/reports`（版本），原因分六类，与 admin 举报队列一致。匿名举报必须通过 action 为 `report` 的 Turnstile，访客验证的 token 不能混用；看不到的对象与不存在一样返回 404；成功一律 202，不透露后续处理。匿名举报复用访客验证的 Turnstile 配置，没有配齐时返回 503、提示登录后举报（用户决定保持这个做法）。
+8. **GitHub 绑定**：web 只显示已有绑定的状态，冻结时可以确认继续使用或解绑，也可以直接解绑。新建绑定需要 GitHub App 安装流程拿到 installation 与仓库的数字 ID，web 还没有这个流程，页面上只做说明，不提供手填 ID 的表单。
+9. **设计文件入库**：`docs/design/web.pen` 里有 Pencil 写入的 `fileToken`（文件的 UUID），gitleaks 只对 `docs/design/*.pen` 的这个字段放行，其他文件和字段照常扫描。

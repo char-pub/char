@@ -6,11 +6,14 @@
  * - 服务端的检查规则发现错误时返回 422 与诊断，草稿不会被保存，界面就地显示诊断，
  *   用户修正后下一次修改会再次尝试；警告随成功的响应一起返回。
  * - 同一时间最多只有一个保存请求；保存过程中的新修改在它完成后接着保存。
+ * - 保存不经过 React Query，所以错误和成功要自己通知全站只读提示（503 `feature.read_only`
+ *   时点亮，任何一次保存成功就熄灭）。
  */
 import type { CheckDiagnostic } from "@char-pub/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Draft, isApiError, type RegistryClient } from "./api";
 import type { Working } from "./draft";
+import { noteApiError, noteWriteSucceeded } from "./read-only";
 
 export type SaveState =
   | { kind: "saved"; at: Date | null }
@@ -74,10 +77,13 @@ export function useDraftEditor(
           r.warnings.map(({ detail, ...d }) => (detail === undefined ? d : { ...d, detail })),
         );
         lastOk.current = true;
+        noteWriteSucceeded();
         setState(pending.current ? { kind: "dirty" } : { kind: "saved", at: new Date() });
         return true;
       } catch (e) {
         lastOk.current = false;
+        // 自动保存不经过 React Query：自己把错误交给全站只读提示。
+        noteApiError(e);
         if (isApiError(e) && e.status === 409) {
           conflict.current = true;
           setState({ kind: "conflict" });

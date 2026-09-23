@@ -18,3 +18,14 @@ description = "pnpm dev keeps its locally generated session secret in the git-ig
 paths = [
   '''(^|/)\.dev/''',
 ]
+
+[[allowlists]]
+description = "Pencil design files record the file's UUID as fileToken; it identifies the file and is not a credential"
+condition = "AND"
+paths = [
+  '''^docs/design/[^/]+\.pen$''',
+]
+regexTarget = "match"
+regexes = [
+  '''^fileToken"\s*:\s*"[0-9a-fA-F-]{36}"$''',
+]

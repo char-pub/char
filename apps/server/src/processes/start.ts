@@ -35,6 +35,7 @@ import {
 import type { GitHubDeps } from "../github/deps.js";
 import { GitHubAppSource } from "../github/source.js";
 import { JobQueue } from "../jobs/queue.js";
+import { REPORT_TURNSTILE_ACTION, type ReportServices } from "../moderation/reports.js";
 import { githubJwks } from "../oidc/github.js";
 import { FlagCache } from "../ops/flags.js";
 import { Cas, casConfigFromEnv } from "../storage/cas.js";
@@ -88,9 +89,9 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       ipAddressHeaders: ["cf-connecting-ip"],
     });
     const gh = githubFromEnv();
-    const guests = guestsFromEnv(authEnv.AUTH_TRUSTED_ORIGINS);
+    const turnstile = turnstileServicesFromEnv(authEnv.AUTH_TRUSTED_ORIGINS);
     const app = createApi({
-      services: guests ? { ...services, guests } : services,
+      services: turnstile ? { ...services, ...turnstile } : services,
       originSecrets: originSecretsFromEnv(edge),
       allowedOrigins: authEnv.AUTH_TRUSTED_ORIGINS,
       sessionPrincipal: sessionPrincipalResolver(auth),
@@ -160,25 +161,37 @@ function githubFromEnv(): GitHubDeps | null {
 }
 
 /**
- * 读取访客验证的配置。没有配置时返回 null，访客验证接口返回 503。Turnstile 的 hostname
- * 允许列表取前端 Origin 白名单中的域名：widget 只会出现在这些页面上。
+ * 读取访客验证的配置，同时得到匿名举报用的 Turnstile。没有配置时返回 null：访客验证接口
+ * 返回 503，匿名举报也返回 503（登录用户与访客照常可以举报）。Turnstile 的 hostname 允许
+ * 列表取前端 Origin 白名单中的域名：widget 只会出现在这些页面上。两个表单各用自己的 action，
+ * token 不能互相借用。
  */
-function guestsFromEnv(webOrigins: readonly string[]): GuestServices | null {
+function turnstileServicesFromEnv(
+  webOrigins: readonly string[],
+): { guests: GuestServices; reports: ReportServices } | null {
   const cfg = guestConfigFromEnv(parseEnv(GuestEnvSchema));
   const { NODE_ENV } = parseEnv(RuntimeEnvSchema);
   if (!cfg) {
-    process.stdout.write("guest verification is not configured; guest routes return 503\n");
+    process.stdout.write(
+      "guest verification is not configured; guest routes and anonymous reports return 503\n",
+    );
     return null;
   }
-  return {
-    turnstile: new CloudflareTurnstile({
+  const turnstile = (action: string) =>
+    new CloudflareTurnstile({
       secret: cfg.turnstileSecret,
       allowedHostnames: webOrigins.map((o) => new URL(o).hostname),
-      action: GUEST_TURNSTILE_ACTION,
+      action,
       // 本地开发可以用 Cloudflare 的测试密钥；其他环境收到测试密钥的结果一律拒绝。
       allowTestingKeys: NODE_ENV === "development",
-    }),
-    email: new SmtpEmailSender(cfg.smtpUrl, cfg.emailFrom),
-    hasher: new GuestHasher(cfg.hmacKey),
+    });
+  const hasher = new GuestHasher(cfg.hmacKey);
+  return {
+    guests: {
+      turnstile: turnstile(GUEST_TURNSTILE_ACTION),
+      email: new SmtpEmailSender(cfg.smtpUrl, cfg.emailFrom),
+      hasher,
+    },
+    reports: { turnstile: turnstile(REPORT_TURNSTILE_ACTION), hasher },
   };
 }

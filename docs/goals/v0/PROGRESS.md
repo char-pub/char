@@ -209,3 +209,14 @@
 - Railway 服务重新连接 GitHub 源后才会在合并时自动部署（部署指南已补充）。
 - 用户报告公开 IR 跨域失败：公开下载 302 到 assets 后浏览器 Origin 变为 `null`。public 桶 CORS 改为允许任何来源的只读请求，浏览器中复验通过。
 - 需要第二个账号的 E2E-4 反例（改名劫持、仓库转移冻结）按用户决定之后再测。
+
+### 2026-09-23 web 重新设计
+
+- 用户确认后按 `docs/design/web.md` 重做 web（D-157）：功能拆分与 11 条操作路径、UI 方向、Pencil 设计稿 `docs/design/web.pen`（23 个画板），然后实现。
+- **基础层**：品牌 token（Sand / Night / Ink，橙紫蓝对应三种作品类型），Plus Jakarta Sans 与 JetBrains Mono 自托管，浅色 / 深色 / 跟随系统三态且首屏不闪烁；补齐 shadcn 组件（Select、Dialog、Sheet、Tabs、Toast 等）；顶栏加全局搜索和移动端抽屉，登录改成对话框；统一的空状态、出错、404 / 410、骨架屏与全站只读提示。sonner 在运行时插入的 `<style>` 被 CSP 拦截，改为把样式打包进 CSS。
+- **页面**：首页（真实的最近发布）、探索、作者主页 `/c/$ns`；作品外框加五个标签（Overview、Context preview、Versions 含版本对比、Contributions、Settings），举报与 yank 对话框，成人内容遮挡在会话内对该作品保持显示；新建、导入（评级 / 权利 / 许可必须显式选择）、整页编辑器（搜索式依赖选择器、发布前检查栏）、发布对话框；贡献列表、提交与审阅（敏感变更逐项确认、显示拒绝理由）；我的作品；账户设置（namespace 改名、成人内容、Token）。
+- **服务端**：搜索按 namespace 过滤；公开举报接口；贡献拒绝理由存进 `contributions.decision_reason`（迁移 0011，并从审计日志补回已有的理由）；按 @namespace 邀请贡献者，邀请名单只返回 @namespace。
+- **验证**：`pnpm ci:all` 全部通过（单元 1241、web / admin 单测 174、conformance 103、集成 1349、web e2e 56、admin e2e 107）；全栈 e2e 3 个通过；浅色、深色与移动端逐页截图对照设计稿。
+- **接口缺字段、这次没做的**：搜索结果与我的作品没有头像（卡片用类型色加首字母）；Release 没有来源与发布者字段；贡献列表没有各状态数量、变更数与冲突标记；Token 列表不显示 Agent 标记；web 不能新建 GitHub 绑定（缺 GitHub App 安装流程）；“请求删除”暂时链接到 `/policy`；未发布过的头像换设备后无法预览。
+- **原有的不一致，未改**：web 限制头像 10 MB，security.md 写的是 8 MiB，服务端对上传统一只限 20 MB；导入后未确认就去发布（`publish.import_unconfirmed`）时，web 上没有回到导入确认的入口。
+- M8-3 的截图（`evidence/m8/`）是重设计之前的样子，人工审阅前需要重新截取。

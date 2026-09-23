@@ -48,12 +48,16 @@ test("UC-1: create, publish and download a character in the browser", async ({
   await expect(page.getByRole("button", { name: "Replace" })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("All changes saved")).toBeVisible({ timeout: 30_000 });
 
-  // 4. 发布 1.0.0 并查看 Publish Report。
-  await expect(page.getByLabel("Version")).toHaveValue("1.0.0");
-  await page.getByRole("button", { name: "Publish" }).click();
-  await expect(page.getByText("Published 1.0.0")).toBeVisible({ timeout: 90_000 });
-  await expect(page.getByRole("region", { name: "Publish report" })).toBeVisible();
-  await page.getByRole("link", { name: "Open the creation page" }).click();
+  // 4. 在发布对话框里发布 1.0.0 并查看 Publish Report。
+  await page.getByRole("button", { name: "Publish…" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel("Version label")).toHaveValue("1.0.0");
+  await dialog.getByRole("button", { name: "Publish 1.0.0" }).click();
+  await expect(dialog.getByRole("heading", { name: "Published 1.0.0" })).toBeVisible({
+    timeout: 90_000,
+  });
+  await expect(dialog.getByRole("region", { name: "Publish report" })).toBeVisible();
+  await dialog.getByRole("link", { name: "View release" }).click();
   await expect(page).toHaveURL(new RegExp(`/c/${ns}/alice-courier`));
 
   // 5. 匿名访问作品页。
@@ -63,9 +67,12 @@ test("UC-1: create, publish and download a character in the browser", async ({
   await expect(visitor.getByRole("heading", { name: "Alice Courier" })).toBeVisible();
   await expect(visitor.getByText("Package for {{user}}! Sign here, please.")).toBeVisible();
   await expect(visitor.getByText(/cheerful courier who knows every alley/)).toBeVisible();
-  await expect(visitor.locator("header img")).toHaveCount(1);
+  // 作品头部的头像（顶栏的品牌 logo 不在 main 里）。
+  await expect(visitor.locator("main header img")).toHaveCount(1);
   await expect(visitor.getByRole("heading", { name: "Why this rating" })).toBeVisible();
-  await expect(visitor.getByRole("button", { name: /1\.0\.0/ })).toBeVisible();
+  await expect(
+    visitor.getByRole("main").getByText(`@${ns}/alice-courier@1.0.0`, { exact: true }),
+  ).toBeVisible();
   await expect(visitor.getByRole("button", { name: "Sign in" })).toBeVisible();
 
   // 搜索也能找到它。
@@ -74,7 +81,9 @@ test("UC-1: create, publish and download a character in the browser", async ({
 
   // 6. 下载 Context IR：API 重定向到内容寻址的公共对象。
   await visitor.goto(`/c/${ns}/alice-courier`);
-  const href = await visitor.getByRole("link", { name: "Context IR" }).getAttribute("href");
+  // 下载在作品头部的 Download 菜单里。
+  await visitor.getByRole("main").getByRole("button", { name: "Download" }).click();
+  const href = await visitor.getByRole("menuitem", { name: /Context IR/ }).getAttribute("href");
   expect(href).toBe(`/v1/creations/@${ns}/alice-courier/releases/1.0.0/ir`);
   const res = await visitor.request.get(href ?? "");
   expect(res.ok()).toBe(true);

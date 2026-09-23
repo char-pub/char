@@ -1,10 +1,10 @@
 /**
  * 搜索：中日英混合语料上的短查询与长查询、mature 默认隐藏、类型与标签过滤、分页，
- * 以及 private / yanked / tombstoned 不出现在结果中。
+ * private / yanked / tombstoned 不出现在结果中，以及按 namespace 精确过滤（作者主页）。
  */
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { userSettings } from "../src/db/schema/index.js";
+import { creations, namespaceRedirects, namespaces, userSettings } from "../src/db/schema/index.js";
 import { createHarness, type Harness } from "./fixtures/harness.js";
 import {
   createNamespace,
@@ -193,5 +193,94 @@ describe("filters and pagination", () => {
     expect((await h.request("/v1/search?limit=500")).status).toBe(422);
     expect((await h.request("/v1/search?cursor=bogus")).status).toBe(422);
     expect((await h.request("/v1/search?type=spaceship")).status).toBe(422);
+  });
+});
+
+describe("filtering by namespace", () => {
+  let kate: string;
+  let hiddenId: string;
+
+  // 放在最后一组：这里新增的作品不会影响上面按全部结果断言的分页测试。
+  beforeAll(async () => {
+    const { db, cas } = h.services;
+    kate = await createNamespace(db, "kate");
+    const mk = (
+      name: string,
+      extra: Record<string, unknown> = {},
+      visibility: "public" | "private" = "public",
+    ) =>
+      publishRelease({
+        db,
+        cas,
+        namespaceId: kate,
+        label: "1.0.0",
+        visibility,
+        creation: {
+          ref: `@kate/${name}`,
+          type: "character",
+          display_name: `Kate ${name}`,
+          fragments: [textFragment("description", "character", "x")],
+          meta: META,
+          ...extra,
+        },
+      });
+    await mk("courier");
+    await mk("magic-cat", { display_name: "魔法猫" });
+    await mk("after-dark", { meta: { ...META, rating: "explicit" } });
+    await mk("secret", {}, "private");
+    hiddenId = (await mk("hidden-one")).creationId;
+    await db.update(creations).set({ status: "hidden" }).where(eq(creations.id, hiddenId));
+    await db.insert(namespaceRedirects).values({ oldSlug: "kate-old", namespaceId: kate });
+  });
+
+  const nsSearch = async (qs: string, user?: string) => {
+    const r = await h.request(`/v1/search?${qs}`, user ? { user } : {});
+    expect(r.status).toBe(200);
+    return refs(await r.json());
+  };
+
+  it("returns only public creations of that namespace", async () => {
+    expect(await nsSearch("ns=kate")).toEqual(["@kate/courier", "@kate/magic-cat"]);
+    const djj = await nsSearch("ns=djj&limit=100");
+    expect(djj.length).toBeGreaterThan(0);
+    expect(djj.every((r) => r.startsWith("@djj/"))).toBe(true);
+  });
+
+  it("keeps the other filters: query, type, mature, private and hidden", async () => {
+    expect(await nsSearch("ns=kate&q=%E9%AD%94%E6%B3%95")).toEqual(["@kate/magic-cat"]);
+    expect(await nsSearch("ns=djj&q=%E9%AD%94%E6%B3%95")).toEqual([
+      "@djj/magic-forest",
+      "@djj/magic-school",
+    ]);
+    expect(await nsSearch("ns=kate&type=world")).toEqual([]);
+    expect(await nsSearch("ns=kate", plain)).not.toContain("@kate/after-dark");
+    expect(await nsSearch("ns=kate", adult)).toEqual([
+      "@kate/after-dark",
+      "@kate/courier",
+      "@kate/magic-cat",
+    ]);
+    for (const user of [undefined, adult]) {
+      const r = await nsSearch("ns=kate", user);
+      expect(r).not.toContain("@kate/secret");
+      expect(r).not.toContain("@kate/hidden-one");
+    }
+  });
+
+  it("matches the current slug exactly and hides suspended namespaces", async () => {
+    expect(await nsSearch("ns=kat")).toEqual([]);
+    expect(await nsSearch("ns=kate-old")).toEqual([]);
+    expect(await nsSearch("ns=nobody")).toEqual([]);
+    const { db } = h.services;
+    await db.update(namespaces).set({ status: "suspended" }).where(eq(namespaces.id, kate));
+    expect(await nsSearch("ns=kate")).toEqual([]);
+    await db.update(namespaces).set({ status: "active" }).where(eq(namespaces.id, kate));
+  });
+
+  it("rejects a malformed namespace", async () => {
+    for (const ns of ["%40kate", "Kate", "-kate", "a".repeat(40)]) {
+      const r = await h.request(`/v1/search?ns=${ns}`);
+      expect(r.status).toBe(422);
+      expect(((await r.json()) as { code: string }).code).toBe("request.invalid");
+    }
   });
 });

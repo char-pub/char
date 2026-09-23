@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError, createRegistryClient } from "./api";
+import { ApiError, createRegistryClient, MAX_REPORT_DETAILS, REPORT_CATEGORIES } from "./api";
 import { getMainText, setGreeting, setMainText, setName, type Working } from "./draft";
 import { IdempotencyKeys, suggestLabel } from "./publish";
+import { REPORT_TURNSTILE_ACTION } from "./turnstile";
 
 const headersOf = (init: RequestInit | undefined) =>
   (init?.headers ?? {}) as Record<string, string>;
@@ -65,6 +66,117 @@ describe("registry client", () => {
   });
 });
 
+describe("search", () => {
+  it("passes the namespace filter and leaves out empty parameters", async () => {
+    const r = recorder([json({ items: [], next_cursor: null })]);
+    const client = createRegistryClient({ baseUrl: "https://api.test", fetch: r.fetch });
+    const page = await client.search({ ns: "kate", q: "", type: "character", cursor: undefined });
+    expect(page).toEqual({ items: [], next_cursor: null });
+    expect(r.calls[0]?.url).toBe("https://api.test/v1/search?ns=kate&type=character");
+  });
+});
+
+describe("contributions", () => {
+  it("reads the rejection reason from the contribution detail", async () => {
+    const detail = {
+      id: "ctb_01j00000000000000000000001",
+      number: 3,
+      title: "Tweak",
+      status: "rejected",
+      agent: false,
+      author: { guest_id: "gst_01j00000000000000000000001", display_name: "Reader" },
+      base_revision: "rev_01j00000000000000000000001",
+      created_at: "2026-09-23T00:00:00.000Z",
+      decided_at: "2026-09-23T01:00:00.000Z",
+      changes: [],
+      preview: null,
+      result_revision: null,
+      decision_reason: "Please keep the tone.",
+    };
+    const r = recorder([json(detail), json({ ...detail, decision_reason: undefined })]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect((await client.contribution("djj", "alice", 3)).decision_reason).toBe(
+      "Please keep the tone.",
+    );
+    // 没有理由（例如撤回的 Contribution）时这个字段不存在。
+    expect((await client.contribution("djj", "alice", 3)).decision_reason).toBeUndefined();
+    expect(r.calls[0]?.url).toBe("/v1/creations/@djj/alice/contributions/3");
+  });
+});
+
+describe("contribution invites", () => {
+  it("invites by @namespace and removes an invite by @namespace", async () => {
+    const r = recorder([
+      json({ user: "usr_01j00000000000000000000001", namespace: "@kate", invited: true }),
+      json({ user: "usr_01j00000000000000000000001", namespace: "@kate", invited: false }),
+      json({ code: "contribution.invite_unknown_user", status: 422, title: "", type: "" }, 422),
+    ]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect(await client.inviteByNamespace("djj", "alice", "@kate")).toEqual({
+      user: "usr_01j00000000000000000000001",
+      namespace: "@kate",
+      invited: true,
+    });
+    expect(r.calls[0]?.url).toBe("/v1/creations/@djj/alice/contribution-invites");
+    expect(r.calls[0]?.init.method).toBe("POST");
+    expect(r.calls[0]?.init.body).toBe(JSON.stringify({ namespace: "@kate" }));
+    await client.uninvite("djj", "alice", "@kate");
+    expect(r.calls[1]?.url).toBe("/v1/creations/@djj/alice/contribution-invites/%40kate");
+    const err = await client.inviteByNamespace("djj", "alice", "nobody").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).code).toBe("contribution.invite_unknown_user");
+  });
+});
+
+describe("reports", () => {
+  it("reports a creation or one of its releases and returns only the acknowledgement", async () => {
+    const r = recorder([
+      json({ status: "received" }, 202),
+      json({ status: "received" }, 202),
+      json({ code: "not_found", status: 404, title: "not_found", type: "" }, 404),
+    ]);
+    const client = createRegistryClient({ baseUrl: "https://api.test", fetch: r.fetch });
+    expect(
+      await client.submitReport("djj", "alice", { category: "rating", details: "  " }),
+    ).toEqual({ status: "received" });
+    expect(r.calls[0]?.url).toBe("https://api.test/v1/creations/@djj/alice/reports");
+    expect(r.calls[0]?.init.credentials).toBe("include");
+    expect(r.calls[0]?.init.body).toBe(JSON.stringify({ category: "rating" }));
+
+    await client.submitReport(
+      "djj",
+      "alice",
+      { category: "copyright", details: "Uses my art.", turnstile_token: "tok" },
+      { label: "1.0.0" },
+    );
+    expect(r.calls[1]?.url).toBe("https://api.test/v1/creations/@djj/alice/releases/1.0.0/reports");
+    expect(JSON.parse(String(r.calls[1]?.init.body))).toEqual({
+      category: "copyright",
+      details: "Uses my art.",
+      turnstile_token: "tok",
+    });
+
+    const err = await client
+      .submitReport("djj", "secret", { category: "spam" })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).code).toBe("not_found");
+  });
+
+  it("exposes the six categories and the details limit for the form", () => {
+    expect(REPORT_CATEGORIES).toEqual([
+      "sexual_minors",
+      "copyright",
+      "rating",
+      "harassment",
+      "illegal",
+      "spam",
+    ]);
+    expect(MAX_REPORT_DETAILS).toBe(2000);
+    expect(REPORT_TURNSTILE_ACTION).toBe("report");
+  });
+});
+
 describe("draft helpers", () => {
   it("writes the level-0 fields into the authoring form", () => {
     let w: Working = { display_name: "x" };
@@ -100,5 +212,74 @@ describe("publish helpers", () => {
     expect(keys.keyFor("rev_a", "1.0.1", "public")).toBe("key-2");
     keys.reset();
     expect(keys.keyFor("rev_a", "1.0.1", "public")).toBe("key-3");
+  });
+});
+
+describe("namespaces", () => {
+  it("reads a namespace and renames it with new_slug", async () => {
+    const r = recorder([
+      json({ slug: "djj", kind: "user", status: "active" }),
+      json({ slug: "dj", kind: "user", status: "active" }),
+      json({ code: "namespace.taken", status: 409, title: "", type: "" }, 409),
+    ]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect(await client.namespace("djj")).toEqual({ slug: "djj", kind: "user", status: "active" });
+    expect(r.calls[0]?.url).toBe("/v1/namespaces/djj");
+    expect((await client.renameNamespace("djj", "dj")).slug).toBe("dj");
+    expect(r.calls[1]?.init.method).toBe("PATCH");
+    expect(r.calls[1]?.init.body).toBe(JSON.stringify({ new_slug: "dj" }));
+    const err = await client.renameNamespace("dj", "kate").catch((e: unknown) => e);
+    expect((err as ApiError).code).toBe("namespace.taken");
+  });
+});
+
+describe("release maintenance", () => {
+  const summary = {
+    id: "rel_01j00000000000000000000001",
+    label: "1.0.0",
+    visibility: "public",
+    status: "yanked",
+    status_reason: "broken greeting",
+    semantic_digest: `sha256:${"a".repeat(64)}`,
+    effective_rating: "general",
+    created_at: "2026-09-01T00:00:00.000Z",
+  };
+  const binding = {
+    repository_id: "101",
+    repository_owner_id: "202",
+    installation_id: "303",
+    full_name: "djj/alice",
+    path: "char.yaml",
+    tracked_ref: "refs/heads/main",
+    publish_refs: ["refs/heads/main", "refs/tags/*"],
+    status: "frozen",
+    frozen_reason: "transferred from djj to kate",
+  };
+
+  it("yanks a release with a public reason", async () => {
+    const r = recorder([json(summary)]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect((await client.yankRelease("djj", "alice", "1.0.0", "broken greeting")).status).toBe(
+      "yanked",
+    );
+    expect(r.calls[0]?.url).toBe("/v1/creations/@djj/alice/releases/1.0.0/yank");
+    expect(r.calls[0]?.init.body).toBe(JSON.stringify({ reason: "broken greeting" }));
+  });
+
+  it("treats a missing binding as null and resolves or removes a frozen one", async () => {
+    const r = recorder([
+      json({ code: "not_found", status: 404, title: "", type: "" }, 404),
+      json(binding),
+      json({ ...binding, status: "active", frozen_reason: undefined }),
+      new Response(null, { status: 204 }),
+    ]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect(await client.sourceBinding("djj", "alice")).toBeNull();
+    expect((await client.sourceBinding("djj", "alice"))?.status).toBe("frozen");
+    expect((await client.resolveSourceBinding("djj", "alice", "rebind")).status).toBe("active");
+    expect(r.calls[2]?.url).toBe("/v1/creations/@djj/alice/source-binding/resolve");
+    expect(r.calls[2]?.init.body).toBe(JSON.stringify({ action: "rebind" }));
+    await client.unbindSource("djj", "alice");
+    expect(r.calls[3]?.init.method).toBe("DELETE");
   });
 });

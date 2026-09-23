@@ -1,33 +1,70 @@
 /**
- * 元信息：评级、内容警告、权利与许可、贡献策略、标签。评级只能如实填写：依赖或图片的
+ * 元信息：评级、内容警告、权利与许可、标签，以及默认语言。评级只能如实填写：依赖或图片的
  * 评级更高时，作品页显示的 effective rating 会自动取最高值。
+ *
+ * 谁可以提交修改（贡献开放度）只在作品设置里改，这里不再提供入口，避免两处的值对不上。
+ * 草稿里已有的 `contribution_policy` 原样保留，编辑器不读也不改它。
  */
 import type { CheckDiagnostic, CreationMeta, Rating } from "@char-pub/core";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
+import { RATING_LABEL } from "@/components/rating";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { getMeta, setMeta, type Working } from "@/lib/draft";
 import { DiagnosticList, diagnosticsFor } from "./diagnostics";
 import { ListInput } from "./list-input";
+import {
+  LICENSE_HELP,
+  LICENSE_PRESETS,
+  licenseShort,
+  RATING_OPTIONS,
+  RIGHTS_OPTIONS,
+} from "./options";
 
-const selectClass =
-  "h-9 w-full rounded-sm border border-input bg-card px-2 text-sm focus-visible:outline-2 focus-visible:outline-seal";
+/** 折叠时的一行摘要，例如 “Teen · CC-BY-4.0 · 4 tags”。 */
+export function metaSummary(w: Working): string {
+  const meta = getMeta(w);
+  const tags = meta.tags?.length ?? 0;
+  const parts = [RATING_LABEL[meta.rating], licenseShort(meta.license)];
+  if (tags > 0) parts.push(`${tags} ${tags === 1 ? "tag" : "tags"}`);
+  return parts.join(" · ");
+}
 
-export const LICENSE_PRESETS = [
-  { id: "LicenseRef-All-Rights-Reserved", label: "All rights reserved" },
-  { id: "CC-BY-4.0", label: "CC BY 4.0 — reuse with credit" },
-  { id: "CC-BY-SA-4.0", label: "CC BY-SA 4.0 — reuse with credit, share alike" },
-  { id: "CC-BY-NC-4.0", label: "CC BY-NC 4.0 — non-commercial reuse with credit" },
-  { id: "CC0-1.0", label: "CC0 — public domain" },
-] as const;
+/** 语言代码的英文名字，例如 `en` → English；认不出时原样返回。 */
+export function languageName(locale: string): string {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "language" }).of(locale) ?? locale;
+  } catch {
+    return locale;
+  }
+}
 
-const RATINGS: { id: Rating; label: string }[] = [
-  { id: "general", label: "General — suitable for everyone" },
-  { id: "teen", label: "Teen — mild violence or themes" },
-  { id: "mature", label: "Mature — adults only" },
-  { id: "explicit", label: "Explicit — sexual or graphic content" },
-];
+export function languageSummary(w: Working): string {
+  const locale = getMeta(w).default_locale;
+  return `${languageName(locale)} (${locale})`;
+}
 
-type Policy = NonNullable<CreationMeta["contribution_policy"]>;
+function Field({
+  id,
+  label,
+  help,
+  children,
+}: {
+  id: string;
+  label: string;
+  help?: string | undefined;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      {children}
+      {help ? <p className="text-xs text-text-3">{help}</p> : null}
+    </div>
+  );
+}
 
 export function MetaEditor({
   working,
@@ -45,129 +82,127 @@ export function MetaEditor({
     rights: useId(),
     license: useId(),
     custom: useId(),
-    policy: useId(),
     tags: useId(),
-    locale: useId(),
   };
   const set = (patch: Partial<CreationMeta>) => update((w) => setMeta(w, patch));
   const preset = LICENSE_PRESETS.some((l) => l.id === meta.license) ? meta.license : "custom";
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-5 sm:grid-cols-2">
       <div className="space-y-1">
-        <label htmlFor={ids.rating} className="text-sm">
-          Rating
-        </label>
-        <select
+        <Field
           id={ids.rating}
-          className={selectClass}
-          value={meta.rating}
-          onChange={(e) => set({ rating: e.target.value as Rating })}
+          label="Rating"
+          help="Be honest: a dependency with a higher rating raises it anyway."
         >
-          {RATINGS.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.label}
-            </option>
-          ))}
-        </select>
+          <NativeSelect
+            id={ids.rating}
+            value={meta.rating}
+            onChange={(e) => set({ rating: e.target.value as Rating })}
+          >
+            {RATING_OPTIONS.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label} — {r.hint}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
         <DiagnosticList items={diagnosticsFor(diagnostics, "meta.rating")} />
       </div>
-      <div className="space-y-1">
-        <label htmlFor={ids.warnings} className="text-sm">
-          Content warnings
-        </label>
+      <Field id={ids.warnings} label="Content warnings" help="Comma separated.">
         <ListInput
           id={ids.warnings}
           value={meta.content_warnings ?? []}
           placeholder="e.g. violence, grief"
           onChange={(next) => set({ content_warnings: next })}
         />
-      </div>
-      <div className="space-y-1">
-        <label htmlFor={ids.rights} className="text-sm">
-          Rights
-        </label>
-        <select
+      </Field>
+      <Field
+        id={ids.rights}
+        label="Rights"
+        help={RIGHTS_OPTIONS.find((r) => r.id === meta.rights)?.note}
+      >
+        <NativeSelect
           id={ids.rights}
-          className={selectClass}
           value={meta.rights}
           onChange={(e) => set({ rights: e.target.value as CreationMeta["rights"] })}
         >
-          <option value="original">Original — I created it</option>
-          <option value="fan-work">Fan work — based on someone else's world</option>
-          <option value="licensed">Licensed — I have permission</option>
-        </select>
-      </div>
-      <div className="space-y-1">
-        <label htmlFor={ids.license} className="text-sm">
-          License
-        </label>
-        <select
-          id={ids.license}
-          className={selectClass}
-          value={preset}
-          onChange={(e) => {
-            if (e.target.value !== "custom") set({ license: e.target.value });
-          }}
-        >
-          {LICENSE_PRESETS.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.label}
+          {RIGHTS_OPTIONS.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.label} — {r.hint}
             </option>
           ))}
-          <option value="custom">Other SPDX expression…</option>
-        </select>
-        {preset === "custom" ? (
-          <Input
-            id={ids.custom}
-            aria-label="SPDX license expression"
-            className="font-mono"
-            value={meta.license}
-            onChange={(e) => set({ license: e.target.value })}
-          />
-        ) : null}
+        </NativeSelect>
+      </Field>
+      <div className="space-y-1">
+        <Field id={ids.license} label="License" help={LICENSE_HELP}>
+          <NativeSelect
+            id={ids.license}
+            value={preset}
+            onChange={(e) => {
+              if (e.target.value !== "custom") set({ license: e.target.value });
+            }}
+          >
+            {LICENSE_PRESETS.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.label}
+              </option>
+            ))}
+            <option value="custom">Other SPDX expression…</option>
+          </NativeSelect>
+          {preset === "custom" ? (
+            <Input
+              id={ids.custom}
+              aria-label="SPDX license expression"
+              className="font-mono"
+              value={meta.license}
+              onChange={(e) => set({ license: e.target.value })}
+            />
+          ) : null}
+        </Field>
         <DiagnosticList items={diagnosticsFor(diagnostics, "meta.license", "meta.rights")} />
       </div>
-      <div className="space-y-1">
-        <label htmlFor={ids.policy} className="text-sm">
-          Who can suggest changes
-        </label>
-        <select
-          id={ids.policy}
-          className={selectClass}
-          value={meta.contribution_policy ?? "signed-in"}
-          onChange={(e) => set({ contribution_policy: e.target.value as Policy })}
-        >
-          <option value="anyone">Anyone, including guests</option>
-          <option value="signed-in">Anyone signed in</option>
-          <option value="invited">Only people I invite</option>
-          <option value="closed">Nobody</option>
-        </select>
+      <div className="sm:col-span-2">
+        <Field id={ids.tags} label="Tags" help="Comma separated. Used by Explore and search.">
+          <ListInput
+            id={ids.tags}
+            value={meta.tags ?? []}
+            placeholder="e.g. cyberpunk, courier"
+            onChange={(next) => set({ tags: next })}
+          />
+        </Field>
       </div>
-      <div className="space-y-1">
-        <label htmlFor={ids.tags} className="text-sm">
-          Tags
-        </label>
-        <ListInput
-          id={ids.tags}
-          value={meta.tags ?? []}
-          placeholder="e.g. cyberpunk, courier"
-          onChange={(next) => set({ tags: next })}
-        />
-      </div>
-      <div className="space-y-1">
-        <label htmlFor={ids.locale} className="text-sm">
-          Language
-        </label>
+    </div>
+  );
+}
+
+export function LanguageEditor({
+  working,
+  update,
+  diagnostics,
+}: {
+  working: Working;
+  update: (fn: (w: Working) => Working) => void;
+  diagnostics: readonly CheckDiagnostic[];
+}) {
+  const id = useId();
+  const locale = getMeta(working).default_locale;
+  return (
+    <div className="max-w-sm space-y-1">
+      <Field
+        id={id}
+        label="Language"
+        help={`A language code such as en, ja or pt-BR. Now: ${languageName(locale)}.`}
+      >
         <Input
-          id={ids.locale}
+          id={id}
           className="font-mono"
-          value={meta.default_locale}
+          value={locale}
           maxLength={35}
-          onChange={(e) => set({ default_locale: e.target.value })}
+          onChange={(e) => update((w) => setMeta(w, { default_locale: e.target.value }))}
         />
-        <DiagnosticList items={diagnosticsFor(diagnostics, "meta.default_locale")} />
-      </div>
+      </Field>
+      <DiagnosticList items={diagnosticsFor(diagnostics, "meta.default_locale")} />
     </div>
   );
 }

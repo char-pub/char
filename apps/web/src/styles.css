@@ -1,75 +1,179 @@
 @import "tailwindcss";
-@import "@fontsource-variable/fraunces";
-@import "@fontsource-variable/instrument-sans";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/jetbrains-mono";
+/*
+ * sonner 默认在运行时插入 <style> 标签，CSP（style-src 'self'）会拦下来，
+ * 所以把它的样式打进我们自己的 CSS；运行时插入在构建时去掉（见 vite.config.ts）。
+ */
+@import "sonner/dist/styles.css";
 
 /*
- * 视觉方向：图书馆目录卡片。纸张般的暖色底、墨色文字、朱砂色印章作为唯一强调色，
- * 细线分隔代替阴影。深色模式是“墨色纸”，强调色保持同一色相。
- * 衬线字体用于标题（Fraunces），正文用 Instrument Sans，标识符与数字用 IBM Plex Mono。
+ * 视觉方向：和品牌对齐的扁平界面。浅色是 Sand 底、Ink 字，深色是 Night 底。
+ * 卡片和面板不加阴影，只用 1px 边框和底色区分层级；阴影只给浮层（菜单、对话框、toast）。
+ * 不用渐变、纸纹或发光。
+ *
+ * 颜色有固定含义：
+ * - 三种作品类型对应三个品牌节点色：Character 橙（primary）、World 紫（purple）、
+ *   Lorebook 蓝（blue）。卡片、徽章、依赖列表、token 占比条都按这个规则着色。
+ * - 蓝色同时是链接色。危险操作用单独的红色（danger），不和强调色混用。
+ * - 评级：General 绿、Teen 琥珀、Mature 浅红、Explicit 实心红。
+ * - 品牌色直接当文字用对比度不够，文字一律用对应的 *-text 加深版本。
+ *
+ * 字体：界面和标题用 Plus Jakarta Sans；`@ns/name@label`、digest、fragment id 等标识符用
+ * JetBrains Mono（`font-mono`）。两种字体都自托管，因为 CSP 不允许第三方字体 CDN。
  */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * 品牌 token。Tailwind 类名见下面的 @theme：`bg-surface`、`text-text-2`、`border-border-strong`、
+ * `bg-primary-soft text-primary-text` 等。
+ */
 :root {
-  --radius: 0.25rem;
+  /* 页面底色（Sand）。 */
+  --bg: #f8f7f4;
+  /* 卡片、面板、输入框、浮层的底色。 */
+  --surface: #ffffff;
+  /* 弱底色：hover、分段控件底、代码块、选中的导航项。 */
+  --surface-2: #f1efea;
+  /* 卡片和分隔线的边框。 */
+  --border: #e4e1da;
+  /* 输入框、次要按钮的边框，比 border 深一级。 */
+  --border-strong: #cfcbc2;
+  /* 正文。 */
+  --text: #0f172a;
+  /* 次要文字：说明、元信息。 */
+  --text-2: #475569;
+  /* 弱化文字：占位符、时间戳、不重要的标签。 */
+  --text-3: #64748b;
 
-  --paper: oklch(0.965 0.012 85);
-  --paper-deep: oklch(0.93 0.018 82);
-  --ink: oklch(0.22 0.012 60);
-  --ink-soft: oklch(0.42 0.015 60);
-  --rule: oklch(0.82 0.02 80);
-  --seal: oklch(0.55 0.17 32);
-  --seal-soft: oklch(0.92 0.045 40);
-  --moss: oklch(0.5 0.08 150);
-  --moss-soft: oklch(0.93 0.035 150);
-  --amber: oklch(0.62 0.13 70);
-  --amber-soft: oklch(0.94 0.05 85);
+  /* 主操作按钮的底色，也是 Character 的类型色。上面的文字用 on-primary（Ink），不用白色。 */
+  --primary: #ff6b3d;
+  /* 橙色的浅底（Character 徽章、选中态的浅底）。 */
+  --primary-soft: #ffe9e0;
+  /* 橙色当文字用的加深版本。 */
+  --primary-text: #c2410c;
+  /* 橙色按钮上的文字。 */
+  --on-primary: #0f172a;
 
-  --background: var(--paper);
-  --foreground: var(--ink);
-  --card: oklch(0.985 0.008 85);
-  --card-foreground: var(--ink);
-  --popover: oklch(0.985 0.008 85);
-  --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: var(--paper);
-  --secondary: var(--paper-deep);
-  --secondary-foreground: var(--ink);
-  --muted: var(--paper-deep);
-  --muted-foreground: var(--ink-soft);
-  --accent: var(--seal-soft);
-  --accent-foreground: oklch(0.4 0.14 32);
-  --destructive: var(--seal);
-  --border: var(--rule);
-  --input: var(--rule);
-  --ring: var(--seal);
+  /* World 的类型色，以及上游、依赖关系。 */
+  --purple: #8b5cf6;
+  --purple-soft: #efe9fe;
+  --purple-text: #6d28d9;
+  /* Lorebook 的类型色，以及链接。 */
+  --blue: #2563eb;
+  --blue-soft: #e4ecfd;
+  --blue-text: #1d4ed8;
+
+  /* 危险操作、错误、Mature / Explicit 评级。 */
+  --danger: #dc2626;
+  --danger-soft: #fde8e8;
+  /* 红色实心（最终的危险操作按钮、Explicit 徽章）上的文字。 */
+  --on-danger: #ffffff;
+  /* 成功、General 评级。 */
+  --success: #15803d;
+  --success-soft: #e3f4e8;
+  /* 警告、Teen 评级、已 yank 的版本。 */
+  --warning: #b45309;
+  --warning-soft: #fdf1dc;
+
+  /* 深色实心按钮、选中态（例如开关打开、复选框勾选、toast 底色）。 */
+  --ink: #0f172a;
+  /* ink 底上的文字。 */
+  --on-ink: #ffffff;
+
+  /* shadcn/ui 的语义变量：基础组件只用这一组，映射到上面的品牌 token。 */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--on-primary);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  /* 现有页面大量用 muted-foreground 写段落说明，取次要文字色以保证对比度。 */
+  --muted-foreground: var(--text-2);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --input: var(--border-strong);
+  /* 焦点环用蓝色：橙色在 Sand 上对比度不足 3:1。 */
+  --ring: var(--blue);
 }
 
 .dark {
-  --paper: oklch(0.19 0.01 60);
-  --paper-deep: oklch(0.24 0.012 60);
-  --ink: oklch(0.93 0.015 85);
-  --ink-soft: oklch(0.72 0.02 80);
-  --rule: oklch(0.34 0.015 60);
-  --seal: oklch(0.7 0.15 35);
-  --seal-soft: oklch(0.3 0.06 32);
-  --moss: oklch(0.74 0.1 150);
-  --moss-soft: oklch(0.28 0.04 150);
-  --amber: oklch(0.8 0.12 80);
-  --amber-soft: oklch(0.3 0.05 80);
+  /* 页面底色（Night）。 */
+  --bg: #171b22;
+  --surface: #1e232c;
+  --surface-2: #252b35;
+  --border: #2e3440;
+  --border-strong: #3d4452;
+  --text: #f8fafc;
+  --text-2: #a7b0be;
+  --text-3: #808b9b;
 
-  --card: oklch(0.215 0.011 60);
-  --popover: oklch(0.215 0.011 60);
-  --accent-foreground: oklch(0.85 0.09 40);
+  --primary: #ff6b3d;
+  --primary-soft: #3a251e;
+  --primary-text: #ff9471;
+  --on-primary: #0f172a;
+
+  --purple: #8b5cf6;
+  --purple-soft: #2b2443;
+  --purple-text: #b9a2fb;
+  --blue: #2563eb;
+  --blue-soft: #1c2841;
+  --blue-text: #8ab0fa;
+
+  --danger: #f87171;
+  --danger-soft: #3b1f23;
+  /* 深色主题的红色更浅，白字对比度不够，改用 Ink。 */
+  --on-danger: #0f172a;
+  --success: #4ade80;
+  --success-soft: #1b3326;
+  --warning: #fbbf24;
+  --warning-soft: #3a2e17;
+
+  --ink: #f8fafc;
+  --on-ink: #0f172a;
+
+  /* 深蓝在 Night 上对比度偏低，焦点环换成浅一级的蓝。 */
+  --ring: var(--blue-text);
 }
 
 @theme inline {
-  --font-display: "Fraunces Variable", "Iowan Old Style", Georgia, serif;
-  --font-sans: "Instrument Sans Variable", "Helvetica Neue", sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* 品牌 token（用途见 :root 的注释）。 */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-text: var(--primary-text);
+  --color-on-primary: var(--on-primary);
+  --color-purple: var(--purple);
+  --color-purple-soft: var(--purple-soft);
+  --color-purple-text: var(--purple-text);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-blue-text: var(--blue-text);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-danger: var(--on-danger);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+
+  /* shadcn/ui 语义色。`primary`、`border` 与品牌 token 同名同值。 */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -89,17 +193,38 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-seal: var(--seal);
-  --color-seal-soft: var(--seal-soft);
-  --color-moss: var(--moss);
-  --color-moss-soft: var(--moss-soft);
-  --color-amber: var(--amber);
-  --color-amber-soft: var(--amber-soft);
-  --color-rule: var(--rule);
+  /* 圆角：6 小标签 / 8 按钮和输入框 / 12 卡片 / 16 面板和对话框；徽章用 rounded-full。 */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
 
-  --radius-sm: calc(var(--radius) - 1px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
+/*
+ * 浮层的进场动画（对话框、抽屉、菜单）。只做进场，退场直接消失；
+ * 组件里用 `motion-safe:` 前缀，系统要求减少动态效果时不播放。
+ */
+@theme {
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-pop-in: pop-in 150ms ease-out;
+  --animate-slide-in-right: slide-in-right 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+    }
+  }
 }
 
 @layer base {
@@ -108,47 +233,41 @@
   }
   html {
     color-scheme: light;
+    /* 对话框锁定滚动时滚动条消失，预留位置避免页面左右跳动。 */
+    scrollbar-gutter: stable;
   }
   html.dark {
     color-scheme: dark;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    /* 细横线纸纹：只用 CSS 渐变，不引入图片资源。 */
-    background-image: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 31px,
-      color-mix(in oklch, var(--rule) 28%, transparent) 31px,
-      color-mix(in oklch, var(--rule) 28%, transparent) 32px
-    );
+    /* 正文 15/1.6。 */
+    font-size: 0.9375rem;
+    line-height: 1.6;
   }
   h1,
   h2,
   h3 {
-    @apply font-display tracking-tight;
-    font-optical-sizing: auto;
+    @apply font-bold tracking-tight;
+    line-height: 1.2;
+  }
+  h3 {
+    @apply font-semibold;
+  }
+  /*
+   * Radix 的对话框和菜单打开时在运行时插入一段 <style> 锁定页面滚动，同样会被 CSP 拦下；
+   * 这里用它设置在 body 上的属性补上同样的规则。
+   */
+  body[data-scroll-locked] {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--text);
   }
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-seal;
-  }
-}
-
-@layer components {
-  /* 目录卡片：纸面 + 左侧打孔线。 */
-  .catalog-card {
-    @apply relative rounded-md border bg-card;
-    box-shadow: 0 1px 0 var(--rule);
-  }
-  .catalog-card::before {
-    content: "";
-    position: absolute;
-    inset: 0 auto 0 0.75rem;
-    width: 1px;
-    background: color-mix(in oklch, var(--seal) 35%, transparent);
-  }
-  .stamp {
-    @apply inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-mono text-[0.7rem] uppercase tracking-wider;
+    @apply outline-2 outline-offset-2 outline-ring;
   }
 }
 

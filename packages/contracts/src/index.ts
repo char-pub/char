@@ -179,6 +179,34 @@ export const OidcPublishRequestSchema = z.strictObject({
 export type OidcPublishRequest = z.infer<typeof OidcPublishRequestSchema>;
 
 // ---------------------------------------------------------------------------
+// GitHub 仓库绑定
+// ---------------------------------------------------------------------------
+
+/**
+ * `GET …/source-binding`：作品当前绑定的 GitHub 仓库，只有作品成员可见；解绑后返回 404。
+ * 仓库以数字 ID 为准，`full_name` 只用于展示。仓库被转移后 binding 进入 frozen，暂停发布，
+ * 等作者确认继续用这个仓库或解绑。
+ */
+export const SourceBindingSchema = z.strictObject({
+  repository_id: z.string(),
+  repository_owner_id: z.string(),
+  installation_id: z.string(),
+  full_name: z.string(),
+  path: z.string(),
+  tracked_ref: z.string(),
+  publish_refs: z.array(z.string()),
+  /** `unbound` 只会出现在确认解绑（resolve unbind）的响应里；GET 在解绑后返回 404。 */
+  status: z.enum(["active", "frozen", "unbound"]),
+  /** 冻结原因，是给人看的一句说明。 */
+  frozen_reason: z.string().optional(),
+  last_seen_commit: z.string().optional(),
+  /** worker 最近一次检查仓库的结果，结构由 worker 决定，web 只做展示。 */
+  last_check: z.record(z.string(), z.unknown()).optional(),
+  last_checked_at: z.string().optional(),
+});
+export type SourceBinding = z.infer<typeof SourceBindingSchema>;
+
+// ---------------------------------------------------------------------------
 // 上传
 // ---------------------------------------------------------------------------
 
@@ -218,6 +246,8 @@ export const SearchQuerySchema = PageQuerySchema.extend({
   q: z.string().trim().min(1).max(200).optional(),
   type: CreationTypeSchema.optional(),
   tag: z.string().max(64).optional(),
+  /** 只返回这个 namespace（当前的 slug，不带 `@`）下的作品，用于作者主页。 */
+  ns: NamespaceSlugSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -411,6 +441,11 @@ export const ContributionDetailSchema = ContributionSummarySchema.extend({
     })
     .nullable(),
   result_revision: z.string().nullable(),
+  /**
+   * 作者拒绝时填写的理由。只有 rejected 状态、并且记录了理由时才有；详情只对提交者和
+   * 作品所在 namespace 的成员可见，列表不返回这个字段。
+   */
+  decision_reason: z.string().optional(),
 });
 
 export const AcceptContributionRequestSchema = z.strictObject({
@@ -427,10 +462,28 @@ export const ContributionSettingsRequestSchema = z.strictObject({
   policy: z.enum(["anyone", "signed-in", "invited", "closed"]),
 });
 
-/** policy 为 invited 时，邀请或取消邀请一个用户（用户 ID，`usr_…`）。 */
-export const ContributionInviteRequestSchema = z.strictObject({
+/** 邀请时填写的个人 namespace：`@slug` 或 `slug`。 */
+export const InviteNamespaceSchema = z
+  .string()
+  .regex(new RegExp(`^@?${NAMESPACE_RE.source.slice(1)}`), "not a namespace");
+
+/**
+ * policy 为 invited 时邀请一个用户，二选一：`user` 是用户 ID（`usr_…`），`namespace` 是对方的
+ * 个人 namespace（`@slug` 或 `slug`，改过名的旧名同样可以）。按 namespace 邀请只有作品的成员
+ * 能用，只会解析出个人 namespace 的 owner；不提供单独的“按名字查用户”接口，免得被用来枚举账号。
+ */
+export const ContributionInviteRequestSchema = z.union([
+  z.strictObject({ user: z.string().min(1).max(64) }),
+  z.strictObject({ namespace: InviteNamespaceSchema }),
+]);
+
+/** 邀请或取消邀请的结果：被邀请人的用户 ID 与个人 namespace（`@slug`，没有时为 null）。 */
+export const ContributionInviteResponseSchema = z.strictObject({
   user: z.string(),
+  namespace: z.string().nullable(),
+  invited: z.boolean(),
 });
+export type ContributionInviteResult = z.infer<typeof ContributionInviteResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // 经验证的访客
@@ -478,6 +531,49 @@ export const GuestSessionResponseSchema = z.strictObject({
   guest: GuestSchema,
   session_expires_at: z.string(),
 });
+
+// ---------------------------------------------------------------------------
+// 举报
+// ---------------------------------------------------------------------------
+
+/**
+ * 举报原因。内容政策定稿之前先用这六类，取值与 admin 举报队列的分类一致：涉及未成年人的
+ * 性内容、版权或商标、评级不对、骚扰或涉及真实人物、违法或有害内容、垃圾信息或恶意软件。
+ */
+export const REPORT_CATEGORIES = [
+  "sexual_minors",
+  "copyright",
+  "rating",
+  "harassment",
+  "illegal",
+  "spam",
+] as const;
+export const ReportCategorySchema = z.enum(REPORT_CATEGORIES);
+export type ReportCategory = z.infer<typeof ReportCategorySchema>;
+
+/** 举报说明的最大长度（字符）。 */
+export const MAX_REPORT_DETAILS = 2000;
+
+/**
+ * 举报一个作品（`POST /v1/creations/@ns/name/reports`）或它的某个版本
+ * （`POST /v1/creations/@ns/name/releases/:label/reports`）。登录用户与经验证访客不需要
+ * Turnstile；匿名举报必须带 `turnstile_token`（widget 的 action 是 `report`）。
+ * 说明可以换行，但不能包含其他控制字符。
+ */
+export const CreateReportRequestSchema = z.strictObject({
+  category: ReportCategorySchema,
+  details: z
+    .string()
+    .trim()
+    .max(MAX_REPORT_DETAILS)
+    .refine((s) => !/\p{Cc}/u.test(s.replace(/[\n\r\t]/g, "")), "contains control characters")
+    .optional(),
+  turnstile_token: z.string().min(1).max(2048).optional(),
+});
+export type CreateReportRequest = z.infer<typeof CreateReportRequestSchema>;
+
+/** 举报的响应只说明“已收到”，不透露是否重复、会不会处理或处理结果。 */
+export const ReportReceivedResponseSchema = z.strictObject({ status: z.literal("received") });
 
 // ---------------------------------------------------------------------------
 // 角色卡导入
@@ -561,12 +657,15 @@ export const ReleaseSourceSchema = z.strictObject({
 });
 export type ReleaseSource = z.infer<typeof ReleaseSourceSchema>;
 
-/** `GET …/contribution-invites`：只有作者可见。 */
+/**
+ * `GET …/contribution-invites`：只有作者可见。被邀请人只给用户 ID 与个人 namespace（`@slug`，
+ * 没有时为 null），不给登录方式带来的显示名：OAuth 的显示名可能是真名，与署名默认不用它的
+ * 规则一致。
+ */
 export const ContributionInvitesResponseSchema = z.strictObject({
   items: z.array(
     z.strictObject({
       user: z.string(),
-      display_name: z.string().nullable(),
       namespace: z.string().nullable(),
       invited_at: z.string(),
     }),

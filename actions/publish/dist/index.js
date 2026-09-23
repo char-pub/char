@@ -50675,6 +50675,23 @@ var OidcPublishRequestSchema = external_exports.strictObject({
   /** Action 本地算出的 semantic digest，只用于比对，便于尽早发现不一致。 */
   semantic_digest: DigestSchema
 });
+var SourceBindingSchema = external_exports.strictObject({
+  repository_id: external_exports.string(),
+  repository_owner_id: external_exports.string(),
+  installation_id: external_exports.string(),
+  full_name: external_exports.string(),
+  path: external_exports.string(),
+  tracked_ref: external_exports.string(),
+  publish_refs: external_exports.array(external_exports.string()),
+  /** `unbound` 只会出现在确认解绑（resolve unbind）的响应里；GET 在解绑后返回 404。 */
+  status: external_exports.enum(["active", "frozen", "unbound"]),
+  /** 冻结原因，是给人看的一句说明。 */
+  frozen_reason: external_exports.string().optional(),
+  last_seen_commit: external_exports.string().optional(),
+  /** worker 最近一次检查仓库的结果，结构由 worker 决定，web 只做展示。 */
+  last_check: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+  last_checked_at: external_exports.string().optional()
+});
 var UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 var MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 var CreateUploadRequestSchema = external_exports.strictObject({
@@ -50700,7 +50717,9 @@ var UploadStatusSchema = external_exports.strictObject({
 var SearchQuerySchema = PageQuerySchema.extend({
   q: external_exports.string().trim().min(1).max(200).optional(),
   type: CreationTypeSchema.optional(),
-  tag: external_exports.string().max(64).optional()
+  tag: external_exports.string().max(64).optional(),
+  /** 只返回这个 namespace（当前的 slug，不带 `@`）下的作品，用于作者主页。 */
+  ns: NamespaceSlugSchema.optional()
 });
 var TOKEN_SCOPES = [
   "creations:read",
@@ -50845,7 +50864,12 @@ var ContributionDetailSchema = ContributionSummarySchema.extend({
     /** 合并后的内容不合法（例如草稿已被改得与变更不兼容）时的错误码。 */
     error: external_exports.string().optional()
   }).nullable(),
-  result_revision: external_exports.string().nullable()
+  result_revision: external_exports.string().nullable(),
+  /**
+   * 作者拒绝时填写的理由。只有 rejected 状态、并且记录了理由时才有；详情只对提交者和
+   * 作品所在 namespace 的成员可见，列表不返回这个字段。
+   */
+  decision_reason: external_exports.string().optional()
 });
 var AcceptContributionRequestSchema = external_exports.strictObject({
   /** 逐项列出确认过的敏感变更键；不接受通配符。 */
@@ -50857,8 +50881,15 @@ var RejectContributionRequestSchema = external_exports.strictObject({
 var ContributionSettingsRequestSchema = external_exports.strictObject({
   policy: external_exports.enum(["anyone", "signed-in", "invited", "closed"])
 });
-var ContributionInviteRequestSchema = external_exports.strictObject({
-  user: external_exports.string()
+var InviteNamespaceSchema = external_exports.string().regex(new RegExp(`^@?${NAMESPACE_RE.source.slice(1)}`), "not a namespace");
+var ContributionInviteRequestSchema = external_exports.union([
+  external_exports.strictObject({ user: external_exports.string().min(1).max(64) }),
+  external_exports.strictObject({ namespace: InviteNamespaceSchema })
+]);
+var ContributionInviteResponseSchema = external_exports.strictObject({
+  user: external_exports.string(),
+  namespace: external_exports.string().nullable(),
+  invited: external_exports.boolean()
 });
 var GuestDisplayNameSchema = external_exports.string().trim().min(1).max(64).regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
 var GuestVerificationRequestSchema = external_exports.strictObject({
@@ -50885,6 +50916,22 @@ var GuestSessionResponseSchema = external_exports.strictObject({
   guest: GuestSchema,
   session_expires_at: external_exports.string()
 });
+var REPORT_CATEGORIES = [
+  "sexual_minors",
+  "copyright",
+  "rating",
+  "harassment",
+  "illegal",
+  "spam"
+];
+var ReportCategorySchema = external_exports.enum(REPORT_CATEGORIES);
+var MAX_REPORT_DETAILS = 2e3;
+var CreateReportRequestSchema = external_exports.strictObject({
+  category: ReportCategorySchema,
+  details: external_exports.string().trim().max(MAX_REPORT_DETAILS).refine((s) => !new RegExp("\\p{Cc}", "u").test(s.replace(/[\n\r\t]/g, "")), "contains control characters").optional(),
+  turnstile_token: external_exports.string().min(1).max(2048).optional()
+});
+var ReportReceivedResponseSchema = external_exports.strictObject({ status: external_exports.literal("received") });
 var CreateImportRequestSchema = external_exports.strictObject({
   upload: external_exports.string().min(1).max(64),
   namespace: NamespaceSlugSchema,
@@ -50944,7 +50991,6 @@ var ContributionInvitesResponseSchema = external_exports.strictObject({
   items: external_exports.array(
     external_exports.strictObject({
       user: external_exports.string(),
-      display_name: external_exports.string().nullable(),
       namespace: external_exports.string().nullable(),
       invited_at: external_exports.string()
     })

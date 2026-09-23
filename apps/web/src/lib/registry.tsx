@@ -32,6 +32,8 @@ export const keys = {
   me: ["me"] as const,
   myCreations: ["me", "creations"] as const,
   search: (p: object) => ["search", p] as const,
+  /** namespace 改名后按 `["namespace"]` 前缀失效，作者主页会重新解析到新名字。 */
+  namespace: (slug: string) => ["namespace", slug] as const,
   creation: (ns: string, name: string) => ["creation", ns, name] as const,
   release: (ns: string, name: string, label: string) =>
     ["creation", ns, name, "release", label] as const,

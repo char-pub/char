@@ -18,19 +18,20 @@ test("playground shows the assembly trace for a sample creation", async ({ page 
 
   const table = page.getByRole("table");
   await expect(table).toBeVisible();
-  await expect(table.getByRole("columnheader", { name: "Decision" })).toBeVisible();
+  await expect(table.getByRole("columnheader", { name: "Result" })).toBeVisible();
   await expect(page.getByTestId("trace-summary")).toContainText("tokenizer: estimate");
 
   await page.getByText("Character + world + lorebook").click();
-  await expect(table.getByText("keyword:Arasaka")).toBeVisible();
+  await expect(table.getByText("The chat mentions “Arasaka”.")).toBeVisible();
 
   expect(errors).toEqual([]);
 });
 
 test("diff page highlights rating and license changes", async ({ page }) => {
   await page.goto("/playground/diff");
-  await expect(page.getByText("rating changed", { exact: true })).toBeVisible();
-  await expect(page.getByText("license changed", { exact: true })).toBeVisible();
+  const attention = page.getByRole("region", { name: "Check these before you upgrade" });
+  await expect(attention.locator('[data-highlight="rating"]')).toBeVisible();
+  await expect(attention.locator('[data-highlight="licenses"]')).toBeVisible();
 });
 
 /**
@@ -75,6 +76,6 @@ test("the production CSP from _headers is not violated", async ({ page }) => {
   await page.getByLabel("Tokenizer").selectOption("cl100k_base");
   await expect(page.getByTestId("trace-summary")).toContainText("tokenizer: cl100k_base");
   await page.goto("/playground/diff");
-  await expect(page.getByText("rating changed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Check these before you upgrade")).toBeVisible();
   expect(violations).toEqual([]);
 });

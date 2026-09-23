@@ -152,16 +152,45 @@ export function rawChangeKey(raw: unknown): string | null {
   }
 }
 
+export type ChangeValue = { text: string } | { value: string };
+
+function fragmentValue(f: unknown): ChangeValue {
+  const content = (f as { content?: { type?: string; text?: string } }).content;
+  if (content?.type === "text" && typeof content.text === "string") return { text: content.text };
+  return { value: `${content?.type ?? "unknown"} content` };
+}
+
+function displayValue(v: unknown): ChangeValue {
+  return { value: Array.isArray(v) ? v.join(", ") : typeof v === "string" ? v : JSON.stringify(v) };
+}
+
 /** 变更的新内容：文本 fragment 返回正文，其他返回可读的值；删除类变更返回 null。 */
-export function changeAfter(raw: unknown): { text: string } | { value: string } | null {
+export function changeAfter(raw: unknown): ChangeValue | null {
   if (!raw || typeof raw !== "object") return null;
   const c = raw as { on?: string; after?: unknown };
   if (c.after === undefined) return null;
-  if (c.on === "fragment") {
-    const content = (c.after as { content?: { type?: string; text?: string } }).content;
-    if (content?.type === "text" && typeof content.text === "string") return { text: content.text };
-    return { value: `${content?.type ?? "unknown"} content` };
+  if (c.on === "fragment") return fragmentValue(c.after);
+  return displayValue(c.after);
+}
+
+/**
+ * 草稿（书写形式的 Creation）里某个变更键现在的值，审阅时作为“改之前”显示。只认文本
+ * fragment 和 `meta.*` 字段；草稿里没有这一项、或者是别的种类时返回 null。
+ */
+export function draftValue(working: unknown, key: string): ChangeValue | null {
+  if (!working || typeof working !== "object") return null;
+  const w = working as { fragments?: unknown; meta?: unknown };
+  const [kind, ...rest] = key.split(":");
+  const target = rest.join(":");
+  if (kind === "fragment") {
+    if (!Array.isArray(w.fragments)) return null;
+    const f = w.fragments.find((x) => (x as { id?: unknown } | null)?.id === target);
+    return f ? fragmentValue(f) : null;
   }
-  const v = c.after;
-  return { value: Array.isArray(v) ? v.join(", ") : typeof v === "string" ? v : JSON.stringify(v) };
+  if (kind === "metadata" && target.startsWith("meta.")) {
+    if (!w.meta || typeof w.meta !== "object") return null;
+    const v = (w.meta as Record<string, unknown>)[target.slice("meta.".length)];
+    return v === undefined ? null : displayValue(v);
+  }
+  return null;
 }

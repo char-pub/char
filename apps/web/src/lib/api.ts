@@ -10,6 +10,8 @@ import {
   type ConfirmImportRequestSchema,
   ContributionDetailSchema,
   type ContributionInvite,
+  ContributionInviteResponseSchema,
+  type ContributionInviteResult,
   ContributionInvitesResponseSchema,
   type ContributionSettingsRequestSchema,
   ContributionSummarySchema,
@@ -32,7 +34,13 @@ import {
   ReleaseDetailSchema,
   type ReleaseSource,
   ReleaseSourceSchema,
+  type ReleaseSummary,
+  ReleaseSummarySchema,
+  type ReportCategory,
+  ReportReceivedResponseSchema,
   RevisionSchema,
+  type SourceBinding,
+  SourceBindingSchema,
   type TOKEN_SCOPES,
   UploadStatusSchema,
 } from "@char-pub/contracts";
@@ -119,11 +127,23 @@ export const AcceptedContributionSchema = z.object({
 });
 export type AcceptedContribution = z.infer<typeof AcceptedContributionSchema>;
 
+/** 举报原因（六类）与说明的长度上限，表单直接用这里的值。 */
+export { MAX_REPORT_DETAILS, REPORT_CATEGORIES } from "@char-pub/contracts";
 /**
  * 一个 Release 的来源（`ReleaseSource`）：它对应的 Revision 与 canonical 形式的 Creation。
  * 贡献者在这份内容上修改，变更里的 `base_digest` 按它计算。
  */
-export type { ContributionInvite, ReleaseSource };
+export type { ContributionInvite, ContributionInviteResult, ReleaseSource, ReportCategory };
+
+/**
+ * 一条举报。登录用户与经验证访客不需要 `turnstile_token`；匿名用户必须带，widget 的 action
+ * 用 `REPORT_TURNSTILE_ACTION`（见 `@/lib/turnstile`）。
+ */
+export interface NewReport {
+  category: ReportCategory;
+  details?: string | undefined;
+  turnstile_token?: string | undefined;
+}
 
 export interface ContributionQuery {
   status?: ContributionStatus | undefined;
@@ -138,7 +158,6 @@ export type {
   Me,
   MyCreation,
   ReleaseDetail,
-  ReleaseSummary,
 } from "@char-pub/contracts";
 
 export const TokenSchema = z.object({
@@ -151,6 +170,8 @@ export const TokenSchema = z.object({
   created_at: z.string(),
 });
 export type PersonalToken = z.infer<typeof TokenSchema>;
+export type Namespace = z.infer<typeof NamespaceSchema>;
+export type { ReleaseSummary, SourceBinding };
 export type TokenScope = (typeof TOKEN_SCOPES)[number];
 export type CreatedToken = z.infer<typeof CreateTokenResponseSchema>;
 
@@ -158,6 +179,8 @@ export interface SearchParams {
   q?: string | undefined;
   type?: CreationType | undefined;
   tag?: string | undefined;
+  /** 只要这个 namespace（当前 slug，不带 `@`）下的作品，用于作者主页。 */
+  ns?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
 }
@@ -186,7 +209,28 @@ export interface RegistryClient {
   getIR(ns: string, name: string, label: string, opts?: { private?: boolean }): Promise<ContextIR>;
   dependents(ns: string, name: string): Promise<DependentsPage>;
   exportCcv3(ns: string, name: string, label: string): Promise<ExportState>;
-  createNamespace(slug: string): Promise<z.infer<typeof NamespaceSchema>>;
+  /**
+   * 作者 yank 自己的某个版本，`reason`（3–500 字）会公开显示。已经锁定这个版本的依赖仍能读到
+   * 内容，但页面会提示，新依赖也不应再选它。重复 yank 直接返回当前状态。
+   */
+  yankRelease(ns: string, name: string, label: string, reason: string): Promise<ReleaseSummary>;
+  /** 作品绑定的 GitHub 仓库；没有绑定时为 null。只有作品成员能查看。 */
+  sourceBinding(ns: string, name: string): Promise<SourceBinding | null>;
+  /** 仓库被转移、binding 冻结后，作者确认继续用这个仓库（rebind）或解绑（unbind）。 */
+  resolveSourceBinding(
+    ns: string,
+    name: string,
+    action: "rebind" | "unbind",
+  ): Promise<SourceBinding>;
+  unbindSource(ns: string, name: string): Promise<void>;
+  createNamespace(slug: string): Promise<Namespace>;
+  /** namespace 的公开信息。改过名的旧 slug 会被重定向，返回的是新名字。 */
+  namespace(slug: string): Promise<Namespace>;
+  /**
+   * 给自己的 namespace 改名。旧名永久重定向到新名，别人也不能再注册；新名已被占用或是保留名时
+   * 抛出 409 `namespace.taken` / `namespace.reserved`。
+   */
+  renameNamespace(slug: string, newSlug: string): Promise<Namespace>;
   createCreation(
     ns: string,
     body: { name: string; type: CreationType; display_name: string },
@@ -237,7 +281,27 @@ export interface RegistryClient {
   /** 邀请名单（只有作者能读取）。 */
   contributionInvites(ns: string, name: string): Promise<{ items: ContributionInvite[] }>;
   invite(ns: string, name: string, user: string): Promise<void>;
+  /**
+   * 按对方的个人 namespace（`@slug` 或 `slug`）邀请，返回被邀请人的用户 ID 与当前的
+   * `@namespace`。找不到这个人时抛出 `contribution.invite_unknown_user`（422）。
+   * 取消邀请用 `uninvite`，`user` 传用户 ID 或 `@slug` 都可以。
+   */
+  inviteByNamespace(ns: string, name: string, namespace: string): Promise<ContributionInviteResult>;
   uninvite(ns: string, name: string, user: string): Promise<void>;
+
+  /**
+   * 举报一个作品；`opts.label` 给出时举报这个版本。成功只返回 `{ status: "received" }`，
+   * 不透露后续处理。看不到的作品或版本（包括别人的 private 版本）与不存在一样抛出 404
+   * `not_found`；匿名用户没带或没通过 Turnstile 抛出 403 `turnstile.required` /
+   * `turnstile.failed`；服务端没有配置 Turnstile 时匿名举报抛出 503 `report.anonymous_unavailable`；
+   * 限流是 429 `rate_limited`。
+   */
+  submitReport(
+    ns: string,
+    name: string,
+    body: NewReport,
+    opts?: { label?: string | undefined },
+  ): Promise<{ status: "received" }>;
 
   /** 当前的访客会话；没有时为 null。 */
   guestMe(): Promise<GuestSession | null>;
@@ -380,6 +444,23 @@ export function createRegistryClient(
     },
     dependents: (ns, name) =>
       json(DependentsPageSchema, "GET", `${creationPath(ns, name)}/dependents?limit=50`),
+    yankRelease: (ns, name, label, reason) =>
+      json(ReleaseSummarySchema, "POST", `${release(ns, name, label)}/yank`, { body: { reason } }),
+    async sourceBinding(ns, name) {
+      try {
+        return await json(SourceBindingSchema, "GET", `${creationPath(ns, name)}/source-binding`);
+      } catch (e) {
+        if (isApiError(e) && e.status === 404) return null;
+        throw e;
+      }
+    },
+    resolveSourceBinding: (ns, name, action) =>
+      json(SourceBindingSchema, "POST", `${creationPath(ns, name)}/source-binding/resolve`, {
+        body: { action },
+      }),
+    async unbindSource(ns, name) {
+      await send("DELETE", `${creationPath(ns, name)}/source-binding`);
+    },
     async exportCcv3(ns, name, label) {
       const url = ccv3DownloadUrl(ns, name, label, base);
       let res: Response;
@@ -399,6 +480,11 @@ export function createRegistryClient(
       throw await problemOf(res);
     },
     createNamespace: (slug) => json(NamespaceSchema, "POST", "/v1/namespaces", { body: { slug } }),
+    namespace: (slug) => json(NamespaceSchema, "GET", `/v1/namespaces/${encodeURIComponent(slug)}`),
+    renameNamespace: (slug, newSlug) =>
+      json(NamespaceSchema, "PATCH", `/v1/namespaces/${encodeURIComponent(slug)}`, {
+        body: { new_slug: newSlug },
+      }),
     createCreation: (ns, body) =>
       json(
         z.object({ id: z.string(), ref: z.string(), type: CreationTypeSchema }),
@@ -474,11 +560,26 @@ export function createRegistryClient(
     async invite(ns, name, user) {
       await send("POST", `${creationPath(ns, name)}/contribution-invites`, { body: { user } });
     },
+    inviteByNamespace: (ns, name, namespace) =>
+      json(
+        ContributionInviteResponseSchema,
+        "POST",
+        `${creationPath(ns, name)}/contribution-invites`,
+        { body: { namespace } },
+      ),
     async uninvite(ns, name, user) {
       await send(
         "DELETE",
         `${creationPath(ns, name)}/contribution-invites/${encodeURIComponent(user)}`,
       );
+    },
+
+    submitReport(ns, name, body, o = {}) {
+      const target = o.label ? release(ns, name, o.label) : creationPath(ns, name);
+      const payload: Record<string, string> = { category: body.category };
+      if (body.details?.trim()) payload.details = body.details;
+      if (body.turnstile_token) payload.turnstile_token = body.turnstile_token;
+      return json(ReportReceivedResponseSchema, "POST", `${target}/reports`, { body: payload });
     },
 
     async guestMe() {

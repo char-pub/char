@@ -1,11 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Editor } from "@/components/editor/editor";
+import { Container } from "@/components/layout";
 import { SignInRequired } from "@/components/sign-in-required";
+import { PageSkeleton } from "@/components/skeletons";
+import { ErrorState, StatePanel } from "@/components/states";
+import { buttonVariants } from "@/components/ui/button";
 import { isApiError } from "@/lib/api";
 import { keys, useMe, useRegistry } from "@/lib/registry";
 
-export const Route = createFileRoute("/c/$ns/$name_/edit")({ component: EditRoute });
+export const Route = createFileRoute("/c/$ns/$name_/edit")({
+  // 编辑器是整页工作区：编辑栏通栏，内容区自己用 Container 对齐。
+  staticData: { fullBleed: true },
+  component: EditRoute,
+});
 
 function EditRoute() {
   const { ns, name } = Route.useParams();
@@ -27,27 +35,61 @@ function EditRoute() {
     gcTime: 0,
   });
 
-  if (me.isPending) return <p className="text-muted-foreground">Loading…</p>;
-  if (!me.data) return <SignInRequired what="edit this creation" />;
+  if (me.isPending) {
+    return (
+      <Container className="py-10">
+        <PageSkeleton label="Loading the editor" />
+      </Container>
+    );
+  }
+  if (!me.data) {
+    return (
+      <Container className="py-10">
+        <SignInRequired what="edit this creation" />
+      </Container>
+    );
+  }
   if (detail.isPending || draft.isPending) {
-    return <p className="text-muted-foreground">Loading the draft…</p>;
+    return (
+      <Container className="py-10">
+        <PageSkeleton label="Loading the draft" />
+      </Container>
+    );
   }
   if (detail.isError || draft.isError) {
     const e = detail.error ?? draft.error;
     return (
-      <section className="space-y-3 py-10">
-        <h1 className="text-3xl">
-          {isApiError(e) && e.status === 404
-            ? "You can't edit this creation."
-            : "The draft could not be loaded."}
-        </h1>
-        <p className="text-muted-foreground">
-          Only members of <span className="font-mono">@{ns}</span> can edit its drafts.{" "}
-          <Link to="/me" className="underline">
-            Go to your creations
-          </Link>
-        </p>
-      </section>
+      <Container className="py-10">
+        {isApiError(e) && (e.status === 404 || e.status === 403) ? (
+          <StatePanel
+            level={1}
+            code="404"
+            title="You can't edit this creation"
+            description={
+              <>
+                Only members of <span className="font-mono">@{ns}</span> can edit its drafts, or the
+                address is wrong.
+              </>
+            }
+            className="mx-auto max-w-xl"
+          >
+            <Link to="/me" className={buttonVariants({ variant: "outline" })}>
+              Go to your creations
+            </Link>
+          </StatePanel>
+        ) : (
+          <ErrorState
+            level={1}
+            title="The draft could not be loaded"
+            error={e}
+            onRetry={() => {
+              void detail.refetch();
+              void draft.refetch();
+            }}
+            className="mx-auto max-w-xl"
+          />
+        )}
+      </Container>
     );
   }
 
@@ -60,6 +102,8 @@ function EditRoute() {
       type={detail.data.type}
       draft={draft.data}
       existingLabels={detail.data.releases.map((r) => r.label)}
+      releases={detail.data.releases}
+      latestPublicLabel={detail.data.latest_release?.label}
     />
   );
 }

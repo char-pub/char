@@ -1,8 +1,9 @@
 /**
- * 公开搜索：`GET /v1/search?q=&type=&tag=&cursor=&limit=`。
+ * 公开搜索：`GET /v1/search?q=&type=&tag=&ns=&cursor=&limit=`。
  *
  * 结果只包含有 active public Release 的作品；mature / explicit 的过滤在服务端强制，
- * 客户端无法通过参数绕过。
+ * 客户端无法通过参数绕过。`ns` 按 namespace 的当前 slug 精确过滤（作者主页用），
+ * 其他过滤条件照常生效：它只能缩小结果，不会让私有或被隐藏的作品出现。
  */
 import { SearchQuerySchema } from "@char-pub/contracts";
 import type { Hono } from "hono";
@@ -37,6 +38,7 @@ export function register(app: Hono<Env>): void {
           q: parsed.data.q,
           type: parsed.data.type,
           tag: parsed.data.tag,
+          ns: parsed.data.ns,
           limit: parsed.data.limit,
           offset,
         },
