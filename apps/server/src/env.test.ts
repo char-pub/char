@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DatabaseEnvSchema,
   EnvError,
+  GitHubEnvSchema,
+  githubConfigFromEnv,
   MigrationEnvSchema,
   parseEnv,
   ServerEnvSchema,
@@ -79,5 +81,34 @@ describe("parseEnv", () => {
         DATABASE_APP_ROLE: "bad role;",
       }),
     ).toThrow(EnvError);
+  });
+});
+
+describe("GitHub integration config", () => {
+  // 不是真正的密钥，只用来检查换行的还原。
+  const full = {
+    GITHUB_APP_ID: "123456",
+    GITHUB_APP_PRIVATE_KEY: "line-1\\nline-2\\nline-3",
+    GITHUB_WEBHOOK_SECRET: "w".repeat(32),
+    OIDC_AUDIENCE: "https://api.char.pub/",
+  };
+
+  it("is off when nothing is configured (local development)", () => {
+    expect(githubConfigFromEnv(parseEnv(GitHubEnvSchema, {}))).toBeNull();
+  });
+
+  it("refuses a partial configuration", () => {
+    expect(() =>
+      parseEnv(GitHubEnvSchema, { GITHUB_APP_ID: "1", GITHUB_WEBHOOK_SECRET: "w".repeat(32) }),
+    ).toThrow(EnvError);
+  });
+
+  it("restores newlines in the private key, trims the audience, and keeps the previous secret", () => {
+    const cfg = githubConfigFromEnv(
+      parseEnv(GitHubEnvSchema, { ...full, GITHUB_WEBHOOK_SECRET_PREVIOUS: "p".repeat(32) }),
+    );
+    expect(cfg?.privateKey).toBe("line-1\nline-2\nline-3");
+    expect(cfg?.oidcAudience).toBe("https://api.char.pub");
+    expect(cfg?.webhookSecrets).toEqual(["w".repeat(32), "p".repeat(32)]);
   });
 });

@@ -19,14 +19,19 @@ import {
   AuthEnvSchema,
   authProvidersFromEnv,
   EdgeEnvSchema,
+  GitHubEnvSchema,
+  githubConfigFromEnv,
   originSecretsFromEnv,
   parseEnv,
   ServerEnvSchema,
 } from "../env.js";
+import type { GitHubDeps } from "../github/deps.js";
+import { GitHubAppSource } from "../github/source.js";
 import { JobQueue } from "../jobs/queue.js";
+import { githubJwks } from "../oidc/github.js";
 import { FlagCache } from "../ops/flags.js";
 import { Cas, casConfigFromEnv } from "../storage/cas.js";
-import { API_MODULES, startWorkers } from "./modules.js";
+import { API_MODULES, githubApiModules, startGitHubWorkers, startWorkers } from "./modules.js";
 
 export interface Started {
   fetch: (req: Request) => Response | Promise<Response>;
@@ -75,13 +80,14 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       providers: authProvidersFromEnv(authEnv),
       ipAddressHeaders: ["cf-connecting-ip"],
     });
+    const gh = githubFromEnv();
     const app = createApi({
       services,
       originSecrets: originSecretsFromEnv(edge),
       allowedOrigins: authEnv.AUTH_TRUSTED_ORIGINS,
       sessionPrincipal: sessionPrincipalResolver(auth),
       authHandler: (req) => auth.handler(req),
-      modules: API_MODULES,
+      modules: gh ? [...API_MODULES, ...githubApiModules(gh)] : API_MODULES,
     });
     return { fetch: app.fetch, shutdown };
   }
@@ -106,6 +112,8 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
   }
 
   await startWorkers(services);
+  const gh = githubFromEnv();
+  if (gh) await startGitHubWorkers(services, gh.source);
   return {
     fetch: (req) =>
       new URL(req.url).pathname === "/healthz"
@@ -113,5 +121,23 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
         : new Response("not found", { status: 404 }),
     hostname: "127.0.0.1",
     shutdown,
+  };
+}
+
+/**
+ * 读取 GitHub 集成的配置。没有配置时（本地开发）返回 null：api 不挂载 GitHub 路由，
+ * worker 不注册 GitHub 任务。
+ */
+function githubFromEnv(): GitHubDeps | null {
+  const cfg = githubConfigFromEnv(parseEnv(GitHubEnvSchema));
+  if (!cfg) {
+    process.stdout.write("github integration is not configured; GitHub routes and jobs are off\n");
+    return null;
+  }
+  return {
+    source: new GitHubAppSource({ appId: cfg.appId, privateKey: cfg.privateKey }),
+    webhookSecrets: cfg.webhookSecrets,
+    oidcAudience: cfg.oidcAudience,
+    jwks: githubJwks(),
   };
 }
