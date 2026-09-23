@@ -40,3 +40,13 @@
 | admin-api 未经 Access 被拒 | Access 拦截 | 待 Access 应用建立后核验 |
 
 结论：M9-3 中“直接访问源站被拒”与“限流规则生效”两项已核验；“admin-api 不经 Access 被拒”待 Access 配置后补验，届时勾选 M9-3。M9-2 需要 admin 与 admin SPA 上线、冒烟测试全部通过后勾选。
+
+## 补验（Cloudflare Access 与集成配置之后）
+
+- Access：`char.pub admin` 应用覆盖 `admin.char.pub` 与 `admin-api.char.pub`。发现用户建的可复用策略把“GitHub 登录”放在 Include 中，任何能用 GitHub 登录的人都能通过；经用户同意改为 Include `char-pub` 组织、Require GitHub 登录，会话 8 小时。admin 的 `CF_ACCESS_TEAM_DOMAIN` 原先误填为 AUD，已更正为 `https://iamdjj.cloudflareaccess.com`，`CF_ACCESS_AUD` 取自应用。
+- admin 进程 Online；admin SPA 部署到 `admin.char.pub`（Workers 自定义域名）。
+- `pnpm smoke`：**6 项全部 ok**（web、api 健康检查、匿名搜索、problem+json、admin-api 未经 Access 302 到登录页、admin SPA 未经 Access 302）。
+- 边缘防护补验：未经 Access 访问 `admin.char.pub` 与 `admin-api.char.pub` 均 302 到 `iamdjj.cloudflareaccess.com` 登录页；自带伪造的 `cf-access-jwt-assertion` 同样 302；绕过 Cloudflare 直连 Railway 的 admin 为 403 `origin.forbidden`。
+- 集成：GitHub OAuth 登录可用（用户已登录；`bootstrap --owner` 与 `--system-namespace commons` 完成）；GitHub App `char-pub` 以 App 身份认证成功（权限 contents / metadata 只读，订阅 push 与 repository），webhook 签名正确 200、错误 401，安装事件已入库；访客验证已启用（无效 Turnstile token 返回 403）。
+
+结论：M9-2、M9-3 满足，勾选。

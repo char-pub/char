@@ -58,6 +58,8 @@ export const contributions = app.table(
     rightsAck: jsonb("rights_ack").notNull(),
     decidedBy: uuid("decided_by").references(() => authUser.id),
     decidedAt: ts("decided_at"),
+    /** 作者拒绝时填写的理由，提交者在详情里可以看到。 */
+    decisionReason: text("decision_reason"),
     resultRevisionId: uuid("result_revision_id").references(() => revisions.id),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

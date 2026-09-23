@@ -29,6 +29,14 @@ export function requestIdOf(c: AppContext): string | null {
   return (c.get("requestId") as string | undefined) ?? null;
 }
 
+/**
+ * 客户端 IP。线上请求一定经过 Cloudflare（源站校验），这个头由 Cloudflare 写入，客户端
+ * 无法伪造；本地开发与测试里可能没有。
+ */
+export function clientIp(c: AppContext): string | undefined {
+  return c.req.header("cf-connecting-ip") ?? undefined;
+}
+
 /** 读取路由声明过的路径参数。路由匹配成功时它一定存在。 */
 export function param(c: AppContext, name: string): string {
   return c.req.param(name) ?? "";

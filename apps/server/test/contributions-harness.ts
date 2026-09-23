@@ -1,5 +1,5 @@
 /**
- * Contribution 集成测试的公共工具：在写路径的测试环境上再挂载 Contribution 路由，
+ * Contribution 集成测试的公共工具：在写路径的测试环境上再挂载 Contribution 与举报路由，
  * 并提供建作品、改草稿、发 Contribution 的快捷方法。
  *
  * 访客：`createGuest` 直接在数据库里写入一个已验证的访客并为它建立真实的访客会话，
@@ -10,6 +10,7 @@ import { uuidv7 } from "uuidv7";
 import type { Services } from "../src/api/app.js";
 import { register as contributions } from "../src/api/routes/contributions.js";
 import { register as read } from "../src/api/routes/read.js";
+import { register as reports } from "../src/api/routes/reports.js";
 import { REGISTRY_WRITE_MODULES } from "../src/api/routes/write.js";
 import { createApi } from "../src/api/server.js";
 import { createGuestSession, GUEST_COOKIE, randomGuestToken } from "../src/auth/guest.js";
@@ -69,8 +70,8 @@ export async function createContributionHarness(
     originSecrets: [],
     allowedOrigins: [ORIGIN],
     sessionPrincipal,
-    // 与生产环境的模块顺序一致：读取接口（包括 Release 的源内容）也挂载上。
-    modules: [...REGISTRY_WRITE_MODULES, read, contributions],
+    // 与生产环境的模块顺序一致：读取接口（包括 Release 的源内容）与举报也挂载上。
+    modules: [...REGISTRY_WRITE_MODULES, read, contributions, reports],
   });
 
   const requester = (auth: Record<string, string>): Requester => {

@@ -129,6 +129,8 @@ export type Action =
   | "guest.read_self"
   /** 退出访客会话。 */
   | "guest.sign_out"
+  /** 举报一个作品或它的某个版本。 */
+  | "report.create"
   | "search";
 
 export type Decision =
@@ -177,6 +179,7 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "account.update_settings",
   "account.manage_tokens",
   "guest.verify",
+  "report.create",
 ]);
 
 /** 动作对应的 kill switch。 */
@@ -418,5 +421,11 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
       if (r.type !== "system") return deny(403, "bad_resource");
       if (p.kind === "guest") return ALLOW;
       return p.kind === "anonymous" ? deny(401, "auth.required") : deny(403, "forbidden");
+
+    // 看得见的作品和版本任何人都可以举报：登录用户、访客或匿名。匿名举报的 Turnstile 与
+    // 所有人的限流在路由里执行；OIDC 发布凭证只能发布，不能代表任何人举报。
+    case "report.create":
+      if (r.type !== "creation" && r.type !== "release") return deny(403, "bad_resource");
+      return p.kind === "oidc" ? deny(403, "forbidden") : ALLOW;
   }
 }
