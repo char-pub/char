@@ -18,6 +18,7 @@ import {
   requestId,
 } from "../http/middleware.js";
 import type { Env, Services } from "./app.js";
+import { DRAFT_PATH_RE, MAX_DRAFT_BYTES } from "./routes/drafts.js";
 
 export interface ApiOptions {
   services: Services;
@@ -39,7 +40,10 @@ export function createApi(opts: ApiOptions): Hono<Env> {
   if (opts.originSecrets.length > 0) app.use(originAuth({ secrets: opts.originSecrets }));
   app.use(apiSecurityHeaders());
   app.use(originCheck({ allowed: opts.allowedOrigins }));
-  app.use(jsonBodyLimit());
+  // 草稿保存的请求体可以更大（上限 5 MiB），其他请求 1 MiB。
+  const normalLimit = jsonBodyLimit();
+  const draftLimit = jsonBodyLimit(MAX_DRAFT_BYTES);
+  app.use((c, next) => (DRAFT_PATH_RE.test(c.req.path) ? draftLimit : normalLimit)(c, next));
   app.use(async (c, next) => {
     c.set("services", opts.services);
     const auth = c.req.header("authorization");

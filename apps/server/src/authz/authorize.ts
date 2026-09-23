@@ -103,6 +103,7 @@ export type Action =
   | "upload.read"
   | "import.create"
   | "namespace.create"
+  | "namespace.rename"
   | "account.read"
   | "account.manage_tokens"
   | "search";
@@ -145,6 +146,7 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "upload.create",
   "import.create",
   "namespace.create",
+  "namespace.rename",
   "account.manage_tokens",
 ]);
 
@@ -270,6 +272,16 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
     case "creation.create":
       if (r.type !== "namespace") return deny(403, "bad_resource");
       return requireMember(p, r.ns);
+
+    case "namespace.rename": {
+      // 改名影响所有作品的公共标识，只有 owner 可以操作；Token 不能改名。
+      if (r.type !== "namespace") return deny(403, "bad_resource");
+      const m = requireMember(p, r.ns);
+      if (!m.allow) return m;
+      if (r.ns.role !== "owner") return deny(403, "forbidden");
+      if (p.kind === "user" && p.scopes) return deny(403, "token.not_allowed");
+      return ALLOW;
+    }
 
     case "creation.edit":
     case "creation.update_settings":

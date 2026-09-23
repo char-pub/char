@@ -22,6 +22,13 @@
       "when": 1790121361979,
       "tag": "0002_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790122412956,
+      "tag": "0003_release_constraints",
+      "breakpoints": true
     }
   ]
 }
