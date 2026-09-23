@@ -173,7 +173,7 @@ export function TokenDelta({ delta }: { delta: NonNullable<ContextDiff["token_de
       </p>
       <p className="font-mono text-xs text-text-3">
         tokenizer: {delta.tokenizer}
-        {estimate ? " (estimate)" : ""}
+        {estimate ? " · approximate" : ""}
       </p>
     </section>
   );

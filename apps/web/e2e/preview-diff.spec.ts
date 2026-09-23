@@ -167,7 +167,7 @@ test("comparing two releases puts rating and license changes first", async ({ pa
   // 片段与 token 的变化，并注明估算。
   await expect(page.getByRole("heading", { name: "Passages" })).toBeVisible();
   await expect(page.getByText("Always in context")).toBeVisible();
-  await expect(page.getByText("tokenizer: estimate (estimate)")).toBeVisible();
+  await expect(page.getByText("tokenizer: estimate · approximate")).toBeVisible();
 
   // 点版本列表里的圆圈也能换比较对象；选择同一个版本时不做比较。
   await versions.getByLabel("From", { exact: true }).selectOption("1.2.0");

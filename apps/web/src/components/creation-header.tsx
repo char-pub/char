@@ -45,11 +45,15 @@ function Avatar() {
   const avatar = ir?.assets.find(
     (a) => a.origin.creation === ir.root.ref && a.origin.slot === "avatar" && a.url,
   );
-  if (avatar?.url && (!isAdultRating(avatar.rating) || c.allowMature)) {
+  // 图片加载失败时退回首字母，不让浏览器把 alt 文字挤在方框里。换了版本（地址变了）再试一次。
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  if (avatar?.url && avatar.url !== failedUrl && (!isAdultRating(avatar.rating) || c.allowMature)) {
+    const url = avatar.url;
     return (
       <img
-        src={avatar.url}
+        src={url}
         alt={avatar.alt ?? ""}
+        onError={() => setFailedUrl(url)}
         className="size-20 shrink-0 rounded-lg border object-cover sm:size-28"
       />
     );
