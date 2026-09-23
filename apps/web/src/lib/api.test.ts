@@ -65,6 +65,16 @@ describe("registry client", () => {
   });
 });
 
+describe("search", () => {
+  it("passes the namespace filter and leaves out empty parameters", async () => {
+    const r = recorder([json({ items: [], next_cursor: null })]);
+    const client = createRegistryClient({ baseUrl: "https://api.test", fetch: r.fetch });
+    const page = await client.search({ ns: "kate", q: "", type: "character", cursor: undefined });
+    expect(page).toEqual({ items: [], next_cursor: null });
+    expect(r.calls[0]?.url).toBe("https://api.test/v1/search?ns=kate&type=character");
+  });
+});
+
 describe("draft helpers", () => {
   it("writes the level-0 fields into the authoring form", () => {
     let w: Working = { display_name: "x" };

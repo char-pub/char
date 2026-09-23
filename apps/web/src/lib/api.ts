@@ -158,6 +158,8 @@ export interface SearchParams {
   q?: string | undefined;
   type?: CreationType | undefined;
   tag?: string | undefined;
+  /** 只要这个 namespace（当前 slug，不带 `@`）下的作品，用于作者主页。 */
+  ns?: string | undefined;
   cursor?: string | undefined;
   limit?: number | undefined;
 }

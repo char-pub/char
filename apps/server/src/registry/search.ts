@@ -130,6 +130,8 @@ export interface SearchInput {
   q?: string | undefined;
   type?: CreationType | undefined;
   tag?: string | undefined;
+  /** 只要这个 namespace（当前 slug）下的作品；旧名不跟随重定向。 */
+  ns?: string | undefined;
   limit: number;
   /** 上一页最后一条的偏移量（按排序后的位置）。 */
   offset: number;
@@ -174,6 +176,7 @@ export async function searchCreations(
     )}))`,
   ];
   if (input.type) conds.push(eq(creations.type, input.type));
+  if (input.ns) conds.push(eq(namespaces.slug, input.ns));
   if (input.tag)
     conds.push(sql`${creations.tags} @> ARRAY[${normalizeForSearch(input.tag)}]::text[]`);
 

@@ -218,6 +218,8 @@ export const SearchQuerySchema = PageQuerySchema.extend({
   q: z.string().trim().min(1).max(200).optional(),
   type: CreationTypeSchema.optional(),
   tag: z.string().max(64).optional(),
+  /** 只返回这个 namespace（当前的 slug，不带 `@`）下的作品，用于作者主页。 */
+  ns: NamespaceSlugSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
