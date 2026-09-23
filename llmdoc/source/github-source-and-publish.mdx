@@ -1,8 +1,12 @@
 ---
-description: "GitHub App 绑定、webhook 同步、仓库转移冻结、Action OIDC 身份与服务端重读 commit 发布"
+description: "GitHub 关联身份、App 安装、仓库写权限 lookup/bind/rebind、转移冻结、webhook 与 Action OIDC 发布"
 kind: architecture
 code:
   paths:
+    - "apps/server/src/api/routes/github-bindings.ts"
+    - "apps/server/src/github/source.ts"
+    - "apps/web/src/components/source-connect.tsx"
+    - "apps/web/src/components/source-binding.tsx"
     - "actions/publish/action.yml"
     - "actions/publish/src/run.ts"
     - "apps/server/src/github/bindings.ts"
@@ -18,12 +22,15 @@ relations:
     - "registry/publishing.mdx"
     - "authoring/cli-workflow.mdx"
   related:
+    - "identity/creator-and-guest.mdx"
     - "identity/public-authorization.mdx"
 ---
 
 # GitHub 来源与发布信任链
 
 GitHub App 绑定使用不可复用的数字仓库及 owner 身份，不能只靠可改名的仓库路径。转移或所有者不一致时冻结来源，待重新确认后再恢复。webhook 验证原始请求字节的 HMAC，按 delivery 去重；push 同步来源状态，不自动发布 Release。
+
+浏览器连接先关联 GitHub 身份、安装 App，再查找仓库。App 能访问仓库只证明安装授权，不能证明当前创作者有绑定权；lookup 在返回私有仓库信息前，bind 和冻结后的 rebind 在写入前，都要用已关联的 GitHub 数字账户身份重新验证仓库写权限。数字身份解析为当前路径或 login 后，还须核对权限响应里的数字身份，避免改名竞争把权限授予另一账户。
 
 Publish Action 在允许的 push、workflow_dispatch 或 release 工作流中计算本地摘要并申请 OIDC token；PR 事件不得取得发布路径。OIDC 证明的是受约束的仓库工作流身份、ref、sha、事件和 token 新鲜度，不证明运行的 Action 源码一定可信。Registry 校验这些声明和重放标识后，用 GitHub App 权限在该 commit 重新读取源文件，按同一项目解析算法重算 digest。Action 提交的摘要只是比对值，不是最终内容权威。
 

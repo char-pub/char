@@ -3,6 +3,7 @@ description: "Better Auth OAuth 创作者会话、个人 Token、访客邮箱 HM
 kind: architecture
 code:
   paths:
+    - "apps/web/src/components/token-manager.tsx"
     - "apps/server/src/auth/better-auth.ts"
     - "apps/server/src/auth/guest.ts"
     - "apps/server/src/auth/turnstile.ts"
@@ -19,6 +20,8 @@ relations:
 # 创作者与访客身份
 
 创作者通过 API 域名上的 HttpOnly 会话 cookie 或受限个人 Token 访问能力；封禁与权限变更要在请求时生效，不能依赖前端缓存。OAuth 的同邮箱账户不自动合并，身份关联须由明确操作完成，避免把可变邮箱当作账户所有权证明。
+
+GitHub 来源连接先显式关联登录身份，再验证仓库能力；已安装 App 不等于已关联创作者。个人 Token 可声明用于 agent，前端负责收集和展示标记，后续操作的 agent 来源由服务端主体强制确定，不能靠客户端取消标签。
 
 访客验证与创作者登录是不同能力。访客用邮件验证和 HMAC 保护的凭据建立有限会话，不能据此获得创作者 Token、namespace 或管理权限。Turnstile 按表单 action 和允许的 hostname 校验，token 不能在访客验证与匿名举报之间复用。没有完整配置访客服务时，相关接口显式返回 503；已登录用户和有效访客可使用各自允许的举报路径。
 
