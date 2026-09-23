@@ -165,6 +165,20 @@ export function Editor({
 
   return (
     <div className="flex flex-1 flex-col">
+      {draft.unconfirmed_import ? (
+        <Container className="py-4">
+          <div role="status" className="rounded-lg bg-warning-soft p-4 text-sm">
+            Confirm the imported card’s rating, rights and license before publishing.{" "}
+            <Link
+              to="/create/import"
+              search={{ resume: draft.unconfirmed_import }}
+              className="font-semibold underline"
+            >
+              Review and confirm the import
+            </Link>
+          </div>
+        </Container>
+      ) : null}
       <div className="sticky top-0 z-30 border-b bg-surface">
         <Container className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
           <Link

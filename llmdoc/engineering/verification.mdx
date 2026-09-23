@@ -3,6 +3,7 @@ description: "改动核心算法后怎样验证 Node、浏览器和 workerd 三�
 kind: guide
 code:
   paths:
+    - "apps/web/e2e/fullstack.spec.ts"
     - "package.json"
     - ".github/workflows/ci.yml"
     - ".dependency-cruiser.cjs"
@@ -25,3 +26,5 @@ relations:
 依赖规则保持 Core 零 IO、纯包与应用之间的方向，管理前端不能反向引用服务端私有实现。CI 还检查类型、构建、依赖边界、分发 bundle 与源一致、密钥泄露，以及独立的代码和依赖安全扫描。具体脚本、版本和覆盖率阈值以根 `package.json` 与 workflow 配置为准，不在本文重复易变数值。
 
 本地全栈验证可从服务启动和冒烟脚本进入，尤其要确认迁移、API、worker、前端与对象存储一起工作。测试结果应按实际运行范围报告：单测通过不能推断生产外部服务可用，draft conformance 通过不能推断多运行时语义已被人工认可。
+
+跨层 fixture 应由真实生产者生成，或先经过权威 schema 校验，避免手写对象和错误实现互相迎合。关键全栈验证必须检查消费端实际读到的字节：例如上传后刷新仍能读取私有预览，公开发布后公共 URL 确实返回图片；仅断言任务完成或数据库 active 不能证明分发链路可用。

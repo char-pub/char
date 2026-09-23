@@ -1,8 +1,10 @@
 ---
-description: "CCv3 浏览器导入向导、私有原件与 Import Report、图片处理、作者确认、重试死信"
+description: "CCv3 导入向导、私有原件与 Import Report、未确认导入恢复、作者显式确认与重试"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/routes/create.import.tsx"
+    - "apps/server/src/api/routes/drafts.ts"
     - "apps/web/src/lib/import.ts"
     - "apps/web/src/components/import-wizard.tsx"
     - "apps/server/src/api/routes/imports.ts"
@@ -23,5 +25,7 @@ relations:
 浏览器上传 CCv3 卡片后，服务端把原件留在私有存储，由 worker 解析并生成 Creation 候选与 Import Report。浏览器向导展示结果和需要作者确认的权利、评级、许可及遗漏字段；报告和原件只向有权主体开放。导入成功只是建立可编辑草稿，不证明卡片来源拥有再分发权，也不绕过发布检查。
 
 卡内图片逐个经过上传安全管线，容器解析成功不代表每张图都 ready。解析错误、暂时性存储故障和不可恢复的输入错误应分开处理；可重试任务依据持久状态继续，重试耗尽进入死信供受控重投。处理过程中要避免部分结果被误认作完整可发布草稿。
+
+处理成功与作者确认是分开的持久状态。草稿只向原上传者暴露未确认导入入口；离开向导后可从报告和当前草稿恢复，无需再次上传。恢复不自动认可权利、评级或许可，作者仍须明确完成三项选择。
 
 确认必须由服务端按原报告和当前草稿重新校验，前端勾选只是明确的用户意图。修改 CCv3 映射、上传管线或 Import Report 字段时，同时复核该事务的恢复路径与发布门槛。

@@ -13,7 +13,7 @@ const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const PEM = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
 const SHA = "c".repeat(40);
 
-function fakeGitHub() {
+function fakeGitHub(permission = "write", permissionUser = 4242) {
   const calls: { method: string; url: string; auth: string | null; accept: string | null }[] = [];
   const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => {
     const req = new Request(input, init);
@@ -36,6 +36,18 @@ function fakeGitHub() {
         headers: { "content-type": "application/vnd.github.raw" },
       });
     }
+    if (url.pathname === "/app") return Response.json({ slug: "char-pub" });
+    if (url.pathname === "/repos/djj/alice/installation") return Response.json({ id: 77 });
+    if (["/repos/djj/alice", "/repositories/1001"].includes(url.pathname))
+      return Response.json({
+        id: 1001,
+        owner: { id: 2001 },
+        full_name: "djj/alice",
+        default_branch: "trunk",
+      });
+    if (url.pathname === "/user/4242") return Response.json({ id: 4242, login: "writer" });
+    if (url.pathname === "/repos/djj/alice/collaborators/writer/permission")
+      return Response.json({ permission, user: { id: permissionUser } });
     if (url.pathname === "/installation/repositories") {
       return Response.json({
         total_count: 1,
@@ -49,6 +61,36 @@ function fakeGitHub() {
 }
 
 describe("GitHubAppSource", () => {
+  it("discovers the installed repository and app URL without a client-supplied installation id", async () => {
+    const source = new GitHubAppSource({ appId: "12345", privateKey: PEM }, fakeGitHub().request);
+    expect(await source.installationUrl()).toBe(
+      "https://github.com/apps/char-pub/installations/new",
+    );
+    expect(await source.lookupRepository("djj/alice")).toEqual({
+      id: "1001",
+      owner_id: "2001",
+      full_name: "djj/alice",
+      installation_id: "77",
+      default_branch: "trunk",
+    });
+    expect(await source.lookupRepository("missing/repo")).toBeNull();
+  });
+  it.each([
+    ["admin", 4242, true],
+    ["write", 4242, true],
+    ["read", 4242, false],
+    ["write", 9999, false],
+  ])(
+    "checks repository permission %s and numeric identity %s",
+    async (permission, id, expected) => {
+      const source = new GitHubAppSource(
+        { appId: "12345", privateKey: PEM },
+        fakeGitHub(permission, id).request,
+      );
+      expect(await source.canManageRepository("77", "1001", "4242")).toBe(expected);
+      expect(await source.canManageRepository("77", "9999", "4242")).toBe(false);
+    },
+  );
   it("exchanges an App JWT for an installation token and reads the file at the commit by repository id", async () => {
     const gh = fakeGitHub();
     const source = new GitHubAppSource({ appId: "12345", privateKey: PEM }, gh.request);

@@ -140,6 +140,7 @@ function ContributionRow({
             className="font-semibold break-words text-text outline-none after:absolute after:inset-0 after:rounded-[inherit] focus-visible:after:ring-[3px] focus-visible:after:ring-ring/40"
           >
             <UserText text={c.title} />
+            {c.has_conflicts ? <Badge variant="warning">Conflicts</Badge> : null}
           </Link>
           {c.agent ? <AgentBadge /> : null}
         </div>
@@ -149,6 +150,7 @@ function ContributionRow({
             by <UserText text={authorLabel(c.author, me)} />
           </span>
           <span aria-hidden>·</span>
+          {c.change_count !== undefined ? <span>{c.change_count} changes · </span> : null}
           <time dateTime={c.created_at} title={new Date(c.created_at).toLocaleString()}>
             {timeAgo(c.created_at)}
           </time>
@@ -210,6 +212,7 @@ export function ContributionList({
                 )}
               >
                 {STATUS_LABEL[s]}
+                {list.data?.pages[0]?.counts ? ` (${list.data.pages[0].counts[s]})` : ""}
                 {/* 接口不返回各状态的总数：只在当前筛选上显示已经读到的条数。 */}
                 {active && list.isSuccess ? (
                   <span className="text-xs text-text-3 tabular-nums">

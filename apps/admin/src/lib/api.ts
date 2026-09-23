@@ -265,6 +265,10 @@ export interface RestoreResult {
 
 export interface LegalRequester {
   name: string;
+  /** Authenticated self-service intake; absent on staff-entered legal requests. */
+  user?: string;
+  request?: "account_deletion" | "creation_removal";
+  reason?: string;
   email?: string;
   organization?: string;
   address?: string;

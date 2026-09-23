@@ -7,11 +7,12 @@
  * - public 内容通过 CDN 直出：IR 等对象 302 到内容寻址的公共 URL，可以永久缓存；
  *   private 内容 302 到短期签名 URL，响应本身不缓存。
  */
-import { CharError, isCharError } from "@char-pub/core";
+import { CharError, ContextIRSchema, isCharError } from "@char-pub/core";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { Resource } from "../../authz/authorize.js";
 import {
+  blockedDigests,
   buildArtifacts,
   creations,
   namespaces,
@@ -136,6 +137,38 @@ async function revisionOf(c: AppContext, f: FoundCreation, r: ReleaseRow): Promi
 }
 
 export function register(app: Hono<Env>): void {
+  route(app, {
+    method: "get",
+    path: `${CREATION_PATH}/releases/:label/avatar`,
+    authorize: loadRelease,
+    handler: async (c, { loaded: { f, r } }) => {
+      c.header("cache-control", "private, no-store");
+      if (r.status === "tombstoned") return gone(c, f, r);
+      const { cas, db } = c.var.services;
+      if (!r.contextIrDigest) return notFound(c);
+      const bytes = await cas.getBlob(isPublicRelease(r) ? "public" : "private", r.contextIrDigest);
+      const ir = ContextIRSchema.parse(JSON.parse(new TextDecoder().decode(bytes)));
+      const digest = ir.assets.find(
+        (a) =>
+          a.origin.creation === ir.root.ref &&
+          a.origin.slot === "avatar" &&
+          a.availability === "mirrored",
+      )?.digest;
+      if (!digest) return notFound(c);
+      const [blocked] = await db
+        .select()
+        .from(blockedDigests)
+        .where(eq(blockedDigests.digest, digest))
+        .limit(1);
+      if (blocked) return notFound(c);
+      return c.redirect(
+        isPublicRelease(r)
+          ? publicObjectUrl(c.var.services.publicAssetBaseUrl, digest)
+          : await cas.signedGet(digest),
+        302,
+      );
+    },
+  });
   // `@ns/name@label` 是 Release 的公共标识写法，重定向到规范路径。重定向本身不暴露任何
   // 信息：目标地址照常做授权，私有 Release 在那里返回 404。
   route(app, {

@@ -257,6 +257,24 @@ export interface ListFilter {
   limit: number;
 }
 
+export async function contributionCounts(
+  db: Executor,
+  creationId: string,
+  f: Omit<ListFilter, "limit">,
+) {
+  const counts = { open: 0, accepted: 0, rejected: 0, withdrawn: 0 };
+  const conds = [eq(contributions.targetCreationId, creationId)];
+  if (f.agent !== undefined) conds.push(eq(contributions.agent, f.agent));
+  if (f.authorUserId) conds.push(eq(contributions.authorUserId, f.authorUserId));
+  if (f.authorGuestId) conds.push(eq(contributions.authorGuestId, f.authorGuestId));
+  const rows = await db
+    .select({ status: contributions.status, count: sql<number>`count(*)::integer` })
+    .from(contributions)
+    .where(and(...conds))
+    .groupBy(contributions.status);
+  for (const row of rows) counts[row.status] = Number(row.count);
+  return counts;
+}
 export async function listContributions(db: Executor, creationId: string, f: ListFilter) {
   const conds = [eq(contributions.targetCreationId, creationId)];
   if (f.status) conds.push(eq(contributions.status, f.status));

@@ -10,7 +10,6 @@ import { uuidv7 } from "uuidv7";
 import { cloudflareAccessRevoker } from "../admin/access-revoke.js";
 import { createAdmin } from "../admin/app.js";
 import { adminModules } from "../admin/routes/index.js";
-import { parseLegalKey } from "../admin/routes/legal.js";
 import type { Services } from "../api/app.js";
 import { createApi } from "../api/server.js";
 import { createAuth, sessionPrincipalResolver } from "../auth/better-auth.js";
@@ -22,6 +21,7 @@ import {
   AdminEnvSchema,
   AuthEnvSchema,
   authProvidersFromEnv,
+  DeletionEnvSchema,
   EdgeEnvSchema,
   GitHubEnvSchema,
   GuestEnvSchema,
@@ -35,6 +35,7 @@ import {
 import type { GitHubDeps } from "../github/deps.js";
 import { GitHubAppSource } from "../github/source.js";
 import { JobQueue } from "../jobs/queue.js";
+import { parseLegalKey } from "../moderation/legal-crypto.js";
 import { REPORT_TURNSTILE_ACTION, type ReportServices } from "../moderation/reports.js";
 import { githubJwks } from "../oidc/github.js";
 import { FlagCache } from "../ops/flags.js";
@@ -88,6 +89,9 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       providers: authProvidersFromEnv(authEnv),
       ipAddressHeaders: ["cf-connecting-ip"],
     });
+    const deletion = parseEnv(DeletionEnvSchema);
+    if (deletion.LEGAL_ENCRYPTION_KEY)
+      services.legalKey = parseLegalKey(deletion.LEGAL_ENCRYPTION_KEY);
     const gh = githubFromEnv();
     const turnstile = turnstileServicesFromEnv(authEnv.AUTH_TRUSTED_ORIGINS);
     const app = createApi({

@@ -8,6 +8,7 @@ import program, { ENVIRONMENT, PORT, publicHost } from "../.railway/railway.js";
 import {
   AdminEnvSchema,
   AuthEnvSchema,
+  DeletionEnvSchema,
   EdgeEnvSchema,
   GitHubEnvSchema,
   GuestEnvSchema,
@@ -27,7 +28,7 @@ const required = (s: { shape: Shape }) =>
 /** 每个进程在启动时解析的变量组；可选组（GitHub、访客验证）要么全配、要么全不配。 */
 const PROCESSES = {
   api: {
-    schemas: [ServerEnvSchema, EdgeEnvSchema, AuthEnvSchema, MigrationEnvSchema],
+    schemas: [ServerEnvSchema, EdgeEnvSchema, AuthEnvSchema, MigrationEnvSchema, DeletionEnvSchema],
     optionalGroups: [GitHubEnvSchema, GuestEnvSchema],
   },
   admin: { schemas: [ServerEnvSchema, EdgeEnvSchema, AdminEnvSchema], optionalGroups: [] },
@@ -123,6 +124,13 @@ describe.each([ENVIRONMENT])("railway definition (%s)", (environment) => {
       for (const [k, v] of Object.entries(svc.variables ?? {})) {
         if (SECRET.test(k)) expect(v.type, `${svc.name}.${k}`).not.toBe("literal");
       }
+    }
+  });
+
+  it("preserves the shared deletion intake key on API and admin", async () => {
+    const r = await load(environment);
+    for (const name of ["api", "admin"]) {
+      expect(r.get(name)?.variables?.LEGAL_ENCRYPTION_KEY?.type).toBe("preserve");
     }
   });
 });

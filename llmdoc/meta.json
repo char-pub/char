@@ -6,28 +6,28 @@
   },
   "documents": {
     "authoring/cli-workflow.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "collaboration/contributions.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "content/card-import.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "content/upload-and-storage.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "engineering/verification.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "execution-model.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "68a2554bbe0603e0d477ec7b55d1d185835c331c"
     },
     "identity/creator-and-guest.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "identity/public-authorization.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "interoperability/ccv3.mdx": {
       "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
@@ -45,25 +45,25 @@
       "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
     },
     "operations/commons-seed.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "operations/deploy-and-edge.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "68a2554bbe0603e0d477ec7b55d1d185835c331c"
     },
     "operations/jobs-and-controls.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "68a2554bbe0603e0d477ec7b55d1d185835c331c"
     },
     "operations/takedown-and-evidence.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "registry/http-contract.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "registry/publishing.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "registry/reading.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "runtime/assembly.mdx": {
       "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
@@ -72,10 +72,10 @@
       "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
     },
     "source/github-source-and-publish.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     },
     "web/creator-experience.mdx": {
-      "validatedRevision": "1a71da9521b1e3dcb14d85e690cd30d7005517b4"
+      "validatedRevision": "07686d4554ce91dab226c1b79354f6d1f8fd0f3e"
     }
   },
   "convergence": {

@@ -4,8 +4,7 @@
  * Report content（`#report`）都指向这里；政策定稿后替换正文。
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { ExternalLink, Flag, ShieldCheck } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { Flag, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/policy")({ component: Policy });
 
@@ -27,23 +26,28 @@ function Policy() {
         </p>
       </header>
 
+      <p className="text-sm text-text-2">
+        Operator identity and public contact details have not been finalized and will be added
+        before the policy is published.
+      </p>
+
       <section id="report" aria-labelledby="report-title" className="scroll-mt-8 space-y-3">
         <h2 id="report-title" className="flex items-center gap-2 text-xl">
           <Flag aria-hidden className="size-5 text-danger" /> Report content
         </h2>
         <p className="text-text-2">
           To report a creation that may be illegal, infringe your rights, or put someone at risk,
-          use the private reporting channel described in our security policy. Private reports are
-          only visible to the char.pub team.
+          open its page and choose Report. Reports are reviewed privately by the char.pub team.
         </p>
         <p className="text-text-2">
           Include the address of the creation (for example{" "}
           <code className="font-mono text-sm text-text">@namespace/name@1.0.0</code>) and what is
           wrong. Never attach illegal material: the address is enough for us to find it.
         </p>
-        <a href={SECURITY} className={buttonVariants({ variant: "outline" })}>
-          How to report <ExternalLink aria-hidden />
-        </a>
+        <p className="text-text-2">
+          To request removal of your own creation, use its Settings tab. To request account
+          deletion, use Settings → Your data.
+        </p>
       </section>
 
       <section aria-labelledby="security-title" className="space-y-3">

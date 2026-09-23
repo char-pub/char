@@ -4,8 +4,8 @@
  * - active：按 tracked ref 和 publish refs 自动发布，可以解绑。
  * - frozen：仓库换了主人（被转移），发布暂停，等作者确认继续用这个仓库（rebind）或解绑。
  *   GitHub App 已经访问不到这个仓库时 rebind 会失败，这时只能解绑。
- * - 没有绑定：新建绑定需要 char.pub GitHub App 的安装流程，web 端还没有这个入口，这里只做说明，
- *   不让用户手填安装 ID 或仓库 ID。非成员查询时服务端返回 404，同样当作没有绑定。
+ * - 没有绑定：引导安装 App，按仓库地址查询并验证写权限，再选择源码路径与发布 refs。
+ *   安装 ID 和仓库 ID 由服务端返回，不要求用户手填。
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderGit2, Link2, Pause, Unlink } from "lucide-react";
@@ -29,6 +29,7 @@ import { keys, useRegistry } from "@/lib/registry";
 import { formatDate } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { FactCard } from "./creation-facts";
+import { SourceConnect } from "./source-connect";
 import { UserText } from "./user-content";
 
 export const sourceBindingKey = (ns: string, name: string) =>
@@ -98,10 +99,14 @@ export function SourceBindingSettings({ ns, name }: { ns: string; name: string }
           </Button>
         </p>
       ) : !b || b.status === "unbound" ? (
-        <p className="rounded-lg bg-surface-2 px-4 py-3 text-sm text-text-2">
-          No repository is connected. Publishing from GitHub goes through the char.pub GitHub App;
-          connecting a repository from the web isn't available yet.
-        </p>
+        <SourceConnect
+          ns={ns}
+          name={name}
+          onConnected={async () => {
+            await qc.invalidateQueries({ queryKey: sourceBindingKey(ns, name) });
+            toast.success("Repository connected");
+          }}
+        />
       ) : (
         <>
           <div

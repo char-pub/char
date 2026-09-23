@@ -49,6 +49,11 @@ export const ServerEnvSchema = RuntimeEnvSchema.extend(DatabaseEnvSchema.shape).
   StorageEnvSchema.shape,
 );
 
+/** 自助删除申请使用与管理端相同的密钥；未配置时仅关闭受理入口。 */
+export const DeletionEnvSchema = z.object({
+  LEGAL_ENCRYPTION_KEY: nonEmpty.optional(),
+});
+
 /** 逗号分隔的 Origin 列表，每一项必须是 `https://host` 或本地开发的 `http://localhost:port` 这样的纯 Origin。 */
 const originList = z
   .string()

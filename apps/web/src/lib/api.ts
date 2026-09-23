@@ -98,7 +98,11 @@ export type PutDraftResponse = z.infer<typeof PutDraftResponseSchema>;
 export type Revision = z.infer<typeof RevisionSchema>;
 export type UploadStatus = z.infer<typeof UploadStatusSchema>;
 export type CreateUploadResponse = z.infer<typeof CreateUploadResponseSchema>;
-export const ContributionsPageSchema = pageOf(ContributionSummarySchema);
+export const ContributionsPageSchema = pageOf(ContributionSummarySchema).extend({
+  counts: z
+    .object({ open: z.number(), accepted: z.number(), rejected: z.number(), withdrawn: z.number() })
+    .optional(),
+});
 export type ContributionsPage = z.infer<typeof ContributionsPageSchema>;
 export type ContributionSummary = z.infer<typeof ContributionSummarySchema>;
 export type ContributionDetail = z.infer<typeof ContributionDetailSchema>;
@@ -161,6 +165,7 @@ export type {
 } from "@char-pub/contracts";
 
 export const TokenSchema = z.object({
+  agent: z.boolean().optional(),
   id: z.string(),
   name: z.string(),
   prefix: z.string(),
@@ -175,6 +180,25 @@ export type { ReleaseSummary, SourceBinding };
 export type TokenScope = (typeof TOKEN_SCOPES)[number];
 export type CreatedToken = z.infer<typeof CreateTokenResponseSchema>;
 
+export const RepositoryChoiceSchema = z.object({
+  id: z.string(),
+  owner_id: z.string(),
+  full_name: z.string(),
+  installation_id: z.string(),
+  default_branch: z.string(),
+});
+export type RepositoryChoice = z.infer<typeof RepositoryChoiceSchema>;
+const GitHubConnectionSchema = z.object({
+  installation_url: z.url().refine((url) => new URL(url).origin === "https://github.com"),
+  linked: z.boolean(),
+});
+const DeletionRequestSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  created_at: z.string(),
+  subjects: z.array(z.string()),
+});
+export type DeletionRequest = z.infer<typeof DeletionRequestSchema>;
 export interface SearchParams {
   q?: string | undefined;
   type?: CreationType | undefined;
@@ -200,8 +224,15 @@ export interface RegistryClient {
     name: string;
     scopes: TokenScope[];
     expires_in_days: number;
+    agent?: boolean;
   }): Promise<CreatedToken>;
   revokeToken(id: string): Promise<void>;
+  deletionRequests(): Promise<{ items: DeletionRequest[] }>;
+  requestDeletion(body: {
+    creation?: string;
+    reason: string;
+    confirm: true;
+  }): Promise<DeletionRequest>;
   search(params: SearchParams): Promise<SearchPage>;
   creation(ns: string, name: string): Promise<z.infer<typeof CreationDetailSchema>>;
   release(ns: string, name: string, label: string): Promise<z.infer<typeof ReleaseDetailSchema>>;
@@ -215,6 +246,19 @@ export interface RegistryClient {
    */
   yankRelease(ns: string, name: string, label: string, reason: string): Promise<ReleaseSummary>;
   /** 作品绑定的 GitHub 仓库；没有绑定时为 null。只有作品成员能查看。 */
+  githubConnection(ns: string, name: string): Promise<z.infer<typeof GitHubConnectionSchema>>;
+  lookupRepository(ns: string, name: string, repository: string): Promise<RepositoryChoice>;
+  bindSource(
+    ns: string,
+    name: string,
+    body: {
+      installation_id: string;
+      repository_id: string;
+      path: string;
+      tracked_ref: string;
+      publish_refs: string[];
+    },
+  ): Promise<SourceBinding>;
   sourceBinding(ns: string, name: string): Promise<SourceBinding | null>;
   /** 仓库被转移、binding 冻结后，作者确认继续用这个仓库（rebind）或解绑（unbind）。 */
   resolveSourceBinding(
@@ -235,6 +279,7 @@ export interface RegistryClient {
     ns: string,
     body: { name: string; type: CreationType; display_name: string },
   ): Promise<{ id: string; ref: string; type: CreationType }>;
+  draftAvatar(ns: string, name: string): Promise<{ url: string; digest: string }>;
   draft(ns: string, name: string): Promise<Draft>;
   /** 保存草稿。`version` 是读到的版本号，服务端据此做乐观锁，冲突时抛出 409。 */
   putDraft(ns: string, name: string, version: number, working: unknown): Promise<PutDraftResponse>;
@@ -446,6 +491,24 @@ export function createRegistryClient(
       json(DependentsPageSchema, "GET", `${creationPath(ns, name)}/dependents?limit=50`),
     yankRelease: (ns, name, label, reason) =>
       json(ReleaseSummarySchema, "POST", `${release(ns, name, label)}/yank`, { body: { reason } }),
+    deletionRequests: () =>
+      json(z.object({ items: z.array(DeletionRequestSchema) }), "GET", "/v1/me/deletion-requests"),
+    requestDeletion: (body) =>
+      json(DeletionRequestSchema, "POST", "/v1/me/deletion-requests", { body }),
+    draftAvatar: (ns, name) =>
+      json(
+        z.object({ url: z.string(), digest: z.string() }),
+        "GET",
+        `${creationPath(ns, name)}/draft/avatar`,
+      ),
+    githubConnection: (ns, name) =>
+      json(GitHubConnectionSchema, "GET", `${creationPath(ns, name)}/source-binding/connect`),
+    lookupRepository: (ns, name, repository) =>
+      json(RepositoryChoiceSchema, "POST", `${creationPath(ns, name)}/source-binding/lookup`, {
+        body: { repository },
+      }),
+    bindSource: (ns, name, body) =>
+      json(SourceBindingSchema, "POST", `${creationPath(ns, name)}/source-binding`, { body }),
     async sourceBinding(ns, name) {
       try {
         return await json(SourceBindingSchema, "GET", `${creationPath(ns, name)}/source-binding`);

@@ -15,11 +15,12 @@ import {
   checkCreation,
   isCharError,
 } from "@char-pub/core";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import { appendAudit } from "../../audit/audit.js";
-import { creationDrafts } from "../../db/schema/index.js";
+import { blockedDigests, creationDrafts, imports, uploads } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
+import { avatarDigest } from "../../registry/avatar.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
 import { forceIdentity } from "../../registry/drafts.js";
 import { encodeId } from "../../registry/ids.js";
@@ -97,6 +98,47 @@ function isObject(v: unknown): v is Record<string, unknown> {
 export function register(app: Hono<Env>): void {
   route(app, {
     method: "get",
+    path: `${CREATION_PATH}/draft/avatar`,
+    authorize: async (c) => {
+      const ctx = await loadCreation(c);
+      if (!ctx) return notFound(c);
+      return { action: "creation.read_draft", resource: ctx.resource, loaded: ctx };
+    },
+    handler: async (c, { loaded }) => {
+      const { db, cas } = c.var.services;
+      c.header("cache-control", "private, no-store");
+      const [draft] = await db
+        .select()
+        .from(creationDrafts)
+        .where(eq(creationDrafts.creationId, loaded.creation.id))
+        .limit(1);
+      const digest = avatarDigest(draft?.working);
+      if (!digest) return notFound(c);
+      const [blocked] = await db
+        .select()
+        .from(blockedDigests)
+        .where(eq(blockedDigests.digest, digest))
+        .limit(1);
+      if (blocked) return notFound(c);
+      // A digest pasted into a draft is not proof of ownership of a private blob.
+      const [owned] = await db
+        .select({ id: uploads.id })
+        .from(uploads)
+        .where(
+          and(
+            eq(uploads.ownerUserId, userIdOf(c.var.principal)),
+            eq(uploads.status, "ready"),
+            sql`(${uploads.result}->'blob'->>'digest' = ${digest} OR ${uploads.result}->'derived' @> ${JSON.stringify([digest])}::jsonb)`,
+          ),
+        )
+        .limit(1);
+      if (!owned) return notFound(c);
+      const url = await cas.signedGet(digest);
+      return c.req.query("redirect") === "1" ? c.redirect(url, 302) : c.json({ url, digest });
+    },
+  });
+  route(app, {
+    method: "get",
     path: `${CREATION_PATH}/draft`,
     authorize: async (c) => {
       const ctx = await loadCreation(c);
@@ -110,10 +152,24 @@ export function register(app: Hono<Env>): void {
         .where(eq(creationDrafts.creationId, loaded.creation.id))
         .limit(1);
       if (!draft) return notFound(c);
+      const [pendingImport] = await c.var.services.db
+        .select({ id: imports.id })
+        .from(imports)
+        .where(
+          and(
+            eq(imports.creationId, loaded.creation.id),
+            eq(imports.ownerUserId, userIdOf(c.var.principal)),
+            eq(imports.status, "succeeded"),
+            isNull(imports.confirmedAt),
+          ),
+        )
+        .limit(1);
+      c.header("cache-control", "private, no-store");
       c.header("etag", `"${draft.version}"`);
       return c.json({
         version: draft.version,
         working: draft.working,
+        ...(pendingImport ? { unconfirmed_import: encodeId("import", pendingImport.id) } : {}),
         base_revision_id: draft.baseRevisionId ? encodeId("revision", draft.baseRevisionId) : null,
         updated_at: draft.updatedAt.toISOString(),
       });

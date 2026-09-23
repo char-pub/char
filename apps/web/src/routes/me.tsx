@@ -2,12 +2,13 @@
  * 我的作品：当前用户所在 namespace 的全部作品，包括还没有发布的草稿。每行显示类型、地址、
  * 最新版本的状态（未发布 / 公开 / 私有 / 被 yank / 已移除）和草稿最近一次编辑的时间。
  *
- * 接口不返回每个作品待审阅的贡献数，所以这里不显示这一列；贡献从每行的菜单进入。
+ * 待审阅贡献从行内数量链接进入；头像使用受权限保护的读取地址，并按需加载。
  */
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, GitPullRequestArrow, MoreHorizontal, Pencil, Plus, Upload } from "lucide-react";
-import { TYPE_STYLE, TypeBadge } from "@/components/badges";
+import { TypeBadge } from "@/components/badges";
+import { CreationAvatar } from "@/components/creation-card";
 import { SignInRequired } from "@/components/sign-in-required";
 import { ListSkeleton, PageSkeleton } from "@/components/skeletons";
 import { EmptyState, ErrorState, StatePanel } from "@/components/states";
@@ -53,27 +54,22 @@ function CreationRow({ c }: { c: MyCreation }) {
   const r = parseRef(c.ref);
   const title = localized(c.display_name) || c.ref;
   const status = releaseStatus(c);
-  const style = TYPE_STYLE[c.type];
   return (
     <tr className="align-middle">
       <td className="py-3 pr-4 pl-4 sm:pl-5">
         <div className="flex items-center gap-3">
-          <span
-            aria-hidden
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-md text-sm font-bold",
-              style.soft,
-              style.text,
-            )}
-          >
-            {[...title][0]?.toUpperCase() ?? "?"}
-          </span>
+          <CreationAvatar name={title} type={c.type} url={c.avatar_url} className="size-10" />
           <div className="min-w-0 space-y-0.5">
             <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="font-semibold break-words">
                 <UserText text={title} />
               </span>
               <TypeBadge type={c.type} />
+              {r && (c.open_contributions ?? 0) > 0 ? (
+                <Link to="/c/$ns/$name/contributions" params={r} className="text-xs text-blue-text">
+                  {c.open_contributions} to review
+                </Link>
+              ) : null}
               {c.status === "hidden" ? <Badge variant="warning">Hidden</Badge> : null}
               {c.status === "suspended" ? <Badge variant="danger">Suspended</Badge> : null}
             </p>

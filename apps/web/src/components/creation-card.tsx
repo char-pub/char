@@ -8,7 +8,9 @@
  */
 import type { CreationType } from "@char-pub/core";
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import type { CreationSummary } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/api";
 import { localized, parseRef } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Tag, TYPE_STYLE, TypeBadge } from "./badges";
@@ -16,18 +18,21 @@ import { RatingBadge } from "./rating";
 import { UserText } from "./user-content";
 
 /**
- * 作品头像。搜索结果里没有头像图片，先用类型色的浅底加名字首字，颜色和类型徽章一致；
+ * 作品头像按需加载，缺少图片或加载失败时用类型色的浅底加名字首字；
  * 纯装饰，读屏不读。
  */
 export function CreationAvatar({
   name,
   type,
   className,
+  url,
 }: {
   name: string;
   type: CreationType;
   className?: string;
+  url?: string | undefined;
 }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const s = TYPE_STYLE[type];
   const initial = [...name.trim()][0]?.toUpperCase() ?? "?";
   return (
@@ -40,7 +45,17 @@ export function CreationAvatar({
         className,
       )}
     >
-      {initial}
+      {url && failedUrl !== url ? (
+        <img
+          src={url.startsWith("/") ? `${API_BASE_URL}${url}` : url}
+          alt=""
+          loading="lazy"
+          className="size-full rounded-md object-cover"
+          onError={() => setFailedUrl(url)}
+        />
+      ) : (
+        initial
+      )}
     </span>
   );
 }
@@ -66,7 +81,7 @@ export function CreationCard({ item, className }: { item: CreationSummary; class
       )}
     >
       <div className="flex items-center gap-3">
-        <CreationAvatar name={title} type={item.type} />
+        <CreationAvatar name={title} type={item.type} url={item.avatar_url} />
         <div className="min-w-0 flex-1">
           <h3 className="line-clamp-2 text-base leading-snug font-bold break-words">
             {r ? (

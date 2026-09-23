@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { DeletionRequests } from "@/components/deletion-request";
 import { MatureSetting } from "@/components/mature-setting";
 import { RenameNamespaceDialog } from "@/components/settings/rename-namespace";
 import { SettingsNav, SettingsSection } from "@/components/settings/section";
@@ -97,7 +98,7 @@ function Settings() {
             description="char.pub signs you in with GitHub, Discord or Google. There is no password."
           >
             <p className="text-sm text-text-2">
-              Adding a second sign-in method to this account isn't available yet. Accounts are never
+              You can link GitHub when connecting a creation's source repository. Accounts are never
               linked by matching email addresses.
             </p>
           </SettingsSection>
@@ -105,11 +106,11 @@ function Settings() {
           <SettingsSection
             id="data"
             title="Your data"
-            description="Downloading everything you've made and deleting your account will live here."
+            description="Request account deletion and follow requests reviewed by the team."
           >
+            <DeletionRequests />
             <p className="text-sm text-text-2">
-              Neither is available on the web yet. Until then, every public release can be
-              downloaded from its creation page.
+              Individual releases can be downloaded from their creation pages.
             </p>
           </SettingsSection>
         </div>

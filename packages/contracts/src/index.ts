@@ -75,10 +75,22 @@ export const ReleaseSummarySchema = z.strictObject({
   semantic_digest: DigestSchema,
   effective_rating: RatingSchema,
   created_at: z.string(),
+  source: z
+    .object({
+      kind: z.enum(["native", "github"]),
+      repository_id: z.string().optional(),
+      commit: z.string().optional(),
+      path: z.string().optional(),
+    })
+    .optional(),
+  publisher: z
+    .object({ kind: z.enum(["user", "github_actions"]), user: z.string().optional() })
+    .optional(),
 });
 export type ReleaseSummary = z.infer<typeof ReleaseSummarySchema>;
 
 export const CreationSummarySchema = z.strictObject({
+  avatar_url: z.string().optional(),
   id: z.string(),
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
@@ -108,6 +120,7 @@ export type CreationDetail = z.infer<typeof CreationDetailSchema>;
 
 /** 草稿内容是任意书写形式的 Creation，由服务端 canonicalize 并校验。 */
 export const DraftSchema = z.strictObject({
+  unconfirmed_import: z.string().optional(),
   version: z.number().int().nonnegative(),
   working: z.unknown(),
   base_revision_id: z.string().nullable(),
@@ -212,6 +225,8 @@ export type SourceBinding = z.infer<typeof SourceBindingSchema>;
 
 export const UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+export const MAX_ASSET_BYTES = 8 * 1024 * 1024;
+export const MAX_CARD_JSON_BYTES = 5 * 1024 * 1024;
 
 export const CreateUploadRequestSchema = z.strictObject({
   purpose: z.enum(["asset", "import"]),
@@ -340,6 +355,8 @@ export type PutDraftResponse = z.infer<typeof PutDraftResponseSchema>;
 
 /** `GET /v1/me/creations`：当前用户所在 namespace 的全部 Creation，包括还没有发布的草稿。 */
 export const MyCreationSchema = z.strictObject({
+  avatar_url: z.string().optional(),
+  open_contributions: z.number().int().nonnegative().optional(),
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema,
@@ -414,6 +431,8 @@ export const ContributionAuthorSchema = z.union([
 ]);
 
 export const ContributionSummarySchema = z.strictObject({
+  change_count: z.number().int().nonnegative().optional(),
+  has_conflicts: z.boolean().optional(),
   id: z.string(),
   number: z.number().int().positive(),
   title: z.string(),

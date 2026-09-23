@@ -10,13 +10,14 @@ import {
   type MyCreationsResponseSchema,
   UpdateSettingsRequestSchema,
 } from "@char-pub/contracts";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
 import type { Action } from "../../authz/authorize.js";
 import {
   authUser,
+  contributions,
   creationDrafts,
   creations,
   namespaceMembers,
@@ -25,6 +26,7 @@ import {
   userSettings,
 } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
+import { avatarDigest } from "../../registry/avatar.js";
 import { auditActor, requestIdOf } from "../../registry/context.js";
 import { encodeId } from "../../registry/ids.js";
 import { type AppContext, type Env, route } from "../app.js";
@@ -91,6 +93,7 @@ export function register(app: Hono<Env>): void {
     handler: async (c, { loaded: userId }) => {
       const rows = await c.var.services.db
         .select({
+          openContributions: sql<number>`(select count(*)::integer from ${contributions} where ${contributions.targetCreationId} = ${creations.id} and ${contributions.status} = 'open')`,
           slug: namespaces.slug,
           name: creations.name,
           type: creations.type,
@@ -121,6 +124,14 @@ export function register(app: Hono<Env>): void {
           const draftName = (r.working as { display_name?: unknown } | null)?.display_name;
           return {
             ref: `@${r.slug}/${r.name}`,
+            open_contributions: Number(r.openContributions),
+            ...(avatarDigest(r.working)
+              ? { avatar_url: `/v1/creations/@${r.slug}/${r.name}/draft/avatar?redirect=1` }
+              : r.label && r.releaseStatus !== "tombstoned"
+                ? {
+                    avatar_url: `/v1/creations/@${r.slug}/${r.name}/releases/${encodeURIComponent(r.label)}/avatar`,
+                  }
+                : {}),
             type: r.type,
             display_name: (draftName ?? r.displayName) as string,
             status: r.status,

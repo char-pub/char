@@ -11,6 +11,7 @@ import {
   charYaml,
   createGitHubHarness,
   type GitHubHarness,
+  grantRepositoryAccess,
   listed,
   putCharSource,
   type RepoFixture,
@@ -78,6 +79,7 @@ beforeAll(async () => {
   t = await createTestDatabase();
   g = await createGitHubHarness(t, cas);
   alice = await g.h.createUser("alice");
+  await grantRepositoryAccess(t, g, alice, ["5001", "5002"]);
   bob = await g.h.createUser("bob");
   const me = g.h.as(alice);
   expect((await me.post("/v1/namespaces", { slug: "djj" })).status).toBe(201);

@@ -1,8 +1,14 @@
 ---
-description: "Tombstone 级联、CSAM 隔离、审计哈希链、证据留存、R2/CDN 删除核验和失败重试"
+description: "删除请求受理、账号删除与作品移除、法律队列加密审阅、人工处置、Tombstone 级联、证据与分发清除"
 kind: architecture
 code:
   paths:
+    - "apps/server/src/api/routes/deletion-requests.ts"
+    - "apps/server/src/moderation/legal-crypto.ts"
+    - "apps/server/src/admin/routes/legal.ts"
+    - "apps/web/src/components/deletion-request.tsx"
+    - "apps/admin/src/components/legal.tsx"
+    - "apps/admin/src/lib/api.ts"
     - "apps/server/src/registry/tombstone.ts"
     - "apps/server/src/worker/tombstone.ts"
     - "apps/server/src/worker/tombstone-dispatch.ts"
@@ -19,7 +25,11 @@ relations:
     - "registry/reading.mdx"
 ---
 
-# 下架、分发清除与证据
+# 删除请求、下架与证据
+
+自助删除请求（账号删除或作品移除）只进入法律请求队列，不直接执行删除。入口要求浏览器登录会话、原因和明确确认，个人 Token 不可代办；作品请求还须通过 creation.edit 授权。原因和请求者详情加密保存，明文 owner_user_id 仅作为本人查询与去重索引，审计不复制原因。缺少法律加密密钥时拒绝受理；限流和事务内同主体同对象待处理请求去重约束重复提交。
+
+提交回执与本人状态列表表示受理进度，受权管理端解密展示身份、请求类型与原因供审阅。实际下架仍需独立管理处置及影响核对，不能从受理成功推断已删除。
 
 下架先预览依赖和引用影响，再由有权管理人员触发。事务内更新 Release 状态、内容 digest 黑名单、必要的级联对象、审计事件和待处理任务；这样新的读取与重新发布会立即被拒绝。但数据库提交不等于公网副本已消失。worker 还须删除公开与私有分发对象、核验 HEAD 结果并清除 CDN 缓存；失败持续重试并保持可观察状态，直到分发清除完成。
 

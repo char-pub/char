@@ -50,6 +50,8 @@ export interface Services {
    * 举报（只是不按 IP 限流）。
    */
   reports?: ReportServices;
+  /** Encrypts private deletion requests for the existing legal queue. */
+  legalKey?: Uint8Array;
 }
 
 export type Env = {

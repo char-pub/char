@@ -61,6 +61,14 @@ export async function signInWith(provider: ProviderId, returnTo: string): Promis
   }
 }
 
+export async function linkSignInMethod(provider: ProviderId, returnTo: string): Promise<void> {
+  const result = await auth().linkSocial({
+    provider,
+    callbackURL: `${window.location.origin}${returnTo}`,
+  });
+  if (result.error) throw new SignInError("Could not link the sign-in method. Try again.");
+}
+
 export async function signOut(): Promise<void> {
   await auth().signOut();
 }

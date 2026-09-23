@@ -11,6 +11,7 @@
  * - 扫描服务暂时不可用时保持 processing 并抛出可重试错误，按队列的退避策略重试，
  *   不会自动放行。
  */
+import { MAX_ASSET_BYTES, MAX_CARD_JSON_BYTES, MAX_UPLOAD_BYTES } from "@char-pub/contracts";
 import { sha256Bytes } from "@char-pub/core";
 import { and, eq, gt, inArray } from "drizzle-orm";
 import type { Db } from "../db/client.js";
@@ -25,13 +26,13 @@ import { ImageRejected, processImage } from "./image.js";
 export const UPLOAD_LIMITS = {
   asset: {
     types: ["image/png", "image/jpeg", "image/webp", "image/gif"],
-    maxBytes: 8 * 1024 * 1024,
+    maxBytes: MAX_ASSET_BYTES,
   },
   import: {
     types: ["image/png", "application/json", "application/zip"],
-    maxBytes: 20 * 1024 * 1024,
+    maxBytes: MAX_UPLOAD_BYTES,
     /** JSON 卡片的上限更低。 */
-    jsonMaxBytes: 5 * 1024 * 1024,
+    jsonMaxBytes: MAX_CARD_JSON_BYTES,
   },
 } as const;
 

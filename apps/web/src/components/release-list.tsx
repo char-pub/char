@@ -123,6 +123,15 @@ export function VersionList({
                 </button>
               )}
               <div className="min-w-0 flex-1 space-y-0.5">
+                {r.source ? (
+                  <p className="text-xs text-text-3">
+                    {r.source.kind === "github" ? "GitHub" : "Native"}
+                    {r.source.commit ? ` · ${r.source.commit.slice(0, 7)}` : ""}
+                    {r.publisher
+                      ? ` · published by ${r.publisher.kind === "github_actions" ? "GitHub Actions" : (r.publisher.user ?? "author")}`
+                      : ""}
+                  </p>
+                ) : null}
                 <p className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-sm font-medium">{r.label}</span>
                   {r.label === latest && r.status === "active" ? (

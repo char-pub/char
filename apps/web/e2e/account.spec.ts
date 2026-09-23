@@ -138,7 +138,11 @@ test("settings: sections, the namespace and API tokens shown once", async ({ pag
   await expect(profile.getByText("@writer", { exact: true })).toBeVisible();
   await expect(profile.getByRole("button", { name: "Rename…" })).toBeVisible();
   // 登录方式和数据导出还没有接口：只有说明，没有按钮。
-  await expect(page.getByRole("region", { name: "Your data" }).getByRole("button")).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("region", { name: "Your data" })
+      .getByRole("button", { name: "Request account deletion…" }),
+  ).toBeVisible();
 
   const section = page.getByRole("region", { name: "API tokens" });
   await section.getByRole("button", { name: "Create a token" }).click();
