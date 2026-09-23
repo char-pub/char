@@ -260,6 +260,7 @@
             },
             "url": {
               "type": "string",
+              "pattern": "^https:\\/\\/",
               "format": "uri"
             },
             "fetched_at": {
@@ -349,6 +350,7 @@
             },
             "url": {
               "type": "string",
+              "pattern": "^https:\\/\\/",
               "format": "uri"
             }
           },

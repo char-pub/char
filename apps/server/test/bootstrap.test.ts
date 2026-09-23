@@ -24,6 +24,16 @@ describe("bootstrap", () => {
     expect(u?.email).toBe("system@char.pub");
   });
 
+  it("refuses to create a second system actor under a different id", async () => {
+    const [existing] = await t.app.db
+      .select({ id: authUser.id })
+      .from(authUser)
+      .where(eq(authUser.email, "system@char.pub"));
+    await expect(ensureSystemActor(t.app.db, uuidv7(), now)).rejects.toThrow(
+      `bootstrap.system_actor_mismatch: system@char.pub already belongs to ${existing?.id}`,
+    );
+  });
+
   it("promotes the first owner only while there is none", async () => {
     const a = uuidv7();
     const b = uuidv7();

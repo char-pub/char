@@ -10,7 +10,7 @@ const API_PORT = 3100;
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "fullstack.spec.ts",
+  testMatch: /fullstack(-[a-z0-9-]+)?\.spec\.ts$/,
   fullyParallel: false,
   workers: 1,
   retries: 0,

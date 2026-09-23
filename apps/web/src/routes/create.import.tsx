@@ -24,7 +24,8 @@ function ImportRoute() {
         <h1 className="text-4xl">Import a character card</h1>
         <p className="max-w-prose text-muted-foreground">
           Bring a Character Card V2/V3 (PNG, JSON or CHARX) to char.pub. You will see exactly what
-          was mapped, what was left out and why, before anything is saved.
+          was mapped, what was left out and why, and confirm the rating, rights and license before
+          it can be published.
         </p>
       </header>
       {ns ? (

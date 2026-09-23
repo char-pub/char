@@ -1,6 +1,6 @@
 /**
  * OIDC token 的 jti 防重放存储：`oidc_jti` 表的主键保证并发请求中只有一个能占用同一个 jti。
- * 过期记录由定时任务清理（这里在占用时顺带删除少量过期记录）。
+ * 过期记录由 worker 的定时清理任务删除。
  */
 import { lt } from "drizzle-orm";
 import type { Executor } from "../db/client.js";

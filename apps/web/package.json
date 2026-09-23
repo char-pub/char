@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@char-pub/assembler": "workspace:*",
-    "@char-pub/ccv3": "workspace:*",
     "@char-pub/contracts": "workspace:*",
     "@char-pub/core": "workspace:*",
     "@fontsource-variable/fraunces": "catalog:",

@@ -162,6 +162,12 @@ export type AssetRef = z.infer<typeof AssetRefSchema>;
 export const DecimalIdSchema = z.string().regex(/^[1-9][0-9]{0,19}$/);
 export const GitCommitSchema = z.string().regex(/^[0-9a-f]{40}$/);
 
+/**
+ * 只接受 https URL。协议检查之外再写一条前缀约束，因为协议检查无法导出到 JSON Schema，
+ * 前缀约束会变成 `pattern`，其他语言的实现按 JSON Schema 校验时同样会拒绝 http。
+ */
+export const HttpsUrlSchema = z.url({ protocol: /^https$/ }).regex(/^https:\/\//);
+
 export const SourceLocatorSchema = z.discriminatedUnion("provider", [
   z.strictObject({
     provider: z.literal("github"),
@@ -169,7 +175,7 @@ export const SourceLocatorSchema = z.discriminatedUnion("provider", [
     commit: GitCommitSchema,
     path: z.string().min(1),
   }),
-  z.strictObject({ provider: z.literal("http"), url: z.url({ protocol: /^https$/ }) }),
+  z.strictObject({ provider: z.literal("http"), url: HttpsUrlSchema }),
 ]);
 
 export const BlobRefSchema = z.strictObject({

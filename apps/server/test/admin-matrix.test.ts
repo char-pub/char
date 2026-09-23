@@ -52,6 +52,7 @@ describe("every admin route is authorized by the capability matrix", () => {
       "/v1/admin/tombstones",
       "/v1/admin/approvals/:id/confirm",
       "/v1/admin/users/:id/ban",
+      "/v1/admin/guests/:id/disable",
       "/v1/admin/reserved-names",
       "/v1/admin/namespaces/:slug/rename",
       "/v1/admin/csam/flag",

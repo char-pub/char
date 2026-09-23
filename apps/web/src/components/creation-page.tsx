@@ -81,6 +81,11 @@ export function BuiltOn({ ir }: { ir: ContextIR }) {
   );
 }
 
+/** 没有写明作者时显示发布它的 namespace，例如 `@alice/luna` → `@alice`。 */
+function publisherOf(ref: string): string {
+  return ref.split("/")[0] ?? ref;
+}
+
 /** 署名、许可与贡献者。 */
 export function Credits({ ir }: { ir: ContextIR }) {
   return (
@@ -95,7 +100,9 @@ export function Credits({ ir }: { ir: ContextIR }) {
             <li key={a.ref}>
               <span className="font-mono text-xs">{a.ref}</span>
               <span className="block text-muted-foreground">
-                {a.authors.length > 0 ? a.authors.map((x) => x.name).join(", ") : "Unknown author"}
+                {a.authors.length > 0
+                  ? a.authors.map((x) => x.name).join(", ")
+                  : publisherOf(a.ref)}
                 {license ? ` · ${license.license}` : ""}
               </span>
             </li>

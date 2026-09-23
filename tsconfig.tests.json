@@ -15,6 +15,7 @@
     "packages/*/scripts/**/*.ts",
     "apps/server/src/**/*.test.ts",
     "apps/server/test/**/*.ts",
+    "apps/server/scripts/**/*.ts",
     "actions/*/src/**/*.test.ts",
     "apps/server/*.config.ts",
     "apps/server/vitest.shared.ts",

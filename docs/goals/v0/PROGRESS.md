@@ -7,9 +7,9 @@
 - Status：**实现中（M0～M8 的本地实现大部分完成）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
 - Current work：
   - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA；Admin SPA（全部接口接入）；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、Registry 写路径与发布 worker、admin 业务路由（四眼、法律请求、员工）、CCv3 导出 worker、bootstrap 命令、GitHub webhook / Source binding / OIDC 发布 / 同步与对账、Contribution API、经验证访客（Turnstile + 邮箱）、CCv3 导入 API 与 worker；单镜像五命令；runbooks；部署指南；冒烟测试脚本。
-  - 并行 subagent：web 接 Registry API（含 `/v1/me` 与全栈 E2E）；Admin SPA 的 Playwright 与权限矩阵测试；服务端遗留项（定期清理、导入死信、admin 停用访客、本地 Mailpit）。
-  - 下一步：web 的导入向导、访客验证页、Contribution 审阅 UI（M8-4）；`pnpm dev` 一键本地环境（M0-4）→ 一致性用例人工审阅 → 等用户授权后部署 staging。
-- Acceptance：DOD 条目尚未打勾。M0-1 / M0-2 本地检查已通过，但验收要求 CI 运行记录，需等首次推送后才能取得（依赖 B-10）。
+  - 并行 subagent：服务端测试缺口（M4-2、M4-3 lint 规则、M4-6、M7-1、M7-2、M7-2b、M9-1）与默认作者；web 的 Contribution 审阅 UI（M8-4）、访客验证页、导入向导改走服务端；admin 后端缺口（锁定上传、namespace 转让、反通知、隔离证据访问、案件与审计导出、强制登出、访客管理页）。
+  - 下一步：合并正在进行的 subagent 结果 → 完整回归 → 一致性用例人工审阅 → 等用户授权后推送与部署 staging。
+- Acceptance：已勾选 17 条（M1-4、M2-3、M2-4、M3-1、M3-4、M4-1、M4-4、M4-5、M5-1～M5-5、M6-1～M6-3、M7-3），证据见 [evidence/2026-09-22-dod-local-audit.md](evidence/2026-09-22-dod-local-audit.md)。M2-1、M2-2、M3-2、M3-3 等待一致性用例的人工接受；M0-1 / M0-2 需要 CI 运行记录（依赖 B-10）。
 - Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
 - 等待用户：一致性用例审阅与接受；复核 D-126 / D-129 / D-130；决定 D-135 第 1 条（CCv3 导入的默认 rights）；授权 force push、组织设置、staging 资源、OAuth App 与 GitHub App 创建。
 
@@ -121,3 +121,25 @@
 - 发现并修复：Contribution 合并后 Action 打包产物没有重新生成，`ci:all` 的产物检查失败；已重建，并在 pre-commit 增加产物检查（用一次会改变产物的改动验证能拦截）。新旧产物对同一项目 dry-run 得到相同的 semantic digest。
 - Verification：`pnpm ci:all` 在合并前的 main 上除产物检查外全部通过（单测 1042、web / admin 43、一致性 103 通过 / 81 todo、集成 + server 单测 1015、build），产物修复后单独复跑通过；合并后 `pnpm test` 1118 个通过，集成测试 564 个通过（27 个文件），lint / typecheck / deps / `check:action-dist` 通过。
 - Decisions：D-142（CCv3 导入）、D-143（经验证访客）。
+
+### 2026-09-22 web 接 API、Admin SPA 全模块、DOD 本地审计
+
+- Work：
+  - 合并 web 接 Registry API（subagent：登录菜单、浏览与搜索、作品页、编辑器与自动保存、发布流程、设置与个人 Token、`/v1/me`、CORS、全栈 E2E `pnpm e2e:fullstack`）。
+  - 合并 Admin SPA 全模块覆盖（subagent：新增四眼请求页、员工页；法律、CSAM、举报、内容等页面接入全部已有接口；修复 `@@namespace` 显示与 mock 规则偏差）。
+  - DOD 本地证据审计（subagent）：32 个本地条目逐条对照测试并实际运行，17 条可打勾，11 条有缺口，4 条等待一致性用例的人工接受。抽查了 M4-1（应用角色 UPDATE / DELETE / TRUNCATE `audit_log` 被拒）、M5-4（中文与日文的两字查询）、M6-1（SVG、polyglot、像素炸弹样本）的证据，与报告一致。
+  - `ci:all` 加入 web 与 admin 的 Playwright（`pnpm test:e2e`）；部署指南补充 public / private 桶的 CORS 与 CSP 收窄步骤。
+- Verification：`pnpm test` 1156 个通过；集成测试 574 个通过（28 个文件）；`pnpm test:e2e`：web 3 个通过（截图与全栈用例默认跳过），admin 93 个通过；全栈 E2E 由 subagent 在本机 Docker 上跑通 UC-1（注册 namespace → 编辑 → 上传头像 → 发布 → 匿名访问 → 搜索 → 下载 IR 并校验）。
+- Decisions：D-144（web 接入 API）。
+- DOD：按审计结论勾选 17 条。
+
+### 2026-09-22 服务端遗留项、core 测试缺口、一键本地环境
+
+- Work：
+  - 合并服务端遗留项（subagent：每小时清理过期数据；导入最后一次失败时标记 failed 且可从死信恢复；admin 停用 / 恢复访客；本地 Mailpit；Turnstile 测试密钥只在 development 生效）。
+  - 合并 core 测试缺口（subagent，新增 126 个用例：标识符长度边界、Release / Contribution schema 的接受 / 拒绝表、digest 已知答案向量与默认值性质测试）。测试发现只允许 https 的 URL 在导出的 JSON Schema 里丢失了协议限制，已修复并重新生成 `spec/schema/`。
+  - `pnpm dev` / `pnpm dev:login` / `pnpm dev:smoke`：一条命令启动 api、worker、web；不需要 OAuth app 也能登录；CI 新增 `dev-env` job 在全新 runner 上运行冒烟。
+  - 走查中发现并修复：`pnpm infra:up` 在 Compose v5 下每次都失败；生命周期规则重复累积；系统账号 ID 不一致时报错不可读；端口被占用时的等待与残留进程。
+- Verification：`pnpm test` 1283 个通过；集成测试 616 个通过（31 个文件）；一致性 103 通过 / 81 todo；全新 clone 的走查与 `pnpm dev:smoke` 6 项全部通过，见 [evidence/2026-09-22-local-dev-walkthrough.md](evidence/2026-09-22-local-dev-walkthrough.md)。
+- Decisions：D-145（清理、导入失败、访客管理、本地邮件）、D-146（继承值不参与默认值省略，**待用户复核**；https URL 校验）。
+- 尚不能打勾：M0-4 需要 CI `dev-env` 的首次运行记录（依赖推送，B-10）。

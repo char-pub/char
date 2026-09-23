@@ -1,4 +1,4 @@
-# 本地开发环境：Postgres 16 + MinIO（S3 兼容）。
+# 本地开发环境：Postgres 16 + MinIO（S3 兼容）+ Mailpit（本地 SMTP，收下所有邮件，不对外投递）。
 # 这里的口令只用于本机开发，线上值在 Railway / Cloudflare 中配置。
 name: charpub
 
@@ -40,7 +40,7 @@ services:
       retries: 30
 
   minio-init:
-    image: quay.io/minio/mc:latest
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
       minio:
         condition: service_healthy
@@ -49,8 +49,23 @@ services:
       mc alias set local http://minio:9000 charpub_local charpub_local_secret &&
       for b in public private uploads evidence; do mc mb --ignore-existing local/charpub-local-$$b; done &&
       mc anonymous set download local/charpub-local-public &&
-      mc ilm rule add --expire-days 1 local/charpub-local-uploads || true
+      (mc ilm rule ls local/charpub-local-uploads >/dev/null 2>&1 ||
+       mc ilm rule add --expire-days 1 local/charpub-local-uploads)
       "
+
+  # 访客验证邮件等都发到这里：SMTP 在 127.0.0.1:51025，网页界面与 API 在 http://127.0.0.1:58025。
+  mailpit:
+    image: ghcr.io/axllent/mailpit:v1.31.2
+    environment:
+      MP_MAX_MESSAGES: "500"
+    ports:
+      - "127.0.0.1:51025:1025"
+      - "127.0.0.1:58025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
 
 volumes:
   pgdata:
