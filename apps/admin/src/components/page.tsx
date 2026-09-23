@@ -1,7 +1,7 @@
 /**
- * 页面框架的小组件：页面标题、“后端接口待接入”提示、错误与空状态、用户内容。
+ * 页面框架的小组件：页面标题、错误与空状态、用户内容。
  */
-import { AlertTriangle, PlugZap } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import type * as React from "react";
 import { type ReactNode, useId } from "react";
 import { Input } from "@/components/ui/input";
@@ -45,24 +45,6 @@ export function PageHeader({
 }
 
 /** 这个页面依赖的后端接口还没有实现，当前显示的是 mock 数据或空结果。 */
-export function PendingBackend({ endpoints }: { endpoints: string[] }) {
-  return (
-    <div
-      role="note"
-      className="flex items-start gap-2 rounded-md border border-dashed border-signal/60 bg-signal-soft/40 px-3 py-2 text-sm"
-    >
-      <PlugZap aria-hidden className="mt-0.5 size-4 shrink-0 text-signal-ink" />
-      <div>
-        <p className="font-medium">Backend endpoint pending</p>
-        <p className="text-muted-foreground">
-          This page is built against the planned contract:{" "}
-          <span className="font-mono">{endpoints.join(", ")}</span>. Until the admin API implements
-          it, data comes from the local mock.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 export function ErrorNote({ error }: { error: unknown }) {
   const code =

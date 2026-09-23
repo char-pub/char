@@ -382,6 +382,15 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       requireReason(input);
       const c = creations.find((x) => x.id === id);
       if (!c) throw new ApiError(404, "not_found");
+      // 与后端一致：强制评级只能调高。
+      const order = ["general", "teen", "mature", "explicit"];
+      const current = Math.max(
+        order.indexOf(c.rating),
+        order.indexOf(c.forced_rating ?? "general"),
+      );
+      if (order.indexOf(input.rating) <= current) {
+        throw new ApiError(422, "admin.rating_can_only_increase");
+      }
       addAudit(
         "creation.force_rating",
         `creation:${id}`,
@@ -453,6 +462,8 @@ export function createMockApi(opts: MockOptions = {}): AdminApi {
       requireReason(input);
       const u = users.find((x) => x.id === id);
       if (!u) throw new ApiError(404, "not_found");
+      // 与后端一致：CSAM 锁定不能被普通封禁覆盖，否则可以借“重新封禁再解封”绕过四眼。
+      if (u.csam_locked) throw new ApiError(409, "admin.csam_locked");
       u.banned = true;
       u.ban_reason = input.reason;
       u.ban_expires = input.until ?? null;

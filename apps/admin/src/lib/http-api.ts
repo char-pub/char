@@ -10,9 +10,20 @@ import {
   ApiError,
   type AuditPage,
   type AuditVerify,
+  type CreationAdminView,
+  type CsamIncident,
+  type FailedJob,
   type Flag,
   type FlagKey,
+  type LegalRequest,
   type Me,
+  type NamespaceAdminView,
+  type PendingApproval,
+  type QueueStats,
+  type Report,
+  type ReservedName,
+  type TombstonePreview,
+  type UserAdminView,
 } from "./api";
 
 type Fetch = typeof fetch;
@@ -36,47 +47,90 @@ export function createHttpApi(baseUrl: string, f: Fetch = (...a) => fetch(...a))
     return json as T;
   }
 
-  const notYet = (name: string) => () =>
-    Promise.reject(new ApiError(501, "admin.not_implemented", `${name} is not available yet`));
+  const list = async <T>(path: string) => (await call<{ items: T[] }>("GET", path)).items;
+  const qs = (q: Record<string, string | undefined>) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(q)) if (v) p.set(k, v);
+    const s = p.toString();
+    return s ? `?${s}` : "";
+  };
+  const enc = encodeURIComponent;
 
   return {
     me: () => call<Me>("GET", "/v1/admin/me"),
     listFlags: async () => (await call<{ flags: Flag[] }>("GET", "/v1/admin/flags")).flags,
     setFlag: async (key: FlagKey, input) => {
-      await call("PUT", `/v1/admin/flags/${encodeURIComponent(key)}`, input);
+      await call("PUT", `/v1/admin/flags/${enc(key)}`, input);
     },
-    listAudit: (q) => {
-      const p = new URLSearchParams();
-      if (q.before) p.set("before", q.before);
-      if (q.subject) p.set("subject", q.subject);
-      if (q.limit) p.set("limit", String(q.limit));
-      const qs = p.toString();
-      return call<AuditPage>("GET", `/v1/admin/audit${qs ? `?${qs}` : ""}`);
-    },
+    listAudit: (q) =>
+      call<AuditPage>(
+        "GET",
+        `/v1/admin/audit${qs({ before: q.before, subject: q.subject, limit: q.limit ? String(q.limit) : undefined })}`,
+      ),
     verifyAudit: () => call<AuditVerify>("GET", "/v1/admin/audit/verify"),
 
-    listReports: notYet("listReports"),
-    actOnReport: notYet("actOnReport"),
-    getCreation: notYet("getCreation"),
-    hideCreation: notYet("hideCreation"),
-    forceRating: notYet("forceRating"),
-    yankRelease: notYet("yankRelease"),
-    previewTombstone: notYet("previewTombstone"),
-    requestTombstone: notYet("requestTombstone"),
-    listApprovals: notYet("listApprovals"),
-    confirmApproval: notYet("confirmApproval"),
-    listUsers: notYet("listUsers"),
-    banUser: notYet("banUser"),
-    unbanUser: notYet("unbanUser"),
-    listNamespaces: notYet("listNamespaces"),
-    listReserved: notYet("listReserved"),
-    addReserved: notYet("addReserved"),
-    setNamespaceStatus: notYet("setNamespaceStatus"),
-    listLegalRequests: notYet("listLegalRequests"),
-    listCsamIncidents: notYet("listCsamIncidents"),
-    listQueues: notYet("listQueues"),
-    listFailedJobs: notYet("listFailedJobs"),
-    retryJob: notYet("retryJob"),
-    cancelJob: notYet("cancelJob"),
+    listReports: () => list<Report>("/v1/admin/reports"),
+    actOnReport: async (id, input) => {
+      await call("POST", `/v1/admin/reports/${enc(id)}/actions`, input);
+    },
+    // `@ns/name` 中的 `/` 是路径的一部分，不能编码。
+    getCreation: (ref) =>
+      call<CreationAdminView>("GET", `/v1/admin/creations/${ref.replace(/^\/+/, "")}`),
+    hideCreation: async (id, input) => {
+      await call("POST", `/v1/admin/creations/${enc(id)}/visibility`, input);
+    },
+    forceRating: async (id, input) => {
+      await call("POST", `/v1/admin/creations/${enc(id)}/rating`, input);
+    },
+    yankRelease: async (id, input) => {
+      await call("POST", `/v1/admin/releases/${enc(id)}/yank`, input);
+    },
+    previewTombstone: (subject) =>
+      call<TombstonePreview>("POST", "/v1/admin/tombstones/preview", { subject }),
+    requestTombstone: async (input) => {
+      const r = await call<{ executed: boolean; approval?: PendingApproval }>(
+        "POST",
+        "/v1/admin/tombstones",
+        input,
+      );
+      return r.executed || !r.approval
+        ? { executed: true as const }
+        : { executed: false as const, approval: r.approval };
+    },
+    listApprovals: () => list<PendingApproval>("/v1/admin/approvals"),
+    confirmApproval: async (id, input) => {
+      await call("POST", `/v1/admin/approvals/${enc(id)}/confirm`, input);
+    },
+    listUsers: (q) => list<UserAdminView>(`/v1/admin/users${qs({ query: q.query })}`),
+    banUser: async (id, input) => {
+      await call("POST", `/v1/admin/users/${enc(id)}/ban`, input);
+    },
+    unbanUser: async (id, input) => {
+      const r = await call<{ approval?: PendingApproval }>(
+        "POST",
+        `/v1/admin/users/${enc(id)}/unban`,
+        input,
+      );
+      return r.approval ? { approval: r.approval } : {};
+    },
+    listNamespaces: (q) =>
+      list<NamespaceAdminView>(`/v1/admin/namespaces${qs({ query: q.query })}`),
+    listReserved: () => list<ReservedName>("/v1/admin/reserved-names"),
+    addReserved: async (input) => {
+      await call("POST", "/v1/admin/reserved-names", input);
+    },
+    setNamespaceStatus: async (slug, input) => {
+      await call("POST", `/v1/admin/namespaces/${enc(slug)}/status`, input);
+    },
+    listLegalRequests: () => list<LegalRequest>("/v1/admin/legal-requests"),
+    listCsamIncidents: () => list<CsamIncident>("/v1/admin/csam-incidents"),
+    listQueues: () => list<QueueStats>("/v1/admin/queues"),
+    listFailedJobs: () => list<FailedJob>("/v1/admin/jobs/failed"),
+    retryJob: async (id, input) => {
+      await call("POST", `/v1/admin/jobs/${enc(id)}/retry`, input);
+    },
+    cancelJob: async (id, input) => {
+      await call("POST", `/v1/admin/jobs/${enc(id)}/cancel`, input);
+    },
   };
 }

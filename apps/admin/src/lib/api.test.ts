@@ -28,7 +28,43 @@ describe("http api", () => {
       status: 422,
       code: "admin.reason_required",
     });
-    await expect(api.listReports()).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("unwraps list responses and builds paths for every endpoint", async () => {
+    const seen: string[] = [];
+    const f = (async (url: string, init: RequestInit) => {
+      seen.push(`${init.method} ${new URL(url).pathname}${new URL(url).search}`);
+      if (url.endsWith("/tombstones")) {
+        return new Response(JSON.stringify({ executed: false, approval: { id: "ap1" } }), {
+          status: 202,
+        });
+      }
+      return new Response(JSON.stringify({ items: [{ id: "x" }] }));
+    }) as typeof fetch;
+    const api = createHttpApi("https://admin-api.char.pub", f);
+    expect(await api.listReports()).toEqual([{ id: "x" }]);
+    await api.getCreation("@djj/alice");
+    await api.listUsers({ query: "sam" });
+    await api.retryJob("job 1", { reason: "retry after fix" });
+    const t = await api.requestTombstone({
+      subject: "fragment:sha256:aa",
+      reason_code: "policy.illegal",
+      reason: "illegal content",
+    });
+    expect(t).toEqual({ executed: false, approval: { id: "ap1" } });
+    expect(seen).toEqual([
+      "GET /v1/admin/reports",
+      "GET /v1/admin/creations/@djj/alice",
+      "GET /v1/admin/users?query=sam",
+      "POST /v1/admin/jobs/job%201/retry",
+      "POST /v1/admin/tombstones",
+    ]);
+    await expect(
+      createHttpApi(
+        "https://x",
+        (async () => new Response("{}", { status: 500 })) as typeof fetch,
+      ).listQueues(),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 
   it("builds audit queries", async () => {

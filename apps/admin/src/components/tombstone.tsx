@@ -15,7 +15,7 @@ import {
   type TombstoneReason,
 } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
-import { ErrorNote, Field, PageHeader, PendingBackend, Tag, Time } from "./page";
+import { ErrorNote, Field, PageHeader, Tag, Time } from "./page";
 import { ReasonForm } from "./reason-form";
 
 export function TombstonePage({ now }: { now?: () => number } = {}) {
@@ -42,13 +42,6 @@ export function TombstonePage({ now }: { now?: () => number } = {}) {
       <PageHeader
         title="Tombstone"
         description="Removes content from distribution everywhere it appears, including every release that depends on it. Preview first."
-      />
-      <PendingBackend
-        endpoints={[
-          "POST /v1/admin/tombstones/preview",
-          "POST /v1/admin/tombstones",
-          "GET/POST /v1/admin/approvals",
-        ]}
       />
       <form
         className="flex items-end gap-2"

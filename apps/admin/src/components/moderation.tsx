@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { CreationAdminView, Report, ReportAction, WithReason } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
-import { Empty, ErrorNote, Field, PageHeader, PendingBackend, Tag, Time, UserText } from "./page";
+import { Empty, ErrorNote, Field, PageHeader, Tag, Time, UserText } from "./page";
 import { ReasonForm } from "./reason-form";
 
 const SEVERITY_TONE = {
@@ -41,7 +41,6 @@ export function ReportsPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Report queue" description="Sorted by severity, then age." />
-      <PendingBackend endpoints={["GET /v1/admin/reports", "POST /v1/admin/reports/:id/actions"]} />
       {q.error ? <ErrorNote error={q.error} /> : null}
       <table className="data-table">
         <thead>
@@ -204,14 +203,6 @@ export function ContentPage() {
       <PageHeader
         title="Content"
         description="Look up any creation or release. Viewing private content is itself recorded in the audit log."
-      />
-      <PendingBackend
-        endpoints={[
-          "GET /v1/admin/creations/:ref",
-          "POST /v1/admin/creations/:id/visibility",
-          "POST /v1/admin/creations/:id/rating",
-          "POST /v1/admin/releases/:id/yank",
-        ]}
       />
       <form
         className="flex items-end gap-2"

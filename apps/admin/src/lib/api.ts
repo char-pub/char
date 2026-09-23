@@ -1,9 +1,8 @@
 /**
  * admin-api 的前端契约。
  *
- * 已由后端实现的接口：运行开关（`/v1/admin/flags`）与审计日志（`/v1/admin/audit`、
- * `/v1/admin/audit/verify`）。其余接口先在这里定义形状，界面基于 mock 数据开发，
- * 标注为“后端接口待接入”，后端实现时以这里的类型为准或同步修改。
+ * 类型与 `apps/server/src/admin/routes/` 的响应一致。列表接口在后端包在 `{ items }` 中，
+ * 由 http-api 解开。本地开发可以设置 `VITE_ADMIN_MOCK=1` 使用 mock 实现。
  *
  * 所有写接口的请求体都包含 `reason`（至少 10 个字符）；法律类操作还要 `legal_request_id`。
  * 错误统一是 problem+json，前端只依赖其中的 `code`。
@@ -39,7 +38,7 @@ export type StaffCapability =
 
 export const MIN_REASON_LENGTH = 10;
 
-/** `GET /v1/admin/me`：当前员工。**后端待实现。** */
+/** `GET /v1/admin/me`：当前员工。 */
 export interface Me {
   email: string;
   roles: StaffRole[];
@@ -47,7 +46,7 @@ export interface Me {
 }
 
 // ---------------------------------------------------------------------------
-// 已实现：运行开关与审计
+// 运行开关与审计
 // ---------------------------------------------------------------------------
 
 export type FlagKey =
@@ -88,7 +87,7 @@ export type AuditVerify =
   | { ok: false; count: number; brokenAt: string; reason: string };
 
 // ---------------------------------------------------------------------------
-// 待实现：举报、内容、tombstone、用户、Namespace、法律、CSAM、任务
+// 举报、内容、tombstone、用户、Namespace、法律、CSAM、任务
 // ---------------------------------------------------------------------------
 
 export type ReportCategory =
@@ -131,9 +130,17 @@ export interface CreationAdminView {
 /** `POST /v1/admin/tombstones/preview`：影响范围。 */
 export interface TombstonePreview {
   subject: string;
-  releases: { id: string; ref: string; label: string }[];
+  releases: {
+    id: string;
+    ref: string;
+    label: string;
+    /** 直接包含被下架对象，还是通过依赖闭包间接包含。 */
+    via?: "direct" | "closure";
+    status?: string;
+  }[];
   objects: number;
   cdn_urls: string[];
+  /** 受影响的下游作者，以 `@namespace` 表示（不暴露邮箱）。 */
   downstream_authors: string[];
   /** 影响超过阈值时需要四眼确认。 */
   requires_four_eyes: boolean;
@@ -298,10 +305,34 @@ export class ApiError extends Error {
   }
 }
 
-/** 这些接口已经由后端实现；其余接口在界面上标注“后端接口待接入”。 */
+/** 已由后端实现的接口。目前全部接口都已接入，保留这个集合用于标注以后新增的接口。 */
 export const IMPLEMENTED_ENDPOINTS = new Set<keyof AdminApi>([
+  "me",
   "listFlags",
   "setFlag",
   "listAudit",
   "verifyAudit",
+  "listReports",
+  "actOnReport",
+  "getCreation",
+  "hideCreation",
+  "forceRating",
+  "yankRelease",
+  "previewTombstone",
+  "requestTombstone",
+  "listApprovals",
+  "confirmApproval",
+  "listUsers",
+  "banUser",
+  "unbanUser",
+  "listNamespaces",
+  "listReserved",
+  "addReserved",
+  "setNamespaceStatus",
+  "listLegalRequests",
+  "listCsamIncidents",
+  "listQueues",
+  "listFailedJobs",
+  "retryJob",
+  "cancelJob",
 ]);

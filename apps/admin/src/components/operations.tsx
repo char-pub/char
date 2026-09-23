@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import type { UserAdminView, WithReason } from "@/lib/api";
 import { useApi, useMe } from "@/lib/context";
 import { FLAG_INFO } from "./flags";
-import { Empty, ErrorNote, Field, PageHeader, PendingBackend, Tag, Time, UserText } from "./page";
+import { Empty, ErrorNote, Field, PageHeader, Tag, Time, UserText } from "./page";
 import { ReasonForm } from "./reason-form";
 
 // ---------------------------------------------------------------------------
@@ -56,13 +56,6 @@ export function UsersPage() {
       <PageHeader
         title="Users"
         description="Banning immediately revokes every session and token of the account."
-      />
-      <PendingBackend
-        endpoints={[
-          "GET /v1/admin/users",
-          "POST /v1/admin/users/:id/ban",
-          "POST /v1/admin/users/:id/unban",
-        ]}
       />
       <form
         className="flex items-end gap-2"
@@ -200,13 +193,6 @@ export function NamespacesPage() {
         title="Namespaces"
         description="Reserved names, freezing and rename arbitration. Old names stay reserved forever after a rename."
       />
-      <PendingBackend
-        endpoints={[
-          "GET /v1/admin/namespaces",
-          "GET/POST /v1/admin/reserved-names",
-          "POST /v1/admin/namespaces/:slug/status",
-        ]}
-      />
       {ns.error ? <ErrorNote error={ns.error} /> : null}
       <table className="data-table">
         <thead>
@@ -342,7 +328,6 @@ export function LegalPage() {
         title="Legal requests"
         description="DMCA notices, court orders and GDPR requests. Requester details are encrypted and only visible here."
       />
-      <PendingBackend endpoints={["GET/POST /v1/admin/legal-requests"]} />
       {q.error ? <ErrorNote error={q.error} /> : null}
       <table className="data-table">
         <thead>
@@ -391,9 +376,6 @@ export function CsamPage() {
       <PageHeader
         title="CSAM incidents"
         description="Never download, forward or screenshot the content. Evidence is only accessible to the legal role and every access is audited."
-      />
-      <PendingBackend
-        endpoints={["GET /v1/admin/csam-incidents", "POST /v1/admin/csam-incidents/:id/report"]}
       />
       {q.error ? <ErrorNote error={q.error} /> : null}
       <table className="data-table">
@@ -447,14 +429,6 @@ export function JobsPage() {
       <PageHeader
         title="Jobs"
         description="Background queues (pg-boss). Retrying or cancelling a job is audited."
-      />
-      <PendingBackend
-        endpoints={[
-          "GET /v1/admin/queues",
-          "GET /v1/admin/jobs/failed",
-          "POST /v1/admin/jobs/:id/retry",
-          "POST /v1/admin/jobs/:id/cancel",
-        ]}
       />
       <table className="data-table">
         <thead>
