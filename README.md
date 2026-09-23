@@ -22,6 +22,7 @@ An open registry, collaboration network and interoperability layer for AI creati
 Requirements: Node ≥ 22.12 (24 LTS recommended), pnpm (version pinned in `package.json#packageManager`), Docker.
 
 ```sh
+git submodule update --init   # brand assets (logo, favicons) from char-pub/brand-assets
 corepack enable        # or install pnpm yourself
 pnpm install
 pnpm infra:up          # Postgres 18 (127.0.0.1:54329) + MinIO (127.0.0.1:59000, console :59001)
@@ -63,3 +64,5 @@ In the browser, render the widget with the matching testing site key `1x00000000
 ## License
 
 Code: [Apache-2.0](LICENSE). Specification and conformance suite: [CC-BY-4.0](spec/LICENSE).
+
+The char.pub logo and icons come from the [`char-pub/brand-assets`](https://github.com/char-pub/brand-assets) submodule (`vendor/brand-assets`). They are used under that repository's own LICENSE and NOTICE and are not covered by this repository's licenses.

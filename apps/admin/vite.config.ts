@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { brandIcons } from "../../scripts/brand-icons";
 
 /**
  * admin.char.pub 的构建配置。
@@ -22,6 +23,7 @@ export default defineConfig({
     }),
     react(),
     tailwindcss(),
+    brandIcons(),
   ],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },

@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { brandIcons } from "../../scripts/brand-icons";
 
 /** 直接使用 workspace 包的 TypeScript 源码，开发与构建都不需要先编译 packages/*。 */
 const sourceConditions = ["@char-pub/source", "module", "browser", "import", "default"];
@@ -24,6 +25,7 @@ export default defineConfig({
     }),
     react(),
     tailwindcss(),
+    brandIcons(),
   ],
   resolve: {
     conditions: sourceConditions,

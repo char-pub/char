@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { AccountMenu } from "./account-menu";
+import { BrandMark } from "./brand-mark";
 import { ThemeToggle } from "./theme-toggle";
 
 const NAV = [
@@ -36,9 +37,9 @@ export function Layout({ children }: { children: ReactNode }) {
       </a>
       <header className="border-b border-foreground/80 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-6 px-5 py-3">
-          <Link to="/" className="flex items-baseline gap-1.5" aria-label="char.pub home">
-            <span className="font-display text-2xl font-semibold leading-none">char</span>
-            <span className="stamp -rotate-3 border-seal text-seal">.pub</span>
+          <Link to="/" className="flex items-center gap-2" aria-label="char.pub home">
+            <BrandMark size={30} />
+            <span className="text-xl font-semibold leading-none tracking-tight">char.pub</span>
           </Link>
           <nav aria-label="Main" className="flex gap-5 text-sm">
             {NAV.map((n) => (
@@ -66,7 +67,10 @@ export function Layout({ children }: { children: ReactNode }) {
       </main>
       <footer className="border-t border-rule">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-6 text-xs text-muted-foreground">
-          <span className="font-display text-sm text-foreground">char.pub</span>
+          <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+            <BrandMark size={24} />
+            char.pub
+          </span>
           <span>Open registry for characters, worlds and stories.</span>
           <nav aria-label="Footer" className="ml-auto flex gap-4">
             <a

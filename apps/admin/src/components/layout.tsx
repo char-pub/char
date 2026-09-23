@@ -11,6 +11,7 @@ import { isMockBuild } from "@/lib/api-env";
 import { useMe } from "@/lib/context";
 import { MOCK_ROLES_KEY } from "@/lib/mock-keys";
 import { DECIDE_CAPABILITIES } from "@/lib/roles";
+import { BrandMark } from "./brand-mark";
 import { ThemeToggle } from "./theme-toggle";
 
 interface NavItem {
@@ -65,7 +66,10 @@ export function StaffBar() {
   const { me, error } = useMe();
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-foreground px-4 py-1.5 text-xs text-background">
-      <span className="font-mono font-medium">char.pub admin</span>
+      <span className="flex items-center gap-1.5 font-mono font-medium">
+        <BrandMark size={24} />
+        char.pub admin
+      </span>
       {me ? (
         <>
           <span className="font-mono" data-testid="staff-email">
