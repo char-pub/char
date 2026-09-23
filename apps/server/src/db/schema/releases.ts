@@ -72,7 +72,11 @@ export const releases = app.table(
     updatedAt: updatedAt(),
   },
   (t) => [
-    uniqueIndex("releases_creation_label_uq").on(t.creationId, t.label),
+    // 失败的发布会释放 label：唯一约束只覆盖未失败的 Release。
+    uniqueIndex("releases_creation_label_uq")
+      .on(t.creationId, t.label)
+      .where(sql`${t.publishState} <> 'failed'`),
+    uniqueIndex("releases_idempotency_uq").on(t.creationId, t.idempotencyKey),
     index("releases_semantic_idx").on(t.semanticDigest),
     check("releases_label_syntax", sql`${t.label} ~ '^[0-9A-Za-z.+-]{1,64}$'`),
   ],

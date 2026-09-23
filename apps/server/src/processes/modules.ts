@@ -7,15 +7,23 @@ import type { Env, Services } from "../api/app.js";
 import { register as read } from "../api/routes/read.js";
 import { register as search } from "../api/routes/search.js";
 import { register as uploads } from "../api/routes/uploads.js";
+import { REGISTRY_WRITE_MODULES } from "../api/routes/write.js";
 import { register as yank } from "../api/routes/yank.js";
 import { parseEnv, WorkerEnvSchema } from "../env.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
 import { CloudflarePurger, LoggingPurger } from "../ops/cdn.js";
 import { noopScanner } from "../upload/csam.js";
+import { registerPublishWorker, requeuePendingPublishes } from "../worker/publish.js";
 import { dispatchTombstoneJob, type TombstoneQueueJob } from "../worker/tombstone-dispatch.js";
 import { registerUploadWorkers } from "../worker/upload.js";
 
-export const API_MODULES: readonly ((app: Hono<Env>) => void)[] = [read, search, yank, uploads];
+export const API_MODULES: readonly ((app: Hono<Env>) => void)[] = [
+  ...REGISTRY_WRITE_MODULES,
+  read,
+  search,
+  yank,
+  uploads,
+];
 
 /** 注册 worker 的任务处理函数。 */
 export async function startWorkers(services: Services): Promise<void> {
@@ -30,6 +38,23 @@ export async function startWorkers(services: Services): Promise<void> {
     newId: () => services.ids.uuid(),
     systemActorId: env.SYSTEM_ACTOR_ID,
   });
+  await registerPublishWorker(services.queue, {
+    db: services.db,
+    cas: services.cas,
+    clock: services.clock,
+    publishDisabled: async () => (await services.flags()).has("publish"),
+    publicAssetBaseUrl: services.publicAssetBaseUrl,
+  });
+  // 发布开关关闭期间被推迟的任务，在开关恢复后重新入队；每 5 分钟检查一次。
+  await services.queue.work(QUEUE_NAMES.publishRequeue, async () => {
+    if ((await services.flags()).has("publish")) return;
+    await requeuePendingPublishes(
+      services.db,
+      services.queue,
+      new Date(now().getTime() - 5 * 60_000),
+    );
+  });
+  await services.queue.boss.schedule(QUEUE_NAMES.publishRequeue, "*/5 * * * *");
   const cdn =
     env.CF_ZONE_ID && env.CF_PURGE_TOKEN
       ? new CloudflarePurger(env.CF_ZONE_ID, env.CF_PURGE_TOKEN)

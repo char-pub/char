@@ -24,6 +24,7 @@ const retrying = (name: string, extra: Omit<Queue, "name"> = {}): Queue => ({
 
 export const QUEUE_NAMES = {
   publish: "publish",
+  publishRequeue: "publish.requeue",
   uploadProcess: "upload.process",
   importCcv3: "import.ccv3",
   githubSync: "github.sync",
