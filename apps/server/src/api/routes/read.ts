@@ -1,5 +1,5 @@
 /**
- * 公开读取接口：Creation 详情、Release 详情、IR 下载、CCv3 导出、反向依赖。
+ * 公开读取接口：Creation 详情、Release 详情、Release 的源内容、IR 下载、CCv3 导出、反向依赖。
  *
  * - 私有内容对无权访问的人一律 404，不暴露它是否存在。
  * - namespace 或 Creation 改名后，旧地址 301 到新地址，路径的其余部分保持不变。
@@ -7,7 +7,7 @@
  * - public 内容通过 CDN 直出：IR 等对象 302 到内容寻址的公共 URL，可以永久缓存；
  *   private 内容 302 到短期签名 URL，响应本身不缓存。
  */
-import { CharError } from "@char-pub/core";
+import { CharError, isCharError } from "@char-pub/core";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { Resource } from "../../authz/authorize.js";
@@ -17,9 +17,11 @@ import {
   namespaces,
   releases,
   reverseEdges,
+  revisions,
 } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { QUEUE_NAMES } from "../../jobs/definitions.js";
+import { loadRevisionContent } from "../../registry/content.js";
 import {
   creationDetail,
   exportCacheKey,
@@ -115,6 +117,24 @@ function isPublicRelease(r: ReleaseRow) {
   return r.visibility === "public";
 }
 
+function yankWarning(r: ReleaseRow): string | undefined {
+  if (r.status !== "yanked") return undefined;
+  return `release ${r.label} was yanked${r.statusReason ? `: ${r.statusReason}` : ""}`;
+}
+
+/** Release 对应的 Revision：发布时记录在 Release 上；没有记录时按内容 digest 查找。 */
+async function revisionOf(c: AppContext, f: FoundCreation, r: ReleaseRow): Promise<string | null> {
+  if (r.revisionId) return r.revisionId;
+  const [rev] = await c.var.services.db
+    .select({ id: revisions.id })
+    .from(revisions)
+    .where(
+      and(eq(revisions.creationId, f.creation.id), eq(revisions.semanticDigest, r.semanticDigest)),
+    )
+    .limit(1);
+  return rev?.id ?? null;
+}
+
 export function register(app: Hono<Env>): void {
   // `@ns/name@label` 是 Release 的公共标识写法，重定向到规范路径。重定向本身不暴露任何
   // 信息：目标地址照常做授权，私有 Release 在那里返回 404。
@@ -161,11 +181,49 @@ export function register(app: Hono<Env>): void {
         license_check: r.licenseCheck,
         availability: r.availability,
       };
-      if (r.status === "yanked") {
-        body.warning = `release ${r.label} was yanked${r.statusReason ? `: ${r.statusReason}` : ""}`;
-      }
+      const warning = yankWarning(r);
+      if (warning) body.warning = warning;
       c.header("cache-control", isPublicRelease(r) ? PUBLIC_READ_CACHE : PRIVATE_CACHE);
       return c.json(body);
+    },
+  });
+
+  // Release 的源内容：它对应的 Revision 与 canonical Creation。提交 Contribution 时在这份
+  // 内容上修改，变更的 base_digest 按它计算。可见性与读取 Release 完全相同。
+  // 内容不可变，但 Release 之后可能被下架，而下架只清除 CDN 上的内容寻址对象，所以这里
+  // 与 Release 详情一样只做短时缓存，不做永久缓存。
+  route(app, {
+    method: "get",
+    path: `${CREATION_PATH}/releases/:label/source`,
+    authorize: loadRelease,
+    handler: async (c, { loaded: { f, r } }) => {
+      if (r.status === "tombstoned") return gone(c, f, r);
+      const revisionId = await revisionOf(c, f, r);
+      if (!revisionId) {
+        return problem(c, 404, "release.source_unavailable", "this release has no stored source");
+      }
+      let content: Awaited<ReturnType<typeof loadRevisionContent>>;
+      try {
+        content = await loadRevisionContent(c.var.services.cas, r.semanticDigest);
+      } catch (e) {
+        if (isCharError(e) && e.code === "registry.revision_corrupt") {
+          return problem(
+            c,
+            410,
+            "release.source_unavailable",
+            "the stored source is no longer available",
+          );
+        }
+        throw e;
+      }
+      const warning = yankWarning(r);
+      c.header("cache-control", isPublicRelease(r) ? PUBLIC_READ_CACHE : PRIVATE_CACHE);
+      return c.json({
+        revision: toPublicId("revision", revisionId),
+        semantic_digest: r.semanticDigest,
+        creation: content.json,
+        ...(warning ? { warning } : {}),
+      });
     },
   });
 

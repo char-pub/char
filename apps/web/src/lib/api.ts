@@ -9,6 +9,8 @@
 import {
   type ConfirmImportRequestSchema,
   ContributionDetailSchema,
+  type ContributionInvite,
+  ContributionInvitesResponseSchema,
   type ContributionSettingsRequestSchema,
   ContributionSummarySchema,
   type CreateContributionRequestSchema,
@@ -28,6 +30,8 @@ import {
   PublishResponseSchema,
   PutDraftResponseSchema,
   ReleaseDetailSchema,
+  type ReleaseSource,
+  ReleaseSourceSchema,
   RevisionSchema,
   type TOKEN_SCOPES,
   UploadStatusSchema,
@@ -38,7 +42,6 @@ import {
   type CreationType,
   CreationTypeSchema,
   type Digest,
-  DigestSchema,
 } from "@char-pub/core";
 import { z } from "zod";
 
@@ -117,15 +120,10 @@ export const AcceptedContributionSchema = z.object({
 export type AcceptedContribution = z.infer<typeof AcceptedContributionSchema>;
 
 /**
- * 一个 Release 的来源：它对应的 Revision 与 canonical 形式的 Creation。贡献者在这份内容上
- * 修改，变更里的 `base_digest` 按它计算。
+ * 一个 Release 的来源（`ReleaseSource`）：它对应的 Revision 与 canonical 形式的 Creation。
+ * 贡献者在这份内容上修改，变更里的 `base_digest` 按它计算。
  */
-export const ReleaseSourceSchema = z.object({
-  revision: z.string(),
-  semantic_digest: DigestSchema,
-  creation: z.unknown(),
-});
-export type ReleaseSource = z.infer<typeof ReleaseSourceSchema>;
+export type { ContributionInvite, ReleaseSource };
 
 export interface ContributionQuery {
   status?: ContributionStatus | undefined;
@@ -236,6 +234,8 @@ export interface RegistryClient {
   rejectContribution(ns: string, name: string, number: number, reason: string): Promise<void>;
   withdrawContribution(ns: string, name: string, number: number): Promise<void>;
   setContributionPolicy(ns: string, name: string, policy: ContributionPolicy): Promise<void>;
+  /** 邀请名单（只有作者能读取）。 */
+  contributionInvites(ns: string, name: string): Promise<{ items: ContributionInvite[] }>;
   invite(ns: string, name: string, user: string): Promise<void>;
   uninvite(ns: string, name: string, user: string): Promise<void>;
 
@@ -465,6 +465,12 @@ export function createRegistryClient(
     async setContributionPolicy(ns, name, policy) {
       await send("PUT", `${creationPath(ns, name)}/contribution-settings`, { body: { policy } });
     },
+    contributionInvites: (ns, name) =>
+      json(
+        ContributionInvitesResponseSchema,
+        "GET",
+        `${creationPath(ns, name)}/contribution-invites`,
+      ),
     async invite(ns, name, user) {
       await send("POST", `${creationPath(ns, name)}/contribution-invites`, { body: { user } });
     },

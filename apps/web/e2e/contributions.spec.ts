@@ -1,6 +1,7 @@
 /**
  * Contribution 界面（mock API）：敏感变更必须逐项确认、冲突有标记、按 Agent 过滤、
- * 审阅期间草稿被改时提示重新加载，以及访客验证后提交 Contribution 的完整流程。
+ * 作者显示名、审阅期间草稿被改时提示重新加载、作者管理邀请名单，以及访客验证后提交
+ * Contribution 并在列表中看到自己的提交的完整流程。
  */
 import { expect, type Page, test } from "@playwright/test";
 import { creationDetail, ME, mockApi, OTHER, problem } from "./mock-api";
@@ -16,7 +17,7 @@ function summary(n: number, over: Record<string, unknown> = {}) {
     title: `Contribution ${n}`,
     status: "open",
     agent: false,
-    author: { user: OTHER.id },
+    author: { user: OTHER.id, display_name: OTHER.name, namespace: `@${OTHER.namespace}` },
     base_revision: "rev_01j00000000000000000000000",
     created_at: "2026-09-22T12:00:00.000Z",
     decided_at: null,
@@ -193,6 +194,8 @@ test("the list marks agent contributions and filters them", async ({ page }) => 
   await expect(list.getByRole("listitem")).toHaveCount(2);
   const agentRow = list.getByRole("listitem").filter({ hasText: "Tidy the lore" });
   await expect(agentRow.getByText("agent", { exact: true })).toBeVisible();
+  // 提交者显示显示名与 namespace，而不是用户 ID。
+  await expect(agentRow.getByText("by Other (@other)")).toBeVisible();
 
   await page.getByLabel("Submitted by").selectOption("human");
   await expect(list.getByRole("listitem")).toHaveCount(1);
@@ -203,6 +206,64 @@ test("the list marks agent contributions and filters them", async ({ page }) => 
   expect(api.calls.some((c) => c.path.endsWith("/contributions"))).toBe(true);
   // 作者可以设置谁能提交。
   await expect(page.getByRole("heading", { name: "Who can contribute" })).toBeVisible();
+});
+
+test("the author sees and edits the invite list", async ({ page }) => {
+  const api = await mockApi(page, ORIGIN);
+  api.on("GET /v1/me", { body: ME });
+  api.on(`GET ${BASE}`, { body: creationDetail({ contribution_policy: "invited" }) });
+  api.on(`GET ${BASE}/contributions`, { body: { items: [], next_cursor: null } });
+  interface Invite {
+    user: string;
+    display_name: string | null;
+    namespace: string | null;
+    invited_at: string;
+  }
+  let invited: Invite[] = [
+    {
+      user: OTHER.id,
+      display_name: OTHER.name,
+      namespace: `@${OTHER.namespace}`,
+      invited_at: "2026-09-22T12:00:00.000Z",
+    },
+  ];
+  const NEW_USER = "usr_01j00000000000000000000009";
+  api.on(`GET ${BASE}/contribution-invites`, () => ({ body: { items: invited } }));
+  api.on(`POST ${BASE}/contribution-invites`, () => {
+    invited = [
+      ...invited,
+      {
+        user: NEW_USER,
+        display_name: null,
+        namespace: null,
+        invited_at: "2026-09-22T13:00:00.000Z",
+      },
+    ];
+    return { body: { user: NEW_USER, invited: true } };
+  });
+  api.on(`DELETE ${BASE}/contribution-invites/${OTHER.id}`, () => {
+    invited = invited.filter((i) => i.user !== OTHER.id);
+    return { body: { user: OTHER.id, invited: false } };
+  });
+
+  await page.goto("/c/writer/mira/contributions");
+  const list = page.getByRole("list", { name: "Invited users" });
+  // 名单来自服务端：刷新页面后仍然能看到之前邀请的人。
+  await expect(list.getByRole("listitem")).toHaveCount(1);
+  await expect(list.getByText("Other", { exact: true })).toBeVisible();
+  await expect(list.getByText("@other")).toBeVisible();
+
+  await page.getByLabel("Invite a user by ID").fill(NEW_USER);
+  await page.getByRole("button", { name: "Invite", exact: true }).click();
+  await expect(list.getByRole("listitem")).toHaveCount(2);
+  await expect(list.getByText(NEW_USER)).toBeVisible();
+
+  await page.getByRole("button", { name: "Remove Other" }).click();
+  await expect(list.getByRole("listitem")).toHaveCount(1);
+  await expect(list.getByText("Other", { exact: true })).toHaveCount(0);
+  expect(api.calls.filter((c) => c.method === "POST").map((c) => c.body)).toEqual([
+    { user: NEW_USER },
+  ]);
 });
 
 test("a guest verifies by email, then submits a contribution", async ({ page }) => {
@@ -329,4 +390,21 @@ test("a guest verifies by email, then submits a contribution", async ({ page }) 
   expect(body.changes).toHaveLength(1);
   expect(body.changes[0]).toMatchObject({ on: "fragment", op: "modify", id: "intro" });
   expect(body.changes[0]).toHaveProperty("base_digest");
+
+  // 访客在列表里只看到自己的提交，并标为“you”。
+  api.on(`GET ${BASE}/contributions`, {
+    body: {
+      items: [
+        summary(7, {
+          title: "Mention the old lighthouse",
+          author: { guest_id: "gst_01j00000000000000000000000", display_name: "Wren" },
+        }),
+      ],
+      next_cursor: null,
+    },
+  });
+  await page.goto("/c/writer/mira/contributions");
+  const mine = page.getByRole("list", { name: "Contributions" });
+  await expect(mine.getByRole("listitem")).toHaveCount(1);
+  await expect(mine.getByText("by you")).toBeVisible();
 });

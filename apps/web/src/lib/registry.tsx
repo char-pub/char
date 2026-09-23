@@ -43,6 +43,8 @@ export const keys = {
     ["creation", ns, name, "contributions", q] as const,
   contribution: (ns: string, name: string, n: number) =>
     ["creation", ns, name, "contribution", n] as const,
+  contributionInvites: (ns: string, name: string) =>
+    ["creation", ns, name, "contribution-invites"] as const,
   source: (ns: string, name: string, label: string) =>
     ["creation", ns, name, "source", label] as const,
   guest: ["guest"] as const,

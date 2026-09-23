@@ -74,6 +74,8 @@ function ContributionsRoute() {
 
       {me.data ? (
         <ContributionList ns={ns} name={name} meId={me.data.id} />
+      ) : guest.data ? (
+        <ContributionList ns={ns} name={name} guestId={guest.data.guest.id} />
       ) : (
         <p className="text-sm text-muted-foreground">
           Contributions are visible to the author and to the person who submitted them.

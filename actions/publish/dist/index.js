@@ -50814,7 +50814,11 @@ var MergePreviewSchema = external_exports.strictObject({
   reason: external_exports.enum(["diverged", "slot_missing"]).optional()
 });
 var ContributionAuthorSchema = external_exports.union([
-  external_exports.strictObject({ user: external_exports.string() }),
+  external_exports.strictObject({
+    user: external_exports.string(),
+    display_name: external_exports.string().optional(),
+    namespace: external_exports.string().optional()
+  }),
   external_exports.strictObject({ guest_id: external_exports.string(), display_name: external_exports.string() })
 ]);
 var ContributionSummarySchema = external_exports.strictObject({
@@ -50928,6 +50932,23 @@ var ConfirmImportRequestSchema = external_exports.strictObject({
   rating: RatingSchema,
   rights: external_exports.enum(["original", "fan-work", "licensed"]),
   license: SpdxExpressionSchema
+});
+var ReleaseSourceSchema = external_exports.strictObject({
+  revision: external_exports.string(),
+  semantic_digest: DigestSchema,
+  creation: external_exports.unknown(),
+  /** Release 被 yank 时附带的提示。 */
+  warning: external_exports.string().optional()
+});
+var ContributionInvitesResponseSchema = external_exports.strictObject({
+  items: external_exports.array(
+    external_exports.strictObject({
+      user: external_exports.string(),
+      display_name: external_exports.string().nullable(),
+      namespace: external_exports.string().nullable(),
+      invited_at: external_exports.string()
+    })
+  )
 });
 
 // src/run.ts
