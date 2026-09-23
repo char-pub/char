@@ -27,7 +27,7 @@ export const MIGRATIONS_SCHEMA = "migrations";
 export const APPEND_ONLY_TABLES = ["audit_log"] as const;
 
 /** 记录可以更新状态但永不删除的表：应用角色没有 DELETE / TRUNCATE。 */
-export const NO_DELETE_TABLES = ["csam_incidents"] as const;
+export const NO_DELETE_TABLES = ["csam_incidents", "staff_approvals"] as const;
 
 export interface MigrateOptions {
   /** owner 角色连接串。 */
