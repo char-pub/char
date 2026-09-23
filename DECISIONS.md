@@ -763,3 +763,14 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 8. **依赖快照已被删除时**（例如 tombstone 后清理了副本），发布直接失败，报 `publish.tombstoned_dependency` 或 `publish.dependency_unavailable`。
 9. **namespace 数量**：v0 每个账号一个个人 namespace；内置保留名约 35 个，与 `reserved_names` 表合并检查。
 10. **搜索列**在发布与 namespace 改名时于同一事务内刷新。
+
+### D-139 admin 业务路由的实现取值 — Accepted
+
+1. **admin 路由的能力声明**：一个路由可以声明多个可选能力（具备任一即可）；下架按原因代码决定所需能力（`legal.*` 需要法律下架权限，其余需要严重违规下架权限）；影响范围预览等只读的 POST 不要求理由；登记法律请求本身、手动标记 CSAM、确认四眼请求不要求关联法律请求。
+2. **强制评级**：只能调高（否则 422 `admin.rating_can_only_increase`）；读取与搜索中的 effective rating 取发布时的值与强制评级中较高者，搜索过滤按它执行。它是 Registry 层的覆盖，不改变任何 Release 的 digest。
+3. **四眼请求**：请求中保存确认所需的能力；确认与执行在同一事务里，执行失败则请求保持 pending；只有一名合格员工时，发起人在 24 小时冷静期后可以自己确认，审计中标记 `self_confirmed_after_cooling_off`；发起人可以取消自己的请求。
+4. **CSAM 锁定的账号**不能被普通封禁覆盖（409），防止借“重新封禁再解封”绕过四眼。
+5. **员工管理**：系统中至少保留一名 owner；员工不能封禁自己。
+6. **法律请求**：申请人信息用 AES-256-GCM 在应用层加密（随机 12 字节 nonce），密钥为 `LEGAL_ENCRYPTION_KEY`；列表不返回申请人信息，每次查看详情写一条 `legal.view` 审计。
+7. **死信任务重试**：把原任务数据重新投递到业务队列，再把死信任务标记为完成；普通失败任务用 pg-boss 的 retry。
+8. **admin 列表响应**统一为 `{ items, next_cursor? }`；tombstone 预览中的下游作者以 `@namespace` 表示，不暴露邮箱。
