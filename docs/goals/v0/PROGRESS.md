@@ -74,3 +74,18 @@
 - Verification：`pnpm test` 922 个通过；`pnpm test:integration` 通过（Testcontainers：Postgres 16 + MinIO）；`pnpm build` 通过，web 产物 `index.html` 只有一个外链 module script；上传处理分支覆盖 96.7%；本地用 `vite preview` + Playwright 查看 Playground，发现 Trace 表 reason 列在 1200px 宽度被截断，已修复并复查截图。
 - Decisions：D-133（数据库 / 队列 / 审计）、D-134（OIDC / webhook）。security 文档的审计哈希公式已与实现统一。
 - 尚不能打勾：M9-5 runbooks 需要用户人工审阅。
+
+### 2026-09-22 一致性测试集、CCv3、admin、GitHub binding
+
+- Work：
+  - 合并一致性测试集基础设施（subagent，27 个用例，Node / Chromium / workerd 三端）与 `packages/ccv3`（subagent，85 个测试）。ccv3 的往返测试改为使用真实 Resolver。
+  - 修复 Resolver bug：可选且未被使用的 late slot 不进入 IR 时，它的 participant 仍然留在 IR 中（一致性用例 012b 起草时发现，已加回归测试）。
+  - 新增一致性预检 `pnpm conformance:precheck`（排序、digest 重算、key 公式、悬空引用、签名 URL）与审阅表生成 `pnpm conformance:review`。
+  - admin 进程骨架（Access JWT + 员工角色 + 操作理由）、kill switch 与审计路由；Postgres 限流与 5 秒开关缓存；GitHub webhook 事件落库、binding 生命周期（转移冻结、重新绑定 / 解绑、对账补偿）、数据库 jti 存储；web 的 wrangler 配置（dry-run 通过）；`infra/DEPLOY.md`。
+- Verification：
+  - `pnpm test` 1015 个单测通过；`pnpm test:conformance` 98 passed / 81 todo（draft 用例只运行不比较）。
+  - `pnpm conformance:precheck`：8 个 IR draft 全部通过；篡改 fragment 文本与 participants 顺序后预检能报出 digest 不符与排序错误。
+  - 集成测试：admin 9 个（包括公开 api 上访问 admin 路由返回 404）、限流与开关 6 个、GitHub binding 11 个，全部通过。
+  - `wrangler deploy --dry-run --env staging`（apps/web）通过，未实际部署。
+- Decisions：D-135（CCv3 取值；**导入卡片的默认 rights 待用户决定**）。
+- 待用户审阅：`pnpm conformance:review` 生成 `spec/conformance/REVIEW.md`；审阅后用 `pnpm conformance:accept <case> --reviewer <name>` 接受。在接受之前 M2-5 不能打勾。
