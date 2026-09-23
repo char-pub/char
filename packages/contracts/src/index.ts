@@ -179,6 +179,34 @@ export const OidcPublishRequestSchema = z.strictObject({
 export type OidcPublishRequest = z.infer<typeof OidcPublishRequestSchema>;
 
 // ---------------------------------------------------------------------------
+// GitHub 仓库绑定
+// ---------------------------------------------------------------------------
+
+/**
+ * `GET …/source-binding`：作品当前绑定的 GitHub 仓库，只有作品成员可见；解绑后返回 404。
+ * 仓库以数字 ID 为准，`full_name` 只用于展示。仓库被转移后 binding 进入 frozen，暂停发布，
+ * 等作者确认继续用这个仓库或解绑。
+ */
+export const SourceBindingSchema = z.strictObject({
+  repository_id: z.string(),
+  repository_owner_id: z.string(),
+  installation_id: z.string(),
+  full_name: z.string(),
+  path: z.string(),
+  tracked_ref: z.string(),
+  publish_refs: z.array(z.string()),
+  /** `unbound` 只会出现在确认解绑（resolve unbind）的响应里；GET 在解绑后返回 404。 */
+  status: z.enum(["active", "frozen", "unbound"]),
+  /** 冻结原因，是给人看的一句说明。 */
+  frozen_reason: z.string().optional(),
+  last_seen_commit: z.string().optional(),
+  /** worker 最近一次检查仓库的结果，结构由 worker 决定，web 只做展示。 */
+  last_check: z.record(z.string(), z.unknown()).optional(),
+  last_checked_at: z.string().optional(),
+});
+export type SourceBinding = z.infer<typeof SourceBindingSchema>;
+
+// ---------------------------------------------------------------------------
 // 上传
 // ---------------------------------------------------------------------------
 

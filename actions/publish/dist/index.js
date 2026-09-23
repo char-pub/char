@@ -50675,6 +50675,23 @@ var OidcPublishRequestSchema = external_exports.strictObject({
   /** Action 本地算出的 semantic digest，只用于比对，便于尽早发现不一致。 */
   semantic_digest: DigestSchema
 });
+var SourceBindingSchema = external_exports.strictObject({
+  repository_id: external_exports.string(),
+  repository_owner_id: external_exports.string(),
+  installation_id: external_exports.string(),
+  full_name: external_exports.string(),
+  path: external_exports.string(),
+  tracked_ref: external_exports.string(),
+  publish_refs: external_exports.array(external_exports.string()),
+  /** `unbound` 只会出现在确认解绑（resolve unbind）的响应里；GET 在解绑后返回 404。 */
+  status: external_exports.enum(["active", "frozen", "unbound"]),
+  /** 冻结原因，是给人看的一句说明。 */
+  frozen_reason: external_exports.string().optional(),
+  last_seen_commit: external_exports.string().optional(),
+  /** worker 最近一次检查仓库的结果，结构由 worker 决定，web 只做展示。 */
+  last_check: external_exports.record(external_exports.string(), external_exports.unknown()).optional(),
+  last_checked_at: external_exports.string().optional()
+});
 var UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 var MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 var CreateUploadRequestSchema = external_exports.strictObject({

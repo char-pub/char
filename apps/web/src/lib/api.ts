@@ -34,9 +34,13 @@ import {
   ReleaseDetailSchema,
   type ReleaseSource,
   ReleaseSourceSchema,
+  type ReleaseSummary,
+  ReleaseSummarySchema,
   type ReportCategory,
   ReportReceivedResponseSchema,
   RevisionSchema,
+  type SourceBinding,
+  SourceBindingSchema,
   type TOKEN_SCOPES,
   UploadStatusSchema,
 } from "@char-pub/contracts";
@@ -154,7 +158,6 @@ export type {
   Me,
   MyCreation,
   ReleaseDetail,
-  ReleaseSummary,
 } from "@char-pub/contracts";
 
 export const TokenSchema = z.object({
@@ -167,6 +170,8 @@ export const TokenSchema = z.object({
   created_at: z.string(),
 });
 export type PersonalToken = z.infer<typeof TokenSchema>;
+export type Namespace = z.infer<typeof NamespaceSchema>;
+export type { ReleaseSummary, SourceBinding };
 export type TokenScope = (typeof TOKEN_SCOPES)[number];
 export type CreatedToken = z.infer<typeof CreateTokenResponseSchema>;
 
@@ -204,7 +209,28 @@ export interface RegistryClient {
   getIR(ns: string, name: string, label: string, opts?: { private?: boolean }): Promise<ContextIR>;
   dependents(ns: string, name: string): Promise<DependentsPage>;
   exportCcv3(ns: string, name: string, label: string): Promise<ExportState>;
-  createNamespace(slug: string): Promise<z.infer<typeof NamespaceSchema>>;
+  /**
+   * 作者 yank 自己的某个版本，`reason`（3–500 字）会公开显示。已经锁定这个版本的依赖仍能读到
+   * 内容，但页面会提示，新依赖也不应再选它。重复 yank 直接返回当前状态。
+   */
+  yankRelease(ns: string, name: string, label: string, reason: string): Promise<ReleaseSummary>;
+  /** 作品绑定的 GitHub 仓库；没有绑定时为 null。只有作品成员能查看。 */
+  sourceBinding(ns: string, name: string): Promise<SourceBinding | null>;
+  /** 仓库被转移、binding 冻结后，作者确认继续用这个仓库（rebind）或解绑（unbind）。 */
+  resolveSourceBinding(
+    ns: string,
+    name: string,
+    action: "rebind" | "unbind",
+  ): Promise<SourceBinding>;
+  unbindSource(ns: string, name: string): Promise<void>;
+  createNamespace(slug: string): Promise<Namespace>;
+  /** namespace 的公开信息。改过名的旧 slug 会被重定向，返回的是新名字。 */
+  namespace(slug: string): Promise<Namespace>;
+  /**
+   * 给自己的 namespace 改名。旧名永久重定向到新名，别人也不能再注册；新名已被占用或是保留名时
+   * 抛出 409 `namespace.taken` / `namespace.reserved`。
+   */
+  renameNamespace(slug: string, newSlug: string): Promise<Namespace>;
   createCreation(
     ns: string,
     body: { name: string; type: CreationType; display_name: string },
@@ -418,6 +444,23 @@ export function createRegistryClient(
     },
     dependents: (ns, name) =>
       json(DependentsPageSchema, "GET", `${creationPath(ns, name)}/dependents?limit=50`),
+    yankRelease: (ns, name, label, reason) =>
+      json(ReleaseSummarySchema, "POST", `${release(ns, name, label)}/yank`, { body: { reason } }),
+    async sourceBinding(ns, name) {
+      try {
+        return await json(SourceBindingSchema, "GET", `${creationPath(ns, name)}/source-binding`);
+      } catch (e) {
+        if (isApiError(e) && e.status === 404) return null;
+        throw e;
+      }
+    },
+    resolveSourceBinding: (ns, name, action) =>
+      json(SourceBindingSchema, "POST", `${creationPath(ns, name)}/source-binding/resolve`, {
+        body: { action },
+      }),
+    async unbindSource(ns, name) {
+      await send("DELETE", `${creationPath(ns, name)}/source-binding`);
+    },
     async exportCcv3(ns, name, label) {
       const url = ccv3DownloadUrl(ns, name, label, base);
       let res: Response;
@@ -437,6 +480,11 @@ export function createRegistryClient(
       throw await problemOf(res);
     },
     createNamespace: (slug) => json(NamespaceSchema, "POST", "/v1/namespaces", { body: { slug } }),
+    namespace: (slug) => json(NamespaceSchema, "GET", `/v1/namespaces/${encodeURIComponent(slug)}`),
+    renameNamespace: (slug, newSlug) =>
+      json(NamespaceSchema, "PATCH", `/v1/namespaces/${encodeURIComponent(slug)}`, {
+        body: { new_slug: newSlug },
+      }),
     createCreation: (ns, body) =>
       json(
         z.object({ id: z.string(), ref: z.string(), type: CreationTypeSchema }),

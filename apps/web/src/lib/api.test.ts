@@ -214,3 +214,72 @@ describe("publish helpers", () => {
     expect(keys.keyFor("rev_a", "1.0.1", "public")).toBe("key-3");
   });
 });
+
+describe("namespaces", () => {
+  it("reads a namespace and renames it with new_slug", async () => {
+    const r = recorder([
+      json({ slug: "djj", kind: "user", status: "active" }),
+      json({ slug: "dj", kind: "user", status: "active" }),
+      json({ code: "namespace.taken", status: 409, title: "", type: "" }, 409),
+    ]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect(await client.namespace("djj")).toEqual({ slug: "djj", kind: "user", status: "active" });
+    expect(r.calls[0]?.url).toBe("/v1/namespaces/djj");
+    expect((await client.renameNamespace("djj", "dj")).slug).toBe("dj");
+    expect(r.calls[1]?.init.method).toBe("PATCH");
+    expect(r.calls[1]?.init.body).toBe(JSON.stringify({ new_slug: "dj" }));
+    const err = await client.renameNamespace("dj", "kate").catch((e: unknown) => e);
+    expect((err as ApiError).code).toBe("namespace.taken");
+  });
+});
+
+describe("release maintenance", () => {
+  const summary = {
+    id: "rel_01j00000000000000000000001",
+    label: "1.0.0",
+    visibility: "public",
+    status: "yanked",
+    status_reason: "broken greeting",
+    semantic_digest: `sha256:${"a".repeat(64)}`,
+    effective_rating: "general",
+    created_at: "2026-09-01T00:00:00.000Z",
+  };
+  const binding = {
+    repository_id: "101",
+    repository_owner_id: "202",
+    installation_id: "303",
+    full_name: "djj/alice",
+    path: "char.yaml",
+    tracked_ref: "refs/heads/main",
+    publish_refs: ["refs/heads/main", "refs/tags/*"],
+    status: "frozen",
+    frozen_reason: "transferred from djj to kate",
+  };
+
+  it("yanks a release with a public reason", async () => {
+    const r = recorder([json(summary)]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect((await client.yankRelease("djj", "alice", "1.0.0", "broken greeting")).status).toBe(
+      "yanked",
+    );
+    expect(r.calls[0]?.url).toBe("/v1/creations/@djj/alice/releases/1.0.0/yank");
+    expect(r.calls[0]?.init.body).toBe(JSON.stringify({ reason: "broken greeting" }));
+  });
+
+  it("treats a missing binding as null and resolves or removes a frozen one", async () => {
+    const r = recorder([
+      json({ code: "not_found", status: 404, title: "", type: "" }, 404),
+      json(binding),
+      json({ ...binding, status: "active", frozen_reason: undefined }),
+      new Response(null, { status: 204 }),
+    ]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    expect(await client.sourceBinding("djj", "alice")).toBeNull();
+    expect((await client.sourceBinding("djj", "alice"))?.status).toBe("frozen");
+    expect((await client.resolveSourceBinding("djj", "alice", "rebind")).status).toBe("active");
+    expect(r.calls[2]?.url).toBe("/v1/creations/@djj/alice/source-binding/resolve");
+    expect(r.calls[2]?.init.body).toBe(JSON.stringify({ action: "rebind" }));
+    await client.unbindSource("djj", "alice");
+    expect(r.calls[3]?.init.method).toBe("DELETE");
+  });
+});
