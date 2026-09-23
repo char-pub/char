@@ -1,94 +1,104 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CreationView } from "@/components/creation-view";
-import { isApiError } from "@/lib/api";
-import { keys, useMe, useRegistry } from "@/lib/registry";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useCreation, useReleaseLabels } from "@/components/creation-context";
+import {
+  BuiltOn,
+  Credits,
+  FactCard,
+  matureReason,
+  ReleaseFacts,
+  UsedBy,
+  WhyThisRating,
+} from "@/components/creation-facts";
+import { CreationContent } from "@/components/creation-overview";
+import { MatureGate } from "@/components/mature-gate";
+import { RATING_LABEL } from "@/components/rating";
+import { ErrorState } from "@/components/states";
+import { Skeleton } from "@/components/ui/skeleton";
+import { dependenciesOf } from "@/lib/creation-graph";
+import { keys, useRegistry } from "@/lib/registry";
+import { localized } from "@/lib/text";
 
 export const Route = createFileRoute("/c/$ns/$name/")({
-  component: CreationRoute,
+  staticData: { creationVersioned: true },
+  component: OverviewTab,
 });
 
-function NotInCatalog() {
+function ContentSkeleton() {
   return (
-    <section className="space-y-3 py-16 text-center">
-      <p className="stamp border-seal text-seal">404</p>
-      <h1 className="text-3xl">This card is not in the catalog.</h1>
-      <Link to="/browse" className="text-sm underline">
-        Browse creations
-      </Link>
-    </section>
+    <div role="status" aria-label="Loading the content" className="space-y-3">
+      <Skeleton className="h-20 w-full rounded-lg" />
+      <div className="space-y-3 rounded-lg border bg-surface p-5">
+        <Skeleton className="h-4 w-1/4" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-5/6" />
+      </div>
+    </div>
   );
 }
 
-function CreationRoute() {
-  const { ns, name } = Route.useParams();
-  const { v } = Route.useSearch();
-  const navigate = useNavigate({ from: "/c/$ns/$name/" });
+/**
+ * Overview：左边是正文（开场白与内容片段，成人内容先遮挡），右边是事实栏（评级来源、依赖、
+ * 被谁依赖、署名与许可、发布信息）。外框已经处理了版本不存在、未发布和已移除。
+ */
+function OverviewTab() {
+  const c = useCreation();
   const client = useRegistry();
-  const me = useMe();
-
-  const detail = useQuery({
-    queryKey: [...keys.creation(ns, name), me.data?.id ?? null],
-    queryFn: () => client.creation(ns, name),
-    enabled: !me.isPending,
-  });
-  const d = detail.data;
-  const label =
-    v ??
-    d?.latest_release?.label ??
-    d?.releases.find((r) => r.status === "active")?.label ??
-    d?.releases[0]?.label;
-  const selected = d?.releases.find((r) => r.label === label);
-
-  const release = useQuery({
-    queryKey: keys.release(ns, name, label ?? ""),
-    queryFn: () => client.release(ns, name, label ?? ""),
-    enabled: !!d && !!label,
-  });
-  const tombstoned = isApiError(release.error, "release.tombstoned")
-    ? { reason: String(release.error.extra.reason ?? "unspecified") }
-    : selected?.status === "tombstoned"
-      ? { reason: selected.status_reason ?? "unspecified" }
-      : null;
-
-  const ir = useQuery({
-    queryKey: keys.ir(ns, name, label ?? ""),
-    queryFn: () =>
-      client.getIR(ns, name, label ?? "", { private: selected?.visibility === "private" }),
-    enabled: !!d && !!label && !tombstoned,
-    // 同一个 Release 的 IR 永远不变。
-    staleTime: Number.POSITIVE_INFINITY,
-  });
+  const [allDependents, setAllDependents] = useState(false);
   const dependents = useQuery({
-    queryKey: keys.dependents(ns, name),
-    queryFn: () => client.dependents(ns, name),
-    enabled: !!d,
+    queryKey: keys.dependents(c.ns, c.name),
+    queryFn: () => client.dependents(c.ns, c.name),
   });
-
-  if (detail.isPending) return <p className="text-muted-foreground">Loading…</p>;
-  if (detail.isError) {
-    if (isApiError(detail.error) && detail.error.status === 404) return <NotInCatalog />;
-    return (
-      <p role="alert" className="text-seal">
-        This creation could not be loaded. Try again in a moment.
-      </p>
-    );
-  }
+  const labels = useReleaseLabels(c.ir ? dependenciesOf(c.ir).map((d) => d.ref) : []);
+  const title = localized(c.detail.display_name);
 
   return (
-    <CreationView
-      ns={ns}
-      name={name}
-      detail={detail.data}
-      label={label}
-      onSelectLabel={(l) => void navigate({ search: { v: l } })}
-      release={release.data}
-      tombstoned={tombstoned}
-      ir={ir.data}
-      irState={ir.isError ? "error" : ir.data ? "ready" : label ? "loading" : "none"}
-      dependents={dependents.data?.items}
-      allowMature={me.data?.settings.show_mature ?? false}
-      canEdit={!!me.data && me.data.namespace === ns}
-    />
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="min-w-0">
+        {c.ir ? (
+          <MatureGate
+            rating={c.rating}
+            allowed={c.allowMature}
+            remember={c.detail.ref}
+            reason={matureReason(c.ir)}
+            signedIn={!!c.me}
+          >
+            <CreationContent ir={c.ir} />
+          </MatureGate>
+        ) : c.irState === "error" ? (
+          <ErrorState
+            title="The content of this version could not be loaded"
+            description="The rest of the page is still accurate. Try loading the content again."
+            onRetry={c.retryIr}
+          />
+        ) : (
+          <ContentSkeleton />
+        )}
+      </div>
+
+      <aside aria-label="About this creation" className="space-y-4">
+        {c.ir ? (
+          <WhyThisRating ir={c.ir} name={title} />
+        ) : (
+          <FactCard id="c-rating" title="Why this rating">
+            <p className="text-sm text-text-2">
+              Rated {RATING_LABEL[c.rating]}: the highest rating found in the creation, its
+              dependencies and its images.
+            </p>
+          </FactCard>
+        )}
+        {c.ir ? <BuiltOn ir={c.ir} labels={labels} /> : null}
+        <UsedBy
+          items={dependents.data?.items}
+          total={Math.max(c.detail.dependents_count, dependents.data?.items.length ?? 0)}
+          state={dependents.isPending ? "loading" : dependents.isError ? "error" : "ready"}
+          expanded={allDependents}
+          onExpand={() => setAllDependents(true)}
+        />
+        {c.ir ? <Credits ir={c.ir} /> : null}
+        {c.selected ? <ReleaseFacts ns={c.ns} summary={c.selected} detail={c.release} /> : null}
+      </aside>
+    </div>
   );
 }
