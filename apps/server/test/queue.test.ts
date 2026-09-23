@@ -46,7 +46,9 @@ describe("queue setup", () => {
   });
 
   it("the app role cannot create or delete queues; only migrations can", async () => {
-    await expect(queue.boss.createQueue("evil-queue")).rejects.toThrow(/permission denied/);
+    await expect(queue.boss.createQueue("evil-queue")).rejects.toThrow(
+      /permission denied|row-level security/,
+    );
     await expect(queue.boss.deleteQueue(QUEUE_NAMES.gc)).rejects.toThrow(/permission denied/);
     expect(await queue.boss.getQueue(QUEUE_NAMES.gc)).not.toBeNull();
   });

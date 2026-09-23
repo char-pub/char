@@ -115,6 +115,47 @@ export type StorageEnv = z.infer<typeof StorageEnvSchema>;
 export type ServerEnv = z.infer<typeof ServerEnvSchema>;
 export type AuthEnv = z.infer<typeof AuthEnvSchema>;
 
+/**
+ * 源站校验：Cloudflare 回源时附带的 `X-Origin-Auth`。轮换期间可以同时配置当前值与上一个值。
+ * production 必须配置；只有 development 允许留空（本地开发不经过 Cloudflare）。
+ */
+export const EdgeEnvSchema = z
+  .object({
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    ORIGIN_AUTH_SECRET: z.string().min(32).optional(),
+    ORIGIN_AUTH_SECRET_PREVIOUS: z.string().min(32).optional(),
+  })
+  .refine((e) => e.NODE_ENV === "development" || e.ORIGIN_AUTH_SECRET !== undefined, {
+    message: "required outside development",
+    path: ["ORIGIN_AUTH_SECRET"],
+  });
+export type EdgeEnv = z.infer<typeof EdgeEnvSchema>;
+
+export function originSecretsFromEnv(env: EdgeEnv): string[] {
+  return [env.ORIGIN_AUTH_SECRET, env.ORIGIN_AUTH_SECRET_PREVIOUS].filter(
+    (s): s is string => s !== undefined,
+  );
+}
+
+/** admin 进程：Cloudflare Access 与员工允许名单。 */
+export const AdminEnvSchema = z.object({
+  CF_ACCESS_TEAM_DOMAIN: url,
+  CF_ACCESS_AUD: nonEmpty,
+  /** 允许进入 admin 的员工邮箱，逗号分隔。 */
+  STAFF_EMAILS: z
+    .string()
+    .transform((s) =>
+      s
+        .split(",")
+        .map((x) => x.trim().toLowerCase())
+        .filter((x) => x.length > 0),
+    )
+    .pipe(z.array(z.email()).min(1)),
+  /** admin SPA 的 Origin（例如 https://admin.char.pub）。 */
+  ADMIN_ORIGINS: originList,
+});
+export type AdminEnv = z.infer<typeof AdminEnvSchema>;
+
 /** 从环境变量得到已配置的第三方登录。 */
 export function authProvidersFromEnv(env: AuthEnv) {
   const pair = (id: string | undefined, secret: string | undefined) =>

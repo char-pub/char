@@ -25,6 +25,12 @@ export interface QueueOptions {
   supervise?: boolean;
   /** 是否运行定时任务调度。只在 worker 进程开启。 */
   schedule?: boolean;
+  /** 后台错误的处理方式，默认写到标准错误输出。 */
+  onError?: (err: Error) => void;
+}
+
+function defaultOnError(err: Error): void {
+  process.stderr.write(`job queue error: ${err.message}\n`);
 }
 
 export interface EnqueueOptions {
@@ -48,6 +54,9 @@ export class JobQueue {
       schedule: options.schedule ?? false,
       max: options.max ?? 5,
     });
+    // pg-boss 的后台轮询出错时会触发 error 事件；没有监听器时 Node 会直接让进程崩溃。
+    // 这类错误（例如数据库短暂不可用）只记录，由 pg-boss 在下一轮重试。
+    this.boss.on("error", (err) => (options.onError ?? defaultOnError)(err));
   }
 
   async start(): Promise<void> {

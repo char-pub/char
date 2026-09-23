@@ -53,6 +53,9 @@ export async function runMigrations(options: MigrateOptions): Promise<void> {
     boss.on("error", () => {});
     await boss.start();
     try {
+      for (const name of PGBOSS_INTERNAL_QUEUES) {
+        if (!(await boss.getQueue(name))) await boss.createQueue(name);
+      }
       for (const q of QUEUES) {
         // 先建死信队列，因为业务队列会引用它。
         if (q.deadLetter && !(await boss.getQueue(q.deadLetter))) {
@@ -93,17 +96,51 @@ async function grantAppRole(db: ReturnType<typeof createDatabase>["db"], role: s
   await db.execute(sql`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${b} TO ${r}`);
   await db.execute(sql`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${b} TO ${r}`);
   await db.execute(sql`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ${b} TO ${r}`);
-  // 队列的增删只能由迁移完成：应用可以更新队列统计，但不能新建或删除队列、改版本记录。
-  for (const t of PGBOSS_OWNER_ONLY_TABLES) {
-    const table = sql.identifier(t);
-    await db.execute(sql`REVOKE INSERT, DELETE, TRUNCATE ON ${b}.${table} FROM ${r}`);
+  // 应用不能删除队列，也不能新增或删除 pg-boss 的版本记录。
+  // - queue 保留 INSERT：pg-boss 的定时调度每次启动都会调用 create_queue 创建内部队列
+  //   （迁移时已经建好，实际是 ON CONFLICT DO NOTHING），没有 INSERT 权限 worker 无法启动。
+  // - version 保留 UPDATE：调度与监控会在这一行上记录 cron 与退避时间。
+  await db.execute(sql`REVOKE DELETE, TRUNCATE ON ${b}.queue FROM ${r}`);
+  await db.execute(sql`REVOKE INSERT, DELETE, TRUNCATE ON ${b}.version FROM ${r}`);
+  // 行级安全：应用角色只能“插入”迁移时登记过的队列名（实际上都已存在，插入会被
+  // ON CONFLICT 忽略），不能借此新建别的队列。表的 owner（迁移角色）不受这些策略限制。
+  // DDL 不能使用绑定参数，所以队列名以字面量写入策略。它们都是代码里的常量，
+  // 这里再按严格的字符集检查一遍，防止任何意外字符进入 SQL。
+  const names = knownQueueNames();
+  for (const n of names) {
+    if (!/^[a-z0-9_.-]+$/.test(n)) throw new Error(`unexpected queue name: ${n}`);
   }
+  const allowed = sql.raw(names.map((n) => `'${n}'`).join(", "));
+  await db.execute(sql`ALTER TABLE ${b}.queue ENABLE ROW LEVEL SECURITY`);
+  for (const p of ["app_select", "app_update", "app_insert"]) {
+    await db.execute(sql`DROP POLICY IF EXISTS ${sql.identifier(p)} ON ${b}.queue`);
+  }
+  await db.execute(sql`CREATE POLICY app_select ON ${b}.queue FOR SELECT TO ${r} USING (true)`);
+  await db.execute(
+    sql`CREATE POLICY app_update ON ${b}.queue FOR UPDATE TO ${r} USING (true) WITH CHECK (true)`,
+  );
+  await db.execute(
+    sql`CREATE POLICY app_insert ON ${b}.queue FOR INSERT TO ${r} WITH CHECK (name IN (${allowed}))`,
+  );
 }
 
-/** pg-boss 中只允许迁移新增或删除行的表。 */
+/** 迁移时创建的全部队列名：业务队列、它们的死信队列与 pg-boss 的内部队列。 */
+function knownQueueNames(): string[] {
+  const names = new Set<string>(PGBOSS_INTERNAL_QUEUES);
+  for (const q of QUEUES) {
+    names.add(q.name);
+    if (q.deadLetter) names.add(q.deadLetter);
+  }
+  return [...names].sort();
+}
+
+/** pg-boss 中应用不能删除行的表。 */
 export const PGBOSS_OWNER_ONLY_TABLES = ["queue", "version"] as const;
 
-async function main() {
+/** pg-boss 定时调度使用的内部队列，迁移时预先创建。 */
+export const PGBOSS_INTERNAL_QUEUES = ["__pgboss__send-it"] as const;
+
+export async function migrateFromEnv(): Promise<void> {
   const env = parseEnv(MigrationEnvSchema);
   await runMigrations({
     connectionString: env.DATABASE_MIGRATION_URL,
@@ -113,7 +150,7 @@ async function main() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main().catch((err: unknown) => {
+  migrateFromEnv().catch((err: unknown) => {
     process.stderr.write(`migration failed: ${err instanceof Error ? err.message : String(err)}\n`);
     process.exit(1);
   });

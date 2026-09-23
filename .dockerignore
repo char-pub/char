@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.turbo
+**/*.tsbuildinfo
+.git
+.claude
+.llmdoc-tmp
+.playwright-mcp
+.wrangler
+**/test-results
+**/playwright-report
+spec/conformance/cases/*/draft
+.env
+.env.*
+!.env.example
