@@ -372,3 +372,85 @@ describe("rescanning existing assets once a real scanner is connected", () => {
     await expectLocked(b);
   });
 });
+
+describe("the enqueued takedown is carried out by the worker", () => {
+  it("tombstones the referencing release, purges the CDN and is safe to redeliver", async () => {
+    const { dispatchTombstoneJob } = await import("../src/worker/tombstone-dispatch.js");
+    const { RecordingPurger } = await import("../src/worker/tombstone.js");
+    const uploader = await newUser("takedown");
+    const id = await uploadAs(uploader.id, await pngOf("#7711cc"));
+    await handleUploadJob(deps(), { upload_id: id });
+    const blob = await readyBlob(id);
+    const nsId = uuidv7();
+    const crId = uuidv7();
+    const relId = uuidv7();
+    await t.app.db
+      .insert(namespaces)
+      .values({ id: nsId, slug: `td-${nsId.slice(-6)}`, kind: "user" });
+    await t.app.db.insert(creations).values({
+      id: crId,
+      namespaceId: nsId,
+      name: "takedown",
+      type: "character",
+      displayName: "T",
+      rating: "general",
+    });
+    await t.app.db.insert(releases).values({
+      id: relId,
+      creationId: crId,
+      label: "1.0.0",
+      visibility: "public",
+      source: { provider: "native" },
+      semanticDigest: `sha256:${"b".repeat(64)}`,
+      publishedBy: { user: uploader.id },
+      publishState: "done",
+    });
+    await t.app.db.insert(blobRefs).values({ digest: blob, releaseId: relId, role: "asset" });
+
+    await handleCsamHit(t.app.db, services.cas, queue, () => uuidv7(), {
+      blobDigest: blob,
+      reason: "staff_flag",
+      actorId: STAFF,
+      actorKind: "staff",
+      now,
+    });
+    const jobs = await queue.boss.findJobs(QUEUE_NAMES.tombstoneCascade);
+    const job = jobs.find((j) => (j.data as { releases?: string[] }).releases?.includes(relId));
+    expect(job).toBeDefined();
+
+    const cdn = new RecordingPurger();
+    const dispatch = () =>
+      dispatchTombstoneJob(
+        {
+          db: t.app.db,
+          cas: services.cas,
+          cdn,
+          now: () => now,
+          queue,
+          systemActorId: SYSTEM,
+          publicAssetBaseUrl: "https://assets.example/cas/sha256",
+          newId: () => uuidv7(),
+        },
+        job?.data as never,
+      );
+    await dispatch();
+    const [rel] = await t.app.db.select().from(releases).where(eq(releases.id, relId));
+    expect(rel).toMatchObject({ status: "tombstoned", statusReason: "policy.minor_sexual" });
+    // 这张图片只在 private 桶里（而且 CSAM 处置已经删除了它），没有公开的 CDN URL 需要清除。
+    expect(cdn.purged).toEqual([]);
+    const actions = await t.app.db
+      .select()
+      .from(moderationActions)
+      .where(eq(moderationActions.action, "tombstone"));
+    const count = actions.length;
+    // 重复投递：不产生新的下架记录。
+    await dispatch();
+    expect(
+      await t.app.db
+        .select()
+        .from(moderationActions)
+        .where(eq(moderationActions.action, "tombstone")),
+    ).toHaveLength(count);
+    expect((await verifyAuditChain(t.app.db)).ok).toBe(true);
+  });
+});

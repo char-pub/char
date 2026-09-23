@@ -137,6 +137,16 @@ export function originSecretsFromEnv(env: EdgeEnv): string[] {
   );
 }
 
+/** worker 进程：系统执行者账号与 CDN 缓存清除。 */
+export const WorkerEnvSchema = z.object({
+  /** 自动处置（例如 CSAM 命中）记录的执行者，必须是 auth_user 中存在的系统账号。 */
+  SYSTEM_ACTOR_ID: z.uuid(),
+  /** Cloudflare zone 与只有 Cache Purge 权限的 token；不配置时只记录日志（本地开发）。 */
+  CF_ZONE_ID: nonEmpty.optional(),
+  CF_PURGE_TOKEN: nonEmpty.optional(),
+});
+export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;
+
 /** admin 进程：Cloudflare Access 与员工允许名单。 */
 export const AdminEnvSchema = z.object({
   CF_ACCESS_TEAM_DOMAIN: url,
