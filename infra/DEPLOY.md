@@ -80,7 +80,7 @@ apply 之后、第一次部署之前：
   - worker：public / private / uploads 读写，另一个只写 evidence 的 token；
   - admin：删除与读取元数据。
 - CORS（uploads 桶）：只允许 `https://www.char.pub` 的 `PUT`，允许 `Content-Type`、`Content-Length`、`x-amz-checksum-sha256` 头。
-- CORS（public 桶）：只允许 `https://www.char.pub` 的 `GET`、`HEAD`，不带凭据。浏览器会直接从 `assets` 域名读取 Context IR（公开下载会重定向过去）。
+- CORS（public 桶）：允许任意来源的 `GET`、`HEAD`，不带凭据。公开下载从 API 重定向到 `assets` 后，浏览器可能发送 `Origin: null`；因此公共只读资源使用 `*`，配置见 `infra/r2/cors-public.json`。私有桶和上传桶继续限定来源。
 - CORS（private 桶）：只允许 `https://www.char.pub` 的 `GET`。私有内容用 API 签发的短期 URL 读取，URL 指向 R2 的账号端点 `<account>.r2.cloudflarestorage.com`。拿到账号端点后，把 web 的 CSP（`apps/web/public/_headers` 的 `connect-src`）从 `*.r2.cloudflarestorage.com` 收窄到这个具体域名。
 
 ```sh
@@ -168,6 +168,12 @@ cd apps/admin && wrangler deploy                  # 需用户同意
 这些都需要用户用自己的账号创建。
 
 ## 7. 冒烟测试与验收
+
+日常更新先在分支上完成 `pnpm ci:all` 与相关全栈 E2E，再通过 PR 合并到 main。三个 Railway 服务的 GitHub source 触发器会部署合并后的提交；逐个核对 api、admin、worker 的提交与成功状态后，再部署两套前端。
+
+前端需要重新做 production 构建：测试命令会覆盖 `dist`，其中可能包含 mock API 或本地 API 地址，不能直接拿测试产物部署。web 使用线上 Turnstile site key，admin 不设置 `VITE_ADMIN_MOCK`。先 `wrangler deploy --dry-run` 检查，再执行正式 deploy，并记录版本 ID。
+
+删除申请依赖 api 与 admin 配置相同的 `LEGAL_ENCRYPTION_KEY`；缺少该值时 api 拒绝受理申请。GitHub 新建绑定还依赖登录账号已关联 GitHub 身份，以及该身份对安装仓库的当前写权限。部署更新无需重新创建 App 或扩大 App 权限。
 
 部署后运行 `pnpm smoke --env production`，然后按 DOD 的端到端验收逐项走查。边缘防护核验：
 
