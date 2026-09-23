@@ -522,6 +522,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: 'catalog:'
         version: 3.1136.0
+      '@char-pub/ccv3':
+        specifier: workspace:*
+        version: link:../../packages/ccv3
       '@char-pub/cli':
         specifier: workspace:*
         version: link:../../packages/cli

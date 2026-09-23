@@ -13,6 +13,7 @@ import { parseEnv, WorkerEnvSchema } from "../env.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
 import { CloudflarePurger, LoggingPurger } from "../ops/cdn.js";
 import { noopScanner } from "../upload/csam.js";
+import { type ExportJob, handleExportJob } from "../worker/export.js";
 import { registerPublishWorker, requeuePendingPublishes } from "../worker/publish.js";
 import { dispatchTombstoneJob, type TombstoneQueueJob } from "../worker/tombstone-dispatch.js";
 import { registerUploadWorkers } from "../worker/upload.js";
@@ -55,6 +56,9 @@ export async function startWorkers(services: Services): Promise<void> {
     );
   });
   await services.queue.boss.schedule(QUEUE_NAMES.publishRequeue, "*/5 * * * *");
+  await services.queue.work<ExportJob>(QUEUE_NAMES.exportBuild, async (job) => {
+    await handleExportJob({ db: services.db, cas: services.cas }, job.data);
+  });
   const cdn =
     env.CF_ZONE_ID && env.CF_PURGE_TOKEN
       ? new CloudflarePurger(env.CF_ZONE_ID, env.CF_PURGE_TOKEN)

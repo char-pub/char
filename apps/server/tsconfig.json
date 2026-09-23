@@ -8,6 +8,7 @@
   "include": ["src"],
   "exclude": ["src/**/*.test.ts"],
   "references": [
+    { "path": "../../packages/ccv3" },
     { "path": "../../packages/cli" },
     { "path": "../../packages/core" },
     { "path": "../../packages/contracts" }

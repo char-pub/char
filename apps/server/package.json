@@ -11,6 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/s3-request-presigner": "catalog:",
+    "@char-pub/ccv3": "workspace:*",
     "@char-pub/cli": "workspace:*",
     "@char-pub/contracts": "workspace:*",
     "@char-pub/core": "workspace:*",
