@@ -1,7 +1,7 @@
 /**
  * M8 人工审阅用的截图（`M8_SCREENSHOTS=1` 时才执行，不在 CI 中运行）：作品页的 Context
  * Preview（展开一行 Trace）、两个版本的 Diff、编辑器（展开 More options）、导入向导的
- * Import Report。截图保存在 `docs/goals/v0/evidence/m8/`。
+ * Import Report。截图保存在仓库根目录的 `test-results/m8/`（不提交）。
  */
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
@@ -11,7 +11,7 @@ import { creationDetail, ME, mockApi } from "./mock-api";
 test.skip(!process.env.M8_SCREENSHOTS, "M8 review screenshots are only taken on demand");
 
 const ORIGIN = "http://127.0.0.1:4173";
-const OUT = fileURLToPath(new URL("../../../docs/goals/v0/evidence/m8/", import.meta.url));
+const OUT = fileURLToPath(new URL("../../../test-results/m8/", import.meta.url));
 const BASE = "/v1/creations/@djj/alice";
 
 function release(label: string, rating: string, n: number) {

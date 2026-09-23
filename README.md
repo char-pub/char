@@ -6,7 +6,7 @@ An open registry, collaboration network and interoperability layer for AI creati
 
 - Specs: [`spec/canonical-model.md`](spec/canonical-model.md), [`spec/context-ir-v0.md`](spec/context-ir-v0.md) (CC-BY-4.0)
 - Decisions: [`DECISIONS.md`](DECISIONS.md)
-- Design: [`docs/design/`](docs/design/)
+- Project knowledge: [`llmdoc/`](llmdoc/) — architecture, contracts, verification and operational guides. Start with `npx -y @tokenroll/llmdoc tree` or `npx -y @tokenroll/llmdoc search "<topic>"`.
 
 ## Repository layout
 

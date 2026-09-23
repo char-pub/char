@@ -142,7 +142,7 @@ Rules → Transform Rules → Modify Request Header：
 
 ### CSAM Scanning Tool
 
-- Caching → Configuration → CSAM Scanning Tool：对 `char.pub` zone 开启，填写经过验证的通知邮箱，必须有人每天查看（见 `docs/runbooks/csam-hit.md`）。
+- Caching → Configuration → CSAM Scanning Tool：对 `char.pub` zone 开启，填写经过验证的通知邮箱，必须有人每天查看（见 [CSAM 命中处置](../llmdoc/operations/csam-response.mdx)）。
 
 ## 5. 前端（Workers Static Assets）
 

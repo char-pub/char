@@ -551,7 +551,7 @@ v0 只启用 Railway Postgres 自带的备份功能，不做每日 `pg_dump` 至
 
 ### D-113 Admin 隔离 — Accepted
 
-Admin 使用独立的子域（`admin.char.pub` + `admin-api.char.pub`）和独立的 `admin` 进程，公开的 `api` 进程不挂载任何 admin 路由。防护分三层：Cloudflare Access、应用内员工会话 + 角色、强制 TOTP 2FA。详见 `docs/design/admin.md`。
+Admin 使用独立的子域（`admin.char.pub` + `admin-api.char.pub`）和独立的 `admin` 进程，公开的 `api` 进程不挂载任何 admin 路由。防护分三层：Cloudflare Access、应用内员工会话 + 角色、强制 TOTP 2FA。当前设计见 [Admin 权限边界](llmdoc/operations/admin-authority.mdx)。
 
 > 2FA 部分 Superseded by D-120（2026-09-22）：v0 的多因素认证由 Cloudflare Access 负责，应用内不做 TOTP。
 
@@ -565,14 +565,16 @@ staging 使用 `char.pub` 的一级子域（`staging.char.pub`、`staging-api.ch
 
 ### D-116 先完成 DoR，再写代码 — Accepted
 
-实现开始前，`docs/goals/v0/` 下的 VISION / DOR / DOD / LOOP / PROGRESS 与 `docs/design/` 下的架构、安全、Admin、测试文档必须就绪，由用户确认后才进入编码。
+实现开始前，愿景、就绪条件、验收标准、执行循环、进度记录与架构、安全、Admin、测试设计必须就绪，由用户确认后才进入编码。
+
+> 2026-09-24 文档迁移：原启动文档和进度证据保留在 Git 历史；持续有效的设计进入 `llmdoc/`，验收门槛见 [发布就绪与人工验收](llmdoc/engineering/release-readiness.mdx)。本条保留最初启动阶段的决策，不要求后续改动重建旧文档目录。
 
 
 ### D-117 OIDC 发布必须先安装 GitHub App — Accepted
 
 通过 GitHub Action（OIDC）发布的仓库，必须已经安装 char.pub GitHub App 并完成 Source Binding。Registry 用 installation token 在 OIDC `sha` claim 对应的 commit 上重新读取源文件并重算 digest，与请求不一致时拒绝发布；不采信 Action 上报的摘要（D-074 “Build at Source, Index at Registry” 的补充）。
 
-OIDC 的信任边界：token 只能证明“绑定的仓库在允许的 ref 和事件上运行了某个 workflow”，不能证明运行的是 `char-pub/publish`。服务端校验清单见 `docs/design/security.md` §4.4：`aud` 固定为 `https://api.char.pub`；`event_name` 只允许 `push` / `workflow_dispatch` / `release`，拒绝 `pull_request_target`；`jti` 一次性；请求的 commit 必须等于 `sha`。另外修正一处事实：GitHub OIDC token **包含** `sha` claim（2026-09-22 核实）。
+OIDC 的信任边界：token 只能证明“绑定的仓库在允许的 ref 和事件上运行了某个 workflow”，不能证明运行的是 `char-pub/publish`。服务端校验约束见 [GitHub 来源与发布信任链](llmdoc/source/github-source-and-publish.mdx)：`aud` 固定为 `https://api.char.pub`；`event_name` 只允许 `push` / `workflow_dispatch` / `release`，拒绝 `pull_request_target`；`jti` 一次性；请求的 commit 必须等于 `sha`。另外修正一处事实：GitHub OIDC token **包含** `sha` claim（2026-09-22 核实）。
 
 ### D-118 仓库转移后冻结 Binding，等作者确认 — Accepted
 
@@ -925,7 +927,7 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 
 ### D-157 web 重新设计：信息架构、品牌视觉与配套接口 — Accepted（用户决定，2026-09-23）
 
-1. **范围**：重组信息架构、换成品牌视觉、统一组件，同时补上服务端已支持但 web 没有入口的功能（yank、作者主页、GitHub 绑定状态、namespace 改名、移动端导航、全局搜索），以及服务端缺的接口（公开举报、贡献拒绝理由、按 @namespace 邀请、搜索按 namespace 过滤）。设计依据是 `docs/design/web.md` 与 `docs/design/web.pen`。
+1. **范围**：重组信息架构、换成品牌视觉、统一组件，同时补上服务端已支持但 web 没有入口的功能（yank、作者主页、GitHub 绑定状态、namespace 改名、移动端导航、全局搜索），以及服务端缺的接口（公开举报、贡献拒绝理由、按 @namespace 邀请、搜索按 namespace 过滤）。原 Web 设计与 Pencil 画板保留在 Git 历史，持续有效的设计依据见 [Web 创作端的责任](llmdoc/web/creator-experience.mdx)。
 2. **视觉**：向 `vendor/brand-assets` 对齐，取代 2026-09-23 “配色与字体暂不改动”的要求。浅色为主：Sand 底、Ink 文字，深色用 Night；主操作是橙底配 Ink 文字（橙底白字对比度不够）；危险操作用单独的红色，不再和强调色混用。品牌的三个节点色固定对应作品类型：Character 橙、World 紫、Lorebook 蓝，卡片、徽章、依赖列表、token 占比条都按这个规则着色。字体换成 Plus Jakarta Sans 与 JetBrains Mono，用 `@fontsource` 自托管，因为 CSP 不允许第三方字体。logo、字标与 lockup 直接引用子模块文件，不在仓库里复制。
 3. **作品页结构**：作品的公开页面收进一个外框（头部加标签页 Overview / Context preview / Versions / Contributions / Settings）。版本对比并入 Versions，旧的 `/diff` 重定向过去。贡献开放度与邀请只在 Settings 标签里设置，编辑器不再提供这个入口；草稿里的 `contribution_policy` 字段原样保留。作者主页是 `/c/$ns`。
 4. **界面语言**：只做英文，排版给中日文留出长度和换行空间，以后再接 i18n。
@@ -933,7 +935,7 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 6. **邀请名单只显示 @namespace**：按 @namespace 邀请之后，作品所有者可以邀请任何有个人 namespace 的人，而 OAuth 显示名可能是真名，所以邀请名单不再返回 `display_name`，与“默认署名不用 OAuth 显示名”的规则一致（D-148 第 3 条）。
 7. **公开举报**：`POST …/reports`（作品）与 `POST …/releases/:label/reports`（版本），原因分六类，与 admin 举报队列一致。匿名举报必须通过 action 为 `report` 的 Turnstile，访客验证的 token 不能混用；看不到的对象与不存在一样返回 404；成功一律 202，不透露后续处理。匿名举报复用访客验证的 Turnstile 配置，没有配齐时返回 503、提示登录后举报（用户决定保持这个做法）。
 8. **GitHub 绑定**：web 只显示已有绑定的状态，冻结时可以确认继续使用或解绑，也可以直接解绑。新建绑定需要 GitHub App 安装流程拿到 installation 与仓库的数字 ID，web 还没有这个流程，页面上只做说明，不提供手填 ID 的表单。
-9. **设计文件入库**：`docs/design/web.pen` 里有 Pencil 写入的 `fileToken`（文件的 UUID），gitleaks 只对 `docs/design/*.pen` 的这个字段放行，其他文件和字段照常扫描。
+9. **设计文件入库（历史）**：旧 Pencil 设计稿的 `fileToken` 是文件 UUID，不是凭据。2026-09-24 删除旧设计稿后，gitleaks 仍保留原路径与该字段的精确放行，用于 Git 历史扫描；其他文件和字段照常扫描。
 
 
 ### D-158 补齐重设计后的功能入口与授权 — Accepted（用户指示，2026-09-24）
