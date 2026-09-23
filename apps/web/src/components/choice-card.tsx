@@ -53,7 +53,8 @@ export function ChoiceCard({
         checked={checked}
         disabled={disabled}
         onChange={onSelect}
-        className="sr-only"
+        // 透明的 radio 盖住整张卡片：点哪里都是点它本身，焦点和键盘行为也都在它上面。
+        className="absolute inset-0 z-10 m-0 size-full cursor-pointer appearance-none rounded-lg opacity-0 disabled:cursor-not-allowed"
       />
       {indicator ? (
         <span

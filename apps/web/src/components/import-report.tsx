@@ -50,6 +50,7 @@ export function targetLabel(to: string): string {
   if (to === "bootstrap.greetings#default") return "Greeting";
   if (to.startsWith("bootstrap.greetings#")) return `Greeting ${to.slice(19)}`;
   if (to === "fragments#examples") return "Example dialogue";
+  if (to === "fragments#description") return "Description";
   if (to === "assets#avatar") return "Avatar";
   if (to.startsWith("fragments#")) return `Passage ${to.slice(9)}`;
   if (to.startsWith("assets#")) return `Image ${to.slice(6)}`;

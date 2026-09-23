@@ -118,7 +118,7 @@ test("imports a card through the registry and requires explicit choices", async 
   await page.getByRole("radio", { name: /^Fan work/ }).check();
   await expect(confirm).toBeDisabled();
   await expect(page.getByText("Choose a license to continue.")).toBeVisible();
-  await page.getByLabel("License").selectOption("CC-BY-4.0");
+  await page.getByLabel("License", { exact: true }).selectOption("CC-BY-4.0");
   await confirm.click();
   await expect(page).toHaveURL(/\/c\/writer\/mira\/edit$/);
   expect(api.calls.find((c) => c.path.endsWith("/confirm"))?.body).toEqual({

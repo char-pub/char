@@ -365,7 +365,8 @@ export function ImportWizard({ ns, onCreated }: { ns: string; onCreated: (name: 
       }
       setStatus(done);
       // 草稿里已有的值作为不需要确认的字段的初始值；需要确认的字段留空，由作者选择。
-      const draft = await client.draft(ns, slug);
+      // 以服务端返回的地址为准读取草稿。
+      const draft = await client.draft(ns, done.creation?.split("/")[1] ?? slug);
       const w = draft.working as {
         fragments?: { id: string; stable?: boolean }[];
         meta?: { rating?: Rating; rights?: Rights; license?: string };
