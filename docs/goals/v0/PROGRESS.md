@@ -6,9 +6,9 @@
 - Package：`docs/goals/v0/`
 - Status：**实现中（M0 本地完成，M1 进行中）**。只做了本地 commit，没有 push（force push 覆盖 `char-pub/char` 需要用户单独确认，B-10）。
 - Current work：
-  - 已合并（本地 main）：core 全部核心逻辑；assembler；contracts；cli；publish Action；web SPA（Playground / Diff / 作品页骨架）；server 的数据库 schema 与迁移、CAS、pg-boss 队列、审计链、集成测试基础设施、`authorize()`、HTTP 中间件、OIDC / webhook 校验、上传图片处理、`CsamScanner`、员工角色矩阵与四眼规则、Cloudflare Access JWT 校验、API 骨架（`route()` 强制授权）；runbooks。
-  - 并行 subagent：`packages/ccv3`；一致性测试集与三运行时运行器；Registry 写路径（namespace / 草稿 / 发布 / worker publish / Token）；Registry 读路径（读取 / 搜索 / yank / tombstone 级联）；Better Auth 集成。
-  - 下一步：合并以上分支 → Contribution API（M6-3）→ 上传 API 与 worker（M6-1、M6-2）→ GitHub 绑定与 OIDC 发布路由（M7-1、M7-2、M7-2b）→ admin 进程与 Admin SPA（M8-5、M9-1）→ web 接 API（M8-1、M8-2、M8-4）。
+  - 已合并（本地 main）：core；assembler；ccv3；contracts；cli（含 login / publish）；publish Action；web SPA 骨架；一致性测试集（27 个用例全部可起草，等待人工审阅）；server 的数据库 / 队列 / CAS / 审计、Better Auth、授权、HTTP 中间件、OIDC / webhook 校验、GitHub binding 生命周期、读取 / 搜索 / yank / tombstone 级联、上传管线与 CSAM 命中路径、admin 骨架（Access + 角色 + kill switch + 审计）、单镜像四命令（容器内已验证 migrate / api / worker 启动）；runbooks；部署指南；冒烟测试脚本。
+  - 并行 subagent：Registry 写路径（namespace / 草稿 / 发布 / worker publish / Token）；admin 业务路由；Admin SPA。
+  - 下一步：GitHub App 客户端与同步任务、OIDC 发布路由（依赖写路径）→ Contribution API → web 接 API → 一致性用例人工审阅 → 等用户授权后部署 staging。
 - Acceptance：DOD 条目尚未打勾。M0-1 / M0-2 本地检查已通过，但验收要求 CI 运行记录，需等首次推送后才能取得（依赖 B-10）。
 - Blockers：见 [DOR § Blockers](DOR.md#blockers)。本地开发不受影响。
 - Next useful work：合并 subagent 结果 → Resolver 与一致性测试集（M2-5，需要人工审阅预期输出）→ server 的 Auth / authz / API（M4-2、M4-3、M5）。
@@ -89,3 +89,10 @@
   - `wrangler deploy --dry-run --env staging`（apps/web）通过，未实际部署。
 - Decisions：D-135（CCv3 取值；**导入卡片的默认 rights 待用户决定**）。
 - 待用户审阅：`pnpm conformance:review` 生成 `spec/conformance/REVIEW.md`；审阅后用 `pnpm conformance:accept <case> --reviewer <name>` 接受。在接受之前 M2-5 不能打勾。
+
+### 2026-09-22 Better Auth、读取 / 上传 / 下架、进程入口
+
+- Work：合并 Better Auth（subagent，21 个集成测试，含完整的 GitHub OAuth 回调模拟）、Registry 读路径与 CJK 搜索与 tombstone 级联（subagent）、上传管线与 CSAM 命中路径（subagent）；新增 `processes/`（单镜像四命令）、`apps/server/Dockerfile`、CDN purge、tombstone 任务分发；把路由与 worker 接进进程。
+- 发现并修复：pg-boss 的调度器每次启动都会插入内部队列并更新版本行，原来的权限收紧会让 worker 启动即崩溃（容器实测发现）。改为用行级安全只允许插入已登记的队列名；pg-boss 后台错误改为记录而不崩溃。
+- Verification：`pnpm test` 1046 个通过；集成测试 159 个通过（15 个文件）；容器内实测：`migrate` 成功；`api` 在 production 缺少 `ORIGIN_AUTH_SECRET` 时拒绝启动，配置后不带 `X-Origin-Auth` 返回 403，带正确值时正常路由，`/healthz` 豁免；`worker` 启动后本机健康检查返回 ok。
+- Decisions：D-136（Better Auth）、D-137（读取 / 搜索 / 下架 / 上传 / 部署形态）。
