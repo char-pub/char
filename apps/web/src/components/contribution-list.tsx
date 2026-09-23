@@ -33,6 +33,7 @@ import {
   isApiError,
 } from "@/lib/api";
 import { keys, useGuest, useMe, useRegistry } from "@/lib/registry";
+import { timeAgo } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { UserText } from "./user-content";
 
@@ -110,23 +111,6 @@ export function authorLabel(
   if (author.display_name && author.namespace)
     return `${author.display_name} (${author.namespace})`;
   return author.display_name ?? author.namespace ?? `user ${author.user}`;
-}
-
-/** “3 days ago” 这类相对时间；超过一个月显示日期。 */
-export function timeAgo(iso: string, now = Date.now()): string {
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return iso;
-  const s = Math.round((now - t) / 1000);
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  if (s < 60) return "just now";
-  if (s < 3600) return rtf.format(-Math.floor(s / 60), "minute");
-  if (s < 86_400) return rtf.format(-Math.floor(s / 3600), "hour");
-  if (s < 30 * 86_400) return rtf.format(-Math.floor(s / 86_400), "day");
-  return new Date(iso).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 type AgentFilter = "all" | "agent" | "human";
@@ -334,13 +318,14 @@ export function ContributionPolicyNote({
         {draftNote ? ` ${draftNote}` : null}
       </p>
       {member ? (
-        // 作品设置页（开放度、邀请名单）由作品外框提供；它进入路由树之前先用普通链接。
-        <a
-          href={`/c/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/settings`}
+        // 开放度和邀请名单在作品的 Settings 标签里设置，这里只给入口。
+        <Link
+          to="/c/$ns/$name/settings"
+          params={{ ns, name }}
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           <SlidersHorizontal aria-hidden /> Who can contribute
-        </a>
+        </Link>
       ) : canPropose ? (
         <Link
           to="/c/$ns/$name/contributions/new"

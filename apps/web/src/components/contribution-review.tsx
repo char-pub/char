@@ -26,9 +26,10 @@ import {
 } from "@/lib/api";
 import { changeAfter, describeKey, draftValue, rawChangeKey } from "@/lib/contribution";
 import { keys, useRegistry } from "@/lib/registry";
+import { timeAgo } from "@/lib/text";
 import { ChangeCard, shortKey } from "./contribution-changes";
 import { ContributorCard, DecisionPanel, OutcomePanel } from "./contribution-decision";
-import { AgentBadge, authorLabel, timeAgo } from "./contribution-list";
+import { AgentBadge, authorLabel } from "./contribution-list";
 import { UserMarkdown, UserText } from "./user-content";
 
 /**

@@ -2,8 +2,9 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ContributionDetail } from "@/lib/api";
+import { timeAgo } from "@/lib/text";
 import { fakeClient, ME, renderWithApp } from "@/test/render";
-import { authorLabel, timeAgo } from "./contribution-list";
+import { authorLabel } from "./contribution-list";
 import { ContributionReview } from "./contribution-review";
 
 const OTHER = "usr_01j00000000000000000000001";

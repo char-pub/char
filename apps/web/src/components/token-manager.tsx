@@ -31,8 +31,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import type { CreatedToken, PersonalToken, TokenScope } from "@/lib/api";
 import { useRegistry } from "@/lib/registry";
-import { formatDate } from "@/lib/text";
-import { timeAgo } from "./contribution-list";
+import { formatDate, timeAgo } from "@/lib/text";
 
 const SCOPES: { id: TokenScope; label: string }[] = [
   { id: "creations:read", label: "Read your creations and drafts" },
