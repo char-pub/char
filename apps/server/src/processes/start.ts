@@ -21,6 +21,7 @@ import {
   AdminEnvSchema,
   AuthEnvSchema,
   authProvidersFromEnv,
+  DeletionEnvSchema,
   EdgeEnvSchema,
   GitHubEnvSchema,
   GuestEnvSchema,
@@ -88,8 +89,9 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       providers: authProvidersFromEnv(authEnv),
       ipAddressHeaders: ["cf-connecting-ip"],
     });
-    if (process.env.LEGAL_ENCRYPTION_KEY)
-      services.legalKey = parseLegalKey(process.env.LEGAL_ENCRYPTION_KEY);
+    const deletion = parseEnv(DeletionEnvSchema);
+    if (deletion.LEGAL_ENCRYPTION_KEY)
+      services.legalKey = parseLegalKey(deletion.LEGAL_ENCRYPTION_KEY);
     const gh = githubFromEnv();
     const turnstile = turnstileServicesFromEnv(authEnv.AUTH_TRUSTED_ORIGINS);
     const app = createApi({

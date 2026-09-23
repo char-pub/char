@@ -125,6 +125,8 @@ export default defineRailway((ctx, project) => {
       ...auth,
       ...githubApp,
       ...guests,
+      // 自助受理与管理端解密必须使用同一把法律请求密钥。
+      LEGAL_ENCRYPTION_KEY: preserve(),
       // 部署前的迁移以 owner 身份执行，结束时把最小权限授予应用角色。
       DATABASE_MIGRATION_URL: db.env.DATABASE_URL,
       DATABASE_APP_ROLE: "charpub_app",
