@@ -107,8 +107,9 @@ test("M8 review screenshots", async ({ page }) => {
   await page.screenshot({ path: `${OUT}diff.png`, fullPage: true });
 
   await page.goto("/c/djj/alice/edit");
-  await page.getByRole("button", { name: "More options" }).click();
-  await expect(page.getByRole("heading", { name: "Fragments" })).toBeVisible();
+  const passages = page.getByRole("button", { name: "Passages", exact: true });
+  if ((await passages.getAttribute("aria-expanded")) !== "true") await passages.click();
+  await expect(page.getByRole("button", { name: "Add passage" })).toBeVisible();
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}editor.png`, fullPage: true });
 });

@@ -64,15 +64,18 @@ test("E2E-2: import a CCv3 PNG, confirm, publish and export it again", async ({
 
   await page.getByRole("radio", { name: /^General/ }).check();
   await page.getByRole("radio", { name: /^Original/ }).check();
-  await page.getByLabel("License").selectOption("CC-BY-4.0");
+  await page.getByLabel("License", { exact: true }).selectOption("CC-BY-4.0");
   await page.getByRole("button", { name: "Save and open the editor" }).click();
   await expect(page).toHaveURL(new RegExp(`/c/${ns}/lumen/edit$`));
 
-  const publish = page.getByRole("region", { name: "Publish" });
-  await expect(publish.getByLabel("Version")).toHaveValue("1.0.0", { timeout: 30_000 });
-  await publish.getByRole("button", { name: "Publish" }).click();
-  await expect(page.getByText("Published 1.0.0")).toBeVisible({ timeout: 90_000 });
-  await page.getByRole("link", { name: "Open the creation page" }).click();
+  await page.getByRole("button", { name: "Publish…" }).click({ timeout: 30_000 });
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel("Version label")).toHaveValue("1.0.0");
+  await dialog.getByRole("button", { name: "Publish 1.0.0" }).click();
+  await expect(dialog.getByRole("heading", { name: "Published 1.0.0" })).toBeVisible({
+    timeout: 90_000,
+  });
+  await dialog.getByRole("link", { name: "View release" }).click();
   await expect(page).toHaveURL(new RegExp(`/c/${ns}/lumen(\\?|$)`));
   await expect(page.getByRole("heading", { name: "Lumen" })).toBeVisible();
   await expect(page.getByText("Lumen tends the lanterns along the canal.")).toBeVisible();
