@@ -12,7 +12,7 @@
 - **G-2 覆盖率**：达到 [测试策略 §3](../../design/testing.md#3-覆盖率门禁) 的门槛（SC-16）。
 - **G-3 文档一致**：`DECISIONS.md`、`spec/`、`docs/design/` 与实现一致。所有新增决策都写入 DECISIONS；规范有改动时，一致性测试集同步更新。
 - **G-4 无密钥**：gitleaks 扫描全部历史为 0 条发现；仓库中只有 `.env.example`（SC-14）。
-- **G-5 人工验收**：用户在 staging 上按“端到端验收”走一遍，并在 PROGRESS 中记下“验收通过”及日期。
+- **G-5 人工验收**：用户在主站上按“端到端验收”走一遍，并在 PROGRESS 中记下“验收通过”及日期。
 - **G-6 生产可用**：production 各域名可访问，冒烟测试通过，Railway 备份已启用（SC-15）。
 
 ## Acceptance items
@@ -75,7 +75,7 @@
 - [x] **M7-2** OIDC 发布（security §4.4 的 10 条清单）：校验 iss / aud / 签名 / exp / jti / event_name，commit 必须等于 `sha`；按 `repository_id` + `repository_owner_id` + ref 匹配 binding；未安装 App 时拒绝（D-117）；Registry 在该 commit 重新读取源码并重算 digest。验证：本地 JWKS 表驱动测试，覆盖改名劫持、`pull_request_target`、重放、摘要不一致等反例。覆盖：SC-10、UC-4。
 - [x] **M7-2b** 仓库 transfer 后 binding 冻结（D-118）：冻结期间发布被拒并通知作者；作者确认后可以重新绑定或换用新仓库；全程写审计。验证：集成测试（用录制的 `repository.transferred` payload 和对账场景）。覆盖：SC-10、UC-4。
 - [x] **M7-3** `char` CLI：init / check --fix（生成稳定 ID 并写回）/ build / preview / login（个人 Token）/ publish。验证：CLI 集成测试。覆盖：SC-1。
-- [ ] **M7-4** `char-pub/publish` Action：在 staging 上用一个真实测试仓库完成一次发布。验证：Action 运行记录 + Registry 查询。前置：DOR B-3。覆盖：UC-4。
+- [ ] **M7-4** `char-pub/publish` Action：在主站上用一个真实测试仓库完成一次发布。验证：Action 运行记录 + Registry 查询。前置：DOR B-3。覆盖：UC-4。
 
 ### M8 前端
 
@@ -88,11 +88,11 @@
 ### M9 Admin 后端、安全加固与部署
 
 - [x] **M9-1** admin 进程：只挂载 admin 路由；校验 Access JWT；员工会话与角色（MFA 由 Access 与组织 2FA 保证，D-120）；四眼确认；哈希链审计与校验工具。验证：集成测试（角色矩阵自动生成用例）+ 在公开 api 上访问 admin 路由返回 404。覆盖：SC-12、UC-8、UC-10。
-- [ ] **M9-2** 部署 staging（Railway 的 staging environment、Workers Static Assets、R2 staging 桶、Access、WAF、Transform Rule、Turnstile，以及 Cloudflare CSAM Scanning Tool），冒烟测试通过。验证：`scripts/smoke.ts` 输出。前置：DOR B-1、B-5、B-6。覆盖：SC-15。
-- [ ] **M9-3** 边缘防护核验：直接访问源站（不经 Cloudflare）被拒；admin-api 不经 Access 被拒；限流生效。验证：curl 记录。覆盖：SC-15、T15。
+- [ ] **M9-2** 部署主站（Railway 的 production environment、Workers Static Assets、R2 桶、Access、WAF、Transform Rule、Turnstile，以及 Cloudflare CSAM Scanning Tool），冒烟测试通过。验证：`pnpm smoke --env production` 输出。前置：DOR B-1、B-5、B-6。覆盖：SC-15。
+- [ ] **M9-3** 边缘防护核验（主站）：直接访问源站（不经 Cloudflare）被拒；admin-api 不经 Access 被拒；限流生效。验证：curl 记录。覆盖：SC-15、T15。
 - [ ] **M9-4** 开启 Railway Postgres 备份，并完成一次恢复演练（把备份恢复到一个新实例，比对行数和样本数据）。验证：演练记录。前置：DOR B-1。覆盖：SC-15、UC-13。
 - [ ] **M9-5** Runbooks：密钥轮换、CSAM 命中、DMCA 处理、数据泄露、DoS / kill switch、数据库恢复、break-glass。验证：人工审阅。
-- [ ] **M9-6** 部署 production，冒烟测试通过。验证：冒烟测试输出。前置：用户确认上线。覆盖：G-6。
+- [ ] **M9-6** 主站对外开放（取消邀请制或公开宣布）前的最终确认：在当前提交上重新运行冒烟测试并通过，端到端验收与人工验收都已完成。验证：冒烟测试输出 + 用户确认记录。前置：用户确认对外开放。覆盖：G-6。
 
 ### M10 内容与收尾
 
@@ -101,13 +101,15 @@
 
 ## End-to-end acceptance
 
-- [ ] **E2E-1**（UC-1、UC-6、UC-13 除外的前端流程）在 staging 上：新用户用 GitHub 登录 → 创建 Level 0 Character → 发布 1.0.0 → 匿名访问作品页，下载 IR 与 CCv3（附 Loss Report）。验证：Playwright 测试 + 人工走查。
+以下流程都在主站上执行（v0 不设 staging 环境）。演练使用专门的测试账号、测试仓库与合成数据，结束后清理测试内容，不使用真实用户的作品或真实 CSAM 素材。
+
+- [ ] **E2E-1**（UC-1、UC-6、UC-13 除外的前端流程）在主站上：新用户用 GitHub 登录 → 创建 Level 0 Character → 发布 1.0.0 → 匿名访问作品页，下载 IR 与 CCv3（附 Loss Report）。验证：Playwright 测试 + 人工走查。
 - [ ] **E2E-2**（UC-2）上传一张合成 CCv3 PNG → 导入草稿并查看 Import Report → 发布 → 导出，并比对 Loss Report。验证：Playwright 测试。
 - [ ] **E2E-3**（UC-3、UC-12）创建 World（intrinsic）+ Lorebook（keyword），由 Character 引用 → 查看 Preview 的解释 → 升级依赖 → 查看 Diff；构造菱形依赖，发布失败。验证：Playwright 测试 + 人工审阅 Preview。
-- [ ] **E2E-4**（UC-4）测试仓库安装 App → 绑定 → Action 发布成功 → 仓库改名后，由另一个 owner 新建的同名仓库发布被拒 → 把测试仓库 transfer 到另一个账号，发布被冻结，作者确认后恢复。验证：staging 联调记录。
+- [ ] **E2E-4**（UC-4）测试仓库安装 App → 绑定 → Action 发布成功 → 仓库改名后，由另一个 owner 新建的同名仓库发布被拒 → 把测试仓库 transfer 到另一个账号，发布被冻结，作者确认后恢复。验证：主站联调记录。
 - [ ] **E2E-5**（UC-5、UC-10）第二个账号提交 Contribution → 作者修改另一个 fragment → 自动 rebase 并接受；构造冲突；敏感变更需要单独确认；`agent: true` 的提交可被过滤；超过限流后被拒。验证：Playwright 测试。
-- [ ] **E2E-6**（UC-7、UC-9）发布 private Release → 另一个账号访问得到 404 → public 依赖 private 被拒；上传带 GPS 信息的图片，结果不含元数据；员工手动标记一张测试图片为 CSAM，走完隔离、证据保全和事件流程（不使用真实 CSAM 素材）。验证：集成测试 + staging 记录。
-- [ ] **E2E-7**（UC-8、UC-10、UC-11）员工通过 Access 登录（未加入 char-pub 组织的账号被拒）→ 对 A → B → C 依赖链中 C 的 fragment 执行 tombstone → CDN 返回 404、resolve 返回 410、审计日志完整 → 切换 kill switch 后 5 秒内生效 → 注册 `@commons` 被拒。验证：staging 演练记录。
+- [ ] **E2E-6**（UC-7、UC-9）发布 private Release → 另一个账号访问得到 404 → public 依赖 private 被拒；上传带 GPS 信息的图片，结果不含元数据；员工手动标记一张测试图片为 CSAM，走完隔离、证据保全和事件流程（不使用真实 CSAM 素材）。验证：集成测试 + 主站记录。
+- [ ] **E2E-7**（UC-8、UC-10、UC-11）员工通过 Access 登录（未加入 char-pub 组织的账号被拒）→ 对 A → B → C 依赖链中 C 的 fragment 执行 tombstone → CDN 返回 404、resolve 返回 410、审计日志完整 → 切换 kill switch 后 5 秒内生效 → 注册 `@commons` 被拒。验证：主站演练记录。
 - [ ] **E2E-8**（UC-13）从 Railway 备份恢复出数据库并完成数据比对。验证：演练记录（与 M9-4 相同）。
 
 ## Coverage

@@ -53,7 +53,7 @@
 | T4 | 越权访问（IDOR） | 猜 `rel_…` / `cr_…` / digest 读取私有内容，或修改他人的 Creation | 集中式授权层（§4.3）；不可访问的私有资源一律返回 `404`；private 桶只能通过签名 URL 访问；public 桶只存公开对象 | 为每个路由自动生成“他人资源”越权测试 |
 | T5 | 探测内容是否存在 | 用 digest 访问 public CDN，判断某段私有文本是否存在 | public 桶只包含 Public Release 引用的对象（D-083）；API 对未授权请求不区分“不存在”和“无权限” | 安全测试 |
 | T6 | CSRF / 跨站 | 恶意页面代替用户发请求 | 会话 cookie 设为 `SameSite=Lax`、`HttpOnly`、`Secure`、host-only；所有写请求校验 `Origin`，只接受白名单；CORS 白名单精确匹配，不用通配符 | 测试：非白名单 Origin 被拒 |
-| T7 | staging 攻击 production | 两者同属一个 site，SameSite 挡不住 | cookie 使用 `__Host-` 前缀，不设置 Domain；两个环境的 Origin 白名单互不包含；密钥与 OAuth App 各自独立 | 配置测试 |
+| T7 | 同 site 子域之间互相攻击 | `www`、`api`、`admin`、`admin-api`、`assets` 同属一个 site，SameSite 挡不住；任何一个子域被攻破或托管了用户内容，都可能读写其他子域的 cookie | cookie 使用 `__Host-` 前缀，不设置 Domain，只发往签发它的主机；Origin 白名单只包含 www 与 admin 各自的精确 Origin；`assets` 只托管内容寻址的静态对象，不设置任何 cookie；admin 会话由 Cloudflare Access 签发，与 www 会话互不相通 | 配置测试 |
 | T8 | XSS / 内容注入 | 用户写的 Markdown 或 HTML、SVG、恶意 display_name | 前端用 React 转义；Markdown 渲染时禁用原始 HTML，并用 DOMPurify 清洗；**不接受 SVG 上传**（v0 把 SVG 转为 PNG 或直接拒绝）；设置严格的 CSP（`script-src 'self'`，不允许 inline）；用户内容不在 `www` 同源下渲染任意 HTML | CSP 报告 + 单元测试 |
 | T9 | 恶意文件 / 解析炸弹 | PNG 解压炸弹、超大 tEXt chunk、polyglot 文件、JSON 深层嵌套、YAML 别名炸弹 | 按 magic bytes 识别类型；sharp 设置 `limitInputPixels`；PNG chunk 设大小上限；JSON 设深度和大小上限；YAML 禁用 alias 并限制大小；解析在 worker 中进行，并设超时 | fuzz 测试 + 样本集 |
 | T10 | SSRF | `provider: http` 类型的 Source 或 linked asset 让服务器访问内网 | v0 不启用 `http` Source 的服务端抓取；GitHub 读取只走固定的 API 域名；将来启用时要求 DNS 解析后的 IP 不属于私网，并禁止重定向到私网 | 设计审查 |
@@ -114,7 +114,7 @@
 
 1. 用 `jose` 的 `createRemoteJWKSet` 拉取 `https://token.actions.githubusercontent.com/.well-known/jwks`；`algorithms: ["RS256"]`。
 2. `iss` 精确等于 `https://token.actions.githubusercontent.com`；v0 不支持 GHES 与企业自定义 issuer。
-3. `aud` 精确等于 `https://api.char.pub`（staging 为 `https://staging-api.char.pub`），与 `char-pub/publish` Action 同步。
+3. `aud` 精确等于 `https://api.char.pub`，与 `char-pub/publish` Action 同步。
 4. `clockTolerance` 60 秒，`maxTokenAge` 10 分钟。
 5. `jti` 写入 `oidc_jti`，保留到过期之后；每个 token 只能换一次发布凭证。
 6. `repository_id` 与 `repository_owner_id`（claim 是字符串，统一转成 bigint）同时匹配 Source Binding；**不解析 `sub`**。
@@ -134,7 +134,7 @@
 
 ## 5. 边缘与源站防护
 
-- 所有自定义域名都开启 Cloudflare Proxied：包括 `www`、`api`、`assets`、`admin`、`admin-api` 以及 staging 对应的域名。
+- 所有自定义域名都开启 Cloudflare Proxied：`www`、`api`、`assets`、`admin`、`admin-api`。
 - **源站校验**：Cloudflare 用 Transform Rule 给回源请求加上一个 header `X-Origin-Auth: <随机 secret>`，Railway 服务**拒绝**不带正确 header 的请求（用常量时间比较）。secret 定期轮换，轮换时新旧两个值同时有效一段时间。Railway 分配的 `*.up.railway.app` 域名在上线后移除，或者同样校验这个 header。
 - admin-api 的第二道校验：验证 `Cf-Access-Jwt-Assertion`，包括签名（Access 的 JWKS）、`aud` 和 `iss`，并确认邮箱在允许名单中。
 - WAF：启用免费套餐的托管规则。自定义规则包括：限制请求方法；admin 和 admin-api 只允许特定国家或地区访问（可选）；对 `/v1/auth/*` 设置更严格的限流。

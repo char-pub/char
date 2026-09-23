@@ -21,11 +21,11 @@
 
 ## 通用步骤
 
-1. 在 staging 先做一遍，确认冒烟测试通过。
-2. 生成新值：`openssl rand -base64 48`（不要用在线工具，不要贴进聊天记录）。
-3. 在 Railway 对应 environment 的 service 上设置新值（`railway variables --set` 或控制台），先设置到“新值”变量，不删旧值。
+1. 生成新值：`openssl rand -base64 48`（不要用在线工具，不要贴进聊天记录）。
+2. 先在本地用新值启动一次（写进 git 忽略的 `.env` 后运行 `pnpm dev`），确认格式正确、服务能启动。v0 只有一个线上主站，没有预发布环境可以先试。
+3. 在 Railway `production` environment 的 service 上设置新值（`railway variables --set` 或控制台），先设置到“新值”变量，不删旧值。
 4. 部署（Railway 会滚动重启）。
-5. 运行冒烟测试：`pnpm smoke --env <staging|production>`。
+5. 运行冒烟测试：`pnpm smoke --env production`。
 6. 确认新值生效后删除旧值，再部署一次。
 7. 在审计日志登记。
 

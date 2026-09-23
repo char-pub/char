@@ -14,7 +14,7 @@
 | D-111 | v0 只启用 Railway Postgres 自带的备份，不做 `pg_dump` 到 R2 |
 | D-112 | Web 与 Admin 都用 Vite + React SPA |
 | D-113 | Admin 放在独立子域，三层防护（2FA 部分已被 D-120 取代） |
-| D-114 | staging 用 `char.pub` 的一级子域 |
+| D-114 | 预留环境使用 `char.pub` 的一级子域（v0 已改为只有一个主站，不设 staging） |
 | D-115 | O-1 用 JCS + NFC + 行尾归一；O-2 的 name 只允许 ASCII slug，另设 `display_name` |
 | D-116 | 先完成 DoR，再写代码 |
 | D-117 | OIDC 发布必须先安装 GitHub App；Registry 自己回源并重算 digest |
@@ -105,10 +105,10 @@
 | X-1 | GitHub 组织 `char-pub` | 已存在，免费套餐；**没有强制 2FA**，新仓库**没有**默认开启 push protection | M0-3 | 用户授权后我用 gh 修改，或用户自己改 |
 | X-2 | 仓库 `char-pub/char` | public，里面是旧原型 | M0 首次推送（需要 force push） | 用户确认后执行 |
 | X-3 | 域名 `char.pub` | NS 已托管在 Cloudflare，还没有任何 DNS 记录 | M9-2 | 部署时创建；wrangler 当前的 token 对 zone 只读，需要用户授权或自己配置 DNS、WAF、Transform Rule |
-| X-4 | Railway project `char-pub`（staging / production 两个 environment） | 还不存在；workspace 已确定为 `Hushed Chat`（Pro） | M9-2、M9-4 | 部署阶段征得用户同意后用 CLI 创建 |
-| X-5 | R2 桶 `charpub-{staging,prod}-{public,private,uploads,evidence}` | 还不存在（账号下有 2 个无关的桶） | M4-4 联调、M9-2 | 部署前创建（会产生少量费用） |
-| X-6 | OAuth App：GitHub / Discord / Google，staging 与 production 各一套 | 还不存在 | M4-2 联调、M9-2 | 用户在各平台后台创建（需要用户的账号），我提供回调地址 |
-| X-7 | GitHub App（只读 Metadata + Contents；staging 与 production 各一个） | 还不存在 | M7-1 联调、M7-4 | 用户用 manifest 流程创建，或授权我用 gh 创建 |
+| X-4 | Railway project `char-pub`（只有 `production` 一个 environment） | 还不存在；workspace 已确定为 `Hushed Chat`（Pro） | M9-2、M9-4 | 部署阶段征得用户同意后用 CLI 创建 |
+| X-5 | R2 桶 `charpub-{public,private,uploads,evidence}` | 还不存在（账号下有 2 个无关的桶） | M4-4 联调、M9-2 | 部署前创建（会产生少量费用） |
+| X-6 | OAuth App：GitHub / Discord / Google，各一个（回调地址指向主站 API） | 还不存在 | M4-2 联调、M9-2 | 用户在各平台后台创建（需要用户的账号），我提供回调地址 |
+| X-7 | GitHub App（只读 Metadata + Contents，一个） | 还不存在 | M7-1 联调、M7-4 | 用户用 manifest 流程创建，或授权我用 gh 创建 |
 | X-8 | Cloudflare Access（Zero Trust 免费版，最多 50 人）、Turnstile、CSAM Scanning Tool（需要一个经过验证的通知邮箱） | 还没配置 | M9-1 联调、M9-2 | 用户开通 Zero Trust；我提供配置 |
 | X-9 | PhotoDNA Cloud Service 申请 | 还没申请 | 接入真实 provider（v0 之后，D-121） | 用户申请；不阻塞 v0 |
 | X-10 | NCMEC CyberTipline ESP 注册 | 还没注册 | 上线前的合规流程（D-121 放行图片之后，这一项更重要） | 用户 |
