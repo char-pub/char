@@ -837,3 +837,8 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 3. **admin 访客管理**：`GET /v1/admin/guests`（最新在前，按状态与显示名过滤）、`GET /v1/admin/guests/:id`、`POST …/disable`、`POST …/enable`。需要操作理由，所需能力与封禁用户相同；写处置记录与审计；停用时在同一事务中删除该访客的全部会话；重复停用不产生新记录。响应中没有邮箱，也没有邮箱 HMAC。
 4. **Turnstile 测试密钥**：Cloudflare 公开的“始终通过”测试密钥返回的结果只在 `NODE_ENV=development` 时被接受（跳过 hostname 与 action 检查），其他环境一律按 `testing-key` 拒绝，防止生产误配测试密钥后校验失效。
 5. **本地邮件**：docker compose 加入 Mailpit（SMTP 127.0.0.1:51025，Web UI / API 127.0.0.1:58025）；本地访客验证的配置写在 README，`.env.example` 不包含测试密钥。
+
+### D-146 继承值不参与默认值省略；https URL 的校验 — Accepted（待用户复核）
+
+1. **规范歧义**：规范化时“值等于默认值的字段要省略”中的默认值，只指字段自身固定的默认值，不包括从其他字段继承来的值。AssetVariant 的 `license`、`rating` 缺省时继承 Creation 的值；如果作者显式写出与 Creation 相同的值，这个字段保留，digest 与省略时不同。原因：显式写出的值是作者对这个变体的独立声明，Creation 之后改了许可或评级，它也应该保持不变；而且如果省略与否取决于另一个字段的当前值，digest 就不再只由字段本身决定。现有一致性用例不受影响。
+2. **只允许 https 的 URL**（Release 的 http 来源、asset 外链 locator）在 zod 与导出的 JSON Schema 中一致：都要求以小写 `https://` 开头。大写的 `HTTPS://` 以前 zod 会接受，现在两边都拒绝，避免外部实现按 JSON Schema 校验时与服务端结论不同。
