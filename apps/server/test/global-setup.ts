@@ -43,18 +43,35 @@ function url(user: { user: string; password: string }, host: string, port: numbe
   return `postgres://${user.user}:${encodeURIComponent(user.password)}@${host}:${port}/${db}`;
 }
 
+/**
+ * 启动容器，失败时再试一次。Testcontainers 等待端口映射的时限固定为 10 秒，Docker 负载高时
+ * 偶尔会超时；这类失败与被测代码无关，重试一次足以区分偶发与真正的环境问题。
+ */
+async function startWithRetry<T>(start: () => Promise<T>): Promise<T> {
+  try {
+    return await start();
+  } catch (e) {
+    process.stderr.write(`container start failed, retrying once: ${String(e)}\n`);
+    return start();
+  }
+}
+
 export default async function setup(project: TestProject) {
   [postgres, minio] = await Promise.all([
-    new PostgreSqlContainer("postgres:16-bookworm")
-      .withDatabase("postgres")
-      .withUsername("postgres")
-      .withPassword("superuser-local-test")
-      .withEnvironment({ POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8" })
-      .start(),
-    new MinioContainer("quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z")
-      .withUsername(MINIO_USER)
-      .withPassword(MINIO_PASSWORD)
-      .start(),
+    startWithRetry(() =>
+      new PostgreSqlContainer("postgres:16-bookworm")
+        .withDatabase("postgres")
+        .withUsername("postgres")
+        .withPassword("superuser-local-test")
+        .withEnvironment({ POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8" })
+        .start(),
+    ),
+    startWithRetry(() =>
+      new MinioContainer("quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z")
+        .withUsername(MINIO_USER)
+        .withPassword(MINIO_PASSWORD)
+        .start(),
+    ),
   ]);
 
   const host = postgres.getHost();
