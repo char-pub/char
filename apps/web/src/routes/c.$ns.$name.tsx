@@ -1,30 +1,101 @@
-import { canonicalizeCreation } from "@char-pub/core";
-import { createFileRoute, notFound } from "@tanstack/react-router";
-import { CreationPage } from "@/components/creation-page";
-import { diffPair, resolveSample, samples } from "@/fixtures/samples";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
+import { CreationView } from "@/components/creation-view";
+import { isApiError } from "@/lib/api";
+import { keys, useMe, useRegistry } from "@/lib/registry";
 
-/** 示例作品按 ref 索引；同一个 ref 取最后一个（版本最新的）示例。 */
-function findSample(ref: string) {
-  const all = [...samples, diffPair.to];
-  let found: (typeof all)[number] | undefined;
-  for (const s of all) {
-    if (canonicalizeCreation(s.root.creation).creation.ref === ref) found = s;
-  }
-  return found;
-}
+const CreationSearchSchema = z.object({
+  /** 查看的版本；缺省为最新的 public Release。 */
+  v: z.string().max(64).optional().catch(undefined),
+});
 
 export const Route = createFileRoute("/c/$ns/$name")({
-  loader: ({ params }) => {
-    const s = findSample(`@${params.ns}/${params.name}`);
-    if (!s) throw notFound();
-    const creation = canonicalizeCreation(s.root.creation).creation;
-    const summary = typeof creation.summary === "string" ? creation.summary : undefined;
-    return { ir: resolveSample(s).ir, summary };
-  },
+  validateSearch: (s) => CreationSearchSchema.parse(s),
   component: CreationRoute,
 });
 
+function NotInCatalog() {
+  return (
+    <section className="space-y-3 py-16 text-center">
+      <p className="stamp border-seal text-seal">404</p>
+      <h1 className="text-3xl">This card is not in the catalog.</h1>
+      <Link to="/browse" className="text-sm underline">
+        Browse creations
+      </Link>
+    </section>
+  );
+}
+
 function CreationRoute() {
-  const { ir, summary } = Route.useLoaderData();
-  return <CreationPage ir={ir} {...(summary ? { summary } : {})} />;
+  const { ns, name } = Route.useParams();
+  const { v } = Route.useSearch();
+  const navigate = useNavigate({ from: "/c/$ns/$name" });
+  const client = useRegistry();
+  const me = useMe();
+
+  const detail = useQuery({
+    queryKey: [...keys.creation(ns, name), me.data?.id ?? null],
+    queryFn: () => client.creation(ns, name),
+    enabled: !me.isPending,
+  });
+  const d = detail.data;
+  const label =
+    v ??
+    d?.latest_release?.label ??
+    d?.releases.find((r) => r.status === "active")?.label ??
+    d?.releases[0]?.label;
+  const selected = d?.releases.find((r) => r.label === label);
+
+  const release = useQuery({
+    queryKey: keys.release(ns, name, label ?? ""),
+    queryFn: () => client.release(ns, name, label ?? ""),
+    enabled: !!d && !!label,
+  });
+  const tombstoned = isApiError(release.error, "release.tombstoned")
+    ? { reason: String(release.error.extra.reason ?? "unspecified") }
+    : selected?.status === "tombstoned"
+      ? { reason: selected.status_reason ?? "unspecified" }
+      : null;
+
+  const ir = useQuery({
+    queryKey: keys.ir(ns, name, label ?? ""),
+    queryFn: () =>
+      client.getIR(ns, name, label ?? "", { private: selected?.visibility === "private" }),
+    enabled: !!d && !!label && !tombstoned,
+    // 同一个 Release 的 IR 永远不变。
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const dependents = useQuery({
+    queryKey: keys.dependents(ns, name),
+    queryFn: () => client.dependents(ns, name),
+    enabled: !!d,
+  });
+
+  if (detail.isPending) return <p className="text-muted-foreground">Loading…</p>;
+  if (detail.isError) {
+    if (isApiError(detail.error) && detail.error.status === 404) return <NotInCatalog />;
+    return (
+      <p role="alert" className="text-seal">
+        This creation could not be loaded. Try again in a moment.
+      </p>
+    );
+  }
+
+  return (
+    <CreationView
+      ns={ns}
+      name={name}
+      detail={detail.data}
+      label={label}
+      onSelectLabel={(l) => void navigate({ search: { v: l } })}
+      release={release.data}
+      tombstoned={tombstoned}
+      ir={ir.data}
+      irState={ir.isError ? "error" : ir.data ? "ready" : label ? "loading" : "none"}
+      dependents={dependents.data?.items}
+      allowMature={me.data?.settings.show_mature ?? false}
+      canEdit={!!me.data && me.data.namespace === ns}
+    />
+  );
 }

@@ -29,7 +29,8 @@
     "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm test:web && pnpm test:conformance && pnpm test:integration && pnpm build && pnpm check:action-dist && pnpm secrets",
     "prepare": "lefthook install || true",
     "check:action-dist": "pnpm --filter @char-pub/publish-action build && git diff --exit-code -- actions/publish/dist",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "e2e:fullstack": "pnpm --filter @char-pub/web e2e:fullstack"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

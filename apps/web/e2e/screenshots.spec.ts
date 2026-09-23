@@ -11,7 +11,6 @@ for (const theme of ["light", "dark"] as const) {
       ["home", "/"],
       ["playground", "/playground"],
       ["diff", "/playground/diff"],
-      ["creation", "/c/djj/alice"],
     ] as const) {
       await page.goto(path);
       if (name === "playground") {

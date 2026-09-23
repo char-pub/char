@@ -186,6 +186,28 @@ describe("account state, tokens and kill switches", () => {
     ).toBe(404);
   });
 
+  it("account settings: only the owner's browser session can change them", () => {
+    const own = { type: "account", user_id: "u_alice" } as const;
+    expect(status(authorize(alice, "account.update_settings", own))).toBe(200);
+    expect(status(authorize(mallory, "account.update_settings", own))).toBe(404);
+    expect(status(authorize(anon, "account.update_settings", own))).toBe(404);
+    const tok: Principal = {
+      kind: "user",
+      user_id: "u_alice",
+      banned: false,
+      scopes: ["creations:write"],
+    };
+    expect(authorize(tok, "account.update_settings", own)).toMatchObject({
+      code: "token.not_allowed",
+    });
+    expect(
+      status(
+        authorize(alice, "account.update_settings", own, { disabled: new Set(["read_only"]) }),
+      ),
+    ).toBe(503);
+    expect(status(authorize(alice, "account.update_settings", { type: "system" }))).toBe(403);
+  });
+
   it.each([
     ["publish", "creation.publish"],
     ["uploads", "upload.create"],

@@ -14,5 +14,10 @@
     "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/core" }, { "path": "../../packages/assembler" }]
+  "references": [
+    { "path": "../../packages/core" },
+    { "path": "../../packages/assembler" },
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/ccv3" }
+  ]
 }

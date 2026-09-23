@@ -105,6 +105,7 @@ export type Action =
   | "namespace.create"
   | "namespace.rename"
   | "account.read"
+  | "account.update_settings"
   | "account.manage_tokens"
   | "search";
 
@@ -147,6 +148,7 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "import.create",
   "namespace.create",
   "namespace.rename",
+  "account.update_settings",
   "account.manage_tokens",
 ]);
 
@@ -345,10 +347,15 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
       return r.type === "upload" ? ALLOW : deny(403, "bad_resource");
 
     case "account.read":
+    case "account.update_settings":
     case "account.manage_tokens":
       if (r.type !== "account") return deny(403, "bad_resource");
-      if (action === "account.manage_tokens" && p.kind === "user" && p.scopes) {
-        // Token 不能用来管理 Token，只能用浏览器会话。
+      if (
+        (action === "account.manage_tokens" || action === "account.update_settings") &&
+        p.kind === "user" &&
+        p.scopes
+      ) {
+        // Token 不能用来管理 Token，也不能修改账号设置（例如开启成人内容），只能用浏览器会话。
         return deny(403, "token.not_allowed");
       }
       return requireUser(p) ?? ALLOW;

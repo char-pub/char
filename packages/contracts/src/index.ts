@@ -244,3 +244,93 @@ export const CreateTokenResponseSchema = z.strictObject({
   prefix: z.string(),
   expires_at: z.string(),
 });
+
+// ---------------------------------------------------------------------------
+// 当前用户与账号设置
+// ---------------------------------------------------------------------------
+
+export const UserSettingsSchema = z.strictObject({
+  /** 是否显示 mature / explicit 内容。开启时必须确认已满 18 岁。 */
+  show_mature: z.boolean(),
+  /** 确认的时间；关闭后为 null。 */
+  mature_confirmed_at: z.string().nullable(),
+  locale: z.string().nullable(),
+});
+export type UserSettings = z.infer<typeof UserSettingsSchema>;
+
+export const MeSchema = z.strictObject({
+  id: z.string(),
+  name: z.string(),
+  image: z.string().nullable(),
+  /** 当前用户的个人 namespace；还没有注册时为 null。 */
+  namespace: NamespaceSlugSchema.nullable(),
+  settings: UserSettingsSchema,
+});
+export type Me = z.infer<typeof MeSchema>;
+
+export const UpdateSettingsRequestSchema = z
+  .strictObject({
+    show_mature: z.boolean(),
+    /** 开启成人内容时必须为 true：用户自我声明已满 18 岁。 */
+    confirm_adult: z.boolean().optional(),
+  })
+  .refine((v) => !v.show_mature || v.confirm_adult === true, {
+    message: "turning on mature content requires confirm_adult: true",
+    path: ["confirm_adult"],
+  });
+
+/** `GET …/dependents` 列表中的一项。 */
+export const DependentSchema = z.strictObject({
+  ref: UnversionedRefSchema,
+  type: CreationTypeSchema,
+  display_name: LocalizedTextSchema,
+  release: z.strictObject({ id: z.string(), label: LabelSchema }),
+  mode: z.enum(["intrinsic", "default"]),
+  rel: z.string().optional(),
+});
+export type Dependent = z.infer<typeof DependentSchema>;
+
+/** 草稿保存的响应：新的版本号、内容 digest 与检查规则给出的警告。 */
+export const PutDraftResponseSchema = z.strictObject({
+  version: z.number().int(),
+  semantic_digest: DigestSchema,
+  warnings: z.array(
+    z.strictObject({
+      code: z.string(),
+      subject: z.string(),
+      severity: z.enum(["error", "warning", "info"]),
+      detail: z.string().optional(),
+    }),
+  ),
+});
+export type PutDraftResponse = z.infer<typeof PutDraftResponseSchema>;
+
+/** `GET /v1/me/creations`：当前用户所在 namespace 的全部 Creation，包括还没有发布的草稿。 */
+export const MyCreationSchema = z.strictObject({
+  ref: UnversionedRefSchema,
+  type: CreationTypeSchema,
+  display_name: LocalizedTextSchema,
+  status: z.enum(["active", "hidden", "suspended"]),
+  latest_release: z
+    .strictObject({
+      label: LabelSchema,
+      visibility: z.enum(["public", "private"]),
+      status: z.enum(["active", "yanked", "tombstoned"]),
+    })
+    .nullable(),
+  draft_updated_at: z.string().nullable(),
+});
+export type MyCreation = z.infer<typeof MyCreationSchema>;
+export const MyCreationsResponseSchema = z.strictObject({ items: z.array(MyCreationSchema) });
+
+/** `GET …/releases/:label`：Release 的详细信息。 */
+export const ReleaseDetailSchema = ReleaseSummarySchema.extend({
+  ref: UnversionedRefSchema,
+  creation: z.string(),
+  lock_digest: DigestSchema.nullable(),
+  context_ir_digest: DigestSchema.nullable(),
+  license_check: z.enum(["pass", "warn", "fail"]).nullable(),
+  availability: z.enum(["complete", "linked"]).nullable(),
+  warning: z.string().optional(),
+});
+export type ReleaseDetail = z.infer<typeof ReleaseDetailSchema>;

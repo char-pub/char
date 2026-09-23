@@ -1,5 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { AccountMenu } from "./account-menu";
 import { ThemeToggle } from "./theme-toggle";
 
 const NAV = [
@@ -7,6 +8,22 @@ const NAV = [
   { to: "/playground", label: "Playground" },
   { to: "/create", label: "Create" },
 ] as const;
+
+/** 第三方登录失败后，Better Auth 会带着 `signin_error` 回到首页。 */
+function SignInErrorNotice() {
+  const failed = useRouterState({
+    select: (s) => "signin_error" in (s.location.search as Record<string, unknown>),
+  });
+  if (!failed) return null;
+  return (
+    <p
+      role="alert"
+      className="mb-6 rounded-sm border border-seal/60 bg-seal-soft px-4 py-2 text-sm"
+    >
+      Sign-in did not complete. You can try again, or use another account.
+    </p>
+  );
+}
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
@@ -39,18 +56,12 @@ export function Layout({ children }: { children: ReactNode }) {
           </nav>
           <div className="ml-auto flex items-center gap-3">
             <ThemeToggle />
-            <button
-              type="button"
-              disabled
-              title="Sign-in arrives with the registry API"
-              className="rounded-sm border border-foreground/70 px-3 py-1 text-sm disabled:opacity-60"
-            >
-              Sign in
-            </button>
+            <AccountMenu />
           </div>
         </div>
       </header>
       <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-5 py-8">
+        <SignInErrorNotice />
         {children}
       </main>
       <footer className="border-t border-rule">

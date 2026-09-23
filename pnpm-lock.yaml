@@ -607,6 +607,12 @@ importers:
       '@char-pub/assembler':
         specifier: workspace:*
         version: link:../../packages/assembler
+      '@char-pub/ccv3':
+        specifier: workspace:*
+        version: link:../../packages/ccv3
+      '@char-pub/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@char-pub/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -625,6 +631,9 @@ importers:
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.38(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      better-auth:
+        specifier: 'catalog:'
+        version: 1.7.5(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.23.1)(kysely@0.29.6)(pg@8.23.0))(pg@8.23.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11)
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -649,6 +658,9 @@ importers:
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.7.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@playwright/test':
         specifier: 'catalog:'
@@ -668,6 +680,12 @@ importers:
       '@testing-library/user-event':
         specifier: 'catalog:'
         version: 14.6.7(@testing-library/dom@10.4.2)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.6
+      '@types/pg':
+        specifier: 'catalog:'
+        version: 8.23.1
       '@types/react':
         specifier: 'catalog:'
         version: 19.3.0
@@ -680,6 +698,9 @@ importers:
       happy-dom:
         specifier: 'catalog:'
         version: 20.14.5
+      pg:
+        specifier: 'catalog:'
+        version: 8.23.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3

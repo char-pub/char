@@ -1,11 +1,12 @@
 /**
  * 组装公开 API（`api` 进程）。admin 路由不在这里挂载：它们只存在于单独的 admin 进程。
  *
- * 中间件顺序：请求 ID → 源站校验 → 安全响应头 → Origin 校验 → 请求体上限 →
+ * 中间件顺序：请求 ID → 源站校验 → 安全响应头 → CORS → Origin 校验 → 请求体上限 →
  * principal 解析 → 路由。每个路由模块导出一个 `register(app)` 函数，并通过 `route()`
  * 注册路由，保证都经过授权。
  */
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { principalFromToken } from "../auth/tokens.js";
 import type { Principal } from "../authz/authorize.js";
 import {
@@ -39,6 +40,20 @@ export function createApi(opts: ApiOptions): Hono<Env> {
   app.use(requestId(() => opts.services.ids.uuid()));
   if (opts.originSecrets.length > 0) app.use(originAuth({ secrets: opts.originSecrets }));
   app.use(apiSecurityHeaders());
+  // 前端（www）与 API 在不同的子域名，浏览器的跨域请求需要 CORS：只对白名单中的 Origin
+  // 放行，并允许携带 session cookie。
+  const allowed = new Set(opts.allowedOrigins);
+  app.use(
+    "/v1/*",
+    cors({
+      origin: (origin) => (allowed.has(origin) ? origin : null),
+      credentials: true,
+      allowMethods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
+      allowHeaders: ["content-type", "if-match", "idempotency-key"],
+      exposeHeaders: ["etag", "retry-after"],
+      maxAge: 600,
+    }),
+  );
   app.use(originCheck({ allowed: opts.allowedOrigins }));
   // 草稿保存的请求体可以更大（上限 5 MiB），其他请求 1 MiB。
   const normalLimit = jsonBodyLimit();

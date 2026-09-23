@@ -11,10 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BrowseRouteImport } from './routes/browse'
-import { Route as CreateRouteImport } from './routes/create'
+import { Route as MeRouteImport } from './routes/me'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as CreateIndexRouteImport } from './routes/create.index'
+import { Route as CreateImportRouteImport } from './routes/create.import'
 import { Route as PlaygroundIndexRouteImport } from './routes/playground.index'
 import { Route as PlaygroundDiffRouteImport } from './routes/playground.diff'
 import { Route as CNsNameRouteImport } from './routes/c.$ns.$name'
+import { Route as CNsNameEditRouteImport } from './routes/c.$ns.$name_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -26,9 +30,24 @@ const BrowseRoute = BrowseRouteImport.update({
   path: '/browse',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CreateRoute = CreateRouteImport.update({
-  id: '/create',
-  path: '/create',
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateIndexRoute = CreateIndexRouteImport.update({
+  id: '/create/',
+  path: '/create/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateImportRoute = CreateImportRouteImport.update({
+  id: '/create/import',
+  path: '/create/import',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlaygroundIndexRoute = PlaygroundIndexRouteImport.update({
@@ -46,66 +65,99 @@ const CNsNameRoute = CNsNameRouteImport.update({
   path: '/c/$ns/$name',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CNsNameEditRoute = CNsNameEditRouteImport.update({
+  id: '/c/$ns/$name_/edit',
+  path: '/c/$ns/$name/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
-  '/create': typeof CreateRoute
+  '/me': typeof MeRoute
+  '/settings': typeof SettingsRoute
+  '/create/import': typeof CreateImportRoute
   '/playground/diff': typeof PlaygroundDiffRoute
+  '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name/edit': typeof CNsNameEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
-  '/create': typeof CreateRoute
+  '/me': typeof MeRoute
+  '/settings': typeof SettingsRoute
+  '/create/import': typeof CreateImportRoute
   '/playground/diff': typeof PlaygroundDiffRoute
+  '/create': typeof CreateIndexRoute
   '/playground': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name/edit': typeof CNsNameEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/browse': typeof BrowseRoute
-  '/create': typeof CreateRoute
+  '/me': typeof MeRoute
+  '/settings': typeof SettingsRoute
+  '/create/import': typeof CreateImportRoute
   '/playground/diff': typeof PlaygroundDiffRoute
+  '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
   '/c/$ns/$name': typeof CNsNameRoute
+  '/c/$ns/$name_/edit': typeof CNsNameEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/browse'
-    | '/create'
+    | '/me'
+    | '/settings'
+    | '/create/import'
     | '/playground/diff'
+    | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/$name/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/browse'
-    | '/create'
+    | '/me'
+    | '/settings'
+    | '/create/import'
     | '/playground/diff'
+    | '/create'
     | '/playground'
     | '/c/$ns/$name'
+    | '/c/$ns/$name/edit'
   id:
     | '__root__'
     | '/'
     | '/browse'
-    | '/create'
+    | '/me'
+    | '/settings'
+    | '/create/import'
     | '/playground/diff'
+    | '/create/'
     | '/playground/'
     | '/c/$ns/$name'
+    | '/c/$ns/$name_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrowseRoute: typeof BrowseRoute
-  CreateRoute: typeof CreateRoute
+  MeRoute: typeof MeRoute
+  SettingsRoute: typeof SettingsRoute
+  CreateImportRoute: typeof CreateImportRoute
   PlaygroundDiffRoute: typeof PlaygroundDiffRoute
+  CreateIndexRoute: typeof CreateIndexRoute
   PlaygroundIndexRoute: typeof PlaygroundIndexRoute
   CNsNameRoute: typeof CNsNameRoute
+  CNsNameEditRoute: typeof CNsNameEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -124,11 +176,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BrowseRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/create': {
-      id: '/create'
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create/': {
+      id: '/create/'
       path: '/create'
-      fullPath: '/create'
-      preLoaderRoute: typeof CreateRouteImport
+      fullPath: '/create/'
+      preLoaderRoute: typeof CreateIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create/import': {
+      id: '/create/import'
+      path: '/create/import'
+      fullPath: '/create/import'
+      preLoaderRoute: typeof CreateImportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/playground/': {
@@ -152,16 +225,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CNsNameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$ns/$name_/edit': {
+      id: '/c/$ns/$name_/edit'
+      path: '/c/$ns/$name/edit'
+      fullPath: '/c/$ns/$name/edit'
+      preLoaderRoute: typeof CNsNameEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrowseRoute: BrowseRoute,
-  CreateRoute: CreateRoute,
+  MeRoute: MeRoute,
+  SettingsRoute: SettingsRoute,
+  CreateImportRoute: CreateImportRoute,
   PlaygroundDiffRoute: PlaygroundDiffRoute,
+  CreateIndexRoute: CreateIndexRoute,
   PlaygroundIndexRoute: PlaygroundIndexRoute,
   CNsNameRoute: CNsNameRoute,
+  CNsNameEditRoute: CNsNameEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
