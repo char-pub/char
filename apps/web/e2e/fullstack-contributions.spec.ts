@@ -143,7 +143,7 @@ test("UC-5: a contribution is rebased onto the author's newer draft and the rati
   await expect(contributor.getByText(/A rating change is sensitive/)).toBeVisible();
   await contributor.getByLabel("Title", { exact: true }).fill("Remember the captains");
   await contributor.getByLabel(/I license my contribution under CC-BY-4.0/).check();
-  await contributor.getByRole("button", { name: "Submit the contribution" }).click();
+  await contributor.getByRole("button", { name: /^Submit \d+ changes?$/ }).click();
   await expect(contributor).toHaveURL(new RegExp(`/c/${ns}/harbor/contributions/1$`));
   await expect(contributor.getByRole("heading", { name: "Remember the captains" })).toBeVisible();
 

@@ -1,6 +1,13 @@
 import { mergeContribution } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
-import { buildChanges, contributionBase, describeKey, needsExplicitGrant } from "./contribution";
+import {
+  buildChanges,
+  changeAfter,
+  contributionBase,
+  describeKey,
+  draftValue,
+  needsExplicitGrant,
+} from "./contribution";
 
 const CREATION = {
   id: "cr_01j00000000000000000000000",
@@ -114,5 +121,24 @@ describe("helpers", () => {
   it("describes change keys", () => {
     expect(describeKey("fragment:intro")).toBe("Fragment #intro");
     expect(describeKey("metadata:meta.content_warnings")).toBe("content warnings");
+  });
+
+  it("reads the current draft value of a change key for the review diff", () => {
+    expect(draftValue(CREATION, "fragment:intro")).toEqual({ text: "Mira keeps the lighthouse." });
+    expect(draftValue(CREATION, "metadata:meta.rating")).toEqual({ value: "general" });
+    expect(draftValue(CREATION, "metadata:meta.tags")).toEqual({ value: "sea" });
+    // 草稿里没有的项、不认识的种类都没有“改之前”。
+    expect(draftValue(CREATION, "fragment:missing")).toBeNull();
+    expect(draftValue(CREATION, "metadata:meta.content_warnings")).toBeNull();
+    expect(draftValue(CREATION, "edge:dep")).toBeNull();
+    expect(draftValue(null, "fragment:intro")).toBeNull();
+  });
+
+  it("formats the new value of a change", () => {
+    expect(
+      changeAfter({ on: "fragment", after: { content: { type: "text", text: "Hi" } } }),
+    ).toEqual({ text: "Hi" });
+    expect(changeAfter({ on: "metadata", after: ["a", "b"] })).toEqual({ value: "a, b" });
+    expect(changeAfter({ on: "fragment", op: "remove" })).toBeNull();
   });
 });

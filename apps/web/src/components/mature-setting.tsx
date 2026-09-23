@@ -1,7 +1,8 @@
 /**
  * “显示成人内容”开关。开启前必须在对话框里确认已满 18 岁，确认结果与时间保存在服务端；
- * 关闭立即生效，服务端同时清除确认记录。
+ * 关闭立即生效，服务端同时清除确认记录。“已开启”和“有确认时间”缺一项，服务端都仍然隐藏。
  */
+import { Eye } from "lucide-react";
 import { useId, useState } from "react";
 import {
   AlertDialog,
@@ -9,9 +10,12 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { formatDate } from "@/lib/text";
 
 export interface MatureSettingProps {
@@ -36,75 +40,70 @@ export function MatureSetting({
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-6">
-        <div>
-          <p id={ids.label} className="font-display text-lg">
+        <div className="min-w-0 space-y-0.5">
+          <p id={ids.label} className="text-sm font-semibold">
             Show mature and explicit creations
           </p>
-          <p id={ids.desc} className="max-w-prose text-sm text-muted-foreground">
-            Off by default. When on, search, browsing and creation pages include content rated
-            mature or explicit. The registry enforces this setting for your account.
+          <p id={ids.desc} className="max-w-prose text-sm text-text-2">
+            {enabled && confirmedAt
+              ? `On since ${formatDate(confirmedAt)} — you confirmed you're 18 or older.`
+              : "Off by default. When on, search, browsing and creation pages include content rated mature or explicit. The registry enforces this for your account."}
           </p>
-          {enabled && confirmedAt ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              You confirmed you are 18 or older on {formatDate(confirmedAt)}.
-            </p>
-          ) : null}
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
+        <Switch
+          className="mt-0.5"
+          checked={enabled}
+          disabled={saving}
           aria-labelledby={ids.label}
           aria-describedby={ids.desc}
-          disabled={saving}
-          onClick={() => {
-            if (enabled) onChange({ show_mature: false });
+          onCheckedChange={(next) => {
+            if (!next) onChange({ show_mature: false });
             else {
               setAdult(false);
               setAsking(true);
             }
           }}
-          className="relative mt-1 h-6 w-11 shrink-0 rounded-full border border-foreground/70 bg-muted transition-colors disabled:opacity-60 aria-checked:bg-seal"
-        >
-          <span
-            aria-hidden
-            className={`absolute top-0.5 size-4.5 rounded-full bg-background shadow transition-[left] ${enabled ? "left-5.5" : "left-0.5"}`}
-          />
-        </button>
+        />
       </div>
       {error ? (
-        <p role="alert" className="text-sm text-seal">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       ) : null}
 
       <AlertDialog open={asking} onOpenChange={setAsking}>
         <AlertDialogContent>
-          <AlertDialogTitle>Are you 18 or older?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Mature and explicit creations are only for adults. By turning this on you confirm that
-            you are at least 18 years old and that viewing such content is legal where you are.
-          </AlertDialogDescription>
-          <label htmlFor={ids.check} className="flex items-center gap-2 text-sm">
-            <input
+          <AlertDialogHeader>
+            <AlertDialogTitle>Show mature and explicit creations?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They'll appear in search and open without a warning. Mature and explicit creations are
+              only for adults; you can turn this off at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center gap-2.5">
+            <Checkbox
               id={ids.check}
-              type="checkbox"
-              className="accent-[var(--seal)]"
               checked={adult}
-              onChange={(e) => setAdult(e.target.checked)}
+              onCheckedChange={(v) => setAdult(v === true)}
             />
-            I am 18 or older
-          </label>
+            <label htmlFor={ids.check} className="text-sm font-medium">
+              I am 18 or older
+            </label>
+          </div>
+          <p className="text-xs text-text-3">
+            We record when you confirmed. Some regions may require stronger age checks later.
+          </p>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep hidden</AlertDialogCancel>
             <Button
+              variant="ink"
               disabled={!adult}
               onClick={() => {
                 setAsking(false);
                 onChange({ show_mature: true, confirm_adult: true });
               }}
             >
-              Show mature content
+              <Eye aria-hidden /> Show mature content
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
