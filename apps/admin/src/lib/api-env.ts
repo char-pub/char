@@ -1,6 +1,6 @@
 /**
  * 选择 admin API 的实现：构建时设置 `VITE_ADMIN_MOCK=1` 使用内置 mock；否则按当前
- * 域名选择 admin-api（staging 与 production 分开），也可以用 `VITE_ADMIN_API_BASE` 覆盖。
+ * 域名选择 admin-api，也可以用 `VITE_ADMIN_API_BASE` 覆盖。
  *
  * mock 模式下可以切换扮演的员工角色（保存在 localStorage，页面顶部有切换器），用于检查
  * 各角色看到的界面；也可以让 mock 后端按另一组角色判断权限，模拟页面打开之后角色被收回。
@@ -16,7 +16,6 @@ export const isMockBuild = (): boolean => import.meta.env.VITE_ADMIN_MOCK === "1
 export function apiBaseFor(hostname: string, override?: string): string {
   if (override) return override;
   if (hostname === "admin.char.pub") return "https://admin-api.char.pub";
-  if (hostname === "staging-admin.char.pub") return "https://staging-admin-api.char.pub";
   // 本地开发：同源，由 vite 的 proxy 转发到本机的 admin 进程。
   return "";
 }

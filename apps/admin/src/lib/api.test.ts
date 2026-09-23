@@ -77,9 +77,8 @@ describe("http api", () => {
     expect(seen).toBe("/v1/admin/audit?before=10&subject=flag%3Auploads&limit=5");
   });
 
-  it("picks the admin api for each environment", () => {
+  it("picks the admin api from the page host", () => {
     expect(apiBaseFor("admin.char.pub")).toBe("https://admin-api.char.pub");
-    expect(apiBaseFor("staging-admin.char.pub")).toBe("https://staging-admin-api.char.pub");
     expect(apiBaseFor("localhost")).toBe("");
     expect(apiBaseFor("admin.char.pub", "https://x.example")).toBe("https://x.example");
   });

@@ -1,5 +1,5 @@
 /**
- * `pnpm smoke --env <staging|production> [--origin <railway 域名>]`
+ * `pnpm smoke [--env production] [--origin <railway 域名>]`
  *
  * 部署后的冒烟测试：只做只读请求，不创建任何数据。检查：
  * - 各域名可访问，web 返回 SPA 并带安全响应头（CSP、HSTS、nosniff）；
@@ -25,13 +25,6 @@ const TARGETS: Record<string, Target> = {
     admin: "https://admin.char.pub",
     adminApi: "https://admin-api.char.pub",
     assets: "https://assets.char.pub",
-  },
-  staging: {
-    web: "https://staging.char.pub",
-    api: "https://staging-api.char.pub",
-    admin: "https://staging-admin.char.pub",
-    adminApi: "https://staging-admin-api.char.pub",
-    assets: "https://staging-assets.char.pub",
   },
 };
 
@@ -137,7 +130,7 @@ async function main(): Promise<void> {
     const i = args.indexOf(n);
     return i >= 0 ? args[i + 1] : undefined;
   };
-  const env = flag("--env") ?? "staging";
+  const env = flag("--env") ?? "production";
   const target = TARGETS[env];
   if (!target) throw new Error(`unknown --env ${env}`);
   const checks = checksFor(target, flag("--origin"));

@@ -1,11 +1,10 @@
 /**
- * Railway 资源定义（`.railway/railway.ts`）的静态检查：在 staging 与 production 两种上下文中
- * 执行定义，确认每个进程拿到的变量与服务端实际读取的变量一致、必需的变量都在、密钥不以
+ * Railway 资源定义（`.railway/railway.ts`）的静态检查：在 production 上下文中执行定义，确认每个进程拿到的变量与服务端实际读取的变量一致、必需的变量都在、密钥不以
  * 字面值写进仓库。这样改了服务端的环境变量而忘了改部署定义时，单元测试就会失败。
  */
 import { createRailwayContext, project } from "railway/iac";
 import { describe, expect, it } from "vitest";
-import program, { PORT, publicHost } from "../.railway/railway.js";
+import program, { ENVIRONMENT, PORT, publicHost } from "../.railway/railway.js";
 import {
   AdminEnvSchema,
   AuthEnvSchema,
@@ -59,7 +58,11 @@ async function load(environment: string): Promise<Map<string, Resource>> {
   return new Map(def.resources.map((r) => [r.name, r]));
 }
 
-describe.each(["staging", "production"])("railway definition (%s)", (environment) => {
+it("refuses to run against any environment other than production", async () => {
+  await expect(load("staging")).rejects.toThrow(/only targets the production environment/);
+});
+
+describe.each([ENVIRONMENT])("railway definition (%s)", (environment) => {
   it("declares Postgres 18 and the three processes of one image", async () => {
     const r = await load(environment);
     expect([...r.keys()].sort()).toEqual(["admin", "api", "postgres", "worker"]);
@@ -78,8 +81,9 @@ describe.each(["staging", "production"])("railway definition (%s)", (environment
       // Railway 不接受在定义里注册自定义域名，域名在 service 创建后用 CLI 添加。
       expect(r.get(name)?.networking?.customDomains ?? {}).toEqual({});
     }
-    const prod = environment === "production";
-    expect(publicHost("api", prod)).toBe(prod ? "api.char.pub" : "staging-api.char.pub");
+    expect(publicHost("api")).toBe("api.char.pub");
+    expect(r.get("api")?.variables?.AUTH_TRUSTED_ORIGINS?.value).toBe("https://www.char.pub");
+    expect(r.get("api")?.variables?.S3_BUCKET_PUBLIC?.value).toBe("charpub-public");
   });
 
   it("gives every process exactly the variables it reads, and all required ones", async () => {

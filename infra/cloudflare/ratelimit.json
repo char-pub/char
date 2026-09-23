@@ -3,7 +3,7 @@
     {
       "ref": "charpub_auth_ratelimit",
       "description": "char.pub: sign-in endpoints, per IP",
-      "expression": "(http.host in {\"api.char.pub\" \"staging-api.char.pub\"}) and starts_with(http.request.uri.path, \"/v1/auth/\")",
+      "expression": "(http.host in {\"api.char.pub\"}) and starts_with(http.request.uri.path, \"/v1/auth/\")",
       "action": "block",
       "ratelimit": {
         "characteristics": ["ip.src", "cf.colo.id"],

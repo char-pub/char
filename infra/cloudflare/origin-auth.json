@@ -1,12 +1,4 @@
 {
-  "environments": {
-    "staging": {
-      "hosts": ["staging-api.char.pub", "staging-admin-api.char.pub"],
-      "secret_file": "~/.charpub-secrets/staging-origin-auth-secret"
-    },
-    "production": {
-      "hosts": ["api.char.pub", "admin-api.char.pub"],
-      "secret_file": "~/.charpub-secrets/production-origin-auth-secret"
-    }
-  }
+  "hosts": ["api.char.pub", "admin-api.char.pub"],
+  "secret_file": "~/.charpub-secrets/production-origin-auth-secret"
 }

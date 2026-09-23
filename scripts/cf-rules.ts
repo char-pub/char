@@ -6,7 +6,8 @@
  * 加的规则原样保留。
  *
  * 调用经由 tool-bridge 的 Cloudflare API 工具（`tb call hushed-chat/cloudflare/execute`），
- * 所以本机不需要保存 Cloudflare token。源站校验头的值从本机文件读取，只在写入的请求中出现，
+ * 所以本机不需要保存 Cloudflare token。这个工具在 tb 的 `personal` profile 下；tb 没有按次
+ * 指定 profile 的参数，所以运行前先检查当前 profile，不对就报错，而不是替用户切换。源站校验头的值从本机文件读取，只在写入的请求中出现，
  * 不打印、不写入仓库。
  */
 import { execFileSync } from "node:child_process";
@@ -17,11 +18,12 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const ZONE = "char.pub";
 const MANAGED = /^charpub_/;
+const TB_PROFILE = "personal";
 /**
  * 部署初期在控制台手工建的规则，内容与本仓库管理的某条规则相同。按描述识别，写入时由
  * 仓库管理的那条替换，避免同一个主机名上出现两条重复规则。
  */
-const ADOPTED = ["staging origin auth"];
+const ADOPTED: string[] = [];
 
 interface Rule {
   ref: string;
@@ -36,26 +38,26 @@ interface Rule {
 const readJson = <T>(name: string): T =>
   JSON.parse(readFileSync(`${ROOT}infra/cloudflare/${name}`, "utf8")) as T;
 
-/** 源站校验规则：每个环境一条，把该环境的密钥写进回源请求头。 */
+/** 源站校验规则：把密钥写进回源请求头。 */
 function originAuthRules(): Rule[] {
-  const cfg = readJson<{
-    environments: Record<string, { hosts: string[]; secret_file: string }>;
-  }>("origin-auth.json");
-  return Object.entries(cfg.environments).map(([env, e]) => ({
-    ref: `charpub_origin_auth_${env}`,
-    description: `char.pub ${env}: origin auth header`,
-    expression: `http.host in {${e.hosts.map((h) => `"${h}"`).join(" ")}}`,
-    action: "rewrite",
-    enabled: true,
-    action_parameters: {
-      headers: {
-        "X-Origin-Auth": {
-          operation: "set",
-          value: readFileSync(e.secret_file.replace(/^~/, homedir()), "utf8").trim(),
+  const cfg = readJson<{ hosts: string[]; secret_file: string }>("origin-auth.json");
+  return [
+    {
+      ref: "charpub_origin_auth",
+      description: "char.pub: origin auth header",
+      expression: `http.host in {${cfg.hosts.map((h) => `"${h}"`).join(" ")}}`,
+      action: "rewrite",
+      enabled: true,
+      action_parameters: {
+        headers: {
+          "X-Origin-Auth": {
+            operation: "set",
+            value: readFileSync(cfg.secret_file.replace(/^~/, homedir()), "utf8").trim(),
+          },
         },
       },
     },
-  }));
+  ];
 }
 
 const PHASES: Record<string, () => Rule[]> = {
@@ -141,7 +143,17 @@ function shape(r: Rule) {
   };
 }
 
+/** 当前 tb profile 必须是能访问 char.pub 账户的那个。 */
+function assertTbProfile(): void {
+  const out = execFileSync("tb", ["use"], { encoding: "utf8" });
+  const current = /^\* (\S+)/m.exec(out)?.[1];
+  if (current !== TB_PROFILE) {
+    throw new Error(`tb profile is "${current ?? "?"}"; run \`tb use ${TB_PROFILE}\` first`);
+  }
+}
+
 function main(): void {
+  assertTbProfile();
   const apply = process.argv.includes("--apply");
   const desired = Object.fromEntries(Object.entries(PHASES).map(([p, f]) => [p, f()]));
   // 只读比较时不需要规则内容，只传阶段名，密钥只在真正写入时离开本机。

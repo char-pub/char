@@ -2,8 +2,8 @@
  * char.pub 在 Railway 上的资源定义。
  *
  * 同一个镜像（apps/server/Dockerfile，构建上下文是仓库根目录）按不同的启动命令跑成三个
- * service，另有一个 Postgres 18。staging 与 production 两个 environment 共用这份定义，区别只在
- * 域名与桶名。
+ * service，另有一个 Postgres 18。v0 只有一个线上环境（Railway 的 `production` environment），
+ * 上线前的验证靠 CI 全量回归、本地 `pnpm dev` 与全栈端到端测试，以及部署前自动迁移。
  *
  * - api：公开 API；每次部署前先用 owner 角色执行数据库迁移，迁移失败则不部署。
  * - admin：只接受经过 Cloudflare Access 的请求。
@@ -26,18 +26,21 @@ const REPO = "char-pub/char";
 /** 进程监听的端口；添加自定义域名时把流量转到这个端口。 */
 export const PORT = 8080;
 
-/** 各环境的公开域名：production 为 `<name>.char.pub`，staging 为 `staging-<name>.char.pub`。 */
-export function publicHost(name: string, production: boolean): string {
-  return production ? `${name}.char.pub` : `staging-${name}.char.pub`;
+/** 唯一的线上环境。在其他 environment 中执行这份定义属于误操作，直接报错。 */
+export const ENVIRONMENT = "production";
+
+/** 公开域名：`<name>.char.pub`。 */
+export function publicHost(name: string): string {
+  return `${name}.char.pub`;
 }
 
 export default defineRailway((ctx, project) => {
-  const prod = ctx.isEnvironment("production");
-  const env = prod ? "production" : "staging";
-  const host = (name: string) => publicHost(name, prod);
-  const www = prod ? "https://www.char.pub" : "https://staging.char.pub";
-  const adminSpa = prod ? "https://admin.char.pub" : "https://staging-admin.char.pub";
-  const apiOrigin = `https://${host("api")}`;
+  if (!ctx.isEnvironment(ENVIRONMENT)) {
+    throw new Error(`this definition only targets the ${ENVIRONMENT} environment`);
+  }
+  const www = `https://${publicHost("www")}`;
+  const adminSpa = `https://${publicHost("admin")}`;
+  const apiOrigin = `https://${publicHost("api")}`;
 
   // Railway 官方的 postgres-ssl 镜像。主版本固定为 18，与本地环境和集成测试使用的版本一致。
   const db = database("postgres", "postgres", {
@@ -67,11 +70,11 @@ export default defineRailway((ctx, project) => {
     S3_REGION: "auto",
     S3_ACCESS_KEY_ID: preserve(),
     S3_SECRET_ACCESS_KEY: preserve(),
-    S3_BUCKET_PUBLIC: `charpub-${env}-public`,
-    S3_BUCKET_PRIVATE: `charpub-${env}-private`,
-    S3_BUCKET_UPLOADS: `charpub-${env}-uploads`,
-    S3_BUCKET_EVIDENCE: `charpub-${env}-evidence`,
-    PUBLIC_ASSETS_BASE_URL: `https://${host("assets")}`,
+    S3_BUCKET_PUBLIC: "charpub-public",
+    S3_BUCKET_PRIVATE: "charpub-private",
+    S3_BUCKET_UPLOADS: "charpub-uploads",
+    S3_BUCKET_EVIDENCE: "charpub-evidence",
+    PUBLIC_ASSETS_BASE_URL: `https://${publicHost("assets")}`,
   };
 
   /** 登录与访客验证只在 api；GitHub 集成在 api（webhook、OIDC 发布）与 worker（同步任务）。 */

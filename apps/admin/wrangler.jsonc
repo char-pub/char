@@ -1,6 +1,7 @@
 // admin.char.pub：纯静态资源的 SPA，部署在 Cloudflare Workers Static Assets，前面有
 // Cloudflare Access（只允许 char-pub 组织成员）。没有 Worker 脚本，所以 public/_headers
-// 中的安全响应头对所有响应生效。自定义域名与 Access 应用在 Cloudflare 控制台配置。
+// 中的安全响应头对所有响应生效。自定义域名由 deploy 自动绑定；Access 应用在 Cloudflare
+// Zero Trust 中配置，必须在部署之前建好，否则后台会在 Access 生效前短暂公开可见。
 {
   "$schema": "https://unpkg.com/wrangler@4.136.0/config-schema.json",
   "name": "charpub-admin",
@@ -9,12 +10,5 @@
     "directory": "./dist/",
     "not_found_handling": "single-page-application"
   },
-  "env": {
-    "staging": {
-      "name": "charpub-admin-staging"
-    },
-    "production": {
-      "name": "charpub-admin-production"
-    }
-  }
+  "routes": [{ "pattern": "admin.char.pub", "custom_domain": true }]
 }
