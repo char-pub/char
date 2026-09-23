@@ -1,7 +1,16 @@
 /**
  * Contribution：对别人作品的修改提议。接受后生成目标 Creation 的新 Revision。
  */
-import { boolean, index, integer, jsonb, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  primaryKey,
+  text,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { app, createdAt, pk, ts, updatedAt } from "./common.js";
 import { creations, revisions } from "./creations.js";
 import { authUser, guests } from "./identity.js";
@@ -78,4 +87,20 @@ export const contributionChanges = app.table(
     position: integer("position").notNull(),
   },
   (t) => [uniqueIndex("contribution_changes_key_uq").on(t.contributionId, t.changeKey)],
+);
+
+/** contribution_policy 为 invited 时，被邀请提交 Contribution 的用户。 */
+export const contributionInvites = app.table(
+  "contribution_invites",
+  {
+    creationId: uuid("creation_id")
+      .notNull()
+      .references(() => creations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUser.id, { onDelete: "cascade" }),
+    invitedBy: uuid("invited_by").references(() => authUser.id),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.creationId, t.userId] })],
 );

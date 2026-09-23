@@ -4,6 +4,7 @@
  */
 import type { Hono } from "hono";
 import type { Env, Services } from "../api/app.js";
+import { register as contributions } from "../api/routes/contributions.js";
 import { bindingsModule } from "../api/routes/github-bindings.js";
 import { webhookModule } from "../api/routes/github-webhook.js";
 import { oidcPublishModule } from "../api/routes/oidc-publish.js";
@@ -30,6 +31,7 @@ export const API_MODULES: readonly ((app: Hono<Env>) => void)[] = [
   search,
   yank,
   uploads,
+  contributions,
 ];
 
 /** GitHub 集成的路由模块：只有配置了 GitHub App 时才挂载。 */

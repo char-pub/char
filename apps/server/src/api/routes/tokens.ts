@@ -52,6 +52,7 @@ export function register(app: Hono<Env>): void {
           prefix: displayPrefix(token),
           tokenHash: hashToken(token),
           scopes: body.scopes,
+          agent: body.agent ?? false,
           expiresAt,
           createdAt: now,
         });
@@ -61,7 +62,12 @@ export function register(app: Hono<Env>): void {
           action: "token.create",
           subject: `user:${userId}`,
           requestId: requestIdOf(c),
-          after: { token: id, scopes: body.scopes, expires_at: expiresAt.toISOString() },
+          after: {
+            token: id,
+            scopes: body.scopes,
+            agent: body.agent ?? false,
+            expires_at: expiresAt.toISOString(),
+          },
         });
       });
       return c.json(
@@ -82,6 +88,7 @@ export function register(app: Hono<Env>): void {
           name: apiTokens.name,
           prefix: apiTokens.prefix,
           scopes: apiTokens.scopes,
+          agent: apiTokens.agent,
           expiresAt: apiTokens.expiresAt,
           lastUsedAt: apiTokens.lastUsedAt,
           createdAt: apiTokens.createdAt,
@@ -95,6 +102,7 @@ export function register(app: Hono<Env>): void {
           name: r.name,
           prefix: r.prefix,
           scopes: r.scopes,
+          agent: r.agent,
           expires_at: r.expiresAt?.toISOString() ?? null,
           last_used_at: r.lastUsedAt?.toISOString() ?? null,
           created_at: r.createdAt.toISOString(),
