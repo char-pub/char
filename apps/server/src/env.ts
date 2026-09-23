@@ -163,6 +163,10 @@ export const AdminEnvSchema = z.object({
     .pipe(z.array(z.email()).min(1)),
   /** admin SPA 的 Origin（例如 https://admin.char.pub）。 */
   ADMIN_ORIGINS: originList,
+  /** 法律请求中申请人信息的加密密钥：32 字节，base64 编码。 */
+  LEGAL_ENCRYPTION_KEY: z
+    .string()
+    .refine((s) => Buffer.from(s, "base64").length === 32, "must be 32 bytes, base64 encoded"),
 });
 export type AdminEnv = z.infer<typeof AdminEnvSchema>;
 

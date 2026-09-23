@@ -8,7 +8,7 @@
  * （namespace 状态、调用者的成员角色、可见性等），授权统一在路由层完成。
  */
 import type { CreationDetail, ReleaseSummary } from "@char-pub/contracts";
-import { ID_PREFIXES, type IdKind, isId } from "@char-pub/core";
+import { ID_PREFIXES, type IdKind, isId, type Rating } from "@char-pub/core";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { TypeID } from "typeid-js";
 import type { NamespaceContext, Principal } from "../authz/authorize.js";
@@ -196,6 +196,17 @@ export function exportCacheKey(input: {
   return `${input.target}:${input.compiler_version}:${input.semantic_digest}:${input.lock_digest}`;
 }
 
+const RATING_ORDER: readonly Rating[] = ["general", "teen", "mature", "explicit"];
+
+/**
+ * 对外展示与过滤用的 effective rating：发布时算出的值与员工强制调高的值中较高的一个。
+ * 强制评级只会调高，不修改 Release 本身。
+ */
+export function effectiveRatingOf(published: Rating, forced: Rating | null | undefined): Rating {
+  if (!forced) return published;
+  return RATING_ORDER.indexOf(forced) > RATING_ORDER.indexOf(published) ? forced : published;
+}
+
 export function releaseSummary(r: ReleaseRow): ReleaseSummary {
   const out: ReleaseSummary = {
     id: toPublicId("release", r.id),
@@ -265,7 +276,10 @@ export async function creationDetail(
     detail.summary = creation.summary as CreationDetail["display_name"];
   if (latest) {
     detail.latest_release = releaseSummary(latest);
-    detail.effective_rating = latest.effectiveRating ?? creation.rating;
+    detail.effective_rating = effectiveRatingOf(
+      latest.effectiveRating ?? creation.rating,
+      creation.forcedRating,
+    );
     if (latest.status === "yanked") {
       detail.warning = `release ${latest.label} was yanked${latest.statusReason ? `: ${latest.statusReason}` : ""}`;
     }

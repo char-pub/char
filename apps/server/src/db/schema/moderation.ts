@@ -7,7 +7,7 @@
  *
  * 应用角色对这张表只有 SELECT / INSERT / UPDATE，不能 DELETE：事件记录本身永不删除。
  */
-import { index, text, uuid } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, text, uuid } from "drizzle-orm/pg-core";
 import { app, createdAt, pk, ts, updatedAt } from "./common.js";
 import { authUser } from "./identity.js";
 import { uploads } from "./releases.js";
@@ -40,4 +40,44 @@ export const csamIncidents = app.table(
     index("csam_incidents_status_idx").on(t.status, t.createdAt),
     index("csam_incidents_digest_idx").on(t.blobDigest),
   ],
+);
+
+/**
+ * 需要两名员工的操作（四眼原则）：第一名员工发起，另一名具备相同能力的员工确认后才执行。
+ * 只有一名合格员工时，发起人要等冷静期结束才能自己确认。
+ */
+export const approvalKindEnum = app.enum("staff_approval_kind", [
+  "tombstone.large",
+  "unban.csam",
+  "staff.remove_owner",
+]);
+export const approvalStatusEnum = app.enum("staff_approval_status", [
+  "pending",
+  "confirmed",
+  "cancelled",
+]);
+
+export const staffApprovals = app.table(
+  "staff_approvals",
+  {
+    id: pk(),
+    kind: approvalKindEnum("kind").notNull(),
+    /** 展示用的操作对象，例如 `user:<id>`、`creation:<id>`。 */
+    subject: text("subject").notNull(),
+    /** 执行时需要的参数（下架对象与原因代码、目标角色等）。 */
+    payload: jsonb("payload").notNull(),
+    reason: text("reason").notNull(),
+    initiatedBy: uuid("initiated_by")
+      .notNull()
+      .references(() => authUser.id),
+    initiatedAt: ts("initiated_at").notNull(),
+    /** 发起时除发起人以外有资格确认的员工数量。 */
+    otherEligibleStaff: integer("other_eligible_staff").notNull(),
+    status: approvalStatusEnum("status").notNull().default("pending"),
+    decidedBy: uuid("decided_by").references(() => authUser.id),
+    decidedAt: ts("decided_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("staff_approvals_status_idx").on(t.status, t.initiatedAt)],
 );

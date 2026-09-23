@@ -108,6 +108,11 @@ export const creations = app.table(
     latestReleaseId: uuid("latest_release_id"),
     /** 最近一个 Release 的 effective rating（包含依赖），搜索过滤按它执行。 */
     effectiveRating: ratingEnum("effective_rating"),
+    /**
+     * 员工强制调高的评级：Registry 层的覆盖，不修改 Creation 本身，也不改变已发布 Release
+     * 的 digest。读取与搜索时的 effective rating 取它与发布时 effective rating 的较高者。
+     */
+    forcedRating: ratingEnum("forced_rating"),
     /** 搜索用的拼接文本（名字、简介、标签、作者），用 pg_trgm 索引。 */
     searchText: text("search_text").notNull().default(""),
     /** 应用层生成的一到两字 n-gram，用于 pg_trgm 无法索引的短 CJK 查询。 */

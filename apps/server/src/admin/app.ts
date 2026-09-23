@@ -60,7 +60,20 @@ export function parseRoles(role: string | null): StaffRole[] {
 export interface AdminRouteSpec<B extends z.ZodType | undefined> {
   method: "get" | "post" | "put" | "patch" | "delete";
   path: string;
-  capability: StaffCapability;
+  /** 需要的能力；给出多个时具备其中任意一个即可。 */
+  capability: StaffCapability | readonly StaffCapability[];
+  /**
+   * 能力取决于请求内容时（例如下架的原因代码决定需要严重违规还是法律下架的权限），
+   * 由它根据原始请求体给出实际需要的能力；缺省使用 `capability`。
+   */
+  capabilityOf?: (raw: unknown) => StaffCapability | undefined;
+  /** 用 POST 传参但不修改任何数据的路由（例如影响范围预览），不要求填写理由。 */
+  readOnly?: boolean;
+  /**
+   * 不要求关联法律请求的写操作：登记新的法律请求本身，以及具备法律权限的员工执行的
+   * 非法律类操作（例如手动标记 CSAM）。
+   */
+  noLegalRequest?: boolean;
   /** 写操作的请求体必须包含 `reason`（至少 10 个字符），法律类操作还要 `legal_request_id`。 */
   body?: B;
   handler: (
@@ -69,25 +82,47 @@ export interface AdminRouteSpec<B extends z.ZodType | undefined> {
   ) => Promise<Response>;
 }
 
+/** 每个 admin 应用上注册过的路由，供权限矩阵测试逐个检查。 */
+const REGISTERED = new WeakMap<object, AdminRouteSpec<z.ZodType | undefined>[]>();
+
+export function registeredAdminRoutes(
+  app: Hono<AdminEnv>,
+): readonly AdminRouteSpec<z.ZodType | undefined>[] {
+  return REGISTERED.get(app) ?? [];
+}
+
 /** 注册一个 admin 路由：检查员工能力；写操作检查理由。 */
 export function adminRoute<B extends z.ZodType | undefined>(
   app: Hono<AdminEnv>,
   spec: AdminRouteSpec<B>,
 ): void {
+  const list = REGISTERED.get(app) ?? [];
+  list.push(spec as AdminRouteSpec<z.ZodType | undefined>);
+  REGISTERED.set(app, list);
   app[spec.method](spec.path, async (c) => {
     const staff = c.var.staff;
-    if (!staffCan(staff.roles, spec.capability)) return problem(c, 403, "admin.forbidden");
+    const isWrite = spec.method !== "get";
+    const raw = isWrite
+      ? ((await c.req.json().catch(() => undefined)) as
+          | { reason?: string; legal_request_id?: string }
+          | undefined)
+      : undefined;
+    const required = (isWrite && spec.capabilityOf?.(raw)) || spec.capability;
+    const candidates: readonly StaffCapability[] = Array.isArray(required)
+      ? required
+      : [required as StaffCapability];
+    const capability = candidates.find((cap) => staffCan(staff.roles, cap));
+    if (!capability) return problem(c, 403, "admin.forbidden");
     let body: unknown;
-    if (spec.method !== "get") {
-      const raw = (await c.req.json().catch(() => undefined)) as
-        | { reason?: string; legal_request_id?: string }
-        | undefined;
-      const check = validateStaffAction({
-        capability: spec.capability,
-        reason: raw?.reason,
-        legal_request_id: raw?.legal_request_id,
-      });
-      if (!check.ok) return problem(c, 422, check.code);
+    if (isWrite) {
+      if (!spec.readOnly) {
+        const check = validateStaffAction({
+          capability,
+          reason: raw?.reason,
+          legal_request_id: spec.noLegalRequest ? "not-required" : raw?.legal_request_id,
+        });
+        if (!check.ok) return problem(c, 422, check.code);
+      }
       if (spec.body) {
         const parsed = spec.body.safeParse(raw);
         if (!parsed.success) {

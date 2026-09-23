@@ -8,7 +8,8 @@
 import { createRemoteJWKSet } from "jose";
 import { uuidv7 } from "uuidv7";
 import { createAdmin } from "../admin/app.js";
-import { registerAudit, registerFlags } from "../admin/ops-routes.js";
+import { adminModules } from "../admin/routes/index.js";
+import { parseLegalKey } from "../admin/routes/legal.js";
 import type { Services } from "../api/app.js";
 import { createApi } from "../api/server.js";
 import { createAuth, sessionPrincipalResolver } from "../auth/better-auth.js";
@@ -99,7 +100,7 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       },
       originSecrets: originSecretsFromEnv(edge),
       allowedOrigins: adminEnv.ADMIN_ORIGINS,
-      modules: [registerFlags, registerAudit],
+      modules: adminModules(parseLegalKey(adminEnv.LEGAL_ENCRYPTION_KEY)),
     });
     return { fetch: app.fetch, shutdown };
   }

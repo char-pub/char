@@ -16,7 +16,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { Principal } from "../authz/authorize.js";
 import type { Executor } from "../db/client.js";
 import { creations, namespaces, releases, userSettings } from "../db/schema/index.js";
-import { refOf, releaseSummary, toPublicId } from "./read.js";
+import { effectiveRatingOf, refOf, releaseSummary, toPublicId } from "./read.js";
 
 /** 中日韩统一表意文字、假名、韩文音节等“按字切分”的文字。 */
 const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
@@ -167,6 +167,11 @@ export async function searchCreations(
     eq(creations.status, "active"),
     eq(namespaces.status, "active"),
     inArray(releases.effectiveRating, [...ratings]),
+    // 员工强制调高的评级同样参与过滤。
+    sql`(${creations.forcedRating} IS NULL OR ${creations.forcedRating} IN (${sql.join(
+      ratings.map((r) => sql`${r}::app.rating`),
+      sql`, `,
+    )}))`,
   ];
   if (input.type) conds.push(eq(creations.type, input.type));
   if (input.tag)
@@ -213,7 +218,7 @@ export async function searchCreations(
       type: c.type,
       display_name: c.displayName as CreationSummary["display_name"],
       rating: c.rating,
-      effective_rating: r.effectiveRating ?? c.rating,
+      effective_rating: effectiveRatingOf(r.effectiveRating ?? c.rating, c.forcedRating),
       tags: c.tags,
       latest_release: releaseSummary(r),
     };
