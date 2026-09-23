@@ -50,6 +50,7 @@ export const approvalKindEnum = app.enum("staff_approval_kind", [
   "tombstone.large",
   "unban.csam",
   "staff.remove_owner",
+  "namespace.transfer",
 ]);
 export const approvalStatusEnum = app.enum("staff_approval_status", [
   "pending",
@@ -80,4 +81,25 @@ export const staffApprovals = app.table(
     updatedAt: updatedAt(),
   },
   (t) => [index("staff_approvals_status_idx").on(t.status, t.initiatedAt)],
+);
+
+/**
+ * 下载隔离证据的一次性凭据。凭据本身只在签发时返回一次，这里只存它的 sha256；
+ * 只能由签发给的员工在 5 分钟内使用一次，使用后记下时间，过期的由定期清理删除。
+ */
+export const evidenceDownloadTickets = app.table(
+  "evidence_download_tickets",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    incidentId: uuid("incident_id")
+      .notNull()
+      .references(() => csamIncidents.id),
+    staffId: uuid("staff_id")
+      .notNull()
+      .references(() => authUser.id),
+    expiresAt: ts("expires_at").notNull(),
+    usedAt: ts("used_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("evidence_download_tickets_expires_idx").on(t.expiresAt)],
 );

@@ -39,6 +39,21 @@ export const userSettings = app.table("user_settings", {
   updatedAt: updatedAt(),
 });
 
+/**
+ * 员工锁定上传：被锁定的用户不能再上传文件或导入角色卡，已有内容不受影响。
+ * 解锁时删除这一行；锁定与解锁都另有处置记录和审计。
+ */
+export const uploadLocks = app.table("upload_locks", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => authUser.id, { onDelete: "cascade" }),
+  lockedBy: uuid("locked_by")
+    .notNull()
+    .references(() => authUser.id),
+  reason: text("reason").notNull(),
+  lockedAt: ts("locked_at").notNull(),
+});
+
 /** 个人 Token：只保存 sha256 哈希；prefix 用于在列表中辨认。 */
 export const apiTokens = app.table(
   "api_tokens",

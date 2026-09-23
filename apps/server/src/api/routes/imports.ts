@@ -20,6 +20,7 @@ import type { Resource } from "../../authz/authorize.js";
 import { creationDrafts, creations, imports, namespaces, uploads } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { QUEUE_NAMES } from "../../jobs/definitions.js";
+import { uploadsLocked } from "../../moderation/upload-lock.js";
 import { hit, RATE_LIMITS } from "../../ops/rate-limit.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
 import { decodeId, encodeId } from "../../registry/ids.js";
@@ -112,6 +113,7 @@ export function register(app: Hono<Env>): void {
       if (!ns) return problem(c, 422, "request.invalid");
       const uid = userIdOf(c.var.principal);
       const now = clock.now();
+      if (await uploadsLocked(db, uid)) return problem(c, 403, "upload.locked");
 
       if (!UUID_RE.test(body.upload)) return notFound(c);
       const [u] = await db.select().from(uploads).where(eq(uploads.id, body.upload)).limit(1);

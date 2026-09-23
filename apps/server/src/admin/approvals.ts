@@ -25,6 +25,7 @@ export const APPROVAL_CAPABILITY: Record<FourEyesKind, StaffCapability> = {
   "tombstone.large": "tombstone.policy",
   "unban.csam": "users.ban",
   "staff.remove_owner": "staff.manage",
+  "namespace.transfer": "namespaces.govern",
 };
 
 export type ApprovalRow = typeof staffApprovals.$inferSelect;

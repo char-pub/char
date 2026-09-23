@@ -1,16 +1,25 @@
 /**
- * 法律请求（DMCA、法院命令、GDPR 等）的登记与查看，只有 legal 与 owner 可以访问。
+ * 法律请求（DMCA、法院命令、GDPR 等）的登记、处置、反通知与案件导出，只有 legal 与 owner
+ * 可以访问。
  *
  * 申请人信息是个人数据，在应用层用 AES-256-GCM 加密后存储：数据库或备份泄露时，
  * 没有密钥也读不到申请人是谁。每条记录使用随机的 12 字节 nonce，密文带认证标签，
  * 被篡改时解密失败。密钥来自环境变量 `LEGAL_ENCRYPTION_KEY`（32 字节，base64）。
+ *
+ * DMCA 流程：
+ * 1. 登记请求。
+ * 2. 停止访问：隐藏涉及的 Creation（可以恢复）。也可以对具体对象执行 tombstone，但 tombstone
+ *    不可逆，之后收到反通知也无法恢复，所以 DMCA 默认用隐藏。
+ * 3. 收到反通知：登记（申请人信息同样加密），并计算恢复期限。
+ * 4. 投诉方如果告知已经起诉，登记之后就不能恢复；否则在恢复期限内恢复被隐藏的内容。
  */
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
-import { legalRequests } from "../../db/schema/index.js";
+import type { Executor } from "../../db/client.js";
+import { legalRequests, moderationActions } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { type AdminEnv, adminRoute } from "../app.js";
 import { isUuid, staffActor } from "./common.js";
@@ -56,6 +65,38 @@ function uiStatus(s: typeof legalRequests.$inferSelect.status) {
   return "open";
 }
 
+export type LegalRow = typeof legalRequests.$inferSelect;
+
+export function iso(d: Date | null): string | null {
+  return d?.toISOString() ?? null;
+}
+
+/** 列表与详情共用的字段（不含申请人信息）。 */
+export function legalSummary(r: LegalRow) {
+  return {
+    id: r.id,
+    kind: r.kind,
+    received_at: r.receivedAt.toISOString(),
+    deadline: iso(r.deadline),
+    status: uiStatus(r.status),
+    subjects: r.subjects as string[],
+    counter_notice_received_at: iso(r.counterNoticeReceivedAt),
+    restore_not_before: iso(r.restoreNotBefore),
+    restore_deadline: iso(r.restoreDeadline),
+    court_action_at: iso(r.courtActionAt),
+    restored_at: iso(r.restoredAt),
+  };
+}
+
+/** 与这个法律请求关联的处置记录，按时间先后排列。 */
+export async function linkedActions(db: Executor, id: string) {
+  return db
+    .select()
+    .from(moderationActions)
+    .where(eq(moderationActions.legalRequestId, id))
+    .orderBy(asc(moderationActions.createdAt));
+}
+
 const CreateSchema = z.strictObject({
   kind: z.enum(["dmca", "court", "gdpr", "other"]),
   requester: z.strictObject({
@@ -84,16 +125,7 @@ export function registerLegal(key: Uint8Array) {
           .orderBy(desc(legalRequests.receivedAt))
           .limit(100);
         // 列表不返回申请人信息，查看详情时才解密。
-        return c.json({
-          items: rows.map((r) => ({
-            id: r.id,
-            kind: r.kind,
-            received_at: r.receivedAt.toISOString(),
-            deadline: r.deadline?.toISOString() ?? null,
-            status: uiStatus(r.status),
-            subjects: r.subjects as string[],
-          })),
-        });
+        return c.json({ items: rows.map(legalSummary) });
       },
     });
 
@@ -119,17 +151,20 @@ export function registerLegal(key: Uint8Array) {
             requestId: c.var.requestId,
           }),
         );
+        const actions = await linkedActions(c.var.services.db, id);
         return c.json({
-          id: r.id,
-          kind: r.kind,
-          received_at: r.receivedAt.toISOString(),
-          deadline: r.deadline?.toISOString() ?? null,
-          status: uiStatus(r.status),
-          subjects: r.subjects as string[],
+          ...legalSummary(r),
           requester: decryptJson(key, r.requester as EncryptedValue),
           counter_notice: r.counterNotice
             ? decryptJson(key, r.counterNotice as EncryptedValue)
             : null,
+          actions: actions.map((a) => ({
+            id: a.id,
+            action: a.action,
+            subject: a.subject,
+            created_at: a.createdAt.toISOString(),
+            reverted: a.revertedBy !== null,
+          })),
         });
       },
     });

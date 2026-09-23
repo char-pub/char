@@ -24,6 +24,7 @@ export const EXPECTED_CAPABILITIES: Record<StaffRole, readonly StaffCapability[]
     "overview.read",
     "csam.read",
     "csam.report",
+    "csam.evidence",
     "legal.manage",
     "tombstone.legal",
     "audit.read_all",
@@ -47,6 +48,7 @@ export const EXPECTED_CAPABILITIES: Record<StaffRole, readonly StaffCapability[]
     "users.ban",
     "csam.read",
     "csam.report",
+    "csam.evidence",
     "legal.manage",
     "tombstone.policy",
     "tombstone.legal",
@@ -84,6 +86,7 @@ const DECIDE: readonly StaffCapability[] = [
   "tombstone.legal",
   "users.ban",
   "staff.manage",
+  "namespaces.govern",
 ];
 
 export const MODULES: readonly ModuleExpectation[] = [
@@ -149,8 +152,21 @@ export const MODULES: readonly ModuleExpectation[] = [
     loaded: "alice@example.com",
     controls: [
       { name: "Details", any: ["overview.read"] },
+      { name: "Revoke sessions", any: ["users.ban"] },
+      { name: "Lock uploads", any: ["users.ban"] },
       { name: "Ban", any: ["users.ban"] },
       { name: "Unban", any: ["users.ban"] },
+    ],
+  },
+  {
+    path: "/guests",
+    nav: "Guests",
+    navAny: ["overview.read"],
+    heading: "Guests",
+    loaded: "Friendly visitor",
+    controls: [
+      { name: "Disable", any: ["users.ban"] },
+      { name: "Enable", any: ["users.ban"] },
     ],
   },
   {
@@ -162,6 +178,7 @@ export const MODULES: readonly ModuleExpectation[] = [
     controls: [
       { name: "Freeze", any: ["namespaces.govern"] },
       { name: "Rename", any: ["namespaces.govern"] },
+      { name: "Transfer", any: ["namespaces.govern"] },
       { name: "Reserve a name", any: ["namespaces.govern"] },
       { name: "Release @admin", any: ["namespaces.govern"] },
     ],
@@ -188,6 +205,7 @@ export const MODULES: readonly ModuleExpectation[] = [
     controls: [
       { name: "Flag content as CSAM", any: ["tombstone.policy", "legal.manage"] },
       { name: "Record NCMEC report", any: ["csam.report"] },
+      { name: "Evidence", any: ["csam.evidence"] },
     ],
   },
   {
@@ -219,7 +237,7 @@ export const MODULES: readonly ModuleExpectation[] = [
     loaded: /No audit entries match\.|flag\.toggle/,
     controls: [
       { name: "Verify hash chain", any: ["audit.read_all"] },
-      { name: "Export JSON", any: ["audit.read_all"] },
+      { name: "Export", any: ["audit.read_all"] },
     ],
   },
   {
@@ -229,6 +247,9 @@ export const MODULES: readonly ModuleExpectation[] = [
     pageAny: ["staff.manage"],
     heading: "Staff",
     loaded: "moderator@char.pub",
-    controls: [{ name: "Edit roles", any: ["staff.manage"] }],
+    controls: [
+      { name: "Edit roles", any: ["staff.manage"] },
+      { name: "Sign out", any: ["staff.manage"] },
+    ],
   },
 ];

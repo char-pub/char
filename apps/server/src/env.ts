@@ -204,26 +204,37 @@ export function githubConfigFromEnv(env: GitHubEnv): GitHubConfig | null {
 }
 
 /** admin 进程：Cloudflare Access 与员工允许名单。 */
-export const AdminEnvSchema = z.object({
-  CF_ACCESS_TEAM_DOMAIN: url,
-  CF_ACCESS_AUD: nonEmpty,
-  /** 允许进入 admin 的员工邮箱，逗号分隔。 */
-  STAFF_EMAILS: z
-    .string()
-    .transform((s) =>
-      s
-        .split(",")
-        .map((x) => x.trim().toLowerCase())
-        .filter((x) => x.length > 0),
-    )
-    .pipe(z.array(z.email()).min(1)),
-  /** admin SPA 的 Origin（例如 https://admin.char.pub）。 */
-  ADMIN_ORIGINS: originList,
-  /** 法律请求中申请人信息的加密密钥：32 字节，base64 编码。 */
-  LEGAL_ENCRYPTION_KEY: z
-    .string()
-    .refine((s) => Buffer.from(s, "base64").length === 32, "must be 32 bytes, base64 encoded"),
-});
+export const AdminEnvSchema = z
+  .object({
+    CF_ACCESS_TEAM_DOMAIN: url,
+    CF_ACCESS_AUD: nonEmpty,
+    /** 允许进入 admin 的员工邮箱，逗号分隔。 */
+    STAFF_EMAILS: z
+      .string()
+      .transform((s) =>
+        s
+          .split(",")
+          .map((x) => x.trim().toLowerCase())
+          .filter((x) => x.length > 0),
+      )
+      .pipe(z.array(z.email()).min(1)),
+    /** admin SPA 的 Origin（例如 https://admin.char.pub）。 */
+    ADMIN_ORIGINS: originList,
+    /** 法律请求中申请人信息的加密密钥：32 字节，base64 编码。 */
+    LEGAL_ENCRYPTION_KEY: z
+      .string()
+      .refine((s) => Buffer.from(s, "base64").length === 32, "must be 32 bytes, base64 encoded"),
+    /**
+     * 可选：Cloudflare Access API，用于强制员工登出时吊销 Access 会话。两项必须同时配置；
+     * 不配置时强制登出只吊销应用会话。
+     */
+    CF_ACCESS_ACCOUNT_ID: z.string().min(1).optional(),
+    CF_ACCESS_API_TOKEN: z.string().min(1).optional(),
+  })
+  .refine((e) => (e.CF_ACCESS_ACCOUNT_ID === undefined) === (e.CF_ACCESS_API_TOKEN === undefined), {
+    message: "CF_ACCESS_ACCOUNT_ID and CF_ACCESS_API_TOKEN must be set together",
+    path: ["CF_ACCESS_API_TOKEN"],
+  });
 export type AdminEnv = z.infer<typeof AdminEnvSchema>;
 
 /**

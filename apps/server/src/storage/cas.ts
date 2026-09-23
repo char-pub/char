@@ -52,6 +52,13 @@ export function casKey(digest: string): string {
   return `cas/sha256/${hex.slice(0, 2)}/${hex}`;
 }
 
+/** 证据对象的 key 是 `evidence/<CAS key>`，从中取回内容 digest。 */
+export function evidenceDigest(key: string): string {
+  const m = /^evidence\/cas\/sha256\/[0-9a-f]{2}\/([0-9a-f]{64})$/.exec(key);
+  if (!m) throw new CasError("cas.invalid_digest", `invalid evidence key: ${key}`);
+  return `sha256:${m[1]}`;
+}
+
 export interface CasConfig {
   client: S3Client;
   buckets: Record<Bucket, string>;
@@ -219,6 +226,45 @@ export class Cas {
       );
     }
     return { key, digest };
+  }
+
+  /** 证据对象的元数据（大小与类型），不读取内容。只供 admin 的证据查看使用。 */
+  async headEvidence(key: string): Promise<{ size: number; mediaType: string } | null> {
+    try {
+      const out = await this.config.client.send(
+        new HeadObjectCommand({ Bucket: this.bucketName("evidence"), Key: key }),
+      );
+      return {
+        size: out.ContentLength ?? 0,
+        mediaType: out.ContentType ?? "application/octet-stream",
+      };
+    } catch (err) {
+      if (isNotFound(err)) return null;
+      throw err;
+    }
+  }
+
+  /**
+   * 读取证据对象，并校验内容与 key 中的 digest 相符。只供 admin 签发的一次性下载使用，
+   * evidence 桶永远不签发存储端的 URL。
+   */
+  async getEvidence(key: string): Promise<Uint8Array> {
+    const digest = evidenceDigest(key);
+    let body: Uint8Array;
+    try {
+      const out = await this.config.client.send(
+        new GetObjectCommand({ Bucket: this.bucketName("evidence"), Key: key }),
+      );
+      if (!out.Body) throw new CasError("cas.not_found", key);
+      body = await out.Body.transformToByteArray();
+    } catch (err) {
+      if (isNotFound(err)) throw new CasError("cas.not_found", key);
+      throw err;
+    }
+    if (sha256Bytes(body) !== digest) {
+      throw new CasError("cas.digest_mismatch", `stored evidence ${key} does not match its digest`);
+    }
+    return body;
   }
 
   /** 读取对象内容，并校验内容与 key 相符。 */

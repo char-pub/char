@@ -27,6 +27,7 @@ export const NAV: NavItem[] = [
   { to: "/tombstone", label: "Tombstone", any: ["tombstone.policy", "tombstone.legal"] },
   { to: "/approvals", label: "Approvals", any: [...DECIDE_CAPABILITIES] },
   { to: "/users", label: "Users", any: ["overview.read"] },
+  { to: "/guests", label: "Guests", any: ["overview.read"] },
   { to: "/namespaces", label: "Namespaces", any: ["overview.read"] },
   { to: "/legal", label: "Legal", any: ["legal.manage"] },
   { to: "/csam", label: "CSAM incidents", any: ["csam.read"] },

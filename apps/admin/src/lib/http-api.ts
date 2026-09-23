@@ -13,9 +13,12 @@ import {
   type CreationAdminView,
   type CsamFlagResult,
   type CsamIncident,
+  type DownloadedFile,
+  type EvidenceMeta,
   type FailedJob,
   type Flag,
   type FlagKey,
+  type GuestAdminView,
   type LegalRequest,
   type LegalRequestDetail,
   type Me,
@@ -24,6 +27,7 @@ import {
   type QueueStats,
   type Report,
   type ReservedName,
+  type RestoreResult,
   type StaffMember,
   type TombstonePreview,
   type UserAdminView,
@@ -51,6 +55,27 @@ export function createHttpApi(baseUrl: string, f: Fetch = (...a) => fetch(...a))
     return json as T;
   }
 
+  /** 下载类接口：返回文件内容与响应头，由调用方交给浏览器保存。 */
+  async function download(
+    method: string,
+    path: string,
+    body?: unknown,
+  ): Promise<DownloadedFile & { headers: Headers }> {
+    const res = await f(path.startsWith("http") ? path : `${base}${path}`, {
+      method,
+      credentials: "include",
+      headers: body === undefined ? {} : { "content-type": "application/json" },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    if (!res.ok) {
+      const p = (await res.json().catch(() => ({}))) as { code?: string; detail?: string };
+      throw new ApiError(res.status, p.code ?? `http.${res.status}`, p.detail);
+    }
+    const disposition = res.headers.get("content-disposition") ?? "";
+    const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "download";
+    return { blob: await res.blob(), filename, headers: res.headers };
+  }
+
   const list = async <T>(path: string) => (await call<{ items: T[] }>("GET", path)).items;
   const qs = (q: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
@@ -72,6 +97,10 @@ export function createHttpApi(baseUrl: string, f: Fetch = (...a) => fetch(...a))
         `/v1/admin/audit${qs({ before: q.before, subject: q.subject, limit: q.limit ? String(q.limit) : undefined })}`,
       ),
     verifyAudit: () => call<AuditVerify>("GET", "/v1/admin/audit/verify"),
+    exportAudit: async (input) => {
+      const { headers, ...file } = await download("POST", "/v1/admin/audit/export", input);
+      return { ...file, next_before: headers.get("x-next-before") };
+    },
 
     listReports: () => list<Report>("/v1/admin/reports"),
     claimReport: async (id, input) => {
@@ -124,6 +153,24 @@ export function createHttpApi(baseUrl: string, f: Fetch = (...a) => fetch(...a))
       );
       return r.approval ? { approval: r.approval } : {};
     },
+    revokeCredentials: (id, input) =>
+      call<{ sessions_revoked: number; tokens_revoked: number }>(
+        "POST",
+        `/v1/admin/users/${enc(id)}/revoke`,
+        input,
+      ),
+    setUploadLock: async (id, input) => {
+      await call("POST", `/v1/admin/users/${enc(id)}/upload-lock`, input);
+    },
+    listGuests: (q) =>
+      list<GuestAdminView>(`/v1/admin/guests${qs({ status: q.status, query: q.query })}`),
+    getGuest: (id) => call<GuestAdminView>("GET", `/v1/admin/guests/${enc(id)}`),
+    disableGuest: async (id, input) => {
+      await call("POST", `/v1/admin/guests/${enc(id)}/disable`, input);
+    },
+    enableGuest: async (id, input) => {
+      await call("POST", `/v1/admin/guests/${enc(id)}/enable`, input);
+    },
     listNamespaces: (q) =>
       list<NamespaceAdminView>(`/v1/admin/namespaces${qs({ query: q.query })}`),
     listReserved: () => list<ReservedName>("/v1/admin/reserved-names"),
@@ -139,13 +186,50 @@ export function createHttpApi(baseUrl: string, f: Fetch = (...a) => fetch(...a))
     renameNamespace: async (slug, input) => {
       await call("POST", `/v1/admin/namespaces/${enc(slug)}/rename`, input);
     },
+    transferNamespace: (slug, input) =>
+      call<{ approval: PendingApproval }>(
+        "POST",
+        `/v1/admin/namespaces/${enc(slug)}/transfer`,
+        input,
+      ),
     listLegalRequests: () => list<LegalRequest>("/v1/admin/legal-requests"),
     getLegalRequest: (id) => call<LegalRequestDetail>("GET", `/v1/admin/legal-requests/${enc(id)}`),
     createLegalRequest: (input) => call<{ id: string }>("POST", "/v1/admin/legal-requests", input),
+    disableAccess: (id, input) =>
+      call<{ hidden: number }>("POST", `/v1/admin/legal-requests/${enc(id)}/disable-access`, input),
+    registerCounterNotice: (id, input) =>
+      call<{ restore_not_before: string; restore_deadline: string }>(
+        "POST",
+        `/v1/admin/legal-requests/${enc(id)}/counter-notice`,
+        input,
+      ),
+    recordCourtAction: async (id, input) => {
+      await call("POST", `/v1/admin/legal-requests/${enc(id)}/court-action`, input);
+    },
+    restoreLegal: (id, input) =>
+      call<RestoreResult>("POST", `/v1/admin/legal-requests/${enc(id)}/restore`, input),
+    exportLegalCase: async (id, input) => {
+      const { headers: _h, ...file } = await download(
+        "POST",
+        `/v1/admin/legal-requests/${enc(id)}/export`,
+        input,
+      );
+      return file;
+    },
     listCsamIncidents: () => list<CsamIncident>("/v1/admin/csam-incidents"),
     flagCsam: (input) => call<CsamFlagResult>("POST", "/v1/admin/csam/flag", input),
     reportCsamIncident: async (id, input) => {
       await call("POST", `/v1/admin/csam-incidents/${enc(id)}/report`, input);
+    },
+    getEvidence: (id) => call<EvidenceMeta>("GET", `/v1/admin/csam-incidents/${enc(id)}/evidence`),
+    downloadEvidence: async (id, input) => {
+      const ticket = await call<{ url: string }>(
+        "POST",
+        `/v1/admin/csam-incidents/${enc(id)}/evidence/download`,
+        input,
+      );
+      const { headers: _h, ...file } = await download("GET", ticket.url);
+      return file;
     },
     listQueues: () => list<QueueStats>("/v1/admin/queues"),
     listFailedJobs: () => list<FailedJob>("/v1/admin/jobs/failed"),
@@ -164,5 +248,11 @@ export function createHttpApi(baseUrl: string, f: Fetch = (...a) => fetch(...a))
       );
       return r.approval ? { approval: r.approval } : {};
     },
+    signOutStaff: (userId, input) =>
+      call<{ sessions_revoked: number; access: "revoked" | "failed" | "not_configured" }>(
+        "POST",
+        `/v1/admin/staff/${enc(userId)}/sign-out`,
+        input,
+      ),
   };
 }

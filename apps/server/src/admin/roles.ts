@@ -10,18 +10,20 @@
  * | 隐藏 / 恢复 Creation                   |        | ✓         | ✓            |       | ✓     | ✓     |
  * | 代作者 yank Release                    |        | ✓         | ✓            |       | ✓     | ✓     |
  * | 封禁 / 解封用户、吊销会话和 Token      |        |           | ✓            |       | ✓     | ✓     |
+ * | 锁定 / 解锁用户上传                    |        |           | ✓            |       | ✓     | ✓     |
  * | 停用 / 恢复访客                         |        |           | ✓            |       | ✓     | ✓     |
- * | 查看 CSAM 事件与隔离区                 |        |           | ✓（只读）    | ✓     |       | ✓     |
+ * | 查看 CSAM 事件                         |        |           | ✓（只读）    | ✓     |       | ✓     |
+ * | 访问隔离证据（元数据与一次性下载）     |        |           |              | ✓     |       | ✓     |
  * | 提交 NCMEC 报告                        |        |           |              | ✓     |       | ✓     |
  * | 登记和处理法律请求                     |        |           |              | ✓     |       | ✓     |
  * | Tombstone：严重违规                    |        |           | ✓            |       |       | ✓     |
  * | Tombstone：法律依据                    |        |           |              | ✓     |       | ✓     |
- * | Namespace 治理                         |        |           |              |       | ✓     | ✓     |
+ * | Namespace 治理（含转让，需四眼确认）   |        |           |              |       | ✓     | ✓     |
  * | Kill switch                            |        |           | ✓            |       | ✓     | ✓     |
  * | 任务队列：查看、重试、取消             |        |           |              |       | ✓     | ✓     |
  * | 审计日志：只看自己的操作               | ✓      |           |              |       |       |       |
  * | 审计日志：查看与导出全部               |        |           |              | ✓     | ✓     | ✓     |
- * | 管理员工与角色                         |        |           |              |       |       | ✓     |
+ * | 管理员工与角色、强制员工登出           |        |           |              |       |       | ✓     |
  *
  * 所有写操作都必须填写理由（至少 10 个字符）；与法律请求相关的操作还要关联法律请求。
  */
@@ -44,6 +46,7 @@ export const STAFF_CAPABILITIES = [
   "users.ban",
   "csam.read",
   "csam.report",
+  "csam.evidence",
   "legal.manage",
   "tombstone.policy",
   "tombstone.legal",
@@ -74,6 +77,7 @@ const MATRIX: Record<Exclude<StaffRole, "owner">, readonly StaffCapability[]> = 
     "audit.read_all",
     "csam.read",
     "csam.report",
+    "csam.evidence",
     "legal.manage",
     "tombstone.legal",
   ],
@@ -131,7 +135,11 @@ export function validateStaffAction(input: {
 export const FOUR_EYES_THRESHOLD_RELEASES = 50;
 export const COOLING_OFF_MS = 24 * 60 * 60 * 1000;
 
-export type FourEyesKind = "tombstone.large" | "unban.csam" | "staff.remove_owner";
+export type FourEyesKind =
+  | "tombstone.large"
+  | "unban.csam"
+  | "staff.remove_owner"
+  | "namespace.transfer";
 
 export function requiresFourEyes(input: {
   kind: "tombstone" | "unban" | "staff.remove_role";
