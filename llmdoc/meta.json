@@ -6,82 +6,82 @@
   },
   "documents": {
     "authoring/cli-workflow.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "collaboration/contributions.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "content/card-import.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "content/upload-and-storage.mdx": {
       "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
     },
     "engineering/verification.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "execution-model.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "identity/creator-and-guest.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "identity/public-authorization.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "interoperability/ccv3.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "interoperability/conformance.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "model/canonical-identity.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "model/publish-integrity.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "operations/admin-authority.mdx": {
       "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
     },
     "operations/commons-seed.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "operations/deploy-and-edge.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "operations/jobs-and-controls.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "operations/takedown-and-evidence.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "registry/http-contract.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "registry/publishing.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "registry/reading.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "runtime/assembly.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "runtime/resolution.mdx": {
-      "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "source/github-source-and-publish.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "web/creator-experience.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "operations/csam-response.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "operations/legal-response.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "operations/database-recovery.mdx": {
       "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
@@ -96,7 +96,7 @@
       "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
     },
     "operations/data-breach-response.mdx": {
-      "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
+      "validatedRevision": "28bad8c1da94dbafd695b6b6700c10a340564c7a"
     },
     "engineering/release-readiness.mdx": {
       "validatedRevision": "cb152206889e7bc2a94cf85abd70108761fd1ca2"
