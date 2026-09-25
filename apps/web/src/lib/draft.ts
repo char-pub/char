@@ -123,6 +123,10 @@ export const MAIN_FRAGMENT: Partial<Record<CreationType, { id: string; kind: Fra
   character: { id: "description", kind: "character" },
   world: { id: "world", kind: "world" },
   lorebook: { id: "lore/entry", kind: "knowledge" },
+  persona: { id: "persona", kind: "persona" },
+  style: { id: "style", kind: "style" },
+  relationship: { id: "relationship", kind: "relationship" },
+  scenario: { id: "scenario", kind: "scenario" },
 };
 
 function mainIndex(w: Working, type: CreationType): number {

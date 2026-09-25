@@ -7,6 +7,8 @@
  * 凭据只存在于 HttpOnly cookie 中，前端代码既读不到也不保存任何 token。
  */
 import {
+  type Ccv3LossReport,
+  Ccv3LossReportSchema,
   type ConfirmImportRequestSchema,
   ContributionDetailSchema,
   type ContributionInvite,
@@ -47,6 +49,8 @@ import {
 import {
   type ContextIR,
   ContextIRSchema,
+  type CreationArtifact,
+  CreationArtifactSchema,
   type CreationType,
   CreationTypeSchema,
   type Digest,
@@ -238,8 +242,15 @@ export interface RegistryClient {
   release(ns: string, name: string, label: string): Promise<z.infer<typeof ReleaseDetailSchema>>;
   /** 读取 Release 的 Context IR。public Release 从公共 CDN 读取，不带 cookie。 */
   getIR(ns: string, name: string, label: string, opts?: { private?: boolean }): Promise<ContextIR>;
+  getArtifact(
+    ns: string,
+    name: string,
+    label: string,
+    opts?: { private?: boolean },
+  ): Promise<CreationArtifact>;
   dependents(ns: string, name: string): Promise<DependentsPage>;
-  exportCcv3(ns: string, name: string, label: string): Promise<ExportState>;
+  exportCcv3(ns: string, name: string, label: string, preset?: string): Promise<ExportState>;
+  getCcv3Loss(ns: string, name: string, label: string, preset?: string): Promise<Ccv3LossReport>;
   /**
    * 作者 yank 自己的某个版本，`reason`（3–500 字）会公开显示。已经锁定这个版本的依赖仍能读到
    * 内容，但页面会提示，新依赖也不应再选它。重复 yank 直接返回当前状态。
@@ -487,6 +498,22 @@ export function createRegistryClient(
       }
       return parsed.data;
     },
+    async getArtifact(ns, name, label, o = {}) {
+      let res: Response;
+      try {
+        res = await doFetch(`${base}${release(ns, name, label)}/artifact`, {
+          headers: { accept: "application/json" },
+          credentials: o.private ? "include" : "omit",
+        });
+      } catch {
+        throw new ApiError(0, "network.unreachable", "could not load the artifact");
+      }
+      if (!res.ok) throw await problemOf(res);
+      const parsed = CreationArtifactSchema.safeParse(await res.json());
+      if (!parsed.success)
+        throw new ApiError(res.status, "response.invalid", parsed.error.issues[0]?.message);
+      return parsed.data;
+    },
     dependents: (ns, name) =>
       json(DependentsPageSchema, "GET", `${creationPath(ns, name)}/dependents?limit=50`),
     yankRelease: (ns, name, label, reason) =>
@@ -524,8 +551,15 @@ export function createRegistryClient(
     async unbindSource(ns, name) {
       await send("DELETE", `${creationPath(ns, name)}/source-binding`);
     },
-    async exportCcv3(ns, name, label) {
-      const url = ccv3DownloadUrl(ns, name, label, base);
+    getCcv3Loss: (ns, name, label, preset) =>
+      json(
+        Ccv3LossReportSchema,
+        "GET",
+        `${release(ns, name, label)}/export/ccv3?part=loss${preset ? `&preset=${encodeURIComponent(preset)}` : ""}`,
+      ),
+    async exportCcv3(ns, name, label, preset) {
+      const rawUrl = ccv3DownloadUrl(ns, name, label, base);
+      const url = preset ? `${rawUrl}?preset=${encodeURIComponent(preset)}` : rawUrl;
       let res: Response;
       try {
         // 构建完成后 API 返回 302：不跟随重定向，只确认已经就绪，下载交给浏览器导航。
@@ -669,3 +703,5 @@ export function createRegistryClient(
       json(ImportStatusSchema, "POST", `/v1/imports/${encodeURIComponent(id)}/confirm`, { body }),
   };
 }
+
+export type { Ccv3LossReport } from "@char-pub/contracts";
