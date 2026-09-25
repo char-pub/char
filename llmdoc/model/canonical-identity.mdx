@@ -1,8 +1,9 @@
 ---
-description: "Creation 的名字、作品身份与内容摘要是什么关系；Canonical Creation、fragment digest、semantic digest、Release pin、Preset policy 和顺序敏感的规范化"
+description: "九类Creation的身份与语义摘要：Canonical、fragment顺序、Preset policy、Prompt Module和Scenario配置的规范化边界"
 kind: architecture
 code:
   paths:
+    - "packages/core/src/schema/identity.ts"
     - "spec/canonical-model.md"
     - "spec/preset-v0.md"
     - "packages/core/src/schema/policy.ts"
@@ -19,8 +20,8 @@ Creation 是可编辑的语义内容，Release 是一次不可变发布，label 
 
 规范化先把字符串变成 Unicode NFC、统一换行、去掉行尾空格，再严格校验 schema；未知字段和非纯 JSON 值应失败。等于默认值的字段和空的可选集合被省略，随后用 JCS 序列化并计算 SHA-256。fragment digest 不含自身 digest 字段；semantic digest 基于把 fragments 转成 `(id,digest)` 列表后的 manifest。这个列表保留声明顺序，因为顺序会改变最终 Context IR；对象键顺序和格式空白则不应改变 digest。
 
-Preset 复用 Creation 身份，但专门的 `policy` 与 Creative Truth 分开：只有 Preset 可以声明且必须声明策略；它不能包含 Creative fragments、内容依赖、绑定槽、参数、cast、开场或 context assets，展示资源不成为模型输入。Creative `instruction` 仍是作者的扮演说明。策略块使用稳定 ID 和字面文本，不执行变量、脚本或外部引用；块没有独立 Release。
+九类 Creation 共享身份与发布契约。Preset 必须声明 `policy`，Prompt Module 必须声明 `prompt_module`；两者与 Creative Truth 分开，不能包含 Creative fragments、内容依赖、绑定槽、参数、cast、开场或 context assets，展示资源不成为模型输入。Creative `instruction` 仍是作者的扮演说明。策略块使用稳定 ID 和字面文本，不执行变量或脚本；复用通过精确锁定的 Module 导入表达，块本身没有独立 Release。
 
-整个规范化 policy 参与作品 semantic digest；块和布局的声明顺序有语义，不能排序后计算。省略启用默认值与空预算集合，不省略禁用值；无 policy 的已有作品摘要保持兼容。布局必须完整且不重复，结构校验不能替代块 ID 等语义约束。
+规范化 policy、prompt_module、Scenario assembly 与作者 assembly_tests 都参与作品 semantic digest；块、导入、布局和测试的声明顺序有语义，不能排序后计算。省略启用默认值与空预算集合，不省略禁用值；没有新增配置的旧作品摘要保持兼容。Preset 布局必须完整且不重复；Module 不拥有布局、预算或运行能力。结构校验不能替代块 ID 等语义约束。
 
 Canonicalizer 是身份判定的单一实现。签名、发布、锁定图和 Diff 必须使用同一套规范化结果；如果源码和公开规范不同步，先判断该修复实现还是修订规范，不能把偶然的当前行为直接宣布为标准。

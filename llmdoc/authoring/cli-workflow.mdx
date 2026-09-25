@@ -1,5 +1,5 @@
 ---
-description: "char.yaml project parsing, include sandbox, deterministic check --fix, conditional draft update and publish retries"
+description: "九类char.yaml作者流程：统一artifact构建、精确依赖、Preset/Scenario预览、合成作者测试、include安全与条件发布"
 kind: guide
 code:
   paths:
@@ -22,3 +22,7 @@ relations:
 远端发布先取草稿当前版本，带 `If-Match` 更新，生成 Revision，再以同一幂等键请求发布。冲突意味着远端已有其他编辑，不能直接覆盖；请求超时后应先查结果并沿用原 key。Release 是否 active 由异步 Registry 流程决定，CLI 不应把接受请求当成构建完成。
 
 修改项目解析时核对路径安全与规范化 digest；修改远端流程时核对共享 HTTP 契约、并发冲突与重试行为。
+
+CLI 初始化覆盖九类作品，build 经统一构建器输出 artifact 与聚合锁，仅内容类型提供 Context IR，不能为策略生成假 IR。预览可显式选择本地 Preset；Scenario 已锁搭配且未被显式覆盖时使用锁定配置。每个外部依赖由精确 Release 快照提供，不隐式跟随 latest；Session 文件是调用时输入，不应复制进静态搭配。
+
+本地 test、预览与 Action 使用同一 SDK 组装/作者测试语义：固定实现身份、精确依赖和合成 Session，不调用模型；观察到的新消息摘要必须由作者明确写入期望。上传策略作品与内容作品走同一条件写入和发布流程，本地产物摘要不能替代作品 semantic digest。

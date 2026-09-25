@@ -1,8 +1,9 @@
 ---
-description: "Contribution 三方合并与接受、状态计数、分页、变更数及仅成员可见的当前草稿冲突"
+description: "Contribution三方合并与配置协作：policy/module/assembly/tests整字段原子冲突、敏感字段与私有草稿审阅"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/components/contribution-form.tsx"
     - "apps/web/src/components/contribution-list.tsx"
     - "packages/core/src/merge.ts"
     - "packages/core/src/diff.ts"
@@ -27,3 +28,5 @@ Registry 持有提案来源、作者权限和接受事务。接受时重新读�
 列表状态总数保持作者、访客与 agent 的可见范围，但独立于当前页和状态筛选。变更数来自提案本身；与当前私有草稿比较的冲突标记只对 namespace 成员的未关闭提案返回，不能借摘要泄露草稿状态。列表预览不锁定合并结果，接受时仍须重算。
 
 浏览器呈现差异与冲突供作者决策，不是合并权威。修改 merge 算法时应同时检查 API 接受语义和审阅 UI 是否仍准确表达失败与敏感变更。
+
+configuration 变更按 policy、prompt_module、assembly、assembly_tests 整字段原子 set/unset，使用该字段规范化 base digest 三方比较。同字段并发不同修改产生冲突，不尝试块级自动合并；必需的策略字段不可 unset，空作者测试集应移除可选字段。合并后必须重新校验整份 Creation，服务端重新计算可接受结果，不能信任 UI 的 configuration 或 sensitive 声明。

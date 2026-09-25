@@ -35,3 +35,5 @@ GitHub App 绑定使用不可复用的数字仓库及 owner 身份，不能只�
 Publish Action 在允许的 push、workflow_dispatch 或 release 工作流中计算本地摘要并申请 OIDC token；PR 事件不得取得发布路径。OIDC 证明的是受约束的仓库工作流身份、ref、sha、事件和 token 新鲜度，不证明运行的 Action 源码一定可信。Registry 校验这些声明和重放标识后，用 GitHub App 权限在该 commit 重新读取源文件，按同一项目解析算法重算 digest。Action 提交的摘要只是比对值，不是最终内容权威。
 
 来源验证成功后进入普通 Revision 与异步发布流程，仍接受 Registry 的权限、依赖、资产和黑名单检查。修改 Action 与服务端任一侧算法时需共同验证 digest 一致和失败重试。
+
+Action 与 Server 源重读都经统一 artifact 构建，比较 artifact.root.semantic_digest 而非产物 digest。技术作者提供明确的依赖快照，Action dry-run 也执行确定性作者测试；此成功只证明受给定输入约束的本地结果，Server 仍从可信 commit 重读并在普通发布流程中检查当前依赖授权、许可及状态；重读作品类型必须与已绑定的 Registry Creation 一致，不能借更新源文件静默更换身份类型。

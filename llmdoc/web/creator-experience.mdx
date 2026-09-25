@@ -1,8 +1,20 @@
 ---
-description: "Web 品牌视觉、CJK 排版、创作者旅程与页面状态；草稿冲突、导入确认、预览和服务端权限边界"
+description: "Web九类资产创作、Preset模块、Scenario逐槽预览与评级确认；私有组件状态、作者测试、版本Diff、品牌与界面反馈"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/components/mature-gate.tsx"
+    - "apps/web/src/components/artifact-picker.tsx"
+    - "apps/web/src/components/creation-context.tsx"
+    - "apps/web/src/components/editor/policy-editor.tsx"
+    - "apps/web/src/components/editor/composition-editor.tsx"
+    - "apps/web/src/components/editor/assembly-editor.tsx"
+    - "apps/web/src/components/editor/draft-preview.tsx"
+    - "apps/web/src/components/policy-artifact.tsx"
+    - "apps/web/src/components/configuration-diff.tsx"
+    - "apps/web/src/components/downloads.tsx"
+    - "apps/web/src/components/session-controls.tsx"
+    - "apps/web/src/lib/assembly-input.ts"
     - "apps/web/src/styles.css"
     - "apps/web/src/components/editor/avatar-field.tsx"
     - "apps/web/src/main.tsx"
@@ -25,13 +37,13 @@ relations:
 
 # Web 创作端的责任
 
-Web SPA 负责内容浏览、草稿编辑、导入审阅和本地预览，通过共享 HTTP 契约与 Registry 交互。查询缓存和局部编辑状态可以减少等待，但服务端的 Revision、权限、分级与发布状态仍是权威。写入成功后应使相关查询失效；切换主体或作品时不能沿用旧缓存呈现私有内容。
+Web SPA 负责内容浏览、草稿编辑、导入审阅和本地预览，通过共享 HTTP 契约与 Registry 交互。查询缓存和局部编辑状态可以减少等待，但服务端的 Revision、权限、分级与发布状态仍是权威。写入成功后应使相关查询失效；切换主体或作品时，隔离必须同时覆盖查询缓存、已复制到组件的选择/编辑状态和未完成异步结果；只给 queryKey 加主体不充分。状态边界应重建或清空，旧请求不得回填到新主体会话。
 
 草稿自动保存带 `If-Match`，并发修改返回冲突时停止继续覆盖，保留本地编辑供作者比较与恢复。网络超时与冲突不同，不能通过盲目重试制造新 Revision。导入向导对权利与遗漏项收集明确确认，发布状态须区分请求已接收、worker 构建中和 active。
 
 刷新或换设备后的预览与未完成导入应从授权 API 的持久状态恢复，不能只依赖浏览器内存。删除请求界面须明确呈现提交回执与审阅状态，不能把请求已提交表现成账号或内容已删除。
 
-预览使用 Core Resolver 与参考 Assembler，但浏览器的 tokenizer、尚未持久化的草稿以及会话输入可能与最终 Runtime 不同；预览只用于作者判断，不能作为发布完整性证明。前端路由、角色和分级过滤只是呈现层，真正可见性由 API 决定。
+预览经统一 buildCreation 与参考 Assembler，但浏览器的 tokenizer、尚未持久化的草稿以及会话输入可能与最终 Runtime 不同；预览只用于作者判断，不能作为发布完整性证明。前端路由、角色和分级过滤只是呈现层，真正可见性由 API 决定。
 
 ## 旅程与界面反馈
 
@@ -48,3 +60,11 @@ Web SPA 负责内容浏览、草稿编辑、导入审阅和本地预览，通过
 面板使用底色与 1px 边框，阴影限于菜单、dialog、toast；每区一个橙底深色文字主按钮。Character 橙、World 紫、Lorebook 蓝，链接蓝；危险红独立于强调色。General 绿、Teen 琥珀、Mature 浅红、Explicit 实红。主题支持 light/dark/system；Sand #F8F7F4、Night #171B22、Ink #0F172A 为基底，品牌 #FF6B3D/#8B5CF6/#2563EB 用作文字时加深以满足对比。
 
 原设计尺度保留为维护约束，实际 token 由样式源码持有：圆角 6/8/12/16 对应 chip/input-button/card/panel-dialog，另有 pill；间距 4/8/12/16/24/32/48/64；内容最大宽度 1200，桌面 gutter 32、移动端 16。字体规格为 Display 56/1.05/800、H1 36/1.15/700、H2 24/1.25/700、H3 18/1.35/600、正文 15/1.6/400、小字 13/1.45/500、标签 12/700/tracking 0.8、mono 13/500（字号/行高/字重）。原画板示例数据与占位插画不构成协议或当前实现事实。
+
+## 策略与组合创作
+
+九类作品使用对应的结构化编辑入口：Preset/Module 的稳定块、顺序和精确导入版本，Scenario 的 cast、slots、依赖绑定与锁定搭配。高级 JSON 只补充复杂合成 Session，不替代主要创作交互；应用前必须过权威 schema。推荐 Preset 是建议，实际预览或发布搭配必须显式选择精确版本；Module 升级应保留导入身份与顺序并更新 pin。
+
+产物按 kind 阅读与下载：所有类型提供完整 CreationArtifact，内容仍提供旧 IR，策略不伪造内容 IR。作者锁定配置默认用于 Scenario 预览，界面显示实际 tokenizer/Profile，显式覆盖与默认配置分开。每个 late slot 独立输入，参与者显示可读名称；最终有序 messages 与 Trace 同时展示，不能把 Trace 行顺序当作消息顺序。按策略版本比较时同时呈现锁与来源变化；作者配置和测试另从精确发布源比较。
+
+预览遮挡使用内容与所选策略的最高有效评级，同主体嵌套视图可继承已确认的评级上限，避免同一内容重复遮挡；更高评级或主体切换不可继承该确认，临时记忆同时隔离主体、作品与评级。作者测试只接受主动填写的合成数据，运行结果不自动修改期望；工作稿改变时已完成或在途结果都失效，避免旧 Passed 误代表新输入。CCv3 界面要求明确策略选择，展示服务端实际 Loss Report，并分别下载卡片和报告，不把包装 JSON 当作可导入卡片。

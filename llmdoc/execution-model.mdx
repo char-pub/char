@@ -1,8 +1,9 @@
 ---
-description: "产品范围与非目标：Creator first、三种创作入口、公开 Registry 和 Context IR；纯计算包与 API、admin、worker 的权威边界"
+description: "产品范围与权威边界：九类一等资产、Scenario组合、CreationArtifact、Creative Truth与Policy；纯计算包和Registry职责"
 kind: architecture
 code:
   paths:
+    - "packages/core/src/schema/creation.ts"
     - "package.json"
     - ".dependency-cruiser.cjs"
     - "apps/server/src/main.ts"
@@ -11,6 +12,8 @@ code:
     - "apps/server/Dockerfile"
 relations:
   related:
+    - "runtime/resolution.mdx"
+    - "runtime/assembly.mdx"
     - "engineering/verification.mdx"
     - "operations/deploy-and-edge.mdx"
 ---
@@ -19,7 +22,7 @@ relations:
 
 char.pub 是面向 AI 创作的开放 Registry、协作网络与互操作层，优先服务不懂 Git 的创作者，同时支持技术作者/Agent、Runtime 消费者和运营审核。Native Web、CCv3/PNG 导入、GitHub/CLI/Action 收敛到同一个 Canonical Creation；Reference Edge、early binding 与稳定 fragment identity 支持组合并锁定不可变 Release；Context IR、CCv3 Loss Report、参考 Assembler、Preview 和 Diff 支持开放消费。公开 IR 与资产可匿名下载，聊天运行流量不经 Registry。
 
-v0 创作界面开放 Character、World、Lorebook；Relationship、Scenario、Persona、Style 以及 slots、late binding、params、override、visibility 的模型能力不意味着必须提供相应创作 UI。Preset 已有 Canonical policy、独立解析、策略 Diff 与参考 Assembler 支持；Registry 发布读取、Web、CLI build/publish/preview、policy Contribution 和 CCv3 policy 转换尚未接入。Scenario 继续作为创作组合入口，独立 Prompt Module 与完整运行搭配锁定留待后续设计。v0 包含 Native→Native Contribution，GitHub PR 展示与 Native→GitHub patch 延后。
+创作与发布开放 Character、World、Lorebook、Relationship、Scenario、Persona、Style、Preset 和 Prompt Module。Scenario 是创作组合入口，并可锁定精确 Preset 与组装配置；Preset 管运行策略和布局，Prompt Module 复用字面策略块。三者共享 Creation/Release 生命周期，不把内容组合另建为 Experience。Web、CLI、SDK、Action 与 Registry 使用统一 CreationArtifact；内容分支保留 Context IR，策略分支不伪造内容 IR。确定性作者测试验证消息组装，不调用模型或托管真实会话。v0 包含 Native→Native Contribution，GitHub PR 展示与 Native→GitHub patch 延后。
 
 v0 不承担聊天平台、好感度/RPG/战斗、Workflow Engine、完整自主 Agent Framework、自建 Git、OAuth/OIDC Provider、Runtime Registry/Open in/Launch Intent、可执行插件、语义搜索或独立搜索引擎、Redis、付费镜像。可执行代码扩展与声明式 Creation 有不同信任域。真实第三方 Runtime 消费者是未来冻结 IR 的条件，不阻塞当前 v0-draft。
 

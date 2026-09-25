@@ -22,6 +22,6 @@ relations:
 
 跨运行时用例把规范输入、操作和期望输出分开管理。新用例先作为 draft 写入并执行，用于发现 runner 或输入错误；draft 不与人工认可的 expected 比对，不能报告为语义一致性已通过。审阅、接受之后才形成可回归的 expected 基线。当前用例全部仍是 draft，尚没有人工接受的 expected；这限制了现阶段对三运行时一致性的结论。
 
-修改 Core、Assembler 或 CCv3 语义时，先确认应改变规范还是实现，再加入能区分旧行为与新行为的用例。运行 precheck 和 bundle 后在 Node、浏览器、workerd 中比较被审阅的结果；draft 的运行成功只证明该路径能执行。即便 draft，成功组装仍应检查 late 占位符没有遗留。
+修改 Core、Assembler 或 CCv3 语义时，先确认应改变规范还是实现，再加入能区分旧行为与新行为的用例。运行 precheck 和 bundle 后在 Node、浏览器、workerd 中比较被审阅的结果；draft 的运行成功只证明该路径能执行。即便 draft，成功组装仍应检查被渲染的 Creative/Session 来源没有遗留 late 占位符。策略块是字面文本，按来源排除该检查；不能因此跳过含策略的整条合并消息，漏检同消息的内容来源。
 
 生成的 cases bundle 是可重建产物，权威是 case 输入、runner 和接受流程。接受 expected 是语义审阅动作，不能用自动重录遮盖不兼容变化。

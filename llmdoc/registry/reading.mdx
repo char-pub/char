@@ -1,8 +1,10 @@
 ---
-description: "Release 与草稿头像读取授权、本人上传签名、可见性、tombstone、分级搜索和安全来源摘要"
+description: "Release artifact/IR读取兼容、私有授权、聚合评级与头像；CCv3精确Preset缓存隔离和card/loss下载"
 kind: architecture
 code:
   paths:
+    - "apps/server/src/worker/export.ts"
+    - "apps/server/src/registry/artifacts.ts"
     - "apps/web/src/routes/me.tsx"
     - "apps/server/src/api/routes/drafts.ts"
     - "apps/server/src/api/routes/me.ts"
@@ -29,8 +31,12 @@ relations:
 
 搜索同时处理常见词与短中文查询，使用数据库索引策略而不是单靠前端筛选。内容分级必须在服务端查询与返回边界实施，页面上的筛选参数只改善展示，不能承担权限。公开资产通过受控 CDN 路径提供，私有资产使用短期签名 URL；URL 的生成和跳转不能泄露原始私有存储键。
 
-搜索和个人作品列表返回受控头像入口。草稿头像签名除草稿读取权限外，还要求当前用户本人拥有对应的 ready 上传，并检查 digest 黑名单；持有或粘贴 digest 不能证明私有对象读取权，因此另一维护者上传的未发布头像不会仅凭成员身份开放。Release 头像从已解析 IR 选择本作 mirrored avatar，再按 Release 可见性跳转公共 URL 或私有签名，tombstone 与黑名单仍阻止分发。
+搜索和个人作品列表返回受控头像入口。草稿头像签名除草稿读取权限外，还要求当前用户本人拥有对应的 ready 上传，并检查 digest 黑名单；持有或粘贴 digest 不能证明私有对象读取权，因此另一维护者上传的未发布头像不会仅凭成员身份开放。Release 头像从统一 artifact 选择本作 mirrored avatar，再按 Release 可见性跳转公共 URL 或私有签名，tombstone 与黑名单仍阻止分发。
 
 Release 的来源和发布者摘要只挑选公开契约需要的字段，不直接返回原始 OIDC 声明或内部身份载荷。
 
 修改发布状态或资产存储时，核对读取、搜索和缓存是否仍遵守同一可见性；下架的事务状态与公网副本实际清除之间还存在异步清理边界。
+
+Release 详情以 artifact_digest 指向统一产物，`/artifact` 按可见性跳转公共 CAS 或私有签名读取；无该字段的旧内容 Release 可包装原已存 Context IR，不能用当前编译器重新生成正文悄悄改变旧发布。`/ir` 保持内容兼容接口，对策略作品明确不适用。读取方必须按 artifact.kind 分型，并以聚合 meta 解释评级与许可。
+
+CCv3 导出显式选择精确 Preset Release 时，角色和策略都须通过读取授权；输出桶和缓存键同时区分策略身份及可见性，缓存命中也不省略授权。缺省导出保留 card/loss 包装兼容，part=card 与 part=loss 分别交付可导入卡片和真实损失报告，按 private/no-store 读取，未构建完成仍为 202。
