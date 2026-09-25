@@ -21,7 +21,8 @@ import {
   SEGMENT_RE,
   SLOT_NAME_RE,
 } from "../ids.js";
-import { PresetPolicySchema } from "./policy.js";
+import { AssemblyConfigSchema, AssemblyFixtureSchema } from "./assembly.js";
+import { PresetPolicySchema, PromptModuleSchema } from "./policy.js";
 
 // ---------------------------------------------------------------------------
 // 基础类型
@@ -110,9 +111,10 @@ export const CREATION_TYPES = [
   "persona",
   "style",
   "preset",
+  "prompt-module",
 ] as const;
 /** v0 对创作者开放的类型；其余类型只有数据模型与 Resolver 行为。 */
-export const OPEN_CREATION_TYPES = ["character", "world", "lorebook"] as const;
+export const OPEN_CREATION_TYPES = CREATION_TYPES;
 export const CreationTypeSchema = z.enum(CREATION_TYPES);
 export type CreationType = z.infer<typeof CreationTypeSchema>;
 
@@ -516,17 +518,41 @@ export const CreationSchema = z
     cast: z.array(CastMemberSchema).optional(),
     /** Preset 的运行策略，与 Creative 内容分开表达。 */
     policy: PresetPolicySchema.optional(),
+    prompt_module: PromptModuleSchema.optional(),
+    assembly: AssemblyConfigSchema.optional(),
+    assembly_tests: z.array(AssemblyFixtureSchema).optional(),
     meta: CreationMetaSchema,
     provenance: ProvenanceSchema.default({}),
   })
   .superRefine((creation, ctx) => {
     const issue = (path: (string | number)[], message: string) =>
       ctx.addIssue({ code: "custom", path, message });
-    if (creation.type !== "preset") {
-      if (creation.policy !== undefined) issue(["policy"], "only a preset may declare policy");
-      return;
-    }
-    if (creation.policy === undefined) issue(["policy"], "a preset requires policy");
+    if (creation.type !== "preset" && creation.policy !== undefined)
+      issue(["policy"], "only a preset may declare policy");
+    if (creation.type !== "prompt-module" && creation.prompt_module !== undefined)
+      issue(["prompt_module"], "only a prompt-module may declare prompt_module");
+    if (creation.type !== "scenario" && creation.assembly !== undefined)
+      issue(["assembly"], "only a scenario may declare assembly");
+    if (
+      creation.assembly_tests?.length &&
+      creation.type !== "scenario" &&
+      creation.type !== "preset"
+    )
+      issue(["assembly_tests"], "assembly tests require a scenario or preset");
+    const testIds = new Set<string>();
+    creation.assembly_tests?.forEach((test, i) => {
+      if (testIds.has(test.id)) issue(["assembly_tests", i, "id"], "duplicate test id");
+      testIds.add(test.id);
+      if (test.root === "self" && creation.type === "preset")
+        issue(["assembly_tests", i, "root"], "preset tests need an external content root");
+      if (test.preset === "self" && creation.type !== "preset")
+        issue(["assembly_tests", i, "preset"], "self preset requires a preset creation");
+    });
+    if (creation.type !== "preset" && creation.type !== "prompt-module") return;
+    if (creation.type === "preset" && creation.policy === undefined)
+      issue(["policy"], "a preset requires policy");
+    if (creation.type === "prompt-module" && creation.prompt_module === undefined)
+      issue(["prompt_module"], "a prompt-module requires prompt_module");
     for (const key of ["fragments", "references", "slots", "params", "cast"] as const) {
       const value = creation[key];
       if (value !== undefined && Object.keys(value).length > 0) {

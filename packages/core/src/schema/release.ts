@@ -5,6 +5,7 @@
  * tombstoned）和状态原因可以改变。
  */
 import { z } from "zod";
+import { AssemblyConfigSchema, AssemblyFixtureSchema } from "./assembly.js";
 import {
   AssetSlotSchema,
   AssetVariantSchema,
@@ -30,6 +31,7 @@ import {
   UnversionedRefSchema,
   UserIdSchema,
 } from "./creation.js";
+import { PresetPolicySchema, PromptModuleSchema } from "./policy.js";
 
 export const VisibilityLevelSchema = z.enum(["public", "private"]);
 export const ReleaseStatusSchema = z.enum(["active", "yanked", "tombstoned"]);
@@ -121,6 +123,8 @@ export const ReleaseSchema = z.strictObject({
   snapshot: BlobRefSchema,
   /** 由快照、lock 和 Resolver 版本确定性生成，可以按需生成后缓存。 */
   context_ir: BlobRefSchema.optional(),
+  /** Unified typed artifact; policy releases do not have a Context IR. */
+  artifact: BlobRefSchema.optional(),
 
   availability: z.enum(["complete", "linked"]),
   effective_rating: RatingSchema,
@@ -169,7 +173,31 @@ export const REQUIRED_METADATA_FIELDS: readonly MetadataField[] = [
 
 const changeOp = z.enum(["add", "modify", "remove"]);
 
+export const CONFIGURATION_FIELDS = [
+  "policy",
+  "prompt_module",
+  "assembly",
+  "assembly_tests",
+] as const;
+export const ConfigurationFieldSchema = z.enum(CONFIGURATION_FIELDS);
+export type ConfigurationField = z.infer<typeof ConfigurationFieldSchema>;
+export const ConfigurationChangeSchema = z.strictObject({
+  on: z.literal("configuration"),
+  field: ConfigurationFieldSchema,
+  op: z.enum(["set", "unset"]),
+  base_digest: DigestSchema.optional(),
+  after: z
+    .union([
+      PresetPolicySchema,
+      PromptModuleSchema,
+      AssemblyConfigSchema,
+      z.array(AssemblyFixtureSchema),
+    ])
+    .optional(),
+});
+
 export const ChangeSchema = z.discriminatedUnion("on", [
+  ConfigurationChangeSchema,
   z.strictObject({
     on: z.literal("fragment"),
     op: changeOp,

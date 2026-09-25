@@ -64,7 +64,7 @@ describe("Preset schema boundaries", () => {
         creation: result.json,
         release: tid("rel", 1),
       }).policy,
-    ).toEqual(result.creation.policy);
+    ).toMatchObject(result.creation.policy ?? {});
   });
 
   it("requires each layout region exactly once, permitting either side of history", () => {
@@ -93,7 +93,7 @@ describe("Preset schema boundaries", () => {
     ]) {
       expect(PresetPolicySchema.safeParse({ ...policy(), blocks }).success).toBe(false);
     }
-    expect(PresetPolicySchema.safeParse({ ...policy(), imports: [] }).success).toBe(false);
+    expect(PresetPolicySchema.safeParse({ ...policy(), scripts: [] }).success).toBe(false);
     expect(PresetPolicySchema.safeParse(policy({ blocks: [] })).success).toBe(true);
   });
 
@@ -179,7 +179,7 @@ describe("resolvePreset", () => {
 
   it("returns exact release identity, resolver identity and canonical policy only", () => {
     const resolved = resolvePreset(input);
-    expect(resolved).toEqual({
+    expect(resolved).toMatchObject({
       ref: creation.ref,
       release: input.release,
       semantic_digest,

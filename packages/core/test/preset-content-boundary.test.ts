@@ -57,7 +57,7 @@ describe("Creative and Policy resolver boundaries", () => {
     );
   });
 
-  it("keeps the current content-only publication path explicitly closed to Presets", () => {
+  it("publishes Presets through a policy artifact without manufacturing content IR", () => {
     const report = checkPublish({
       ...root,
       label: "v1",
@@ -69,8 +69,8 @@ describe("Creative and Policy resolver boundaries", () => {
         ownerNamespaces: new Set(["djj"]),
       },
     });
-    expect(report.ok).toBe(false);
+    expect(report.ok).toBe(true);
     expect(report.resolved).toBeUndefined();
-    expect(report.issues.some((issue) => issue.code === "resolve.preset_not_content")).toBe(true);
+    expect(report.artifact?.kind).toBe("preset");
   });
 });

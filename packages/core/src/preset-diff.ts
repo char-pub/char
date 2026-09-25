@@ -45,6 +45,7 @@ export function diffPresets(from: ResolvedPreset, to: ResolvedPreset): PresetDif
     modified: [],
     order_changed: false,
   };
+  const origin_changes: NonNullable<PresetDiff["origin_changes"]> = [];
   const blockFields = ["text", "position", "enabled"] as const;
   for (const id of ids) {
     const oldBlock = before.get(id);
@@ -56,6 +57,12 @@ export function diffPresets(from: ResolvedPreset, to: ResolvedPreset): PresetDif
         .filter((field) => oldBlock[field] !== newBlock[field])
         .sort(compareStrings);
       if (fields.length > 0) blocks.modified.push({ id, fields });
+      if (canonical(oldBlock.origin) !== canonical(newBlock.origin))
+        origin_changes.push({
+          id,
+          ...(oldBlock.origin ? { from: oldBlock.origin } : {}),
+          ...(newBlock.origin ? { to: newBlock.origin } : {}),
+        });
     }
   }
   blocks.order_changed =
@@ -65,5 +72,21 @@ export function diffPresets(from: ResolvedPreset, to: ResolvedPreset): PresetDif
   const policy_changes = policyFields
     .filter((field) => canonical(a.policy[field]) !== canonical(b.policy[field]))
     .sort(compareStrings);
-  return PresetDiffSchema.parse({ from: identity(a), to: identity(b), blocks, policy_changes });
+  const oldLock = new Map((a.lock ?? []).map((entry) => [entry.ref, entry]));
+  const newLock = new Map((b.lock ?? []).map((entry) => [entry.ref, entry]));
+  const lock_changes: NonNullable<PresetDiff["lock_changes"]> = [];
+  for (const ref of [...new Set([...oldLock.keys(), ...newLock.keys()])].sort(compareStrings)) {
+    const from = oldLock.get(ref),
+      to = newLock.get(ref);
+    if (canonical(from) !== canonical(to))
+      lock_changes.push({ ref, ...(from ? { from } : {}), ...(to ? { to } : {}) });
+  }
+  return PresetDiffSchema.parse({
+    from: identity(a),
+    to: identity(b),
+    blocks,
+    policy_changes,
+    lock_changes,
+    origin_changes,
+  });
 }

@@ -88,7 +88,9 @@ describe("diffPresets", () => {
 
   it("detects reordering even without changed text or membership", () => {
     const from = resolved();
-    const to = resolved({ blocks: [...from.policy.blocks].reverse() });
+    const to = resolved({
+      blocks: [...from.policy.blocks].reverse().map(({ origin: _origin, ...block }) => block),
+    });
     expect(diffPresets(from, to).blocks).toEqual({
       added: [],
       removed: [],

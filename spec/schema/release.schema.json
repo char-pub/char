@@ -111,6 +111,9 @@
     "context_ir": {
       "$ref": "#/$defs/BlobRef"
     },
+    "artifact": {
+      "$ref": "#/$defs/BlobRef"
+    },
     "availability": {
       "type": "string",
       "enum": [

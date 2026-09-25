@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SEGMENT_RE } from "../ids.js";
+import { PolicyImportSchema } from "./identity.js";
 
 /** 默认布局顺序；显式 Preset 必须完整列出这些区域，每个恰好一次。 */
 export const PRESET_REGIONS = [
@@ -53,6 +54,7 @@ export const PresetPolicySchema = z
   .strictObject({
     version: z.literal("0-draft"),
     blocks: z.array(PresetBlockSchema),
+    imports: z.array(PolicyImportSchema).optional(),
     layout: z.array(z.enum(PRESET_REGIONS)).length(PRESET_REGIONS.length),
     region_budgets: z
       .partialRecord(z.enum(CREATIVE_REGIONS), z.number().int().nonnegative().safe())
@@ -63,6 +65,16 @@ export const PresetPolicySchema = z
     }),
   })
   .superRefine((policy, ctx) => {
+    const imports = new Set<string>();
+    policy.imports?.forEach((item, i) => {
+      if (imports.has(item.id))
+        ctx.addIssue({
+          code: "custom",
+          path: ["imports", i, "id"],
+          message: "duplicate import id",
+        });
+      imports.add(item.id);
+    });
     const seen = new Set<string>();
     policy.blocks.forEach((block, i) => {
       if (seen.has(block.id)) {
@@ -79,3 +91,25 @@ export const PresetPolicySchema = z
     }
   });
 export type PresetPolicy = z.infer<typeof PresetPolicySchema>;
+
+export const PromptModuleSchema = z
+  .strictObject({
+    version: z.literal("0-draft"),
+    blocks: z.array(PresetBlockSchema),
+    imports: z.array(PolicyImportSchema).optional(),
+  })
+  .superRefine((module, ctx) => {
+    for (const field of ["blocks", "imports"] as const) {
+      const seen = new Set<string>();
+      module[field]?.forEach((item, i) => {
+        if (seen.has(item.id))
+          ctx.addIssue({
+            code: "custom",
+            path: [field, i, "id"],
+            message: `duplicate ${field} id`,
+          });
+        seen.add(item.id);
+      });
+    }
+  });
+export type PromptModule = z.infer<typeof PromptModuleSchema>;

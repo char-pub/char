@@ -72,7 +72,7 @@ export interface LoadedGraph {
 
 function loadRelease(input: ReleaseInput): LoadedRelease {
   const { creation, semantic_digest } = canonicalizeCreation(input.creation);
-  if (creation.type === "preset") {
+  if (creation.type === "preset" || creation.type === "prompt-module") {
     throw new CharError({
       code: "resolve.preset_not_content",
       subject: creation.ref,

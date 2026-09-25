@@ -16,15 +16,31 @@
         "added": {
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              {
+                "type": "string",
+                "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            ]
           }
         },
         "removed": {
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              {
+                "type": "string",
+                "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            ]
           }
         },
         "modified": {
@@ -33,8 +49,16 @@
             "type": "object",
             "properties": {
               "id": {
-                "type": "string",
-                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  }
+                ]
               },
               "fields": {
                 "minItems": 1,
@@ -79,6 +103,123 @@
           "requires"
         ]
       }
+    },
+    "lock_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "#/$defs/UnversionedRef"
+          },
+          "from": {
+            "$ref": "#/$defs/LockEntry"
+          },
+          "to": {
+            "$ref": "#/$defs/LockEntry"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "origin_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              {
+                "type": "string",
+                "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            ]
+          },
+          "from": {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string",
+                "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+              },
+              "release": {
+                "type": "string",
+                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              },
+              "semantic_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "block": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "via": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              }
+            },
+            "required": [
+              "ref",
+              "release",
+              "semantic_digest",
+              "block",
+              "via"
+            ],
+            "additionalProperties": false
+          },
+          "to": {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string",
+                "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+              },
+              "release": {
+                "type": "string",
+                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              },
+              "semantic_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "block": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "via": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              }
+            },
+            "required": [
+              "ref",
+              "release",
+              "semantic_digest",
+              "block",
+              "via"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
@@ -117,6 +258,35 @@
     "Digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "LockEntry": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/UnversionedRef"
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "semantic_digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          }
+        }
+      },
+      "required": [
+        "ref",
+        "release",
+        "semantic_digest",
+        "via"
+      ],
+      "additionalProperties": false
     }
   }
 }
