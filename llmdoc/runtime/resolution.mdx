@@ -1,5 +1,5 @@
 ---
-description: "Resolver dependency graph, exact Release locks, diamond conflicts, bindings, overrides and deterministic Context IR"
+description: "Resolver dependency graph, exact Release locks, diamond conflicts, bindings, overrides and deterministic Context IR; rejects Preset policy roots and dependencies"
 kind: architecture
 code:
   paths:
@@ -20,6 +20,8 @@ relations:
 # Resolver 与 Context IR
 
 Resolver 从根 Release 和精确锁定的依赖快照构造 Context IR。第一阶段沿 Reference Edge 建立引用实例：同一 Release 可以从不同路径引入，但同一 Creation 在整张图中只能对应一个 Release。冲突报告两条路径；环、超深图和过多实例会失败。pin 的 semantic digest 必须与重新计算的内容一致。tombstone 直接失败，yank 保留警告。
+
+内容 Resolver 明确拒绝 Preset 根和实际加载的 Preset 依赖，避免将策略解析成丢失语义的空内容 IR。策略经独立解析后交给 Assembler；选择或切换 Preset 不改变内容锁。Scenario 是创作组合入口，不另建 Composition 或 Experience 一等对象。
 
 第二阶段处理 bindings、params、fragment override、模板和渲染顺序。Creation 的 Creative Truth 不能被运行时 Preset 或 Session 改写。early slot 在解析时固定；late slot 留待会话组装，不能在发布前假装已得到具体值。IR 同时保留 origin 和锁定信息，使下游 Diff、导出和审计能够解释内容来源。
 
