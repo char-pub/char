@@ -167,7 +167,7 @@ describe("UC-1: a creator publishes a Level 0 character", () => {
     expect(frags.map((f) => [f.ownerRef, f.fragmentId])).toEqual([["@djj/alice", "description"]]);
     const refs = await t.app.db.select().from(blobRefs).where(eq(blobRefs.releaseId, row.id));
     expect(new Set(refs.map((r) => r.role))).toEqual(
-      new Set(["snapshot", "ir", "manifest", "fragment", "asset"]),
+      new Set(["snapshot", "artifact", "ir", "manifest", "fragment", "asset"]),
     );
 
     // public 桶允许匿名读取（模拟 CDN）：IR 可以直接下载，内容与 digest 相符。

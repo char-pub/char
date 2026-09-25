@@ -41,6 +41,8 @@ export const imports = app.table(
     errorCode: text("error_code"),
     errorDetail: text("error_detail"),
     creationId: uuid("creation_id").references(() => creations.id),
+    /** 作者显式转换并确认的独立 Policy 草稿。 */
+    policyPresetId: uuid("policy_preset_id").references(() => creations.id),
     /** 原件的 digest（private 桶）。 */
     sourceDigest: text("source_digest"),
     /** Import Report 的 digest（private 桶，JCS 编码）。 */

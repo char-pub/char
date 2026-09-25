@@ -189,7 +189,7 @@ export async function previewTombstone(
     .sort((a, b) => (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : a.label < b.label ? -1 : 1));
 
   // 要停止分发的对象：
-  // - 每个受影响 Release 的快照、IR 和导出物，它们都包含被下架的内容；
+  // - 每个受影响 Release 的统一产物、快照、IR 和导出物，它们都包含被下架的内容；
   // - 被下架的 fragment / asset 本身；整体下架 Release 或 Creation 时，还包括这些 Release
   //   直接引用的 fragment 与 asset。
   // 但任何仍被未受影响的 Release 引用的对象都保留（例如共享的依赖 fragment），
@@ -204,7 +204,11 @@ export async function previewTombstone(
   const byDigest = new Map<string, Set<string>>();
   for (const r of refRows) {
     const artifact =
-      r.role === "snapshot" || r.role === "ir" || r.role === "export" || r.role === "manifest";
+      r.role === "artifact" ||
+      r.role === "snapshot" ||
+      r.role === "ir" ||
+      r.role === "export" ||
+      r.role === "manifest";
     const content = wholeTarget && directSet.has(r.releaseId);
     if (artifact || content || r.digest === subjectDigest) {
       const set = byDigest.get(r.digest) ?? new Set();

@@ -8,16 +8,25 @@
  * - 幂等：缓存 key 已存在时直接跳过。Release 已被下架时不构建。
  */
 import { exportCCv3 } from "@char-pub/ccv3";
-import { ContextIRSchema, type JSONValue, jcs } from "@char-pub/core";
+import {
+  ContextIRSchema,
+  type EffectiveMeta,
+  type JSONValue,
+  jcs,
+  type ResolvedPreset,
+} from "@char-pub/core";
 import { eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { blobRefs, buildArtifacts, releases } from "../db/schema/index.js";
+import { readArtifact } from "../registry/artifacts.js";
 import type { Cas } from "../storage/cas.js";
 
 export interface ExportJob {
   release_id: string;
   target: "ccv3";
   cache_key: string;
+  preset_release_id?: string;
+  private_output?: boolean;
 }
 
 export interface ExportDeps {
@@ -42,10 +51,29 @@ export async function handleExportJob(deps: ExportDeps, job: ExportJob): Promise
   const bucket = r.visibility === "public" ? ("public" as const) : ("private" as const);
   const irBytes = await cas.getBlob(bucket, r.contextIrDigest);
   const ir = ContextIRSchema.parse(JSON.parse(new TextDecoder().decode(irBytes)));
-  const { card, loss } = exportCCv3(ir);
+  let resolvedPreset: ResolvedPreset | undefined;
+  let presetMeta: EffectiveMeta | undefined;
+  let presetPublic = true;
+  if (job.preset_release_id) {
+    const [p] = await db
+      .select()
+      .from(releases)
+      .where(eq(releases.id, job.preset_release_id))
+      .limit(1);
+    if (!p || p.status === "tombstoned" || p.publishState !== "done") return "skipped";
+    const artifact = await readArtifact(cas, p, "https://assets.char.pub/cas/sha256");
+    if (artifact.kind !== "preset") return "skipped";
+    resolvedPreset = artifact.preset;
+    presetMeta = artifact.meta;
+    presetPublic = p.visibility === "public";
+  }
+  const { card, loss } = exportCCv3(
+    ir,
+    resolvedPreset ? { resolvedPreset, ...(presetMeta ? { presetMeta } : {}) } : {},
+  );
   const bytes = new TextEncoder().encode(jcs({ card, loss } as unknown as JSONValue));
   const blob = await cas.putBlob(db, {
-    bucket,
+    bucket: job.private_output || !presetPublic ? "private" : bucket,
     bytes,
     mediaType: "application/json",
     kind: "export",
@@ -57,7 +85,12 @@ export async function handleExportJob(deps: ExportDeps, job: ExportJob): Promise
       .onConflictDoNothing();
     await tx
       .insert(blobRefs)
-      .values({ digest: blob.digest, releaseId: r.id, role: "export" })
+      .values([
+        { digest: blob.digest, releaseId: r.id, role: "export" },
+        ...(job.preset_release_id
+          ? [{ digest: blob.digest, releaseId: job.preset_release_id, role: "export" }]
+          : []),
+      ])
       .onConflictDoNothing();
   });
   return "built";

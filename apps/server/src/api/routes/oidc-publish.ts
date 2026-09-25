@@ -156,6 +156,7 @@ export function oidcPublishModule(gh: GitHubDeps): (app: Hono<Env>) => void {
             {
               ref: `@${ctx.ns.slug}/${ctx.creation.name}`,
               creationId: encodeId("creation", ctx.creation.id),
+              type: ctx.creation.type,
             },
           );
         } catch (e) {

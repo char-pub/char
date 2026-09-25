@@ -5,7 +5,12 @@
  * 草稿伪装成另一个 Creation。`ref` 总是使用 namespace 的当前名字，namespace 改名后
  * 下一次保存就会更新。
  */
-import type { AttributionAuthor, CreationType, LocalizedText } from "@char-pub/core";
+import {
+  type AttributionAuthor,
+  type CreationType,
+  type LocalizedText,
+  PRESET_REGIONS,
+} from "@char-pub/core";
 
 /**
  * 新建 Creation 时的草稿。许可默认“保留所有权利”：作者本人可以发布，别人不能再分发，
@@ -18,7 +23,7 @@ export function initialDraft(input: {
   display_name: LocalizedText;
   author: AttributionAuthor;
 }): Record<string, unknown> {
-  return {
+  const draft: Record<string, unknown> = {
     id: input.id,
     ref: input.ref,
     type: input.type,
@@ -32,6 +37,39 @@ export function initialDraft(input: {
       license: "LicenseRef-All-Rights-Reserved",
     },
   };
+  const fragment = (kind: string, text: string) => ({
+    id: "description",
+    stable: true,
+    kind,
+    content: { type: "text", text },
+  });
+  if (input.type === "preset") {
+    draft.policy = {
+      version: "0-draft",
+      blocks: [],
+      layout: [...PRESET_REGIONS],
+      requires: { system_role: true },
+    };
+  } else if (input.type === "prompt-module") {
+    draft.prompt_module = { version: "0-draft", blocks: [] };
+  } else if (input.type === "relationship") {
+    draft.slots = {
+      first: { accepts: ["character", "persona"], required: false },
+      second: { accepts: ["character", "persona"], required: false },
+    };
+    draft.fragments = [fragment("relationship", "Describe their relationship.")];
+  } else if (input.type === "scenario") {
+    draft.cast = [{ key: "player", who: { late: "persona" }, role: "user" }];
+    draft.fragments = [fragment("scenario", "Describe the opening situation.")];
+  } else if (input.type === "persona" || input.type === "style") {
+    draft.fragments = [
+      fragment(
+        input.type,
+        input.type === "persona" ? "Describe your persona." : "Describe the expressive style.",
+      ),
+    ];
+  }
+  return draft;
 }
 
 export function forceIdentity(

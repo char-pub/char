@@ -8,11 +8,14 @@
  * 导入是异步的：请求在一个事务里登记导入并入队，worker 解析卡片、处理图片后创建 Creation。
  * 同一个上传只能导入一次，重复提交返回同一个导入。
  */
+
+import { type ImportReport, importPolicyPreset } from "@char-pub/ccv3";
 import {
   ConfirmImportRequestSchema,
   CreateImportRequestSchema,
   type ImportStatus,
 } from "@char-pub/contracts";
+import { CharError, canonicalizeCreation, isCharError } from "@char-pub/core";
 import { eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { appendAudit } from "../../audit/audit.js";
@@ -86,6 +89,21 @@ async function creationRef(c: AppContext, imp: ImportRow): Promise<string | unde
   return row ? `@${row.slug}/${row.name}` : undefined;
 }
 
+async function statusBody(c: AppContext, imp: ImportRow, report?: ImportStatus["report"]) {
+  let policy_preset: ImportStatus["policy_preset"];
+  if (imp.policyPresetId) {
+    const [p] = await c.var.services.db
+      .select({ name: creations.name, slug: namespaces.slug })
+      .from(creations)
+      .innerJoin(namespaces, eq(namespaces.id, creations.namespaceId))
+      .where(eq(creations.id, imp.policyPresetId))
+      .limit(1);
+    if (p)
+      policy_preset = { id: encodeId("creation", imp.policyPresetId), ref: `@${p.slug}/${p.name}` };
+  }
+  return importStatusBody(imp, { creation: await creationRef(c, imp), report, policy_preset });
+}
+
 export function register(app: Hono<Env>): void {
   route(app, {
     method: "post",
@@ -123,7 +141,7 @@ export function register(app: Hono<Env>): void {
       const [existing] = await db.select().from(imports).where(eq(imports.uploadId, u.id)).limit(1);
       if (existing) {
         if (existing.namespaceId === ns.id && existing.name === body.name) {
-          return c.json(importStatusBody(existing, { creation: await creationRef(c, existing) }));
+          return c.json(await statusBody(c, existing));
         }
         return problem(c, 409, "import.upload_used", "this upload has already been imported");
       }
@@ -191,12 +209,12 @@ export function register(app: Hono<Env>): void {
             .from(imports)
             .where(eq(imports.uploadId, u.id))
             .limit(1);
-          if (winner) return c.json(importStatusBody(winner));
+          if (winner) return c.json(await statusBody(c, winner));
         }
         return taken();
       }
       if (!row) throw new Error("import insert returned no row");
-      return c.json(importStatusBody(row), 202);
+      return c.json(await statusBody(c, row), 202);
     },
   });
 
@@ -215,12 +233,7 @@ export function register(app: Hono<Env>): void {
         report = JSON.parse(new TextDecoder().decode(bytes)) as ImportStatus["report"];
       }
       c.header("cache-control", "private, no-store");
-      return c.json(
-        importStatusBody(imp, {
-          creation: await creationRef(c, imp),
-          ...(report ? { report } : {}),
-        }),
-      );
+      return c.json(await statusBody(c, imp, report));
     },
   });
 
@@ -234,7 +247,7 @@ export function register(app: Hono<Env>): void {
       return { action: "import.confirm", resource: found.resource, loaded: found.imp };
     },
     handler: async (c, { body, loaded: imp }) => {
-      const { db, clock } = c.var.services;
+      const { db, clock, cas, ids } = c.var.services;
       const creationId = imp.creationId;
       if (imp.status !== "succeeded" || !creationId) {
         return problem(c, 409, "import.not_ready", "the import has not finished");
@@ -244,49 +257,119 @@ export function register(app: Hono<Env>): void {
       }
       const uid = userIdOf(c.var.principal);
       const now = clock.now();
-      const updated = await db.transaction(async (tx) => {
-        const [draft] = await tx
+      let policyWorking: ReturnType<typeof canonicalizeCreation> | undefined;
+      let policyReport: ImportReport | undefined;
+      let policyOptions: Parameters<typeof importPolicyPreset>[1] | undefined;
+      const policyId = body.policy_preset ? ids.uuid() : undefined;
+      if (body.policy_preset && policyId) {
+        if (!imp.reportDigest) return problem(c, 422, "ccv3.policy_empty");
+        const [ns] = await db
           .select()
-          .from(creationDrafts)
-          .where(eq(creationDrafts.creationId, creationId))
-          .limit(1)
-          .for("update");
-        if (!draft) return null;
-        const working = draft.working as { meta?: Record<string, unknown> };
-        await tx
-          .update(creationDrafts)
-          .set({
-            working: {
-              ...working,
-              meta: {
-                ...(working.meta ?? {}),
-                rating: body.rating,
-                rights: body.rights,
-                license: body.license,
+          .from(namespaces)
+          .where(eq(namespaces.id, imp.namespaceId))
+          .limit(1);
+        if (!ns) return notFound(c);
+        const bytes = await cas.getBlob("private", imp.reportDigest);
+        policyReport = JSON.parse(new TextDecoder().decode(bytes)) as ImportReport;
+        policyOptions = {
+          id: encodeId("creation", policyId),
+          ref: `@${ns.slug}/${body.policy_preset.name}`,
+          display_name: body.policy_preset.display_name ?? `${imp.name} preset`,
+          meta: {
+            default_locale: "en",
+            rating: body.rating,
+            rights: body.rights,
+            license: body.license,
+          },
+        };
+        try {
+          policyWorking = canonicalizeCreation(importPolicyPreset(policyReport, policyOptions));
+        } catch (e) {
+          if (isCharError(e)) return problem(c, 422, e.code, e.detail);
+          throw e;
+        }
+      }
+      let updated: ImportRow | null;
+      try {
+        updated = await db.transaction(async (tx) => {
+          const [locked] = await tx
+            .select()
+            .from(imports)
+            .where(eq(imports.id, imp.id))
+            .for("update");
+          if (locked?.confirmedAt)
+            throw new CharError({ code: "import.already_confirmed", subject: imp.id });
+          const [draft] = await tx
+            .select()
+            .from(creationDrafts)
+            .where(eq(creationDrafts.creationId, creationId))
+            .limit(1)
+            .for("update");
+          if (!draft) return null;
+          if (policyWorking && policyId && body.policy_preset && policyReport && policyOptions) {
+            // 署名来自锁定的当前角色草稿，经协议规范化后只传公开 authors 字段。
+            const authors = canonicalizeCreation(draft.working).creation.authors;
+            policyWorking = canonicalizeCreation(
+              importPolicyPreset(policyReport, { ...policyOptions, authors }),
+            );
+            if (await nameTaken(tx, imp.namespaceId, body.policy_preset.name))
+              throw new CharError({ code: "creation.taken", subject: body.policy_preset.name });
+            await tx.insert(creations).values({
+              id: policyId,
+              namespaceId: imp.namespaceId,
+              name: body.policy_preset.name,
+              type: "preset",
+              displayName: policyWorking.creation.display_name,
+              rating: body.rating,
+            });
+            await tx
+              .insert(creationDrafts)
+              .values({ creationId: policyId, working: policyWorking.json, updatedBy: uid });
+          }
+          const working = draft.working as { meta?: Record<string, unknown> };
+          await tx
+            .update(creationDrafts)
+            .set({
+              working: {
+                ...working,
+                meta: {
+                  ...(working.meta ?? {}),
+                  rating: body.rating,
+                  rights: body.rights,
+                  license: body.license,
+                },
               },
-            },
-            version: draft.version + 1,
-            updatedBy: uid,
-            updatedAt: now,
-          })
-          .where(eq(creationDrafts.creationId, creationId));
-        const [row] = await tx
-          .update(imports)
-          .set({ confirmedAt: now, updatedAt: now })
-          .where(eq(imports.id, imp.id))
-          .returning();
-        await appendAudit(tx, {
-          at: now,
-          actor: auditActor(c.var.principal),
-          action: "import.confirm",
-          subject: `creation:${creationId}`,
-          requestId: requestIdOf(c),
-          after: { import: encodeId("import", imp.id), ...body },
+              version: draft.version + 1,
+              updatedBy: uid,
+              updatedAt: now,
+            })
+            .where(eq(creationDrafts.creationId, creationId));
+          const [row] = await tx
+            .update(imports)
+            .set({
+              confirmedAt: now,
+              updatedAt: now,
+              ...(policyId ? { policyPresetId: policyId } : {}),
+            })
+            .where(eq(imports.id, imp.id))
+            .returning();
+          await appendAudit(tx, {
+            at: now,
+            actor: auditActor(c.var.principal),
+            action: "import.confirm",
+            subject: `creation:${creationId}`,
+            requestId: requestIdOf(c),
+            after: { import: encodeId("import", imp.id), ...body },
+          });
+          return row ?? null;
         });
-        return row ?? null;
-      });
+      } catch (e) {
+        if (isCharError(e)) return problem(c, 409, e.code, e.detail);
+        if (uniqueViolation(e) !== null) return problem(c, 409, "creation.taken");
+        throw e;
+      }
       if (!updated) return notFound(c);
-      return c.json(importStatusBody(updated, { creation: await creationRef(c, updated) }));
+      return c.json(await statusBody(c, updated));
     },
   });
 }

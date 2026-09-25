@@ -72,7 +72,7 @@ describe("loading a creation from a GitHub commit", () => {
     gh.put(REPO, SHA, "chars/alice/char.yaml", YAML);
     gh.put(REPO, SHA, "chars/alice/description.md", "{{self}} is a courier.\n");
     const out = await loadSourceAtCommit(gh, AT, EXPECTED);
-    expect(out.reported_digest).toBe(action.resolved.ir.root.semantic_digest);
+    expect(out.reported_digest).toBe(action.artifact.root.semantic_digest);
     // 存入 Revision 的内容使用 Registry 的真实 ID，所以两个 digest 不同。
     expect(out.semantic_digest).not.toBe(out.reported_digest);
   });
@@ -122,4 +122,13 @@ describe("loading a creation from a GitHub commit", () => {
       expect(() => normalizeRepoPath(bad)).toThrow();
     }
   });
+});
+
+it("locks GitHub source to the Registry creation type", async () => {
+  const gh = new MemoryGitHubSource();
+  gh.put(REPO, SHA, "chars/alice/char.yaml", YAML);
+  gh.put(REPO, SHA, "chars/alice/description.md", "A courier.");
+  expect(await codeOf(loadSourceAtCommit(gh, AT, { ...EXPECTED, type: "preset" }))).toBe(
+    "github.type_mismatch",
+  );
 });

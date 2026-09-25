@@ -26,6 +26,7 @@ export const changeTargetEnum = app.enum("change_target", [
   "edge",
   "asset",
   "metadata",
+  "configuration",
 ]);
 export const changeOpEnum = app.enum("change_op", ["add", "modify", "remove", "set", "unset"]);
 export const mergeStateEnum = app.enum("merge_state", [

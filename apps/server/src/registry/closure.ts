@@ -5,8 +5,14 @@
  * 每个直接依赖的快照，就能得到整张依赖图，不需要递归查询。每个 Release 当前的状态
  * （active / yanked / tombstoned）与可见性总是以数据库为准，快照里不保存可变状态。
  */
-import type { CanonicalCreation, JSONValue, ReleaseInput } from "@char-pub/core";
+import {
+  type CanonicalCreation,
+  getCreationDependencies,
+  type JSONValue,
+  type ReleaseInput,
+} from "@char-pub/core";
 import { and, eq, inArray, ne } from "drizzle-orm";
+import type { Principal } from "../authz/authorize.js";
 import type { Executor } from "../db/client.js";
 import {
   assetMeta,
@@ -16,6 +22,7 @@ import {
   releases,
 } from "../db/schema/index.js";
 import { type Cas, CasError } from "../storage/cas.js";
+import { authorizedRelease } from "./artifacts.js";
 import { loadSnapshot, type SnapshotDependency } from "./content.js";
 import { decodeId, encodeId } from "./ids.js";
 
@@ -36,11 +43,12 @@ export interface Closure {
    * 发布校验会把它们当作 tombstoned 依赖拒绝。
    */
   unavailable: { release: string; status: ReleaseRow["status"]; reason: string | null }[];
+  denied: string[];
 }
 
 function pinnedReleases(creation: CanonicalCreation): string[] {
   const out: string[] = [];
-  for (const e of creation.references) {
+  for (const e of getCreationDependencies(creation)) {
     if (e.pin && "release" in e.pin) out.push(e.pin.release);
   }
   return out;
@@ -66,20 +74,22 @@ export async function loadClosure(
   db: Executor,
   cas: Cas,
   root: CanonicalCreation,
+  principal: Principal,
 ): Promise<Closure> {
   const direct = pinnedReleases(root);
-  const closure: Closure = { releases: new Map(), unavailable: [] };
+  const closure: Closure = { releases: new Map(), unavailable: [], denied: [] };
   if (direct.length === 0) return closure;
 
   const snapshots: { row: ReleaseRow; deps: SnapshotDependency[]; root: JSONValue }[] = [];
   for (const typeId of new Set(direct)) {
     const id = decodeId("release", typeId);
     if (!id) continue;
-    const [row] = await db
-      .select()
-      .from(releases)
-      .where(and(eq(releases.id, id), eq(releases.publishState, "done")))
-      .limit(1);
+    const allowed = await authorizedRelease(db, principal, typeId);
+    const row = allowed?.row;
+    if (!allowed) {
+      closure.denied.push(typeId);
+      continue;
+    }
     // 不存在或尚未发布成功的 Release 不加入闭包，Resolver 会报告找不到。
     if (!row?.snapshotDigest) continue;
     try {
@@ -115,10 +125,22 @@ export async function loadClosure(
       creation: s.root,
     });
     for (const d of s.deps) {
-      if (closure.releases.has(d.release)) continue;
       const id = decodeId("release", d.release);
       const row = id ? rows.get(id) : undefined;
       if (!row) continue;
+      if (d.semantic_digest !== row.semanticDigest) {
+        closure.unavailable.push({
+          release: d.release,
+          status: row.status,
+          reason: "snapshot dependency digest differs from its release",
+        });
+        continue;
+      }
+      if (closure.releases.has(d.release)) continue;
+      if (!(await authorizedRelease(db, principal, d.release))) {
+        closure.denied.push(d.release);
+        continue;
+      }
       closure.releases.set(d.release, {
         input: inputOf(row, d.creation, d.semantic_digest),
         row,

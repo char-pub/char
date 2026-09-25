@@ -61,6 +61,8 @@ export const releases = app.table(
     lockDigest: text("lock_digest"),
     snapshotDigest: text("snapshot_digest"),
     contextIrDigest: text("context_ir_digest"),
+    /** 统一内容或策略产物；旧 Release 可按快照按需重建。 */
+    artifactDigest: text("artifact_digest"),
     availability: releaseAvailabilityEnum("availability"),
     effectiveRating: ratingEnum("effective_rating"),
     licenseCheck: licenseCheckEnum("license_check"),
