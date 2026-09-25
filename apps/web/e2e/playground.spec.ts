@@ -44,6 +44,8 @@ test("the production CSP from _headers is not violated", async ({ page }) => {
   expect(csp).toBeTruthy();
   await page.route("**/*", async (route) => {
     if (route.request().url().startsWith(API)) return route.abort();
+    // CSP 只注入文档；静态资源直接放行，避免页面关闭时仍有 fetch/fulfill 未完成。
+    if (route.request().resourceType() !== "document") return route.continue();
     const response = await route.fetch();
     const type = response.headers()["content-type"] ?? "";
     if (!type.includes("text/html")) return route.fulfill({ response });
