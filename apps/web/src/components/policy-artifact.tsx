@@ -96,6 +96,7 @@ function PolicyPreviewSession() {
   const artifact = c.artifact;
   return (
     <MatureGate
+      identity={c.me?.id}
       key={`${c.me?.id}:${c.selected?.id}:${content?.root.semantic_digest}`}
       rating={highestRating(c.rating, content?.meta.rating)}
       allowed={c.allowMature}
@@ -215,6 +216,7 @@ export function PolicyVersions() {
         <p role="alert">Could not load the selected versions.</p>
       ) : a && b ? (
         <MatureGate
+          identity={c.me?.id}
           key={`${c.me?.id}:${a.root.release}:${b.root.release}`}
           rating={highestRating(c.rating, a.meta.rating, b.meta.rating)}
           allowed={c.allowMature}

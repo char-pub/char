@@ -59,6 +59,7 @@ function OverviewTab() {
       <div className="min-w-0">
         {c.artifact && c.artifact.kind !== "content" ? (
           <MatureGate
+            identity={c.me?.id}
             rating={c.rating}
             allowed={c.allowMature}
             remember={c.detail.ref}
@@ -68,6 +69,7 @@ function OverviewTab() {
           </MatureGate>
         ) : c.ir ? (
           <MatureGate
+            identity={c.me?.id}
             rating={c.rating}
             allowed={c.allowMature}
             remember={c.detail.ref}

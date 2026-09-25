@@ -175,6 +175,7 @@ function PreviewSession({
           Context Preview
         </Heading>
         <MatureGate
+          identity={me.data?.id}
           key={`${me.data?.id}:${ir.root.release}:${preset?.semantic_digest}:${artifact?.root.semantic_digest}`}
           rating={highestRating(ir.meta.rating, artifact?.meta.rating, selectedRating)}
           allowed={allowsMature(me.data)}

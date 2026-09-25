@@ -135,6 +135,7 @@ function ContentVersionsTab() {
   } else {
     body = (
       <MatureGate
+        identity={c.me?.id}
         rating={worst?.effective_rating ?? "general"}
         allowed={c.allowMature}
         remember={c.detail.ref}

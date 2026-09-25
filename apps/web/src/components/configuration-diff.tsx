@@ -32,6 +32,7 @@ export function ConfigurationDiff({
   );
   return (
     <MatureGate
+      identity={c.me?.id}
       key={String(c.me?.id) + from + to}
       rating={highestRating(
         ...c.detail.releases

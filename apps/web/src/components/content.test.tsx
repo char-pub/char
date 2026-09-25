@@ -78,6 +78,60 @@ describe("MatureGate", () => {
     );
     expect(screen.queryByText("other creation")).toBeNull();
   });
+
+  it("shares the confirmed rating with nested previews but requires confirmation for a higher rated preset", async () => {
+    const preview = (rating: "mature" | "explicit") => (
+      <MatureGate rating="mature" identity="reader">
+        <MatureGate rating={rating} identity="reader">
+          <p>assembled preview</p>
+        </MatureGate>
+      </MatureGate>
+    );
+    const { rerender } = render(preview("mature"));
+    await userEvent.click(screen.getByRole("button", { name: "Show this once" }));
+    expect(screen.getByText("assembled preview")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Show this once" })).toBeNull();
+
+    rerender(preview("explicit"));
+    expect(screen.queryByText("assembled preview")).toBeNull();
+    expect(screen.getByText("Explicit content is hidden")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Show this once" }));
+    expect(screen.getByText("assembled preview")).toBeTruthy();
+  });
+
+  it("isolates both mounted and remembered confirmations by account and rating", async () => {
+    vi.stubGlobal("sessionStorage", memoryStorage());
+    const preview = (identity: string, rating: "mature" | "explicit" = "mature") => (
+      <MatureGate rating={rating} identity={identity} remember="@djj/alice">
+        <p>account preview</p>
+      </MatureGate>
+    );
+    const first = render(preview("reader"));
+    await userEvent.click(screen.getByRole("button", { name: "Show this once" }));
+    first.rerender(preview("other-reader"));
+    expect(screen.queryByText("account preview")).toBeNull();
+    first.rerender(preview("reader", "explicit"));
+    expect(screen.queryByText("account preview")).toBeNull();
+    first.unmount();
+
+    const remounted = render(preview("reader"));
+    expect(screen.getByText("account preview")).toBeTruthy();
+    remounted.rerender(preview("anonymous"));
+    expect(screen.queryByText("account preview")).toBeNull();
+  });
+
+  it("does not inherit a confirmation from another identity", async () => {
+    render(
+      <MatureGate rating="mature" identity="reader">
+        <MatureGate rating="mature" identity="other-reader">
+          <p>other account preview</p>
+        </MatureGate>
+      </MatureGate>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Show this once" }));
+    expect(screen.queryByText("other account preview")).toBeNull();
+    expect(screen.getByRole("button", { name: "Show this once" })).toBeTruthy();
+  });
 });
 
 describe("user content is never executed", () => {

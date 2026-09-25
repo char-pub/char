@@ -60,6 +60,7 @@ function DraftPreviewSession({ working }: { working: Working }) {
       ) : null}
       {artifact ? (
         <MatureGate
+          identity={me.data?.id}
           key={artifact.root.semantic_digest}
           rating={artifact.meta.rating}
           allowed={allowsMature(me.data)}

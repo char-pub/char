@@ -43,6 +43,7 @@ function PreviewTab() {
   }
   return (
     <MatureGate
+      identity={c.me?.id}
       rating={c.rating}
       allowed={c.allowMature}
       remember={c.detail.ref}
