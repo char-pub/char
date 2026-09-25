@@ -1,6 +1,6 @@
 # 一等创作资产完整接入：执行记录
 
-状态：实施中。用户已授权上一轮全部剩余能力；Client 明确为 CLI、SDK、Publish Action；作者测试只做确定性组装验证。正式契约随实现写入规范与 schema。本文件保留阶段、接口协调和未完成项，不能把计划当成已交付。
+状态：已完成本轮实现与验收（2026-09-26）。用户已授权上一轮全部剩余能力；Client 明确为 CLI、SDK、Publish Action；作者测试只做确定性组装验证。正式契约随实现写入规范与 schema。本文件记录已交付范围、共享接口与最终验收证据。
 
 ## 范围与边界
 
@@ -55,7 +55,7 @@ Scenario `assembly` 锁定精确 Preset 和 profile、assembler、tokenizer；�
 - [x] D. CLI init/check/build/preview/test/publish、Action 与 Server 源摘要一致。
 - [x] E. Web 新类型编辑、Preset/模块/组合/作者测试、版本与贡献、选择预览、导入导出。
 - [x] F. 新类型发布到真实 CAS 的集成回归、私有依赖/评级/下架、跨客户端兼容、浏览器关键旅程。
-- [ ] G. 全量门禁、生成物同步、llmdoc:update、干净工作区与明确交付报告。
+- [x] G. 全量门禁、生成物同步、llmdoc:update、本轮改动提交与明确交付报告；保留用户并行改动。
 
 完成条件是各入口真实使用闭环，而非枚举存在、接口返回成功或文件存在。任何未完成项继续保持未勾选。conformance 人工 expected、运营和远端部署仍按原审批边界处理。
 
@@ -67,9 +67,16 @@ Web owner：作者与消费界面、Web API adapter 与浏览器测试。
 主 agent：契约协调、CLI/Action、assembler SDK/作者测试、CCv3、规范与最终集成；稳定 llmdoc 由 recorder 收尾。
 
 
-## 验证进展
+## 最终验收
 
 - Core 模块、锁定搭配、发布完整性和 Contribution 全集已通过；新增策略 Diff 同时显示依赖与来源变化。
 - SDK / CLI / Action / CCv3 针对性测试通过；消息测试摘要排除附件传输 URL，保留内容 digest。
 - 模块展开与作者测试已在 Node、Chromium、workerd 使用相同断言通过，未接受任何 draft expected。
-- 全仓类型和依赖边界检查通过。Server 集成及跨主体、成熟内容、导出缓存和级联下架回归通过；Web 138 项单测、7 条新能力关键浏览器旅程通过。完整 CI 正在执行，随后同步 llmdoc。
+- 完整 `pnpm ci:all` 退出码 0：lint、类型检查、依赖边界、覆盖率门禁、构建、Action 生成物一致性、历史与工作树敏感信息扫描全部通过。
+- 单测 / Server unit：55 文件、1363 项；Web / Admin 单测：27 文件、187 项；Server integration / unit：63 文件、1379 项。这些分组包含重复的 Server unit，不合并为唯一用例总数。
+- 三运行环境 conformance：145 项通过，87 项既有 draft todo 保持；没有自动接受 expected。
+- Web 浏览器回归：62 项通过，7 项既有 opt-in 跳过；Admin：107 项通过。新能力旅程覆盖 Preset 编辑重排、独立 Module、Scenario 锁定搭配和作者测试、逐角色绑定、配置 Contribution、显式 CCv3 Policy 导入。全量回归发现并修复嵌套评级确认问题，未弱化原有断言。
+- CCv3 真实卡片与 Loss Report 分别下载；全部类型可下载统一 Creation artifact，内容作品继续提供 Context IR。编译后的 CLI init/check/build/preview/test 实际命令验证通过。
+- Module → Preset → Scenario 级联下架已验证 CAS 删除和 CDN purger 调用；没有宣称线上 CDN 已核验或平台已部署。
+- llmdoc deep 同步复用 14 篇现有 owner，另验证 11 篇语义不变；validate 与概念/逐文件路由验收通过。文档提交 `28bad8c`、指纹提交 `6659faf`。两项反思分别判定为既有治理原则已覆盖、主体隔离规则已提升。
+- 本轮源码、规范与生成物均已提交。其他线程的 `DECISIONS.md` D-161 工作树改动保留；该剧情方向不属于本轮实现验收。未部署、推送远端或发布 npm。
