@@ -954,3 +954,13 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 4. **预算与兼容**：显式 Preset 先扣固定输入，再预留全部可见 pinned，之后按重要性、布局、区域内 IR 顺序选择完整片段；同时校验最终消息文本成本，格式差额进入 Trace。system 能力必须明确；不能跨 history 合并 system 文本。无 Preset 时保持旧默认布局、预算优先顺序与能力降级语义。
 5. **组合与版本**：Scenario 继续承担创作组合职责，不增加 Experience/Composition 类型。推荐 Preset 不自动选用或锁版本；实际策略身份写入 Trace。完整运行搭配锁定和独立模块需要后续单独设计。
 6. **验收边界**：新增跨 Runtime fixture 保持 draft；实质断言验证消息、预算、身份与拒绝行为。自动执行不代替人工接受 expected，也不等同于线上发布或真实第三方 Runtime 验收。
+
+### D-160 补齐全部一等创作资产与各端接入 — Accepted（用户指示，2026-09-26）
+
+1. **范围**：用户授权补齐 Preset 完整使用链路、Style/Scenario/Persona/Relationship 创作消费、独立 Prompt Module、完整搭配锁定及作者测试，再统一调整 Web、Server 和 Client。Client 已明确为 CLI、SDK、Publish Action。该授权取代 D-021 与 D-159 对本次创作类型接入的延期安排，不改变内容治理、部署或对外发布授权边界。
+2. **模块**：独立类型为 `prompt-module`，只有 Policy 内容。Preset 与 Module 可精确引用 Module；按声明顺序遍历依赖、先依赖后本地，同 Release 只注入一次，同作品不同版本和依赖环拒绝。模块来源与聚合锁必须可审计。
+3. **统一产物**：内容 IR、ResolvedPreset 与 ResolvedPromptModule 通过判别式 CreationArtifact 分发，共享 Release、权限、依赖完整性、资产、许可和评级检查；内容 IR 保持独立，不将运行策略伪装成 Creative 片段。
+4. **搭配**：Scenario 继续是唯一组合 Creation。assembly 锁定策略及运行配置，真实 Session 保持 Runtime 私有；推荐与精确配置分别表达。
+5. **作者测试**：用户明确选择确定性的组装验证，包括激活、顺序、预算、可见性及错误预期。作者只能显式编写并发布合成输入，不自动复制真实会话，不调用真实模型、不引入模型凭据和费用。
+6. **协作与兼容**：新增配置 Contribution domain，第一版整字段原子三方合并。CCv3 Policy 只在显式选择后转换，并保留权利确认和损失说明；旧内容作品的读取、导出、发布和权限流程继续兼容。
+7. **验收**：按 [完整接入执行记录](spec/proposals/first-class-assets-rollout.md) 完成核心、服务端、各客户端和完整旅程验证；部署、npm 发布、人工接受 conformance expected 不包含在本次实现授权内。

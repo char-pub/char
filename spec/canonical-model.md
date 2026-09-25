@@ -2,7 +2,7 @@
 
 > Status: **v0-draft**。冻结条件见 DECISIONS D-054。
 > 本文件定义 char.pub 所有 Source（Native / GitHub / CCv3 Import）共同映射到的规范数据模型。
-> `char.yaml` 只是它的一种 authoring syntax；Creative 内容经 Resolver 生成 Context IR（见 [`context-ir-v0.md`](context-ir-v0.md)），Preset 独立解析为 ResolvedPreset（见 [`preset-v0.md`](preset-v0.md)）。
+> `char.yaml` 只是它的一种 authoring syntax；Creative 内容经 Resolver 生成 Context IR（见 [`context-ir-v0.md`](context-ir-v0.md)），Preset 与 Prompt Module 独立解析为策略产物（见 [`preset-v0.md`](preset-v0.md)）；统一产物、锁定搭配及作者测试见 [`assembly-assets-v0.md`](assembly-assets-v0.md)。
 
 类型记法使用 TypeScript 风格，仅作为语言中立的结构描述；`?` 表示可选。
 
@@ -94,14 +94,18 @@ interface Creation {
   assets: AssetSlot[]                 // §7
   bootstrap?: Bootstrap               // §8，Character / Scenario 使用
   policy?: PresetPolicy                // 仅 preset；见 preset-v0.md
+  prompt_module?: PromptModule         // 仅 prompt-module
+  assembly?: AssemblyConfig           // 仅 scenario；不含 Session
+  assembly_tests?: AssemblyFixture[]   // preset / scenario 主动编写的公开合成测试
 
   meta: CreationMeta                  // §9
   provenance: Provenance              // §10
 }
 
 type CreationType =
-  | "character" | "world" | "lorebook"                          // v0 开放
-  | "relationship" | "scenario" | "persona" | "style" | "preset" // v0 仅模型存在
+  | "character" | "world" | "lorebook"
+  | "relationship" | "scenario" | "persona" | "style"
+  | "preset" | "prompt-module"        // 九类均开放创作和发布
 
 interface AttributionAuthor {
   name: string
@@ -123,8 +127,9 @@ interface AttributionAuthor {
 | persona | ≥1 `persona` fragment | persona |
 | style | ≥1 `style` fragment | style, examples |
 | preset | `policy`；禁止非空 Creative 内容、引用、cast、slots、params、bootstrap 与 context assets | — |
+| prompt-module | `prompt_module`；同样隔离 Creative 字段，不提供 layout、budget 或能力覆盖 | — |
 
-Preset 的协议与参考组装能力已定义于 [`preset-v0.md`](preset-v0.md)。这不开放 Registry / Web 创作、CLI build/publish 或 policy Contribution；公开创作类型仍遵循 v0 范围。
+Preset 的协议与参考组装能力定义于 [`preset-v0.md`](preset-v0.md)。Registry、Web、CLI 与 Publish Action 均按统一产物支持九类作品；策略字段使用独立 configuration Contribution，详细边界见 [`assembly-assets-v0.md`](assembly-assets-v0.md) 与 D-160。
 
 Level 0 Character（Name + Description + Greeting + Avatar）必须能以最少字段表达并发布：
 
@@ -478,7 +483,8 @@ interface Release {
 
   lock: LockEntry[]                   // 完整依赖闭包，§12.1
   snapshot: BlobRef                   // 规范化 Creation + 闭包文本，D-043
-  context_ir?: BlobRef                // 从 snapshot + lock + Resolver 版本确定性生成并缓存，D-043 / D-056
+  context_ir?: BlobRef                // 内容作品的 Context IR，D-043 / D-056
+  artifact?: BlobRef                  // content / preset / prompt-module 统一产物；旧 Release 可缺省
 
   availability: "complete" | "linked" // D-045
   effective_rating: Rating
@@ -491,7 +497,7 @@ interface LockEntry {
   ref: CreationRef
   release: ReleaseId
   semantic_digest: Digest
-  via: EdgePath                       // 从根到此处的 edge 路径，用于 Preview 解释
+  via: EdgePath                       // content 保留原 edge 路径；policy/assembly/test 增加领域前缀
 }
 
 type SourceRecord =
@@ -507,12 +513,13 @@ type SourceRecord =
 1. 所有 `pin` 为精确 Release；无 `follow: latest`。
 2. 依赖闭包中不存在 tombstoned；存在 yanked 时 warn。
 3. `visibility: public` 的 Release 闭包中全部为 `visibility: public` 的 Release（D-043）。
-4. 单图单版本（D-029）。
+4. Creative、Policy、assembly 与测试聚合图中，同一作品只能选择一个精确 Release（D-029 / D-160）。
 5. override target 全部 `stable: true`。
 6. required slot 全部已绑定或 late。
 7. 所有被引用 Asset 状态为 `ready`（D-084）。
 8. Creation / Asset License 兼容性与文本及镜像 Asset 的再分发许可（D-046）。
 9. 同一 Creation 的 label 未被占用（D-044）。
+10. 发布者有权读取全部私有依赖；声明的作者测试在固定 Assembler/tokenizer 下通过确定性验证。
 
 ---
 
@@ -542,12 +549,14 @@ type Change =
       base_digest?: Digest; after?: ReferenceEdge }
   | { on: "asset"; op: "add" | "modify" | "remove"; slot: string; variant?: string;
       base_digest?: Digest; after?: AssetSlot | AssetVariant }
+  | { on: "configuration"; field: "policy" | "prompt_module" | "assembly" | "assembly_tests";
+      op: "set" | "unset"; base_digest?: Digest; after?: JSONValue } // 按 field 严格校验
   | { on: "metadata"; field: MetadataField; op: "set" | "unset";
       base_digest?: Digest; after?: JSONValue;
       sensitive: boolean }            // meta.rating / meta.license / meta.content_warnings → true
 ```
 
-`id`、`slot + variant`、`field` 是各类变更的稳定比较键；同一个 Contribution 不能对同一键提交多个变更。整个 AssetSlot 的变更与该 slot 下任一 variant 的变更相交，不能当成独立键自动合并。`base_digest` 是提交时该键的 canonical 值 digest，add / 新增字段时省略，表示基线中不存在。Fragment 使用 `fragment.digest`；edge、asset、metadata 值使用 `sha256(JCS(canonical value))`，缺失值不计算 digest。变更先按键做三方比较，再整体校验所得 Creation。合并（D-062）：
+`id`、`slot + variant`、`field` 是各类变更的稳定比较键；同一个 Contribution 不能对同一键提交多个变更。整个 AssetSlot 的变更与该 slot 下任一 variant 的变更相交，不能当成独立键自动合并。`base_digest` 是提交时该键的 canonical 值 digest，add / 新增字段时省略，表示基线中不存在。Fragment 使用 `fragment.digest`；edge、asset、metadata、configuration 值使用 `sha256(JCS(canonical value))`，缺失值不计算 digest。变更先按键做三方比较，再整体校验所得 Creation。合并（D-062）：
 
 ```text
 for change in changes:
@@ -594,7 +603,7 @@ v0-draft 方案（待冻结）：
 | `first_mes` / `alternate_greetings` | `bootstrap.greetings` |
 | `mes_example` | `examples` fragment（解析为 dialogue，失败则 text） |
 | `character_book.entries[]` | `knowledge` fragments，`activation.keyword`；仅在源 `id` 有持久身份保证时保留为 `lore/<id>`；缺失、仅为数组下标或稳定性未知时派生临时 ID 并标 `stable: false` |
-| `system_prompt` / `post_history_instructions` | **原值不进入 Creation / IR**；字段名记入 `provenance.imported_from.omitted_policy_fields`，原值在 v0 原始导入文件及 Import Report 中保留；Preset 结构定义后才可生成推荐 Preset 草稿（O-7） |
+| `system_prompt` / `post_history_instructions` | **原值不进入 Creation / IR**；字段名记入 `provenance.imported_from.omitted_policy_fields`，原值在 v0 原始导入文件及 Import Report 中保留；作者明确选择并确认权利后，可生成保留署名的独立 Preset 草稿；确认事务保存关联以支持重试（D-160） |
 | `creator_notes` | `summary` |
 | `tags` / `creator` | `meta.tags` / `authors`（同时保留导入 provenance） |
 | `{{char}}` / `{{user}}` | `{{self}}` / `{{user}}` |

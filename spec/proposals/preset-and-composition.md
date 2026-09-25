@@ -1,6 +1,6 @@
 # Preset 与可复用 Prompt 内容：设计提案
 
-状态：**第一阶段的协议与参考实现已获准实施。** 生效约定见 [D-159](../../DECISIONS.md) 与 [Preset 规范](../preset-v0.md)；本文保留原提案背景，后续 UI、模块复用与完整搭配锁定仍待设计，不改变 v0 创作开放范围。
+状态：**历史设计提案，第一阶段及后续范围已分别由 D-159 / D-160 接续。** 生效约定见 [架构决策](../../DECISIONS.md)、[Preset 规范](../preset-v0.md) 与 [组装资产规范](../assembly-assets-v0.md)。本文保留当时的分阶段讨论；下文“后续/延后”不代表当前状态，最新范围和验收见 [执行记录](first-class-assets-rollout.md)。
 
 本提案把一等公民讨论收敛为 Preset、Style 与 Scenario 的职责和演进路径。候选字段和行为以正式规范与 schema 的最终取值为准。
 

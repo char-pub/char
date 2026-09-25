@@ -295,7 +295,7 @@ interface RuntimeProfile {
 ContextIR + ResolvedPreset? + RuntimeProfile + Session
 ```
 
-Preset 缺省时，Assembler 使用自身的默认 layout。Preset 的结构、独立解析、布局、区域预算、System / Post-history 文本及能力校验见 [`preset-v0.md`](preset-v0.md)。内容 Resolver 拒绝 Preset 根与依赖；Preset 不进入内容 IR 的 lock。
+Preset 缺省时，Assembler 使用自身的默认 layout。Preset 的结构、独立解析、布局、区域预算、System / Post-history 文本及能力校验见 [`preset-v0.md`](preset-v0.md)。内容 Resolver 拒绝 Preset 和 Prompt Module 根与依赖；策略不进入内容 IR 的 lock。统一产物的聚合锁、Scenario 运行搭配和作者测试见 [`assembly-assets-v0.md`](assembly-assets-v0.md)。
 
 ### 11.2 必须满足
 
@@ -463,7 +463,7 @@ expected/   context-ir.json（Resolver 用例，字节级比对）
 
 | # | 事项 |
 |---|---|
-| IR-1 | Preset 的最小结构与 §11.1 接口已定义于 preset-v0.md；跨 Preset 模块引用及完整运行搭配锁定仍延后 |
+| IR-1（已解决） | Preset、Prompt Module、Scenario 运行搭配和作者测试已定义于 preset-v0.md / assembly-assets-v0.md；不支持 Preset 继承 |
 | IR-2 | 多 participant 在 `per-agent` 模式下，是否由 IR 预先切分出每个角色的视图（目前由 Assembler 负责） |
 | IR-3 | `structured` content 的 schema 注册机制 |
 | IR-4 | `semantic` activation 是否要在 IR 中携带预计算 embedding（这会使 IR 与模型绑定，倾向于不携带） |

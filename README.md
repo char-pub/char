@@ -4,16 +4,17 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Create characters, worlds and lorebooks, compose them from reusable content, and publish versions that other tools can understand and run.
+Create characters, worlds, lorebooks, relationships, scenarios, personas, styles, presets and prompt modules. Compose reusable content and policy, then publish versions other tools can understand and run.
 
 > GitHub can host a Char, char.pub can discover it, agents can understand it, runtimes can run it — but no single platform owns it.
 
-[Canonical Model](spec/canonical-model.md) · [Context IR](spec/context-ir-v0.md) · [Architecture](llmdoc/execution-model.mdx) · [Release readiness](llmdoc/engineering/release-readiness.mdx)
+[Canonical Model](spec/canonical-model.md) · [Context IR](spec/context-ir-v0.md) · [Assembly assets and author tests](spec/assembly-assets-v0.md) · [Architecture](llmdoc/execution-model.mdx) · [Release readiness](llmdoc/engineering/release-readiness.mdx)
 
 ## What you can build
 
 - **Create through your preferred workflow.** Use the Web editor, import CCv3 cards or PNGs, or author in GitHub with the CLI and Publish Action. These paths share one canonical content model.
 - **Compose and publish.** Reference specific versions of worlds and lorebooks, inspect dependencies, and publish immutable Releases with content digests.
+- **Pin and verify a runtime setup.** Lock a Scenario to an exact Preset, runtime profile and implementation versions; test activation, ordering, budgets and visibility with public synthetic Sessions without calling a model.
 - **Collaborate with review.** Propose changes through Contributions, inspect conflicts and sensitive changes, and accept them into a draft before publishing.
 - **Understand the resulting context.** Preview the resolved content and its origins, inspect assembly traces, and compare versions with Context Diff.
 - **Use content across runtimes.** Download public Context IR and assets without signing in, or export CCv3 with a Loss Report that explains conversion limits.

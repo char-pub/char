@@ -1,6 +1,6 @@
 # Char Preset v0-draft
 
-Status: **v0-draft**。本文定义 Preset 协议与纯计算参考实现；Registry / Web 创作、CLI build/publish、CCv3 policy 导入和 Contribution 编辑不在本阶段开放范围。
+Status: **v0-draft**。本文定义 Preset 协议与纯计算参考实现；模块依赖、统一发布产物、锁定搭配与作者测试见 [组装资产契约](assembly-assets-v0.md)。
 
 ## 1. 身份与边界
 
@@ -8,13 +8,14 @@ Preset 是 `type: "preset"` 的 Creation，共享作品身份、元数据和 sem
 
 Preset 必须有 `policy`，其他 Creation 禁止声明此字段。Preset 禁止非空 `fragments`、`references`、`slots`、`params`、`cast`，禁止 bootstrap 和 context assets；允许 presentation assets 作为展示资料。空的可选集合依现有 Canonical 规则省略。策略只处理文本，不使用展示资源进行模型输入。
 
-内容 `resolve` 对 Preset 根和实际加载的 Preset 依赖返回 `resolve.preset_not_content`。当前内容发布流程也会明确拒绝，不生成丢失策略的空 IR。`meta.recommended_presets` 仍只是推荐作品身份，不自动选用、锁定或下载 Preset。
+内容 `resolve` 对 Preset 根和实际加载的 Preset 依赖返回 `resolve.preset_not_content`。统一发布流程通过 `buildCreation` 生成独立策略产物，不生成丢失策略的空 IR。`meta.recommended_presets` 仍只是推荐作品身份，不自动选用、锁定或下载 Preset。
 
 ## 2. Canonical Policy
 
 ```ts
 interface PresetPolicy {
   version: "0-draft"
+  imports?: { id: Segment; use: CreationRef; pin: {release: ReleaseId; semantic_digest: Digest} }[]
   blocks: {
     id: Segment
     text: string
@@ -34,7 +35,7 @@ interface PresetPolicy {
 - 布局必须完整列出下表区域，每项恰好一次；缺失、未知或重复区域均拒绝。
 - `region_budgets` 只接受 Creative 区域，值是非负安全整数。零表示该区域没有可用预算；未指定表示没有局部上限。
 - `requires` 必须明确声明 system role；多 system 消息需求可以显式声明，能力不能通过缺省值假定成立。
-- 第一版没有继承、模块引用或策略依赖图。块没有独立 Release。
+- 支持精确引用独立 `prompt-module`，规则见组装资产契约；不支持 Preset 继承。块没有独立 Release。
 
 | 区域 | 内容 | 可设区域上限 |
 |---|---|---|
@@ -68,7 +69,8 @@ JSON Schema 导出布局集合、条件字段与内容域限制；按块 ID 的�
 resolvePreset({
   creation: unknown,          // 完整作品快照，不能只有 policy
   release: ReleaseId,         // 精确发布 ID
-  semantic_digest: Digest     // 必须提供的期望摘要
+  semantic_digest: Digest,    // 必须提供的期望摘要
+  dependencies?: ReleaseInput[] // 精确模块快照闭包
 }): ResolvedPreset
 
 interface ResolvedPreset {
@@ -76,7 +78,9 @@ interface ResolvedPreset {
   release: ReleaseId
   semantic_digest: Digest
   resolver: { name: string; version: string }
-  policy: PresetPolicy
+  policy: ResolvedPolicy     // blocks 已展开，并带 origin
+  lock: LockEntry[]
+  lock_digest: Digest
 }
 ```
 
@@ -84,7 +88,7 @@ interface ResolvedPreset {
 
 Assembler 校验 ResolvedPreset 的结构；调用方必须先通过 `resolvePreset` 验证不可信快照。ResolvedPreset 不携带全部作品元数据，Assembler 不能用 policy 单独重新计算完整作品摘要。它与已解析内容 IR 一样是调用方提供的解析结果，不是带签名的权限凭证。
 
-内容 IR 与策略身份分别记录；切换策略不改变 IR 或它的锁摘要。第一版没有 policy lock，因为策略没有依赖。复现组装还需要相同 Session、Profile、Assembler 和 tokenizer；不承诺模型生成文本确定。
+内容 IR 与策略身份分别记录；切换策略不改变 IR 或它的锁摘要。策略的独立 lock 固定模块依赖，统一产物的聚合 lock 另覆盖搭配与作者测试依赖。复现组装还需要相同 Session、Profile、Assembler 和 tokenizer；不承诺模型生成文本确定。
 
 ## 4. Assembler 行为
 
@@ -120,10 +124,12 @@ Trace 增加可选 `preset: {ref, release, semantic_digest, resolver}`，参考�
 
 `diffPresets(from, to)` 比较两个经过结构校验与策略规范化的 ResolvedPreset，独立于 Creative Context Diff。输出包含两侧 ref、Release、semantic digest；按稳定块 ID 列出 added、removed、modified（text、position、enabled），并报告共有块相对顺序是否改变及 version、layout、region_budgets、requires 的变化。
 
+`lock_changes` 显示精确依赖和路径变化，`origin_changes` 显示共有块的来源变化；模块升级但文本相同也有明确记录。两字段在 schema 中可选以兼容旧 Diff，参考实现始终输出。
+
 字段列表和 ID 列表按稳定字符串顺序输出。缺省 enabled 与 true、空 budgets 与缺省等价；单纯新增或删除不当作共有块重排。该 Diff 只表达策略差异，作品的名称、许可、评级等完整元数据不在 ResolvedPreset 内，不能据此宣称完整作品未发生变化。输入身份不是完整性验证的替代，调用方仍应先使用独立解析器。
 
 ## 6. 验证与交付范围
 
 协议用例覆盖布局、独立身份、默认行为、区域预算、能力拒绝和摘要不匹配，跨 Node、浏览器和 workerd 执行。新增 fixture 保持 draft；实质测试验证消息和 Trace，不自动接受 expected，不把执行成功等同于人工认可基线。
 
-本阶段提供纯库 API、公开 JSON Schema、规范与测试。Registry 的 Preset 发布/读取产物、CLI build/publish/preview、Web 编辑与版本页、policy Contribution、CCv3 转换，以及完整运行搭配锁定均需要后续接线，不能从 Creation 类型枚举推断已可用。
+Registry、Web、CLI、SDK 与 Publish Action 使用同一统一产物契约；交付和验收记录见 [执行记录](proposals/first-class-assets-rollout.md)。CCv3 策略转换必须显式选择，导出不能表达的布局、预算与能力要求进入损失报告。
