@@ -78,7 +78,7 @@ export function buildChecks({
       target: { anchor: ANCHOR.name },
     });
   }
-  if (main && text === "") {
+  if (main && type !== "scenario" && text === "") {
     items.push({
       key: "main",
       tone: "error",

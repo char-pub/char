@@ -185,11 +185,18 @@ function Actions() {
         </Link>
       ) : null}
       <DownloadMenu
-        key={label}
+        key={String(c.me?.id) + label}
         ns={ns}
         name={name}
         label={usable ? label : undefined}
         canExportCard={detail.type === "character"}
+        kind={
+          detail.type === "preset"
+            ? "preset"
+            : detail.type === "prompt-module"
+              ? "prompt-module"
+              : "content"
+        }
         className="order-first flex-1 sm:flex-none lg:order-none"
       />
       <DropdownMenu modal={false}>

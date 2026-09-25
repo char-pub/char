@@ -26,6 +26,12 @@ function becauseOf(ir: ContextIR, f: IRFragment | undefined): string | null {
 /** 表格里“Why”一列：一句话。 */
 export function whyShort(ir: ContextIR, e: TraceEntry, f: IRFragment | undefined): string {
   const r = e.reason;
+  if (e.id === "assembly:formatting")
+    return "Message separators and generated headings add to the final text cost.";
+  if (e.id.startsWith("preset:"))
+    return e.decision === "included"
+      ? "Enabled by the selected preset."
+      : "Disabled in the selected preset.";
   if (r.startsWith("keyword:")) return `The chat mentions ${quote(r.slice("keyword:".length))}.`;
   if (e.id === "history") return "The conversation so far.";
   if (e.id.startsWith("session:")) return "Part of this session.";
@@ -93,8 +99,10 @@ const SECTION: Record<string, string> = {
 
 /** “Where”一列：短说法。 */
 export function whereShort(region: string): string {
+  if (region === "assembly:formatting") return "formatting";
+  if (region.startsWith("preset:")) return "policy";
   if (region === "history") return "chat";
-  if (region === "system:examples") return "before chat";
+  if (region === "system:examples") return "examples";
   if (region.startsWith("session:")) return "session";
   if (region.startsWith("system:")) return "system";
   return region;
@@ -103,7 +111,11 @@ export function whereShort(region: string): string {
 /** 展开行里的“Placed”。 */
 export function whereLong(region: string): string {
   if (region === "history") return "In the chat history.";
-  if (region === "system:examples") return "Just before the chat, as example dialogue.";
+  if (region === "preset:main") return "Before every context region.";
+  if (region === "preset:after-history") return "After every context region.";
+  if (region === "assembly:formatting") return "Final message text; not a separate message.";
+  if (region === "system:examples")
+    return "In the examples region. Its actual position is shown in Messages.";
   if (region === "session:bindings")
     return "In the system prompt, where the session describes who you are.";
   if (region.startsWith("session:")) return "In the session part of the system prompt.";
@@ -115,6 +127,9 @@ export function whereLong(region: string): string {
 export function fromText(ir: ContextIR, e: TraceEntry, f: IRFragment | undefined): string {
   const origin = e.origin ?? f?.origin;
   if (!origin) {
+    if (e.id === "assembly:formatting")
+      return "Additional text created when the selected layout renders messages.";
+    if (e.id.startsWith("preset:")) return "The selected preset or its locked prompt modules.";
     if (e.id === "history") return "The chat history you typed in the session panel.";
     if (e.id.startsWith("session:")) return "The persona you set in the session panel.";
     return "The session.";

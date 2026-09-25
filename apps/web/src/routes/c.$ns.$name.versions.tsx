@@ -4,10 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useId, useMemo, useState } from "react";
 import { z } from "zod";
+import { ConfigurationDiff } from "@/components/configuration-diff";
 import { irQuery, useCreation, useReleaseLabels } from "@/components/creation-context";
 import { matureReason } from "@/components/creation-facts";
 import { DiffView, TokenDelta } from "@/components/diff-view";
 import { MatureGate } from "@/components/mature-gate";
+import { PolicyVersions } from "@/components/policy-artifact";
 import { isAdultRating } from "@/components/rating";
 import { type CompareSide, VersionList } from "@/components/release-list";
 import { EmptyState, ErrorState } from "@/components/states";
@@ -51,6 +53,15 @@ function refsOf(...irs: (ContextIR | undefined)[]): string[] {
  */
 function VersionsTab() {
   const c = useCreation();
+  return c.detail.type === "preset" || c.detail.type === "prompt-module" ? (
+    <PolicyVersions />
+  ) : (
+    <ContentVersionsTab />
+  );
+}
+
+function ContentVersionsTab() {
+  const c = useCreation();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/c/$ns/$name/versions" });
   const client = useRegistry();
@@ -63,8 +74,8 @@ function VersionsTab() {
   const to = search.to ?? available[0]?.label;
   const from = search.from ?? available.find((r) => r.label !== to)?.label;
   const relOf = (label: string | undefined) => available.find((r) => r.label === label);
-  const fromIR = useQuery(irQuery(client, c.ns, c.name, relOf(from)));
-  const toIR = useQuery(irQuery(client, c.ns, c.name, relOf(to)));
+  const fromIR = useQuery(irQuery(client, c.ns, c.name, relOf(from), c.me?.id ?? null));
+  const toIR = useQuery(irQuery(client, c.ns, c.name, relOf(to), c.me?.id ?? null));
   const labels = useReleaseLabels(refsOf(fromIR.data, toIR.data));
   const labelsKey = [...labels].join();
 
@@ -201,6 +212,7 @@ function VersionsTab() {
           {diff?.token_delta && from !== to ? <TokenDelta delta={diff.token_delta} /> : null}
         </div>
         {body}
+        {c.detail.type === "scenario" ? <ConfigurationDiff from={from} to={to} /> : null}
       </section>
       {yank ? (
         <YankDialog

@@ -3,7 +3,7 @@
  * 对话历史、手动启用的片段。改动后预览立即重新组装。
  */
 import type { TokenizerName } from "@char-pub/assembler";
-import { type ContextIR, displayFragmentId } from "@char-pub/core";
+import { type ContextIR, displayFragmentId, USER_LATE_SLOT } from "@char-pub/core";
 import { useId } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import type { PreviewSettings } from "@/lib/preview";
+import { localized } from "@/lib/text";
 
 export const TOKENIZER_OPTIONS: { value: TokenizerName; label: string }[] = [
   { value: "estimate", label: "estimate (approximate, fast)" },
@@ -42,6 +43,7 @@ export function SessionControls({
   tokenizer,
   onTokenizer,
   tokenizerStatus,
+  locked = false,
 }: {
   ir: ContextIR;
   settings: PreviewSettings;
@@ -49,6 +51,7 @@ export function SessionControls({
   tokenizer: TokenizerName;
   onTokenizer: (t: TokenizerName) => void;
   tokenizerStatus: "ready" | "loading" | "error";
+  locked?: boolean;
 }) {
   const ids = {
     locale: useId(),
@@ -72,97 +75,166 @@ export function SessionControls({
 
   return (
     <form className="space-y-5" onSubmit={(e) => e.preventDefault()} aria-label="Session settings">
-      <div className="space-y-1.5">
-        <Label htmlFor={ids.locale}>Language</Label>
-        <NativeSelect
-          id={ids.locale}
-          value={settings.locale}
-          onChange={(e) => set({ locale: e.target.value })}
-        >
-          {locales.map((l) => (
-            <option key={l} value={l}>
-              {languageName(l)}
-            </option>
-          ))}
-        </NativeSelect>
-      </div>
-
-      <fieldset className="space-y-1.5">
-        <legend id={ids.mode} className="text-sm font-medium">
-          Runtime mode
-        </legend>
-        <div className="grid grid-cols-2 gap-1 rounded-md bg-surface-2 p-1">
-          {MODES.map((m) => (
-            <label
-              key={m.value}
-              className="cursor-pointer rounded-sm px-3 py-1.5 text-center text-sm font-medium text-text-2 transition-colors has-[:checked]:bg-surface has-[:checked]:text-text has-[:checked]:shadow-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/40"
-            >
-              <input
-                type="radio"
-                name={ids.mode}
-                value={m.value}
-                className="sr-only"
-                checked={settings.mode === m.value}
-                onChange={() => set({ mode: m.value })}
-              />
-              {m.label}
-            </label>
-          ))}
+      <fieldset disabled={locked} className="space-y-5">
+        <div className="space-y-1.5">
+          <Label htmlFor={ids.locale}>Language</Label>
+          <NativeSelect
+            id={ids.locale}
+            value={settings.locale}
+            onChange={(e) => set({ locale: e.target.value })}
+          >
+            {locales.map((l) => (
+              <option key={l} value={l}>
+                {languageName(l)}
+              </option>
+            ))}
+          </NativeSelect>
         </div>
-        <p className="text-xs text-text-3">
-          {settings.mode === "narrator"
-            ? "One model voices everyone; private passages are only a hint."
-            : "Each character gets its own context; private passages stay private."}
-        </p>
+
+        <fieldset className="space-y-1.5">
+          <legend id={ids.mode} className="text-sm font-medium">
+            Runtime mode
+          </legend>
+          <div className="grid grid-cols-2 gap-1 rounded-md bg-surface-2 p-1">
+            {MODES.map((m) => (
+              <Label
+                key={m.value}
+                className="cursor-pointer rounded-sm px-3 py-1.5 text-center text-sm font-medium text-text-2 transition-colors has-[:checked]:bg-surface has-[:checked]:text-text has-[:checked]:shadow-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/40"
+              >
+                <input
+                  type="radio"
+                  name={ids.mode}
+                  value={m.value}
+                  className="sr-only"
+                  checked={settings.mode === m.value}
+                  onChange={() => set({ mode: m.value })}
+                />
+                {m.label}
+              </Label>
+            ))}
+          </div>
+          <p className="text-xs text-text-3">
+            {settings.mode === "narrator"
+              ? "One model voices everyone; private passages are only a hint."
+              : "Each character gets its own context; private passages stay private."}
+          </p>
+        </fieldset>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={ids.window}>Context window</Label>
+          <NativeSelect
+            id={ids.window}
+            className="font-mono"
+            value={String(settings.contextWindow)}
+            onChange={(e) => {
+              const n = Number.parseInt(e.target.value, 10);
+              if (Number.isFinite(n) && n > 0) set({ contextWindow: n });
+            }}
+          >
+            {windows.map((w) => (
+              <option key={w} value={w}>
+                {w.toLocaleString("en-US")} tokens
+              </option>
+            ))}
+          </NativeSelect>
+          <p className="text-xs text-text-3">
+            {settings.reserveForOutput.toLocaleString("en-US")} tokens are kept free for the reply.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={ids.tokenizer}>Tokenizer</Label>
+          <NativeSelect
+            id={ids.tokenizer}
+            value={tokenizer}
+            onChange={(e) => onTokenizer(e.target.value as TokenizerName)}
+            aria-describedby={ids.tokenizerStatus}
+          >
+            {TOKENIZER_OPTIONS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </NativeSelect>
+          <p id={ids.tokenizerStatus} className="text-xs text-text-3" aria-live="polite">
+            {tokenizerStatus === "loading"
+              ? "Loading the tokenizer… counts are estimates until it is ready."
+              : tokenizerStatus === "error"
+                ? "Could not load this tokenizer; showing estimates."
+                : tokenizer === "estimate"
+                  ? "Counts are estimates."
+                  : "Exact counts for this encoding."}
+          </p>
+        </div>
       </fieldset>
-
-      <div className="space-y-1.5">
-        <Label htmlFor={ids.window}>Context window</Label>
-        <NativeSelect
-          id={ids.window}
-          className="font-mono"
-          value={String(settings.contextWindow)}
-          onChange={(e) => {
-            const n = Number.parseInt(e.target.value, 10);
-            if (Number.isFinite(n) && n > 0) set({ contextWindow: n });
-          }}
-        >
-          {windows.map((w) => (
-            <option key={w} value={w}>
-              {w.toLocaleString("en-US")} tokens
-            </option>
-          ))}
-        </NativeSelect>
-        <p className="text-xs text-text-3">
-          {settings.reserveForOutput.toLocaleString("en-US")} tokens are kept free for the reply.
-        </p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor={ids.tokenizer}>Tokenizer</Label>
-        <NativeSelect
-          id={ids.tokenizer}
-          value={tokenizer}
-          onChange={(e) => onTokenizer(e.target.value as TokenizerName)}
-          aria-describedby={ids.tokenizerStatus}
-        >
-          {TOKENIZER_OPTIONS.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </NativeSelect>
-        <p id={ids.tokenizerStatus} className="text-xs text-text-3" aria-live="polite">
-          {tokenizerStatus === "loading"
-            ? "Loading the tokenizer… counts are estimates until it is ready."
-            : tokenizerStatus === "error"
-              ? "Could not load this tokenizer; showing estimates."
-              : tokenizer === "estimate"
-                ? "Counts are estimates."
-                : "Exact counts for this encoding."}
-        </p>
-      </div>
-
+      {settings.mode === "per-agent" ? (
+        <Label className="block text-sm">
+          Speaking participant
+          <NativeSelect
+            value={settings.forParticipant ?? ""}
+            onChange={(e) => set({ forParticipant: e.target.value })}
+          >
+            <option value="">Choose a participant</option>
+            {ir.participants
+              .filter((p) => p.key !== "user")
+              .map((p) => (
+                <option key={p.key} value={p.key}>
+                  {typeof p.display_name === "string" ? p.display_name : p.key}
+                </option>
+              ))}
+          </NativeSelect>
+        </Label>
+      ) : null}
+      {ir.late_slots
+        .filter((s) => s.key !== USER_LATE_SLOT)
+        .map((slot, index) => {
+          const binding = settings.lateBindings?.[slot.key] ?? {
+            name: "",
+            description: "",
+            kind: slot.accepts[0] ?? "persona",
+          };
+          const change = (patch: Partial<typeof binding>) =>
+            set({
+              lateBindings: { ...settings.lateBindings, [slot.key]: { ...binding, ...patch } },
+            });
+          return (
+            <fieldset key={slot.key} className="space-y-2 rounded border p-3">
+              <legend className="px-1 text-sm" title={slot.key}>
+                Role{" "}
+                {localized(
+                  ir.participants.find((participant) => participant.late === slot.key)
+                    ?.display_name,
+                  settings.locale,
+                ) ||
+                  slot.hint ||
+                  index + 1}
+              </legend>
+              <Label className="block text-xs">
+                Kind
+                <NativeSelect
+                  value={binding.kind}
+                  onChange={(e) => change({ kind: e.target.value })}
+                >
+                  {slot.accepts.map((kind) => (
+                    <option key={kind}>{kind}</option>
+                  ))}
+                </NativeSelect>
+              </Label>
+              <Label className="block text-xs">
+                Name
+                <Input value={binding.name} onChange={(e) => change({ name: e.target.value })} />
+              </Label>
+              <Label className="block text-xs">
+                Description
+                <Textarea
+                  rows={2}
+                  value={binding.description}
+                  onChange={(e) => change({ description: e.target.value })}
+                />
+              </Label>
+            </fieldset>
+          );
+        })}
       <fieldset className="space-y-3 border-t pt-4">
         <legend className="float-left mb-3 w-full text-sm font-semibold">
           You, in this session

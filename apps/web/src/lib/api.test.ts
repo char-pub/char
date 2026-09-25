@@ -1,3 +1,4 @@
+import { buildCreation, PRESET_REGIONS } from "@char-pub/core";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError, createRegistryClient, MAX_REPORT_DETAILS, REPORT_CATEGORIES } from "./api";
 import { getMainText, setGreeting, setMainText, setName, type Working } from "./draft";
@@ -281,5 +282,58 @@ describe("release maintenance", () => {
     expect(r.calls[2]?.init.body).toBe(JSON.stringify({ action: "rebind" }));
     await client.unbindSource("djj", "alice");
     expect(r.calls[3]?.init.method).toBe("DELETE");
+  });
+});
+
+describe("policy artifact transport", () => {
+  it("validates artifact responses and includes cookies only for private snapshots", async () => {
+    const artifact = buildCreation({
+      root: {
+        release: "rel_01j00000000000000000000000",
+        visibility: "public",
+        creation: {
+          id: "cr_01j00000000000000000000000",
+          ref: "@writer/policy",
+          type: "preset",
+          display_name: "Policy",
+          policy: {
+            version: "0-draft",
+            blocks: [],
+            layout: [...PRESET_REGIONS],
+            requires: { system_role: true },
+          },
+          meta: {
+            default_locale: "en",
+            rating: "general",
+            rights: "original",
+            license: "CC-BY-4.0",
+          },
+        },
+      },
+    }).artifact;
+    const r = recorder([json(artifact), json(artifact), json({ kind: "preset" })]);
+    const client = createRegistryClient({ baseUrl: "https://api.test", fetch: r.fetch });
+    expect((await client.getArtifact("writer", "policy", "1.0.0")).kind).toBe("preset");
+    await client.getArtifact("writer", "policy", "1.0.0", { private: true });
+    expect(r.calls[0]?.url).toBe(
+      "https://api.test/v1/creations/@writer/policy/releases/1.0.0/artifact",
+    );
+    expect(r.calls[0]?.init.credentials).toBe("omit");
+    expect(r.calls[1]?.init.credentials).toBe("include");
+    await expect(client.getArtifact("writer", "policy", "1.0.0")).rejects.toBeInstanceOf(ApiError);
+  });
+  it("forwards only the explicitly selected exact preset release to CCv3 export", async () => {
+    const r = recorder([new Response(null, { status: 302 })]);
+    const client = createRegistryClient({ baseUrl: "https://api.test", fetch: r.fetch });
+    const result = await client.exportCcv3(
+      "writer",
+      "character",
+      "1.0.0",
+      "rel_01j00000000000000000000000",
+    );
+    expect(result).toEqual({
+      state: "ready",
+      url: "https://api.test/v1/creations/@writer/character/releases/1.0.0/export/ccv3?preset=rel_01j00000000000000000000000",
+    });
   });
 });

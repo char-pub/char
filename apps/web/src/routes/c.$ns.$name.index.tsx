@@ -13,6 +13,7 @@ import {
 } from "@/components/creation-facts";
 import { CreationContent } from "@/components/creation-overview";
 import { MatureGate } from "@/components/mature-gate";
+import { PolicyContent } from "@/components/policy-artifact";
 import { RATING_LABEL } from "@/components/rating";
 import { ErrorState } from "@/components/states";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,7 +57,16 @@ function OverviewTab() {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="min-w-0">
-        {c.ir ? (
+        {c.artifact && c.artifact.kind !== "content" ? (
+          <MatureGate
+            rating={c.rating}
+            allowed={c.allowMature}
+            remember={c.detail.ref}
+            signedIn={!!c.me}
+          >
+            <PolicyContent artifact={c.artifact} />
+          </MatureGate>
+        ) : c.ir ? (
           <MatureGate
             rating={c.rating}
             allowed={c.allowMature}
@@ -66,7 +76,7 @@ function OverviewTab() {
           >
             <CreationContent ir={c.ir} />
           </MatureGate>
-        ) : c.irState === "error" ? (
+        ) : c.irState === "error" || c.artifactError ? (
           <ErrorState
             title="The content of this version could not be loaded"
             description="The rest of the page is still accurate. Try loading the content again."

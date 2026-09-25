@@ -19,11 +19,19 @@ import {
   SENSITIVE_METADATA_FIELDS,
 } from "@char-pub/core";
 
+export const CONFIGURATION_FIELDS = [
+  "policy",
+  "prompt_module",
+  "assembly",
+  "assembly_tests",
+] as const;
+
 /** 贡献者可以编辑的内容。 */
 export interface ContributionEdit {
   fragments: Fragment[];
   rating: Rating;
   tags: string[];
+  configuration?: Record<string, unknown>;
 }
 
 export interface ContributionBase {
@@ -51,6 +59,11 @@ export function contributionBase(creation: unknown): ContributionBase {
       fragments: canonical.creation.fragments.map(withoutDigest),
       rating: meta.rating,
       tags: [...(meta.tags ?? [])],
+      configuration: Object.fromEntries(
+        CONFIGURATION_FIELDS.filter((field) => canonical.creation[field] !== undefined).map(
+          (field) => [field, canonical.creation[field]],
+        ),
+      ),
     },
   };
 }
@@ -108,6 +121,39 @@ export function buildChanges(base: CanonicalResult, edit: ContributionEdit): unk
   // 空的标签列表在 canonical 形式中被省略：清空标签要写成 unset。
   const tags = metadataChange(base, "meta.tags", edit.tags.length > 0 ? edit.tags : undefined);
   if (tags) changes.push(tags);
+  if (edit.configuration !== undefined) {
+    const proposed = { ...base.creation } as Record<string, unknown>;
+    for (const field of CONFIGURATION_FIELDS) {
+      if (
+        edit.configuration[field] === undefined ||
+        (field === "assembly_tests" &&
+          Array.isArray(edit.configuration[field]) &&
+          edit.configuration[field].length === 0)
+      )
+        delete proposed[field];
+      else proposed[field] = edit.configuration[field];
+    }
+    let normalized: Record<string, unknown> = proposed;
+    try {
+      normalized = canonicalizeCreation(proposed).json as Record<string, unknown>;
+    } catch {
+      /* Incomplete edits remain local; the form validates before submission. */
+    }
+    for (const field of CONFIGURATION_FIELDS) {
+      const before = (base.json as Record<string, JSONValue>)[field];
+      const after = normalized[field] as JSONValue | undefined;
+      if (before === undefined && after === undefined) continue;
+      if (before !== undefined && after !== undefined && digestOf(before) === digestOf(after))
+        continue;
+      changes.push({
+        on: "configuration",
+        field,
+        op: after === undefined ? "unset" : "set",
+        ...(before === undefined ? {} : { base_digest: digestOf(before) }),
+        ...(after === undefined ? {} : { after }),
+      });
+    }
+  }
   return changes;
 }
 
@@ -127,6 +173,8 @@ export function describeKey(key: string): string {
       return `Dependency ${target}`;
     case "asset":
       return `Asset ${target}`;
+    case "configuration":
+      return `Configuration: ${target.replaceAll("_", " ")}`;
     case "metadata":
       return target.replace(/^meta\./, "").replace(/_/g, " ");
     default:
@@ -145,6 +193,8 @@ export function rawChangeKey(raw: unknown): string | null {
     case "asset":
       if (typeof c.slot !== "string") return null;
       return typeof c.variant === "string" ? `asset:${c.slot}/${c.variant}` : `asset:${c.slot}`;
+    case "configuration":
+      return typeof c.field === "string" ? `configuration:${c.field}` : null;
     case "metadata":
       return typeof c.field === "string" ? `metadata:${c.field}` : null;
     default:
@@ -182,6 +232,10 @@ export function draftValue(working: unknown, key: string): ChangeValue | null {
   const w = working as { fragments?: unknown; meta?: unknown };
   const [kind, ...rest] = key.split(":");
   const target = rest.join(":");
+  if (kind === "configuration") {
+    const v = (working as Record<string, unknown>)[target];
+    return v === undefined ? null : { value: JSON.stringify(v, null, 2) };
+  }
   if (kind === "fragment") {
     if (!Array.isArray(w.fragments)) return null;
     const f = w.fragments.find((x) => (x as { id?: unknown } | null)?.id === target);

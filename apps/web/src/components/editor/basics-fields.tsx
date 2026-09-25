@@ -42,6 +42,26 @@ export const MAIN_LABEL: Partial<
     placeholder: "A piece of lore. Add entries that switch on with keywords under Passages.",
     help: "Always sent to the model. Keyword entries go under More options → Passages.",
   },
+  persona: {
+    label: "Persona",
+    placeholder: "Who the reader is in this story.",
+    help: "The identity and description of the reader's role.",
+  },
+  style: {
+    label: "Writing style",
+    placeholder: "Describe the voice, perspective and prose.",
+    help: "Reusable creative direction for the writing.",
+  },
+  relationship: {
+    label: "Relationship",
+    placeholder: "Use {{slot:a}} and {{slot:b}} to refer to the roles below.",
+    help: "Describe the relationship, then declare its roles below.",
+  },
+  scenario: {
+    label: "Starting situation",
+    placeholder: "Where the cast meets and what is happening.",
+    help: "Set the scene. Add the participants in Cast below.",
+  },
 };
 
 export const SUMMARY_MAX = 500;

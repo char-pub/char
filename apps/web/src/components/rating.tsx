@@ -66,3 +66,11 @@ export function RatingSources({ meta }: { meta: EffectiveMeta }) {
     </div>
   );
 }
+
+export function highestRating(...ratings: (Rating | undefined)[]): Rating {
+  const order: Rating[] = ["general", "teen", "mature", "explicit"];
+  return (
+    order[Math.max(0, ...ratings.map((rating) => (rating ? order.indexOf(rating) : 0)))] ??
+    "general"
+  );
+}

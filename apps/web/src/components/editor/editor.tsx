@@ -13,20 +13,24 @@ import type { ReleaseSummary } from "@char-pub/contracts";
 import type { CreationType } from "@char-pub/core";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, GitCompareArrows, Rocket, ScanEye } from "lucide-react";
-import { useState } from "react";
+import { type ComponentProps, useState } from "react";
 import { Container } from "@/components/layout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import type { Draft } from "@/lib/api";
 import { getFragments, getName, getReferences, type Working } from "@/lib/draft";
 import { suggestLabel } from "@/lib/publish";
-import { useRegistry } from "@/lib/registry";
+import { useMe, useRegistry } from "@/lib/registry";
 import { useDraftEditor } from "@/lib/use-draft-editor";
 import { ANCHOR, mainFragmentId, type SectionKey, scrollToAnchor, type Target } from "./anchors";
+import { AssemblyEditor, AuthorTestsEditor } from "./assembly-editor";
 import { BasicsFields } from "./basics-fields";
 import { buildChecks, ChecksPanel, NextRelease } from "./checks-panel";
+import { CompositionEditor } from "./composition-editor";
 import { DiagnosticList } from "./diagnostics";
+import { DraftPreview } from "./draft-preview";
 import { MoreOptions } from "./more-options";
+import { PolicyEditor } from "./policy-editor";
 import { PublishDialog } from "./publish-panel";
 import { SaveStatus } from "./save-status";
 
@@ -107,7 +111,14 @@ function newestRelease(releases: readonly ReleaseSummary[]): ReleaseSummary | un
   return [...releases].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 }
 
-export function Editor({
+export function Editor(props: ComponentProps<typeof EditorSession>) {
+  const me = useMe();
+  if (me.isPending) return <p role="status">Loading your editor…</p>;
+  return (
+    <EditorSession key={`${me.data?.id ?? "anonymous"}:${props.ns}:${props.name}`} {...props} />
+  );
+}
+function EditorSession({
   ns,
   name,
   type,
@@ -251,6 +262,22 @@ export function Editor({
               latestLabel={latestPublicLabel}
             />
           </section>
+
+          {type === "preset" || type === "prompt-module" ? (
+            <PolicyEditor
+              working={ed.working}
+              update={ed.update}
+              module={type === "prompt-module"}
+            />
+          ) : (
+            <CompositionEditor type={type} working={ed.working} update={ed.update} />
+          )}
+          {type === "scenario" ? <AssemblyEditor working={ed.working} update={ed.update} /> : null}
+          {type === "scenario" || type === "preset" ? (
+            <AuthorTestsEditor working={ed.working} update={ed.update} />
+          ) : null}
+
+          <DraftPreview working={ed.working} />
 
           <MoreOptions
             self={`@${ns}/${name}`}

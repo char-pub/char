@@ -97,7 +97,10 @@ export function DependencyPicker({
     staleTime: 30_000,
   });
   const direct = parseRef(query.trim());
-  const items = (results.data?.items ?? []).filter((c) => c.ref !== self && !taken.includes(c.ref));
+  const items = (results.data?.items ?? []).filter(
+    (c) =>
+      c.ref !== self && !taken.includes(c.ref) && c.type !== "preset" && c.type !== "prompt-module",
+  );
   const showDirect =
     !!direct &&
     `@${direct.ns}/${direct.name}` !== self &&
@@ -275,6 +278,11 @@ function DependencyConfig({
       ) : detail.isError ? (
         <p role="alert" className="text-sm text-danger">
           {lookupError(detail.error)}
+        </p>
+      ) : d?.type === "preset" || d?.type === "prompt-module" ? (
+        <p role="alert" className="text-sm text-danger">
+          Policy creations cannot be content dependencies. Use the policy or preset controls
+          instead.
         </p>
       ) : !chosen ? (
         <p role="alert" className="text-sm text-danger">

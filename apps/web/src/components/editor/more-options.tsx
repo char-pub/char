@@ -94,36 +94,40 @@ export function MoreOptions({
         <p className="text-xs text-text-2">Passages, dependencies, rating and license</p>
       </div>
       <div className="divide-y">
-        <OptionSection
-          id={ANCHOR.passages}
-          title="Passages"
-          summary={passagesSummary(working, type)}
-          icon={FileText}
-          open={open.has("passages")}
-          onToggle={() => onToggle("passages")}
-        >
-          <FragmentsEditor
-            type={type}
-            working={working}
-            update={update}
-            diagnostics={diagnostics}
-          />
-        </OptionSection>
-        <OptionSection
-          id={ANCHOR.dependencies}
-          title="Dependencies"
-          summary={dependenciesSummary(working)}
-          icon={Network}
-          open={open.has("dependencies")}
-          onToggle={() => onToggle("dependencies")}
-        >
-          <DependenciesEditor
-            self={self}
-            working={working}
-            update={update}
-            diagnostics={diagnostics}
-          />
-        </OptionSection>
+        {type !== "preset" && type !== "prompt-module" ? (
+          <>
+            <OptionSection
+              id={ANCHOR.passages}
+              title="Passages"
+              summary={passagesSummary(working, type)}
+              icon={FileText}
+              open={open.has("passages")}
+              onToggle={() => onToggle("passages")}
+            >
+              <FragmentsEditor
+                type={type}
+                working={working}
+                update={update}
+                diagnostics={diagnostics}
+              />
+            </OptionSection>
+            <OptionSection
+              id={ANCHOR.dependencies}
+              title="Dependencies"
+              summary={dependenciesSummary(working)}
+              icon={Network}
+              open={open.has("dependencies")}
+              onToggle={() => onToggle("dependencies")}
+            >
+              <DependenciesEditor
+                self={self}
+                working={working}
+                update={update}
+                diagnostics={diagnostics}
+              />
+            </OptionSection>
+          </>
+        ) : null}
         <OptionSection
           id={ANCHOR.meta}
           title="Rating, license & tags"
