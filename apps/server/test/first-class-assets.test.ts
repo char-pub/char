@@ -342,6 +342,20 @@ it("isolates CCv3 export caches and bytes when a public character selects a priv
   expect(selected.status).toBe(302);
   expect(selected.headers.get("cache-control")).toContain("private");
   expect((await h.as(null).get(selectedPath)).status).toBe(404);
+  for (const part of ["card", "loss"]) {
+    expect((await h.as(null).get(`${selectedPath}&part=${part}`)).status).toBe(404);
+    expect((await h.as(bob).get(`${selectedPath}&part=${part}`)).status).toBe(404);
+    const result = await h.as(alice).get(`${selectedPath}&part=${part}`);
+    expect(result.status).toBe(200);
+    expect(result.headers.get("cache-control")).toBe("private, no-store");
+    const body = await result.json();
+    if (part === "card")
+      expect(body).toMatchObject({
+        spec: "chara_card_v3",
+        data: { system_prompt: "Literal {{user}} policy." },
+      });
+    else expect(body).toMatchObject({ target: "ccv3", other: expect.any(Array) });
+  }
 });
 
 it("separates export cache keys for public and private releases of identical content", async () => {

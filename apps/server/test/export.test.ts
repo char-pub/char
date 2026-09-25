@@ -2,6 +2,7 @@
  * CCv3 导出的按需构建：第一次请求返回 202 并入队，worker 构建后再次请求得到 302 到导出物；
  * 导出物登记了反向引用，下架时会被一起删除。
  */
+import { Ccv3LossReportSchema } from "@char-pub/contracts";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { register as registerRead } from "../src/api/routes/read.js";
@@ -88,7 +89,7 @@ describe("lazy CCv3 export", () => {
   it("returns 202 first, builds once, then redirects to an export with a card and loss report", async () => {
     await publish();
     const path = "/v1/creations/@exp/mira/releases/1.0.0/export/ccv3";
-    const first = await api.request(path);
+    const first = await api.request(`${path}?part=card`);
     expect(first.status).toBe(202);
     expect(first.headers.get("retry-after")).toBeTruthy();
 
@@ -123,6 +124,18 @@ describe("lazy CCv3 export", () => {
     expect(out.card.data.first_mes).toBe("Hello {{user}}.");
     expect(out.card.data.character_book?.entries).toHaveLength(1);
     expect(out.loss.target).toBe("ccv3");
+    const card = await api.request(`${path}?part=card`);
+    expect(card.status).toBe(200);
+    expect(card.headers.get("cache-control")).toBe("private, no-store");
+    expect(card.headers.get("content-disposition")).toBe('attachment; filename="mira-1.0.0.json"');
+    expect(await card.json()).toEqual(out.card);
+    const loss = await api.request(`${path}?part=loss`);
+    expect(loss.status).toBe(200);
+    expect(loss.headers.get("cache-control")).toBe("private, no-store");
+    expect(Ccv3LossReportSchema.parse(await loss.json())).toEqual(out.loss);
+    const invalid = await api.request(`${path}?part=unknown`);
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toMatchObject({ code: "export.invalid_part" });
 
     const [artifact] = await t.app.db.select().from(buildArtifacts);
     expect(artifact?.blobDigest).toBe(digest);

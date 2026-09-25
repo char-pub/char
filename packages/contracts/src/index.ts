@@ -699,3 +699,37 @@ export const ContributionInvitesResponseSchema = z.strictObject({
   ),
 });
 export type ContributionInvite = z.infer<typeof ContributionInvitesResponseSchema>["items"][number];
+
+/** GET export/ccv3?part=loss：导出器明确记录的格式转换损失。 */
+const Ccv3LossItemSchema = z.strictObject({ subject: z.string(), detail: z.string() });
+export const Ccv3LossReportSchema = z.strictObject({
+  target: z.literal("ccv3"),
+  profile: z.strictObject({ mode: z.literal("narrator"), tokenizer: z.literal("estimate") }),
+  flattened_dependencies: z.array(
+    z.strictObject({
+      ref: z.string(),
+      fragments: z.array(z.string()),
+      tokens: z.number().nonnegative(),
+      into: z.array(z.string()),
+    }),
+  ),
+  activation_downgrades: z.array(
+    Ccv3LossItemSchema.extend({ from: z.enum(["semantic", "manual"]), to: z.literal("dropped") }),
+  ),
+  visibility: z.array(Ccv3LossItemSchema),
+  participants: z.array(Ccv3LossItemSchema),
+  context_assets: z.array(Ccv3LossItemSchema),
+  locales: z.strictObject({ dropped: z.array(z.string()), exported: z.string() }),
+  policy_fields: z.array(
+    z.strictObject({ ref: z.string(), fields: z.array(z.string()), restored: z.boolean() }),
+  ),
+  other: z.array(Ccv3LossItemSchema),
+  tokens: z.strictObject({
+    description: z.number().nonnegative(),
+    scenario: z.number().nonnegative(),
+    character_book: z.number().nonnegative(),
+    mes_example: z.number().nonnegative(),
+    total: z.number().nonnegative(),
+  }),
+});
+export type Ccv3LossReport = z.infer<typeof Ccv3LossReportSchema>;

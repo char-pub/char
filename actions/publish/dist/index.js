@@ -360446,6 +360446,37 @@ var ContributionInvitesResponseSchema = external_exports.strictObject({
     })
   )
 });
+var Ccv3LossItemSchema = external_exports.strictObject({ subject: external_exports.string(), detail: external_exports.string() });
+var Ccv3LossReportSchema = external_exports.strictObject({
+  target: external_exports.literal("ccv3"),
+  profile: external_exports.strictObject({ mode: external_exports.literal("narrator"), tokenizer: external_exports.literal("estimate") }),
+  flattened_dependencies: external_exports.array(
+    external_exports.strictObject({
+      ref: external_exports.string(),
+      fragments: external_exports.array(external_exports.string()),
+      tokens: external_exports.number().nonnegative(),
+      into: external_exports.array(external_exports.string())
+    })
+  ),
+  activation_downgrades: external_exports.array(
+    Ccv3LossItemSchema.extend({ from: external_exports.enum(["semantic", "manual"]), to: external_exports.literal("dropped") })
+  ),
+  visibility: external_exports.array(Ccv3LossItemSchema),
+  participants: external_exports.array(Ccv3LossItemSchema),
+  context_assets: external_exports.array(Ccv3LossItemSchema),
+  locales: external_exports.strictObject({ dropped: external_exports.array(external_exports.string()), exported: external_exports.string() }),
+  policy_fields: external_exports.array(
+    external_exports.strictObject({ ref: external_exports.string(), fields: external_exports.array(external_exports.string()), restored: external_exports.boolean() })
+  ),
+  other: external_exports.array(Ccv3LossItemSchema),
+  tokens: external_exports.strictObject({
+    description: external_exports.number().nonnegative(),
+    scenario: external_exports.number().nonnegative(),
+    character_book: external_exports.number().nonnegative(),
+    mes_example: external_exports.number().nonnegative(),
+    total: external_exports.number().nonnegative()
+  })
+});
 
 // src/run.ts
 var ALLOWED_EVENTS = /* @__PURE__ */ new Set(["push", "workflow_dispatch", "release"]);

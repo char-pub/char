@@ -313,6 +313,9 @@ export function register(app: Hono<Env>): void {
       if (f.creation.type === "preset" || f.creation.type === "prompt-module")
         return problem(c, 422, "export.not_applicable", "select a content release to export CCv3");
       const { db, cas, queue } = c.var.services;
+      const part = c.req.query("part");
+      if (part !== undefined && part !== "card" && part !== "loss")
+        return problem(c, 400, "export.invalid_part", "part must be card or loss");
       const selected = c.req.query("preset");
       const presetRelease = selected
         ? await authorizedRelease(db, c.var.principal, selected)
@@ -337,6 +340,20 @@ export function register(app: Hono<Env>): void {
         .where(eq(buildArtifacts.cacheKey, key))
         .limit(1);
       if (hit) {
+        if (part) {
+          const bytes = await cas.getBlob(publicExport ? "public" : "private", hit.blobDigest);
+          const output = JSON.parse(new TextDecoder().decode(bytes)) as {
+            card: Record<string, unknown>;
+            loss: Record<string, unknown>;
+          };
+          c.header("cache-control", PRIVATE_CACHE);
+          if (part === "card")
+            c.header(
+              "content-disposition",
+              `attachment; filename="${f.creation.name}-${r.label}.json"`,
+            );
+          return c.json(output[part]);
+        }
         if (publicExport) {
           c.header("cache-control", IMMUTABLE_CACHE);
           return c.redirect(
