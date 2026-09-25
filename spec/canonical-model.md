@@ -2,7 +2,7 @@
 
 > Status: **v0-draft**。冻结条件见 DECISIONS D-054。
 > 本文件定义 char.pub 所有 Source（Native / GitHub / CCv3 Import）共同映射到的规范数据模型。
-> `char.yaml` 只是它的一种 authoring syntax；Context IR 是它经 Resolver 后的产物（见 [`context-ir-v0.md`](context-ir-v0.md)）。
+> `char.yaml` 只是它的一种 authoring syntax；Creative 内容经 Resolver 生成 Context IR（见 [`context-ir-v0.md`](context-ir-v0.md)），Preset 独立解析为 ResolvedPreset（见 [`preset-v0.md`](preset-v0.md)）。
 
 类型记法使用 TypeScript 风格，仅作为语言中立的结构描述；`?` 表示可选。
 
@@ -93,6 +93,7 @@ interface Creation {
   references: ReferenceEdge[]         // §5
   assets: AssetSlot[]                 // §7
   bootstrap?: Bootstrap               // §8，Character / Scenario 使用
+  policy?: PresetPolicy                // 仅 preset；见 preset-v0.md
 
   meta: CreationMeta                  // §9
   provenance: Provenance              // §10
@@ -121,7 +122,9 @@ interface AttributionAuthor {
 | scenario | `cast`（见 §11） | scenario |
 | persona | ≥1 `persona` fragment | persona |
 | style | ≥1 `style` fragment | style, examples |
-| preset | 见 O-7，v0.5 定义 | — |
+| preset | `policy`；禁止非空 Creative 内容、引用、cast、slots、params、bootstrap 与 context assets | — |
+
+Preset 的协议与参考组装能力已定义于 [`preset-v0.md`](preset-v0.md)。这不开放 Registry / Web 创作、CLI build/publish 或 policy Contribution；公开创作类型仍遵循 v0 范围。
 
 Level 0 Character（Name + Description + Greeting + Avatar）必须能以最少字段表达并发布：
 

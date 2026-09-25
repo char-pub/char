@@ -33,6 +33,7 @@ import {
   type LocaleMap,
   type ReferenceEdge,
 } from "./schema/creation.js";
+import type { PresetPolicy } from "./schema/policy.js";
 
 export type Digest = `sha256:${string}`;
 
@@ -240,6 +241,17 @@ function canonicalGreeting(g: Greeting): Greeting {
   return compact(out, ["locale"]);
 }
 
+/** 已校验的 Policy 剥离默认值；数组声明顺序具有语义。 */
+export function canonicalPolicy(policy: PresetPolicy): PresetPolicy {
+  return compact(
+    {
+      ...policy,
+      blocks: policy.blocks.map((block) => omitIf({ ...block }, "enabled", (value) => value)),
+    },
+    ["region_budgets"],
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Creation
 // ---------------------------------------------------------------------------
@@ -337,6 +349,7 @@ export function canonicalizeCreation(input: CreationInput | unknown): CanonicalR
   if (c.bootstrap) {
     creation.bootstrap = { greetings: c.bootstrap.greetings.map(canonicalGreeting) };
   }
+  if (c.policy) creation.policy = canonicalPolicy(c.policy);
 
   const json = stripCreationDefaults(creation);
   const { fragments: _f, ...rest } = json as Obj;

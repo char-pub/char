@@ -21,6 +21,7 @@ import {
   SEGMENT_RE,
   SLOT_NAME_RE,
 } from "../ids.js";
+import { PresetPolicySchema } from "./policy.js";
 
 // ---------------------------------------------------------------------------
 // 基础类型
@@ -496,25 +497,50 @@ export type CastMember = z.infer<typeof CastMemberSchema>;
 // Creation
 // ---------------------------------------------------------------------------
 
-export const CreationSchema = z.strictObject({
-  id: CreationIdSchema,
-  ref: UnversionedRefSchema,
-  type: CreationTypeSchema,
-  display_name: LocalizedTextSchema,
-  summary: LocalizedTextSchema.optional(),
-  /** 可归属的原作者；导入时保留源卡的 creator。 */
-  authors: z.array(AttributionAuthorSchema).optional(),
-  slots: z.record(SlotNameSchema, SlotDeclSchema).optional(),
-  params: z.record(ParamNameSchema, ParamDeclSchema).optional(),
-  fragments: z.array(FragmentSchema).default([]),
-  references: z.array(ReferenceEdgeSchema).default([]),
-  assets: z.array(AssetSlotSchema).default([]),
-  bootstrap: BootstrapSchema.optional(),
-  /** 只在 type 为 scenario 时出现。 */
-  cast: z.array(CastMemberSchema).optional(),
-  meta: CreationMetaSchema,
-  provenance: ProvenanceSchema.default({}),
-});
+export const CreationSchema = z
+  .strictObject({
+    id: CreationIdSchema,
+    ref: UnversionedRefSchema,
+    type: CreationTypeSchema,
+    display_name: LocalizedTextSchema,
+    summary: LocalizedTextSchema.optional(),
+    /** 可归属的原作者；导入时保留源卡的 creator。 */
+    authors: z.array(AttributionAuthorSchema).optional(),
+    slots: z.record(SlotNameSchema, SlotDeclSchema).optional(),
+    params: z.record(ParamNameSchema, ParamDeclSchema).optional(),
+    fragments: z.array(FragmentSchema).default([]),
+    references: z.array(ReferenceEdgeSchema).default([]),
+    assets: z.array(AssetSlotSchema).default([]),
+    bootstrap: BootstrapSchema.optional(),
+    /** 只在 type 为 scenario 时出现。 */
+    cast: z.array(CastMemberSchema).optional(),
+    /** Preset 的运行策略，与 Creative 内容分开表达。 */
+    policy: PresetPolicySchema.optional(),
+    meta: CreationMetaSchema,
+    provenance: ProvenanceSchema.default({}),
+  })
+  .superRefine((creation, ctx) => {
+    const issue = (path: (string | number)[], message: string) =>
+      ctx.addIssue({ code: "custom", path, message });
+    if (creation.type !== "preset") {
+      if (creation.policy !== undefined) issue(["policy"], "only a preset may declare policy");
+      return;
+    }
+    if (creation.policy === undefined) issue(["policy"], "a preset requires policy");
+    for (const key of ["fragments", "references", "slots", "params", "cast"] as const) {
+      const value = creation[key];
+      if (value !== undefined && Object.keys(value).length > 0) {
+        issue([key], `a preset cannot declare ${key}`);
+      }
+    }
+    if ((creation.bootstrap?.greetings.length ?? 0) > 0) {
+      issue(["bootstrap"], "a preset cannot declare bootstrap greetings");
+    }
+    creation.assets.forEach((asset, i) => {
+      if (asset.role === "context")
+        issue(["assets", i, "role"], "a preset cannot declare context assets");
+    });
+  });
 /** 解析后的 Creation（默认值已填充）。 */
 export type Creation = z.output<typeof CreationSchema>;
 /** 输入形式：可以省略有默认值的字段。 */

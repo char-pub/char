@@ -47929,6 +47929,70 @@ var SLOT_NAME_RE = /^[a-z][a-z0-9_]{0,31}$/;
 var PARAM_NAME_RE = /^[a-z][a-z0-9_]{0,31}$/;
 var CAST_KEY_RE = /^[a-z][a-z0-9_-]{0,31}$/;
 
+// ../../packages/core/src/schema/policy.ts
+var PRESET_REGIONS = [
+  "system:character",
+  "system:cast",
+  "session:bindings",
+  "system:persona",
+  "system:world",
+  "system:scenario",
+  "system:relationship",
+  "system:knowledge",
+  "system:style",
+  "system:instruction",
+  "system:examples",
+  "session:memory",
+  "session:state",
+  "session:variants",
+  "history"
+];
+var CREATIVE_REGIONS = [
+  "system:character",
+  "system:cast",
+  "system:persona",
+  "system:world",
+  "system:scenario",
+  "system:relationship",
+  "system:knowledge",
+  "system:style",
+  "system:instruction",
+  "system:examples"
+];
+var PresetBlockSchema = external_exports.strictObject({
+  id: external_exports.string().regex(SEGMENT_RE),
+  /** 字面文本：不解释模板、脚本或变量。 */
+  text: external_exports.string().min(1).refine((text) => text.trim().length > 0, "expected nonblank text"),
+  position: external_exports.enum(["main", "after-history"]),
+  /** 缺省为 true；canonical 形式省略显式 true。 */
+  enabled: external_exports.boolean().optional()
+});
+var PresetPolicySchema = external_exports.strictObject({
+  version: external_exports.literal("0-draft"),
+  blocks: external_exports.array(PresetBlockSchema),
+  layout: external_exports.array(external_exports.enum(PRESET_REGIONS)).length(PRESET_REGIONS.length),
+  region_budgets: external_exports.partialRecord(external_exports.enum(CREATIVE_REGIONS), external_exports.number().int().nonnegative().safe()).optional(),
+  requires: external_exports.strictObject({
+    system_role: external_exports.literal(true),
+    multiple_system_messages: external_exports.literal(true).optional()
+  })
+}).superRefine((policy, ctx) => {
+  const seen = /* @__PURE__ */ new Set();
+  policy.blocks.forEach((block, i) => {
+    if (seen.has(block.id)) {
+      ctx.addIssue({ code: "custom", path: ["blocks", i, "id"], message: "duplicate block id" });
+    }
+    seen.add(block.id);
+  });
+  if (new Set(policy.layout).size !== PRESET_REGIONS.length) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["layout"],
+      message: "layout must contain every supported region exactly once"
+    });
+  }
+});
+
 // ../../packages/core/src/schema/creation.ts
 var DigestSchema = external_exports.string().regex(DIGEST_RE, "expected sha256:<64 hex>");
 var REF_BODY = `@${NAMESPACE_RE.source.slice(1, -1)}/${NAME_RE.source.slice(1, -1)}`;
@@ -48252,8 +48316,30 @@ var CreationSchema = external_exports.strictObject({
   bootstrap: BootstrapSchema.optional(),
   /** 只在 type 为 scenario 时出现。 */
   cast: external_exports.array(CastMemberSchema).optional(),
+  /** Preset 的运行策略，与 Creative 内容分开表达。 */
+  policy: PresetPolicySchema.optional(),
   meta: CreationMetaSchema,
   provenance: ProvenanceSchema.default({})
+}).superRefine((creation, ctx) => {
+  const issue3 = (path2, message) => ctx.addIssue({ code: "custom", path: path2, message });
+  if (creation.type !== "preset") {
+    if (creation.policy !== void 0) issue3(["policy"], "only a preset may declare policy");
+    return;
+  }
+  if (creation.policy === void 0) issue3(["policy"], "a preset requires policy");
+  for (const key of ["fragments", "references", "slots", "params", "cast"]) {
+    const value = creation[key];
+    if (value !== void 0 && Object.keys(value).length > 0) {
+      issue3([key], `a preset cannot declare ${key}`);
+    }
+  }
+  if ((creation.bootstrap?.greetings.length ?? 0) > 0) {
+    issue3(["bootstrap"], "a preset cannot declare bootstrap greetings");
+  }
+  creation.assets.forEach((asset, i) => {
+    if (asset.role === "context")
+      issue3(["assets", i, "role"], "a preset cannot declare context assets");
+  });
 });
 
 // ../../packages/core/src/canonical.ts
@@ -48416,6 +48502,15 @@ function canonicalGreeting(g) {
   if (out.locale) out.locale = canonicalLocaleMap(out.locale);
   return compact(out, ["locale"]);
 }
+function canonicalPolicy(policy) {
+  return compact(
+    {
+      ...policy,
+      blocks: policy.blocks.map((block) => omitIf({ ...block }, "enabled", (value) => value))
+    },
+    ["region_budgets"]
+  );
+}
 function stripCreationDefaults(c) {
   let out = { ...c };
   if (c.slots) {
@@ -48483,6 +48578,7 @@ function canonicalizeCreation(input2) {
   if (c.bootstrap) {
     creation.bootstrap = { greetings: c.bootstrap.greetings.map(canonicalGreeting) };
   }
+  if (c.policy) creation.policy = canonicalPolicy(c.policy);
   const json2 = stripCreationDefaults(creation);
   const { fragments: _f, ...rest } = json2;
   const manifest = normalizeValue({
@@ -48819,11 +48915,6 @@ function checkTypeRequirements(c, sink) {
       needKind("style", "'style'");
       break;
     case "preset":
-      sink.info(
-        "check.preset_unspecified",
-        "type",
-        "the preset structure is not defined yet; its content is not checked"
-      );
       break;
   }
 }
@@ -48955,7 +49046,7 @@ function checkCreation(c, opts = {}) {
     }
   }
   for (const e of c.references) checkEdgeLocal(c, e, scope, sink);
-  if (c.cast !== void 0) {
+  if (c.cast !== void 0 && (c.type !== "preset" || c.cast.length > 0)) {
     if (c.type !== "scenario") {
       sink.error("check.cast_not_allowed", "cast", `a ${c.type} cannot declare a cast`);
     }
@@ -49015,11 +49106,22 @@ function irFragmentDigest(f) {
   return digestJson(body);
 }
 
+// ../../packages/core/src/version.ts
+var CORE_VERSION = "0.0.0";
+var RESOLVER = { name: "@char-pub/core", version: CORE_VERSION };
+
 // ../../packages/core/src/resolve/graph.ts
 var MAX_GRAPH_DEPTH = 32;
 var MAX_GRAPH_INSTANCES = 5e3;
 function loadRelease(input2) {
   const { creation, semantic_digest } = canonicalizeCreation(input2.creation);
+  if (creation.type === "preset") {
+    throw new CharError({
+      code: "resolve.preset_not_content",
+      subject: creation.ref,
+      detail: "presets are policy inputs; use resolvePreset instead of the content resolver"
+    });
+  }
   if (input2.semantic_digest !== void 0 && input2.semantic_digest !== semantic_digest) {
     throw new CharError({
       code: "resolve.semantic_digest_mismatch",
@@ -49431,6 +49533,19 @@ var TRACE_REASONS = [
 var TraceReasonSchema = external_exports.union([external_exports.enum(TRACE_REASONS), external_exports.string().regex(/^keyword:.+$/)]);
 var AssemblyTraceSchema = external_exports.strictObject({
   ir: external_exports.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema }),
+  /** 实际采用的运行策略身份；推荐列表不构成已选用的 Preset。 */
+  preset: external_exports.strictObject({
+    ref: UnversionedRefSchema,
+    release: ReleaseIdSchema,
+    semantic_digest: DigestSchema,
+    resolver: external_exports.strictObject({ name: external_exports.string(), version: external_exports.string() })
+  }).optional(),
+  /** 可选以兼容旧 Trace；参考 Assembler 的新输出始终携带。 */
+  assembler: external_exports.strictObject({
+    name: external_exports.string(),
+    version: external_exports.string(),
+    layout: external_exports.enum(["default-v1", "preset-v1"])
+  }).optional(),
   profile: external_exports.strictObject({ tokenizer: external_exports.string(), context_window: external_exports.number(), mode: external_exports.string() }),
   total_tokens: external_exports.number(),
   estimated: external_exports.boolean(),
@@ -49487,10 +49602,6 @@ var ContextDiffSchema = external_exports.strictObject({
   ),
   token_delta: external_exports.strictObject({ tokenizer: external_exports.string(), always: external_exports.number(), potential: external_exports.number() }).optional()
 });
-
-// ../../packages/core/src/version.ts
-var CORE_VERSION = "0.0.0";
-var RESOLVER = { name: "@char-pub/core", version: CORE_VERSION };
 
 // ../../packages/core/src/resolve/env.ts
 var INSTANCE_SELF = "#self";

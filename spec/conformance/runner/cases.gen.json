@@ -3316,6 +3316,706 @@
       "expected": {}
     },
     {
+      "dir": "014-preset-layout",
+      "meta": {
+        "id": "014-preset-layout",
+        "title": "Preset layout preserves content identity and records independent policy provenance",
+        "kind": "assembler",
+        "expect": "trace",
+        "spec_refs": [
+          "context-ir §11 Preset assembly"
+        ],
+        "status": "draft",
+        "notes": "Move style after history; main/reminder policy blocks retain their own origins. Disabled blocks never reach messages. The default scenario preserves existing behavior. All expected output remains subject to human review."
+      },
+      "input": {
+        "deps": [],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@fixture/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "fragments": [
+              {
+                "id": "character",
+                "stable": true,
+                "kind": "character",
+                "importance": "pinned",
+                "content": {
+                  "type": "text",
+                  "text": "Alice is a courier."
+                }
+              },
+              {
+                "id": "knowledge",
+                "stable": true,
+                "kind": "knowledge",
+                "content": {
+                  "type": "text",
+                  "text": "The bridge is closed."
+                }
+              },
+              {
+                "id": "style",
+                "stable": true,
+                "kind": "style",
+                "content": {
+                  "type": "text",
+                  "text": "Use concise dialogue."
+                }
+              }
+            ]
+          }
+        },
+        "assemble": {
+          "scenarios": [
+            {
+              "name": "explicit-layout",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 4096,
+                "reserve_for_output": 128,
+                "mode": "narrator",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
+              },
+              "preset": {
+                "creation": {
+                  "id": "cr_01h455vb4pex5vsknk084sn002",
+                  "ref": "@fixture/narrator",
+                  "type": "preset",
+                  "display_name": "Narrator",
+                  "policy": {
+                    "version": "0-draft",
+                    "blocks": [
+                      {
+                        "id": "main",
+                        "text": "Portray the selected cast.",
+                        "position": "main"
+                      },
+                      {
+                        "id": "reminder",
+                        "text": "Continue with the next reply.",
+                        "position": "after-history"
+                      },
+                      {
+                        "id": "disabled",
+                        "text": "This block must never be sent.",
+                        "position": "main",
+                        "enabled": false
+                      }
+                    ],
+                    "layout": [
+                      "system:character",
+                      "system:cast",
+                      "session:bindings",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:instruction",
+                      "system:examples",
+                      "session:memory",
+                      "session:state",
+                      "session:variants",
+                      "history",
+                      "system:style"
+                    ],
+                    "requires": {
+                      "system_role": true
+                    }
+                  },
+                  "meta": {
+                    "default_locale": "en",
+                    "rating": "general",
+                    "rights": "original",
+                    "license": "CC-BY-4.0"
+                  }
+                },
+                "release": "rel_01h455vb4pex5vsknk084sn002",
+                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+              }
+            },
+            {
+              "name": "default-layout",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 4096,
+                "reserve_for_output": 128,
+                "mode": "narrator",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "015-preset-budget-capabilities",
+      "meta": {
+        "id": "015-preset-budget-capabilities",
+        "title": "Preset budgets and capability mismatches fail explicitly",
+        "kind": "assembler",
+        "expect": "trace",
+        "spec_refs": [
+          "context-ir §11 Preset assembly"
+        ],
+        "status": "draft",
+        "notes": "knowledge-cap skips only knowledge; pinned-region-cap fails preset_region_over_budget; fixed-over-budget fails fixed_over_budget; missing-system and split-system-unsupported fail preset_incompatible. Snapshots are canonicalized and digest-checked before assembly. These are draft cases, not accepted expected outputs."
+      },
+      "input": {
+        "deps": [],
+        "root": {
+          "release": "rel_01h455vb4pex5vsknk084sn001",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01h455vb4pex5vsknk084sn001",
+            "ref": "@fixture/alice",
+            "type": "character",
+            "display_name": "Alice",
+            "meta": {
+              "default_locale": "en",
+              "rights": "original",
+              "rating": "general",
+              "license": "CC-BY-4.0"
+            },
+            "fragments": [
+              {
+                "id": "character",
+                "stable": true,
+                "kind": "character",
+                "importance": "pinned",
+                "content": {
+                  "type": "text",
+                  "text": "Alice is a courier."
+                }
+              },
+              {
+                "id": "knowledge",
+                "stable": true,
+                "kind": "knowledge",
+                "content": {
+                  "type": "text",
+                  "text": "The bridge is closed."
+                }
+              },
+              {
+                "id": "style",
+                "stable": true,
+                "kind": "style",
+                "content": {
+                  "type": "text",
+                  "text": "Use concise dialogue."
+                }
+              }
+            ]
+          }
+        },
+        "assemble": {
+          "scenarios": [
+            {
+              "name": "knowledge-cap",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 4096,
+                "reserve_for_output": 128,
+                "mode": "narrator",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
+              },
+              "preset": {
+                "creation": {
+                  "id": "cr_01h455vb4pex5vsknk084sn003",
+                  "ref": "@fixture/narrator",
+                  "type": "preset",
+                  "display_name": "Narrator",
+                  "policy": {
+                    "version": "0-draft",
+                    "blocks": [
+                      {
+                        "id": "main",
+                        "text": "Portray the selected cast.",
+                        "position": "main"
+                      },
+                      {
+                        "id": "reminder",
+                        "text": "Continue with the next reply.",
+                        "position": "after-history"
+                      },
+                      {
+                        "id": "disabled",
+                        "text": "This block must never be sent.",
+                        "position": "main",
+                        "enabled": false
+                      }
+                    ],
+                    "layout": [
+                      "system:character",
+                      "system:cast",
+                      "session:bindings",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:instruction",
+                      "system:examples",
+                      "session:memory",
+                      "session:state",
+                      "session:variants",
+                      "history",
+                      "system:style"
+                    ],
+                    "region_budgets": {
+                      "system:knowledge": 0
+                    },
+                    "requires": {
+                      "system_role": true
+                    }
+                  },
+                  "meta": {
+                    "default_locale": "en",
+                    "rating": "general",
+                    "rights": "original",
+                    "license": "CC-BY-4.0"
+                  }
+                },
+                "release": "rel_01h455vb4pex5vsknk084sn003",
+                "semantic_digest": "sha256:6b80da6a43c162f5b13ffc0b06e466574b9e672c301d94cee3df03cb74f7e2df"
+              }
+            },
+            {
+              "name": "pinned-region-cap",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 4096,
+                "reserve_for_output": 128,
+                "mode": "narrator",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
+              },
+              "preset": {
+                "creation": {
+                  "id": "cr_01h455vb4pex5vsknk084sn004",
+                  "ref": "@fixture/narrator",
+                  "type": "preset",
+                  "display_name": "Narrator",
+                  "policy": {
+                    "version": "0-draft",
+                    "blocks": [
+                      {
+                        "id": "main",
+                        "text": "Portray the selected cast.",
+                        "position": "main"
+                      },
+                      {
+                        "id": "reminder",
+                        "text": "Continue with the next reply.",
+                        "position": "after-history"
+                      },
+                      {
+                        "id": "disabled",
+                        "text": "This block must never be sent.",
+                        "position": "main",
+                        "enabled": false
+                      }
+                    ],
+                    "layout": [
+                      "system:character",
+                      "system:cast",
+                      "session:bindings",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:instruction",
+                      "system:examples",
+                      "session:memory",
+                      "session:state",
+                      "session:variants",
+                      "history",
+                      "system:style"
+                    ],
+                    "region_budgets": {
+                      "system:character": 0
+                    },
+                    "requires": {
+                      "system_role": true
+                    }
+                  },
+                  "meta": {
+                    "default_locale": "en",
+                    "rating": "general",
+                    "rights": "original",
+                    "license": "CC-BY-4.0"
+                  }
+                },
+                "release": "rel_01h455vb4pex5vsknk084sn004",
+                "semantic_digest": "sha256:7f64268893799a335b62313b1d7e559051fadca87008c58e1f00b9f18a08d6cc"
+              }
+            },
+            {
+              "name": "fixed-over-budget",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 1,
+                "reserve_for_output": 0,
+                "mode": "narrator",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
+              },
+              "preset": {
+                "creation": {
+                  "id": "cr_01h455vb4pex5vsknk084sn002",
+                  "ref": "@fixture/narrator",
+                  "type": "preset",
+                  "display_name": "Narrator",
+                  "policy": {
+                    "version": "0-draft",
+                    "blocks": [
+                      {
+                        "id": "main",
+                        "text": "Portray the selected cast.",
+                        "position": "main"
+                      },
+                      {
+                        "id": "reminder",
+                        "text": "Continue with the next reply.",
+                        "position": "after-history"
+                      },
+                      {
+                        "id": "disabled",
+                        "text": "This block must never be sent.",
+                        "position": "main",
+                        "enabled": false
+                      }
+                    ],
+                    "layout": [
+                      "system:character",
+                      "system:cast",
+                      "session:bindings",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:instruction",
+                      "system:examples",
+                      "session:memory",
+                      "session:state",
+                      "session:variants",
+                      "history",
+                      "system:style"
+                    ],
+                    "requires": {
+                      "system_role": true
+                    }
+                  },
+                  "meta": {
+                    "default_locale": "en",
+                    "rating": "general",
+                    "rights": "original",
+                    "license": "CC-BY-4.0"
+                  }
+                },
+                "release": "rel_01h455vb4pex5vsknk084sn002",
+                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+              }
+            },
+            {
+              "name": "missing-system",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 4096,
+                "reserve_for_output": 128,
+                "mode": "narrator",
+                "capabilities": {
+                  "multiple_system_messages": true
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
+              },
+              "preset": {
+                "creation": {
+                  "id": "cr_01h455vb4pex5vsknk084sn002",
+                  "ref": "@fixture/narrator",
+                  "type": "preset",
+                  "display_name": "Narrator",
+                  "policy": {
+                    "version": "0-draft",
+                    "blocks": [
+                      {
+                        "id": "main",
+                        "text": "Portray the selected cast.",
+                        "position": "main"
+                      },
+                      {
+                        "id": "reminder",
+                        "text": "Continue with the next reply.",
+                        "position": "after-history"
+                      },
+                      {
+                        "id": "disabled",
+                        "text": "This block must never be sent.",
+                        "position": "main",
+                        "enabled": false
+                      }
+                    ],
+                    "layout": [
+                      "system:character",
+                      "system:cast",
+                      "session:bindings",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:instruction",
+                      "system:examples",
+                      "session:memory",
+                      "session:state",
+                      "session:variants",
+                      "history",
+                      "system:style"
+                    ],
+                    "requires": {
+                      "system_role": true
+                    }
+                  },
+                  "meta": {
+                    "default_locale": "en",
+                    "rating": "general",
+                    "rights": "original",
+                    "license": "CC-BY-4.0"
+                  }
+                },
+                "release": "rel_01h455vb4pex5vsknk084sn002",
+                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+              }
+            },
+            {
+              "name": "split-system-unsupported",
+              "profile": {
+                "runtime": {
+                  "name": "char-pub-conformance",
+                  "version": "0"
+                },
+                "tokenizer": "estimate",
+                "context_window": 4096,
+                "reserve_for_output": 128,
+                "mode": "narrator",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": false
+                }
+              },
+              "session": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
+              },
+              "preset": {
+                "creation": {
+                  "id": "cr_01h455vb4pex5vsknk084sn002",
+                  "ref": "@fixture/narrator",
+                  "type": "preset",
+                  "display_name": "Narrator",
+                  "policy": {
+                    "version": "0-draft",
+                    "blocks": [
+                      {
+                        "id": "main",
+                        "text": "Portray the selected cast.",
+                        "position": "main"
+                      },
+                      {
+                        "id": "reminder",
+                        "text": "Continue with the next reply.",
+                        "position": "after-history"
+                      },
+                      {
+                        "id": "disabled",
+                        "text": "This block must never be sent.",
+                        "position": "main",
+                        "enabled": false
+                      }
+                    ],
+                    "layout": [
+                      "system:character",
+                      "system:cast",
+                      "session:bindings",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:instruction",
+                      "system:examples",
+                      "session:memory",
+                      "session:state",
+                      "session:variants",
+                      "history",
+                      "system:style"
+                    ],
+                    "requires": {
+                      "system_role": true
+                    }
+                  },
+                  "meta": {
+                    "default_locale": "en",
+                    "rating": "general",
+                    "rights": "original",
+                    "license": "CC-BY-4.0"
+                  }
+                },
+                "release": "rel_01h455vb4pex5vsknk084sn002",
+                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
       "dir": "101-publish-unpinned",
       "meta": {
         "id": "101-publish-unpinned",

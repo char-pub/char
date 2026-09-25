@@ -64,13 +64,21 @@ Case IDs: `001`–`013` follow the first batch listed in the Context IR specific
 - **Publish reports** — `ok` must match, and the lists of error-level and warning-level issue
   codes must match in order.
 - **Assembler traces** — `input/assemble.json` lists named scenarios
-  (`{ "scenarios": [{ "name", "profile", "session" }] }`); every scenario resolves the IR and
+  (`{ "scenarios": [{ "name", "profile", "session", "preset"? }] }`); `preset`, when present,
+  is a full `{ creation, release, semantic_digest }` snapshot. The runner verifies and resolves
+  it with `resolvePreset` before assembly; it never trusts a hand-authored resolved policy.
+  Every scenario resolves the IR and
   assembles it once with the `estimate` tokenizer. `expected/trace.json` is
   `{ "scenarios": [{ "name", "entries": [{ "id", "decision", "reason" }] }] }`, or
   `{ "name", "error": { "code" } }` for a scenario that must fail. Only `id`, `decision` and
   `reason` are compared, in order — never token counts, regions or annotation text.
   Independently of review status, a successful scenario fails the case if a `{{late:*}}`
-  placeholder reaches the model messages.
+  placeholder reaches Creative or Session message content. Policy blocks are literal text,
+  so their exact source-delimited prefixes and suffixes are excluded from that check even
+  when system messages are merged; the remaining content is still checked.
+  Preset fixture tests additionally assert actual message order, regions, selected policy
+  identity and budget/capability errors across the same three runtimes. These assertions
+  supplement draft execution; they do not constitute human acceptance of expected output.
 - **CCv3 round trips** — the card in `input/card.json` is imported, canonicalized, resolved and
   exported. `expected/loss-report.json` holds only the stable part: from the import, the omitted
   policy field names, each lorebook entry's source id / derived fragment id / activation, and

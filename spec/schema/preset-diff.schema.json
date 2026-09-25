@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v0-draft/preset-diff.schema.json",
+  "title": "char.pub Preset Diff",
+  "type": "object",
+  "properties": {
+    "from": {
+      "$ref": "#/$defs/PresetIdentity"
+    },
+    "to": {
+      "$ref": "#/$defs/PresetIdentity"
+    },
+    "blocks": {
+      "type": "object",
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          }
+        },
+        "modified": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "fields": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "text",
+                    "position",
+                    "enabled"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "fields"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "order_changed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "added",
+        "removed",
+        "modified",
+        "order_changed"
+      ],
+      "additionalProperties": false
+    },
+    "policy_changes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "version",
+          "layout",
+          "region_budgets",
+          "requires"
+        ]
+      }
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "blocks",
+    "policy_changes"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "PresetIdentity": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/UnversionedRef"
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "semantic_digest": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "ref",
+        "release",
+        "semantic_digest"
+      ],
+      "additionalProperties": false
+    },
+    "UnversionedRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

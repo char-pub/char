@@ -301,6 +301,23 @@ export const TraceReasonSchema = z.union([z.enum(TRACE_REASONS), z.string().rege
 
 export const AssemblyTraceSchema = z.strictObject({
   ir: z.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema }),
+  /** 实际采用的运行策略身份；推荐列表不构成已选用的 Preset。 */
+  preset: z
+    .strictObject({
+      ref: UnversionedRefSchema,
+      release: ReleaseIdSchema,
+      semantic_digest: DigestSchema,
+      resolver: z.strictObject({ name: z.string(), version: z.string() }),
+    })
+    .optional(),
+  /** 可选以兼容旧 Trace；参考 Assembler 的新输出始终携带。 */
+  assembler: z
+    .strictObject({
+      name: z.string(),
+      version: z.string(),
+      layout: z.enum(["default-v1", "preset-v1"]),
+    })
+    .optional(),
   profile: z.strictObject({ tokenizer: z.string(), context_window: z.number(), mode: z.string() }),
   total_tokens: z.number(),
   estimated: z.boolean(),

@@ -89,6 +89,9 @@
         "$ref": "#/$defs/CastMember"
       }
     },
+    "policy": {
+      "$ref": "#/$defs/PresetPolicy"
+    },
     "meta": {
       "$ref": "#/$defs/CreationMeta"
     },
@@ -105,6 +108,63 @@
     "meta"
   ],
   "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "preset"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "policy"
+        ],
+        "not": {
+          "required": [
+            "bootstrap"
+          ]
+        },
+        "properties": {
+          "fragments": {
+            "maxItems": 0
+          },
+          "references": {
+            "maxItems": 0
+          },
+          "cast": {
+            "maxItems": 0
+          },
+          "slots": {
+            "maxProperties": 0
+          },
+          "params": {
+            "maxProperties": 0
+          },
+          "assets": {
+            "items": {
+              "properties": {
+                "role": {
+                  "const": "presentation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "not": {
+          "required": [
+            "policy"
+          ]
+        }
+      }
+    }
+  ],
   "$defs": {
     "UnversionedRef": {
       "type": "string",
@@ -1130,6 +1190,140 @@
         "who"
       ],
       "additionalProperties": false
+    },
+    "PresetPolicy": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "const": "0-draft"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PresetBlock"
+          }
+        },
+        "layout": {
+          "minItems": 15,
+          "maxItems": 15,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "system:character",
+              "system:cast",
+              "session:bindings",
+              "system:persona",
+              "system:world",
+              "system:scenario",
+              "system:relationship",
+              "system:knowledge",
+              "system:style",
+              "system:instruction",
+              "system:examples",
+              "session:memory",
+              "session:state",
+              "session:variants",
+              "history"
+            ]
+          }
+        },
+        "region_budgets": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "system:character",
+              "system:cast",
+              "system:persona",
+              "system:world",
+              "system:scenario",
+              "system:relationship",
+              "system:knowledge",
+              "system:style",
+              "system:instruction",
+              "system:examples"
+            ]
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "requires": {
+          "type": "object",
+          "properties": {
+            "system_role": {
+              "type": "boolean",
+              "const": true
+            },
+            "multiple_system_messages": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "system_role"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "version",
+        "blocks",
+        "layout",
+        "requires"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "layout": {
+              "uniqueItems": true
+            }
+          }
+        }
+      ]
+    },
+    "PresetBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "main",
+            "after-history"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "position"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "text": {
+              "pattern": "\\S"
+            }
+          }
+        }
+      ]
     },
     "CreationMeta": {
       "type": "object",

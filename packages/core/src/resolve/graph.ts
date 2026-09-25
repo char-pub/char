@@ -72,6 +72,13 @@ export interface LoadedGraph {
 
 function loadRelease(input: ReleaseInput): LoadedRelease {
   const { creation, semantic_digest } = canonicalizeCreation(input.creation);
+  if (creation.type === "preset") {
+    throw new CharError({
+      code: "resolve.preset_not_content",
+      subject: creation.ref,
+      detail: "presets are policy inputs; use resolvePreset instead of the content resolver",
+    });
+  }
   if (input.semantic_digest !== undefined && input.semantic_digest !== semantic_digest) {
     throw new CharError({
       code: "resolve.semantic_digest_mismatch",

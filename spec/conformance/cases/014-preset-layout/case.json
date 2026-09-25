@@ -1,0 +1,11 @@
+{
+  "id": "014-preset-layout",
+  "title": "Preset layout preserves content identity and records independent policy provenance",
+  "kind": "assembler",
+  "expect": "trace",
+  "spec_refs": [
+    "context-ir §11 Preset assembly"
+  ],
+  "status": "draft",
+  "notes": "Move style after history; main/reminder policy blocks retain their own origins. Disabled blocks never reach messages. The default scenario preserves existing behavior. All expected output remains subject to human review."
+}
