@@ -347,11 +347,10 @@ export function register(app: Hono<Env>): void {
             loss: Record<string, unknown>;
           };
           c.header("cache-control", PRIVATE_CACHE);
-          if (part === "card")
-            c.header(
-              "content-disposition",
-              `attachment; filename="${f.creation.name}-${r.label}.json"`,
-            );
+          c.header(
+            "content-disposition",
+            `attachment; filename="${f.creation.name}-${r.label}${part === "loss" ? "-loss" : ""}.json"`,
+          );
           return c.json(output[part]);
         }
         if (publicExport) {

@@ -28,6 +28,12 @@ describe("CCv3 export review", () => {
       fakeClient({ me: async () => ME, exportCcv3, getCcv3Loss }),
     );
     await userEvent.click(await screen.findByRole("button", { name: "Download" }));
+    expect(
+      screen.getByRole("menuitem", { name: /Creation artifact/ }).getAttribute("href"),
+    ).toMatch(/\/releases\/1\.0\.0\/artifact$/);
+    expect(screen.getByRole("menuitem", { name: /Context IR/ }).getAttribute("href")).toMatch(
+      /\/releases\/1\.0\.0\/ir$/,
+    );
     await userEvent.click(screen.getByRole("menuitem", { name: /Character card/ }));
     const dialog = await screen.findByRole("dialog");
     await userEvent.click(

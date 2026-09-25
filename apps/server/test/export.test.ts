@@ -132,6 +132,9 @@ describe("lazy CCv3 export", () => {
     const loss = await api.request(`${path}?part=loss`);
     expect(loss.status).toBe(200);
     expect(loss.headers.get("cache-control")).toBe("private, no-store");
+    expect(loss.headers.get("content-disposition")).toBe(
+      'attachment; filename="mira-1.0.0-loss.json"',
+    );
     expect(Ccv3LossReportSchema.parse(await loss.json())).toEqual(out.loss);
     const invalid = await api.request(`${path}?part=unknown`);
     expect(invalid.status).toBe(400);

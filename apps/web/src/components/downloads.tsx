@@ -1,5 +1,5 @@
 /**
- * 下载菜单：Context IR 直接下载；CCv3 角色卡由服务端按需导出，构建中时按 `Retry-After`
+ * 下载菜单：统一产物与内容 Context IR 直接下载；CCv3 角色卡由服务端按需导出，构建中时按 `Retry-After`
  * 轮询，就绪后交给浏览器下载。导出进度写在按钮下方（`aria-live`），出错也在这里说明。
  */
 import { ChevronDown, Download, FileJson, IdCard } from "lucide-react";
@@ -128,20 +128,31 @@ export function DownloadMenu({
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <a
-                href={
-                  kind === "content"
-                    ? irDownloadUrl(ns, name, label)
-                    : irDownloadUrl(ns, name, label).replace(/\/ir$/, "/artifact")
-                }
-                download={`${ns}-${name}-${label}.json`}
+                href={irDownloadUrl(ns, name, label).replace(/\/ir$/, "/artifact")}
+                download={`${ns}-${name}-${label}-artifact.json`}
               >
                 <FileJson aria-hidden />
                 <span className="flex flex-col">
-                  <span>{kind === "content" ? "Context IR" : "Policy artifact"}</span>
-                  <span className="text-xs font-normal text-text-3">Runtime-ready JSON</span>
+                  <span>Creation artifact</span>
+                  <span className="text-xs font-normal text-text-3">
+                    Complete content, policy and locked settings
+                  </span>
                 </span>
               </a>
             </DropdownMenuItem>
+            {kind === "content" ? (
+              <DropdownMenuItem asChild>
+                <a href={irDownloadUrl(ns, name, label)} download={`${ns}-${name}-${label}.json`}>
+                  <FileJson aria-hidden />
+                  <span className="flex flex-col">
+                    <span>Context IR</span>
+                    <span className="text-xs font-normal text-text-3">
+                      Resolved creative content
+                    </span>
+                  </span>
+                </a>
+              </DropdownMenuItem>
+            ) : null}
             {canExportCard ? (
               <DropdownMenuItem disabled={building} onSelect={() => setExportOpen(true)}>
                 <IdCard aria-hidden />
