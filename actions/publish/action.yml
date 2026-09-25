@@ -10,6 +10,9 @@ inputs:
     description: Path to char.yaml inside the repository.
     required: false
     default: char.yaml
+  dependencies:
+    description: Newline-separated local dependency Release snapshot JSON paths (exact pins).
+    required: false
   label:
     description: Release label, e.g. 1.2.0. Defaults to the tag name when triggered by a tag push.
     required: false

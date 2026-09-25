@@ -183,3 +183,103 @@ describe("Preset conformance fixture semantics", () => {
     });
   });
 });
+
+// These assertions run unchanged in Node, Chromium and workerd. They do not accept draft baselines.
+describe("module and author fixture portability", () => {
+  it("deduplicates exact module imports and runs a public synthetic fixture without a model", async () => {
+    const { buildCreation } = await import("@char-pub/core");
+    const { ASSEMBLER, runAssemblyTests, TOKENIZER_VERSIONS } = await import("@char-pub/assembler");
+    const c = cases.find((item) => item.dir === "014-preset-layout");
+    const content = c?.input.root;
+    const original = c?.input.assemble?.scenarios[0];
+    if (!content || !original?.preset) throw new Error("missing source fixture");
+    const contentCanonical = canonicalizeCreation(content.creation);
+    const module = canonicalizeCreation({
+      id: "cr_01h455vb4pex5vsknk084sn007",
+      ref: "@fixture/shared",
+      type: "prompt-module",
+      display_name: "Shared style",
+      prompt_module: {
+        version: "0-draft",
+        blocks: [{ id: "style", position: "main", text: "Use vivid details." }],
+      },
+      meta: { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" },
+    });
+    const moduleRelease = "rel_01h455vb4pex5vsknk084sn007";
+    const base = canonicalizeCreation(original.preset.creation).creation;
+    const policy = base.policy;
+    if (!policy) throw new Error("missing policy");
+    const preset = canonicalizeCreation({
+      ...base,
+      policy: {
+        ...policy,
+        imports: [
+          {
+            id: "first",
+            use: module.creation.ref,
+            pin: { release: moduleRelease, semantic_digest: module.semantic_digest },
+          },
+          {
+            id: "second",
+            use: module.creation.ref,
+            pin: { release: moduleRelease, semantic_digest: module.semantic_digest },
+          },
+        ],
+      },
+      assembly_tests: [
+        {
+          id: "module-once",
+          root: {
+            ref: contentCanonical.creation.ref,
+            release: content.release,
+            semantic_digest: contentCanonical.semantic_digest,
+          },
+          preset: "self",
+          profile: original.profile,
+          session: original.session,
+          assembler: ASSEMBLER,
+          tokenizer: { name: "estimate", version: TOKENIZER_VERSIONS.estimate },
+          expected: {
+            kind: "success",
+            trace: [{ source: "preset:@fixture/shared#style", included: true, reason: "always" }],
+          },
+        },
+      ],
+    });
+    const input = {
+      root: {
+        release: original.preset.release,
+        visibility: "public" as const,
+        creation: preset.creation,
+      },
+      dependencies: [
+        content,
+        ...(c?.input.deps ?? []),
+        { release: moduleRelease, visibility: "public" as const, creation: module.creation },
+      ],
+    };
+    const built = buildCreation(input);
+    expect(built.artifact.kind).toBe("preset");
+    if (built.artifact.kind !== "preset") throw new Error("expected preset");
+    expect(
+      built.artifact.preset.policy.blocks.filter((block) => block.id === "@fixture/shared#style"),
+    ).toHaveLength(1);
+    expect(built.artifact.preset.lock).toHaveLength(1);
+    const report = await runAssemblyTests(input);
+    expect(report.ok).toBe(true);
+    expect(
+      report.results[0]?.trace?.entries.filter(
+        (entry) => entry.id === "preset:@fixture/shared#style",
+      ),
+    ).toHaveLength(1);
+    const changed = {
+      ...input,
+      dependencies: input.dependencies.map((dep) =>
+        dep.release === moduleRelease
+          ? { ...dep, creation: { ...module.creation, display_name: "tampered" } }
+          : dep,
+      ),
+    };
+    expect(() => buildCreation(changed)).toThrow();
+  });
+});

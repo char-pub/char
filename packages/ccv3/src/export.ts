@@ -18,14 +18,18 @@
  */
 import {
   type ContextIR,
+  type EffectiveMeta,
   finalizeIrText,
   type IRContent,
   type IRFragment,
   type Participant,
+  RATINGS,
+  type ResolvedPreset,
 } from "@char-pub/core";
 import { base64Encode, utf8Encode } from "./bytes.js";
 import type { CCv2Card, CCv3Card, CCv3Data, CCv3LorebookEntry } from "./card.js";
 import { replacePngText } from "./png.js";
+import { exportPolicyFields } from "./policy.js";
 
 export type TokenEstimator = (text: string) => number;
 
@@ -49,6 +53,11 @@ export function estimateTokens(text: string): number {
 }
 
 export interface ExportOptions {
+  /** Explicitly selected, integrity-checked policy release. */
+  resolvedPreset?: ResolvedPreset;
+  /** Aggregated attribution and licenses from the selected policy artifact. */
+  presetMeta?: Pick<EffectiveMeta, "licenses" | "attribution"> &
+    Partial<Pick<EffectiveMeta, "rating" | "content_warnings">>;
   /** 用户选择的 Preset 里的策略文本；不提供时导出结果不含这两个字段的内容。 */
   preset?: { system_prompt?: string; post_history_instructions?: string };
   /** 头像 PNG；提供时同时返回嵌入了卡片数据的 PNG。 */
@@ -403,8 +412,21 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
   });
   loss.locales.dropped = [...droppedLocales].sort();
 
-  const presetSystem = opts.preset?.system_prompt ?? "";
-  const presetPost = opts.preset?.post_history_instructions ?? "";
+  const selectedPolicy = opts.resolvedPreset ? exportPolicyFields(opts.resolvedPreset) : undefined;
+  if (selectedPolicy) {
+    loss.other.push(...selectedPolicy.losses);
+    if (!opts.presetMeta)
+      loss.other.push({
+        subject: "policy.attribution",
+        detail:
+          "ResolvedPreset has no author/license metadata; preserve attribution and licenses from its creation artifact before redistribution",
+      });
+  }
+  const presetSystem = selectedPolicy?.fields.system_prompt ?? opts.preset?.system_prompt ?? "";
+  const presetPost =
+    selectedPolicy?.fields.post_history_instructions ??
+    opts.preset?.post_history_instructions ??
+    "";
   for (const o of ir.meta.import_omissions) {
     const restored = o.fields.every(
       (f) =>
@@ -417,15 +439,43 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
   const rootNode = ir.graph.nodes.find((n) => n.ref === rootRef);
   const self = env.participants.get("self");
   const name = self ? displayText(self.display_name, locale) : (rootNode?.display_name ?? rootRef);
-  const attribution = ir.meta.attribution
+  const attribution = [
+    ...ir.meta.attribution,
+    ...(opts.resolvedPreset ? (opts.presetMeta?.attribution ?? []) : []),
+  ]
     .map((a) => `${a.ref}: ${a.authors.map((x) => x.name).join(", ") || "unknown"}`)
     .join("\n");
-  const licenses = ir.meta.licenses
+  const licenses = [
+    ...ir.meta.licenses,
+    ...(opts.resolvedPreset ? (opts.presetMeta?.licenses ?? []) : []),
+  ]
     .map((l) => `${l.ref}${l.asset ? ` (${l.asset})` : ""}: ${l.license}`)
     .join("\n");
+  const policyRating = opts.resolvedPreset ? opts.presetMeta?.rating : undefined;
+  const effectiveRating =
+    policyRating && RATINGS.indexOf(policyRating) > RATINGS.indexOf(ir.meta.rating)
+      ? policyRating
+      : ir.meta.rating;
+  const ratingLabel =
+    opts.resolvedPreset && !policyRating
+      ? `unverified (content: ${ir.meta.rating}; policy: unknown)`
+      : effectiveRating;
+  if (opts.resolvedPreset && !policyRating)
+    loss.other.push({
+      subject: "policy.rating",
+      detail:
+        "The selected policy's effective rating was not provided; the combined export rating is unverified",
+    });
+  const contentWarnings = [
+    ...new Set([
+      ...ir.meta.content_warnings,
+      ...(opts.resolvedPreset ? (opts.presetMeta?.content_warnings ?? []) : []),
+    ]),
+  ].sort();
   const notesTail = [
     "---",
-    `Exported from char.pub (${rootRef}). Rating: ${ir.meta.rating}.`,
+    `Exported from char.pub (${rootRef}). Rating: ${ratingLabel}.`,
+    contentWarnings.length ? `Content warnings: ${contentWarnings.join(", ")}` : "",
     attribution ? `Authors:\n${attribution}` : "",
     licenses ? `Licenses:\n${licenses}` : "",
   ]
@@ -450,7 +500,23 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
     character_version: opts.character_version ?? "",
     mes_example,
     extensions: {
-      char_pub: { root: ir.root, lock_digest: ir.lock_digest, ir_version: ir.ir_version },
+      char_pub: {
+        root: ir.root,
+        lock_digest: ir.lock_digest,
+        ir_version: ir.ir_version,
+        ...(opts.resolvedPreset
+          ? {
+              preset: {
+                ref: opts.resolvedPreset.ref,
+                release: opts.resolvedPreset.release,
+                semantic_digest: opts.resolvedPreset.semantic_digest,
+                ...(opts.resolvedPreset.lock_digest
+                  ? { lock_digest: opts.resolvedPreset.lock_digest }
+                  : {}),
+              },
+            }
+          : {}),
+      },
     },
     system_prompt: presetSystem,
     post_history_instructions: presetPost,

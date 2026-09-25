@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cmdBuild, cmdCheck, cmdInit, cmdPreview, type Output } from "../src/commands.js";
+import { cmdBuild, cmdCheck, cmdInit, cmdPreview, cmdTest, type Output } from "../src/commands.js";
 import { generateFragmentIds, loadCharYaml, placeholderCreationId } from "../src/project.js";
 
 let dir: string;
@@ -48,14 +48,25 @@ describe("init", () => {
     expect(await cmdInit({ dir, ref: "@djj/alice", type: "character", name: "Alice" }, o)).toBe(1);
   });
 
-  it.each(["world", "lorebook"] as const)(
-    "creates a %s project that passes check",
-    async (type) => {
-      const o = capture();
-      expect(await cmdInit({ dir, ref: "@djj/thing", type, name: "Thing" }, o)).toBe(0);
-      expect(await cmdCheck({ file: path.join(dir, "char.yaml") }, o)).toBe(0);
-    },
-  );
+  it.each([
+    "world",
+    "lorebook",
+    "persona",
+    "style",
+    "relationship",
+    "scenario",
+    "preset",
+    "prompt-module",
+  ] as const)("creates a %s project that passes check", async (type) => {
+    const o = capture();
+    expect(await cmdInit({ dir, ref: "@djj/thing", type, name: "Thing" }, o)).toBe(0);
+    expect(await cmdCheck({ file: path.join(dir, "char.yaml") }, o)).toBe(0);
+    expect(
+      await cmdBuild({ file: path.join(dir, "char.yaml"), outDir: path.join(dir, "dist") }, o),
+    ).toBe(0);
+    const artifact = JSON.parse(await readFile(path.join(dir, "dist", "artifact.json"), "utf8"));
+    expect(artifact.kind).toBe(type === "preset" || type === "prompt-module" ? type : "content");
+  });
 });
 
 describe("check --fix", () => {
@@ -248,5 +259,41 @@ meta: { default_locale: en, rating: general, rights: original, license: CC-BY-4.
         o,
       ),
     ).toBe(1);
+  });
+});
+
+describe("policy and author-test commands", () => {
+  it("previews content with an explicitly selected local policy and shows final messages", async () => {
+    const o = capture();
+    const characterDir = path.join(dir, "character");
+    const presetDir = path.join(dir, "preset");
+    await cmdInit({ dir: characterDir, ref: "@test/hero", type: "character", name: "Hero" }, o);
+    await cmdInit({ dir: presetDir, ref: "@test/preset", type: "preset", name: "Policy" }, o);
+    expect(
+      await cmdPreview(
+        {
+          file: path.join(characterDir, "char.yaml"),
+          preset: path.join(presetDir, "char.yaml"),
+          tokenizer: "estimate",
+          contextWindow: 2048,
+          mode: "narrator",
+          persona: "Reader",
+          messages: ["Hello"],
+        },
+        o,
+      ),
+    ).toBe(0);
+    expect(o.out.join("\n")).toContain("[system] Write the next turn of the story.");
+    expect(o.out.join("\n")).toContain("[user] Hello");
+    expect(o.out.join("\n")).toContain("preset:main");
+  });
+  it("reports zero fixtures without creating or changing expectations", async () => {
+    const o = capture();
+    await cmdInit({ dir, ref: "@test/scene", type: "scenario", name: "Scene" }, o);
+    const file = path.join(dir, "char.yaml");
+    const before = await readFile(file, "utf8");
+    expect(await cmdTest({ file }, o)).toBe(0);
+    expect(o.out.at(-1)).toBe("0 assembly test(s)");
+    expect(await readFile(file, "utf8")).toBe(before);
   });
 });

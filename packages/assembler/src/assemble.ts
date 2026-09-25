@@ -253,7 +253,10 @@ export function assemble(input: AssembleInput): AssembleResult {
   const locale = chooseLocale(ir, profile, session);
   const ctx = new RenderContext(ir, session, locale, profile.capabilities.images === true, labels);
   const forParticipant = session.for_participant ?? SELF_PARTICIPANT;
-  if (!ctx.hasParticipant(forParticipant)) {
+  if (
+    (profile.mode === "per-agent" || session.for_participant !== undefined) &&
+    !ctx.hasParticipant(forParticipant)
+  ) {
     throw new CharError({ code: "assemble.unknown_participant", subject: forParticipant });
   }
   const manual = new Set(session.manual_enabled ?? []);

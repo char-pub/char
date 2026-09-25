@@ -10,7 +10,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { ProblemSchema, PublishResponseSchema } from "@char-pub/contracts";
 import { CharError, isCharError, isLabel } from "@char-pub/core";
-import { buildLocal, type Output } from "./commands.js";
+import { buildLocal, cmdTest, type Output } from "./commands.js";
 
 export const DEFAULT_REGISTRY = "https://api.char.pub";
 export const TOKEN_RE = /^cp_pat_[0-9A-Za-z]{43}$/;
@@ -130,7 +130,8 @@ export async function cmdPublish(o: PublishOptions, out: Output): Promise<number
       });
     }
     const f = o.fetch ?? fetch;
-    const { creation, resolved, project } = await buildLocal(o.file, o.deps);
+    const { creation, artifact, project } = await buildLocal(o.file, o.deps);
+    if ((await cmdTest({ file: o.file, ...(o.deps ? { deps: o.deps } : {}) }, out)) !== 0) return 1;
     const ref = creation.ref.slice(1);
     const base = `/v1/creations/@${ref}`;
 
@@ -149,7 +150,7 @@ export async function cmdPublish(o: PublishOptions, out: Output): Promise<number
       message: `char publish ${o.label}`,
     });
     const key =
-      o.idempotencyKey ?? `cli:${creation.ref}:${o.label}:${resolved.ir.root.semantic_digest}`;
+      o.idempotencyKey ?? `cli:${creation.ref}:${o.label}:${artifact.root.semantic_digest}`;
     const pub = await api<unknown>(
       f,
       cred,
