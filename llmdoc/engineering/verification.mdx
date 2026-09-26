@@ -1,5 +1,5 @@
 ---
-description: "改动核心算法后怎样验证 Node、浏览器和 workerd 三个运行时；依赖分层、单元与集成测试、conformance、E2E 和安全门禁"
+description: "改动核心算法后怎样验证 Node、浏览器和 workerd 三个运行时；冷启动依赖与缓存证据、Action 分发与 CodeQL、集成测试、conformance 和安全门禁"
 kind: guide
 code:
   paths:
@@ -13,6 +13,10 @@ code:
     - "scripts/smoke.test.ts"
     - ".github/workflows/codeql.yml"
     - ".github/workflows/dependency-review.yml"
+    - "infra/minio/Dockerfile"
+    - "infra/docker-compose.yml"
+    - "apps/server/test/global-setup.ts"
+    - "actions/publish/build.mjs"
 relations:
   related:
     - "engineering/working-agreements.mdx"
@@ -24,9 +28,11 @@ relations:
 
 验证从变更的权威边界出发。纯内容语义先跑 Core、Assembler 或 CCv3 单测与属性测试；跨协议变更同时跑服务端授权、并发与失败路径测试；浏览器交互再跑 Web/Admin 测试和关键 E2E。规范语义需在 Node、浏览器和 workerd 中复核 conformance，但 draft case 运行成功不等于已建立审阅基线。
 
-依赖规则保持 Core 零 IO、纯包与应用之间的方向，管理前端不能反向引用服务端私有实现。CI 还检查类型、构建、依赖边界、分发 bundle 与源一致、密钥泄露，以及独立的代码和依赖安全扫描。具体脚本、版本和覆盖率阈值以根 `package.json` 与 workflow 配置为准，不在本文重复易变数值。
+依赖规则保持 Core 零 IO、纯包与应用之间的方向，管理前端不能反向引用服务端私有实现。CI 还检查类型、构建、依赖边界、分发 bundle 与源一致、密钥泄露，以及独立的代码和依赖安全扫描。Action 分发可将第三方依赖隔离到 vendor，但构建必须验证其中没有第一方或工作区代码；CodeQL 仍扫描第一方源码及其分发代码，依赖清单仍接受依赖审查。分发一致性检查覆盖整个生成目录的新增、修改和删除，不能漏过未跟踪的 vendor 文件。具体脚本、版本和覆盖率阈值以根 `package.json` 与 workflow 配置为准，不在本文重复易变数值。
 
 本地全栈验证可从服务启动和冒烟脚本进入，尤其要确认迁移、API、worker、前端与对象存储一起工作。测试结果应按实际运行范围报告：单测通过不能推断生产外部服务可用，draft conformance 通过不能推断多运行时语义已被人工认可。
+
+涉及镜像、依赖来源或启动可重复性时，已有缓存可运行不证明目标干净环境能取得并构建依赖；应针对变动、失效或存疑的依赖核验实际来源与冷获取路径，并以相应 CI 结果确认，不要求每次清空全部缓存。本地 Compose 与集成测试共用固定上游源码构建的对象存储镜像，避免两条启动路径依赖不同产物；源码构建仍依赖基础镜像和模块来源，不代表离线可用。
 
 跨层 fixture 应由真实生产者生成，或先经过权威 schema 校验，避免手写对象和错误实现互相迎合。关键全栈验证必须检查消费端实际读到的字节：例如上传后刷新仍能读取私有预览，公开发布后公共 URL 确实返回图片；仅断言任务完成或数据库 active 不能证明分发链路可用。
 
