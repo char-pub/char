@@ -13,6 +13,7 @@ import type {
   FragmentOverride,
   ReferenceEdge,
 } from "../src/schema/creation.js";
+import { PRESET_REGIONS } from "../src/schema/policy.js";
 import { D, level0Character, tid } from "./fixtures.js";
 
 function canon(input: CreationInput): CanonicalCreation {
@@ -247,7 +248,7 @@ describe("checkCreation: type requirements", () => {
     );
   });
 
-  it("accepts a scenario with a cast and gives a preset only an info note", () => {
+  it("accepts a scenario with a cast and a preset with a valid policy", () => {
     const s = checkCreation(
       canon({
         ...base,
@@ -257,9 +258,20 @@ describe("checkCreation: type requirements", () => {
       }),
     );
     expect(s.diagnostics).toEqual([]);
-    const p = checkCreation(canon({ ...base, type: "preset" }));
+    const p = checkCreation(
+      canon({
+        ...base,
+        type: "preset",
+        policy: {
+          version: "0-draft",
+          blocks: [],
+          layout: [...PRESET_REGIONS],
+          requires: { system_role: true },
+        },
+      }),
+    );
     expect(p.ok).toBe(true);
-    expect(codes(p.diagnostics, "info")).toEqual(["check.preset_unspecified"]);
+    expect(p.diagnostics).toEqual([]);
   });
 });
 

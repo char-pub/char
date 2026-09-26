@@ -339,11 +339,8 @@ function checkTypeRequirements(c: CanonicalCreation, sink: Sink): void {
       needKind("style", "'style'");
       break;
     case "preset":
-      sink.info(
-        "check.preset_unspecified",
-        "type",
-        "the preset structure is not defined yet; its content is not checked",
-      );
+    case "prompt-module":
+      // Canonicalization 已严格验证 Policy 及其与 Creative 字段的边界。
       break;
   }
 }
@@ -504,7 +501,10 @@ export function checkCreation(c: CanonicalCreation, opts: CheckOptions = {}): Ch
   for (const e of c.references) checkEdgeLocal(c, e, scope, sink);
 
   // Cast
-  if (c.cast !== undefined) {
+  if (
+    c.cast !== undefined &&
+    (!(c.type === "preset" || c.type === "prompt-module") || c.cast.length > 0)
+  ) {
     if (c.type !== "scenario") {
       sink.error("check.cast_not_allowed", "cast", `a ${c.type} cannot declare a cast`);
     }

@@ -8,7 +8,7 @@ export default defineProject({
   resolve: { conditions },
   test: {
     name: "conformance-browser",
-    include: ["runner/conformance.test.ts"],
+    include: ["runner/conformance.test.ts", "runner/preset.test.ts"],
     browser: {
       enabled: true,
       headless: true,

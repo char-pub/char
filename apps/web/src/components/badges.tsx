@@ -37,6 +37,7 @@ export const TYPE_STYLE: Record<CreationType, TypeStyle> = {
   persona: { label: "Persona", ...NEUTRAL },
   style: { label: "Style", ...NEUTRAL },
   preset: { label: "Preset", ...NEUTRAL },
+  "prompt-module": { label: "Prompt module", ...NEUTRAL },
 };
 
 /** 作品类型：白底描边加类型色圆点，例如“● Character”。 */

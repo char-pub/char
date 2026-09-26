@@ -379,6 +379,7 @@ export const ReleaseDetailSchema = ReleaseSummarySchema.extend({
   creation: z.string(),
   lock_digest: DigestSchema.nullable(),
   context_ir_digest: DigestSchema.nullable(),
+  artifact_digest: DigestSchema.nullable().optional(),
   license_check: z.enum(["pass", "warn", "fail"]).nullable(),
   availability: z.enum(["complete", "linked"]).nullable(),
   warning: z.string().optional(),
@@ -413,7 +414,7 @@ export const ContributionQuerySchema = PageQuerySchema.extend({
 
 export const MergePreviewSchema = z.strictObject({
   key: z.string(),
-  on: z.enum(["fragment", "edge", "asset", "metadata"]),
+  on: z.enum(["fragment", "edge", "asset", "metadata", "configuration"]),
   op: z.string(),
   state: z.enum(["applied", "already_applied", "conflict"]),
   sensitive: z.boolean(),
@@ -644,6 +645,7 @@ export const ImportStatusSchema = z.strictObject({
   error_detail: z.string().optional(),
   /** 导入成功后生成的 Creation。 */
   creation: UnversionedRefSchema.optional(),
+  policy_preset: z.strictObject({ id: z.string(), ref: UnversionedRefSchema }).optional(),
   /** 发布前必须由作者确认的字段；确认后为空数组。 */
   needs_confirmation: z.array(z.enum(IMPORT_CONFIRMATION_FIELDS)),
   confirmed_at: z.string().nullable(),
@@ -657,6 +659,12 @@ export const ConfirmImportRequestSchema = z.strictObject({
   rating: RatingSchema,
   rights: z.enum(["original", "fan-work", "licensed"]),
   license: SpdxExpressionSchema,
+  policy_preset: z
+    .strictObject({
+      name: CreationNameSchema,
+      display_name: z.string().trim().min(1).max(200).optional(),
+    })
+    .optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -691,3 +699,37 @@ export const ContributionInvitesResponseSchema = z.strictObject({
   ),
 });
 export type ContributionInvite = z.infer<typeof ContributionInvitesResponseSchema>["items"][number];
+
+/** GET export/ccv3?part=loss：导出器明确记录的格式转换损失。 */
+const Ccv3LossItemSchema = z.strictObject({ subject: z.string(), detail: z.string() });
+export const Ccv3LossReportSchema = z.strictObject({
+  target: z.literal("ccv3"),
+  profile: z.strictObject({ mode: z.literal("narrator"), tokenizer: z.literal("estimate") }),
+  flattened_dependencies: z.array(
+    z.strictObject({
+      ref: z.string(),
+      fragments: z.array(z.string()),
+      tokens: z.number().nonnegative(),
+      into: z.array(z.string()),
+    }),
+  ),
+  activation_downgrades: z.array(
+    Ccv3LossItemSchema.extend({ from: z.enum(["semantic", "manual"]), to: z.literal("dropped") }),
+  ),
+  visibility: z.array(Ccv3LossItemSchema),
+  participants: z.array(Ccv3LossItemSchema),
+  context_assets: z.array(Ccv3LossItemSchema),
+  locales: z.strictObject({ dropped: z.array(z.string()), exported: z.string() }),
+  policy_fields: z.array(
+    z.strictObject({ ref: z.string(), fields: z.array(z.string()), restored: z.boolean() }),
+  ),
+  other: z.array(Ccv3LossItemSchema),
+  tokens: z.strictObject({
+    description: z.number().nonnegative(),
+    scenario: z.number().nonnegative(),
+    character_book: z.number().nonnegative(),
+    mes_example: z.number().nonnegative(),
+    total: z.number().nonnegative(),
+  }),
+});
+export type Ccv3LossReport = z.infer<typeof Ccv3LossReportSchema>;

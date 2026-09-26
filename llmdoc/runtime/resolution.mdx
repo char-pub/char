@@ -1,8 +1,12 @@
 ---
-description: "Resolver dependency graph, exact Release locks, diamond conflicts, bindings, overrides and deterministic Context IR"
+description: "CreationArtifact统一构建、聚合依赖锁与内容IR的分工；buildCreation、精确pin、菱形冲突、bindings与策略根拒绝"
 kind: architecture
 code:
   paths:
+    - "spec/assembly-assets-v0.md"
+    - "packages/core/src/build.ts"
+    - "packages/core/src/dependencies.ts"
+    - "packages/core/src/schema/artifact.ts"
     - "spec/context-ir-v0.md"
     - "packages/core/src/schema/ir.ts"
     - "packages/core/src/resolve/index.ts"
@@ -17,9 +21,13 @@ relations:
     - "interoperability/conformance.mdx"
 ---
 
-# Resolver 与 Context IR
+# 统一产物与内容解析
 
 Resolver 从根 Release 和精确锁定的依赖快照构造 Context IR。第一阶段沿 Reference Edge 建立引用实例：同一 Release 可以从不同路径引入，但同一 Creation 在整张图中只能对应一个 Release。冲突报告两条路径；环、超深图和过多实例会失败。pin 的 semantic digest 必须与重新计算的内容一致。tombstone 直接失败，yank 保留警告。
+
+`buildCreation` 是统一构建入口，返回 content、preset 或 prompt-module 三种 CreationArtifact；只在内容分支携带 Context IR。产物摘要标识完整构建结果，`artifact.root.semantic_digest` 才是作品语义摘要，签名或发布核对不能混用。内容 Resolver 拒绝 Preset/Module 根及实际加载的策略依赖，避免输出丢失策略语义的空内容 IR。
+
+统一产物的聚合 lock 覆盖 Creative、Module、Scenario 搭配和作者测试的全部精确依赖；同一 ref 跨这些领域也只能选择一个 Release。聚合 meta/assets 供许可、评级、资产状态、授权和分发检查使用；禁用块或空模块不使依赖从生命周期中消失。Context IR 的锁仍只描述 Creative 图，选择或切换 Preset 不改变内容锁。Scenario 是创作组合入口，不另建 Composition 或 Experience 一等对象。
 
 第二阶段处理 bindings、params、fragment override、模板和渲染顺序。Creation 的 Creative Truth 不能被运行时 Preset 或 Session 改写。early slot 在解析时固定；late slot 留待会话组装，不能在发布前假装已得到具体值。IR 同时保留 origin 和锁定信息，使下游 Diff、导出和审计能够解释内容来源。
 

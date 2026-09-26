@@ -33,6 +33,7 @@ import {
   type LocaleMap,
   type ReferenceEdge,
 } from "./schema/creation.js";
+import type { PresetPolicy, PromptModule } from "./schema/policy.js";
 
 export type Digest = `sha256:${string}`;
 
@@ -240,6 +241,27 @@ function canonicalGreeting(g: Greeting): Greeting {
   return compact(out, ["locale"]);
 }
 
+/** 已校验的 Policy 剥离默认值；数组声明顺序具有语义。 */
+export function canonicalPolicy(policy: PresetPolicy): PresetPolicy {
+  return compact(
+    {
+      ...policy,
+      blocks: policy.blocks.map((block) => omitIf({ ...block }, "enabled", (value) => value)),
+    },
+    ["region_budgets", "imports"],
+  );
+}
+
+export function canonicalPromptModule(module: PromptModule): PromptModule {
+  return compact(
+    {
+      ...module,
+      blocks: module.blocks.map((block) => omitIf({ ...block }, "enabled", (value) => value)),
+    },
+    ["imports"],
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Creation
 // ---------------------------------------------------------------------------
@@ -290,6 +312,7 @@ function stripCreationDefaults(c: CanonicalCreation): JSONValue {
     "assets",
     "cast",
     "provenance",
+    "assembly_tests",
   ]);
   return normalizeValue(out);
 }
@@ -337,6 +360,8 @@ export function canonicalizeCreation(input: CreationInput | unknown): CanonicalR
   if (c.bootstrap) {
     creation.bootstrap = { greetings: c.bootstrap.greetings.map(canonicalGreeting) };
   }
+  if (c.policy) creation.policy = canonicalPolicy(c.policy);
+  if (c.prompt_module) creation.prompt_module = canonicalPromptModule(c.prompt_module);
 
   const json = stripCreationDefaults(creation);
   const { fragments: _f, ...rest } = json as Obj;

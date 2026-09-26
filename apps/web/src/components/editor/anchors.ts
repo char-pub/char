@@ -34,6 +34,12 @@ export function mainFragmentId(w: Working, type: CreationType): string | undefin
 }
 
 export function targetOf(subject: string, type: CreationType, w: Working): Target | null {
+  if (subject.startsWith("policy") || subject.startsWith("prompt_module"))
+    return { anchor: "edit-policy" };
+  if (subject.startsWith("assembly_tests")) return { anchor: "edit-tests" };
+  if (subject.startsWith("assembly")) return { anchor: "edit-assembly" };
+  if (["cast", "slots", "params"].some((prefix) => subject.startsWith(prefix)))
+    return { anchor: "edit-composition" };
   if (subject === "display_name" || subject.startsWith("display_name.")) {
     return { anchor: ANCHOR.name };
   }

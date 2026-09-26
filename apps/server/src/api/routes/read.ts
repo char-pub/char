@@ -7,7 +7,7 @@
  * - public 内容通过 CDN 直出：IR 等对象 302 到内容寻址的公共 URL，可以永久缓存；
  *   private 内容 302 到短期签名 URL，响应本身不缓存。
  */
-import { CharError, ContextIRSchema, isCharError } from "@char-pub/core";
+import { CharError, isCharError } from "@char-pub/core";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { Resource } from "../../authz/authorize.js";
@@ -22,6 +22,7 @@ import {
 } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { QUEUE_NAMES } from "../../jobs/definitions.js";
+import { authorizedRelease, readArtifact } from "../../registry/artifacts.js";
 import { loadRevisionContent } from "../../registry/content.js";
 import {
   creationDetail,
@@ -145,12 +146,10 @@ export function register(app: Hono<Env>): void {
       c.header("cache-control", "private, no-store");
       if (r.status === "tombstoned") return gone(c, f, r);
       const { cas, db } = c.var.services;
-      if (!r.contextIrDigest) return notFound(c);
-      const bytes = await cas.getBlob(isPublicRelease(r) ? "public" : "private", r.contextIrDigest);
-      const ir = ContextIRSchema.parse(JSON.parse(new TextDecoder().decode(bytes)));
-      const digest = ir.assets.find(
+      const artifact = await readArtifact(cas, r, c.var.services.publicAssetBaseUrl);
+      const digest = artifact.assets.find(
         (a) =>
-          a.origin.creation === ir.root.ref &&
+          a.origin.creation === artifact.root.ref &&
           a.origin.slot === "avatar" &&
           a.availability === "mirrored",
       )?.digest;
@@ -211,6 +210,7 @@ export function register(app: Hono<Env>): void {
         creation: toPublicId("creation", f.creation.id),
         lock_digest: r.lockDigest,
         context_ir_digest: r.contextIrDigest,
+        artifact_digest: r.artifactDigest,
         license_check: r.licenseCheck,
         availability: r.availability,
       };
@@ -262,10 +262,37 @@ export function register(app: Hono<Env>): void {
 
   route(app, {
     method: "get",
+    path: `${CREATION_PATH}/releases/:label/artifact`,
+    authorize: loadRelease,
+    handler: async (c, { loaded: { f, r } }) => {
+      if (r.status === "tombstoned") return gone(c, f, r);
+      if (!r.artifactDigest) {
+        c.header("cache-control", isPublicRelease(r) ? PUBLIC_READ_CACHE : PRIVATE_CACHE);
+        return c.json(await readArtifact(c.var.services.cas, r, c.var.services.publicAssetBaseUrl));
+      }
+      c.header("cache-control", isPublicRelease(r) ? IMMUTABLE_CACHE : PRIVATE_CACHE);
+      return c.redirect(
+        isPublicRelease(r)
+          ? publicObjectUrl(c.var.services.publicAssetBaseUrl, r.artifactDigest)
+          : await c.var.services.cas.signedGet(r.artifactDigest),
+        302,
+      );
+    },
+  });
+
+  route(app, {
+    method: "get",
     path: `${CREATION_PATH}/releases/:label/ir`,
     authorize: loadRelease,
     handler: async (c, { loaded: { f, r } }) => {
       if (r.status === "tombstoned") return gone(c, f, r);
+      if (f.creation.type === "preset" || f.creation.type === "prompt-module")
+        return problem(
+          c,
+          422,
+          "release.ir_not_applicable",
+          "policy works provide an artifact, not a content IR",
+        );
       const digest = r.contextIrDigest;
       if (!digest) throw new CharError({ code: "release.ir_missing", subject: r.label });
       if (isPublicRelease(r)) {
@@ -283,12 +310,29 @@ export function register(app: Hono<Env>): void {
     authorize: loadRelease,
     handler: async (c, { loaded: { f, r } }) => {
       if (r.status === "tombstoned") return gone(c, f, r);
+      if (f.creation.type === "preset" || f.creation.type === "prompt-module")
+        return problem(c, 422, "export.not_applicable", "select a content release to export CCv3");
       const { db, cas, queue } = c.var.services;
+      const part = c.req.query("part");
+      if (part !== undefined && part !== "card" && part !== "loss")
+        return problem(c, 400, "export.invalid_part", "part must be card or loss");
+      const selected = c.req.query("preset");
+      const presetRelease = selected
+        ? await authorizedRelease(db, c.var.principal, selected)
+        : null;
+      if (selected && !presetRelease) return notFound(c);
+      if (presetRelease?.row.status === "tombstoned") return problem(c, 410, "release.tombstoned");
+      if (presetRelease && presetRelease.creation.type !== "preset")
+        return problem(c, 422, "export.not_preset", "the selected release must be a Preset");
+      const publicExport =
+        isPublicRelease(r) && (!presetRelease || isPublicRelease(presetRelease.row));
       const key = exportCacheKey({
         semantic_digest: r.semanticDigest,
         lock_digest: r.lockDigest ?? "",
         target: "ccv3",
-        compiler_version: CCV3_EXPORT_VERSION,
+        compiler_version: presetRelease
+          ? `${CCV3_EXPORT_VERSION}:preset:${presetRelease.row.id}:${presetRelease.row.semanticDigest}:bucket:${publicExport ? "public" : "private"}`
+          : CCV3_EXPORT_VERSION,
       });
       const [hit] = await db
         .select()
@@ -296,7 +340,20 @@ export function register(app: Hono<Env>): void {
         .where(eq(buildArtifacts.cacheKey, key))
         .limit(1);
       if (hit) {
-        if (isPublicRelease(r)) {
+        if (part) {
+          const bytes = await cas.getBlob(publicExport ? "public" : "private", hit.blobDigest);
+          const output = JSON.parse(new TextDecoder().decode(bytes)) as {
+            card: Record<string, unknown>;
+            loss: Record<string, unknown>;
+          };
+          c.header("cache-control", PRIVATE_CACHE);
+          c.header(
+            "content-disposition",
+            `attachment; filename="${f.creation.name}-${r.label}${part === "loss" ? "-loss" : ""}.json"`,
+          );
+          return c.json(output[part]);
+        }
+        if (publicExport) {
           c.header("cache-control", IMMUTABLE_CACHE);
           return c.redirect(
             publicObjectUrl(c.var.services.publicAssetBaseUrl, hit.blobDigest),
@@ -310,7 +367,13 @@ export function register(app: Hono<Env>): void {
         await queue.enqueue(
           tx,
           QUEUE_NAMES.exportBuild,
-          { release_id: r.id, target: "ccv3", cache_key: key },
+          {
+            release_id: r.id,
+            target: "ccv3",
+            cache_key: key,
+            ...(presetRelease ? { preset_release_id: presetRelease.row.id } : {}),
+            ...(publicExport ? {} : { private_output: true }),
+          },
           { singletonKey: `export:${key}` },
         );
       });

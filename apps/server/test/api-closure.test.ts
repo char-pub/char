@@ -173,7 +173,7 @@ describe("transitive dependencies", () => {
       await h.as(user).get("/v1/creations/@chain/orphan/releases/1.0.0/report"),
     );
     expect((report.report as { issues: { code: string }[] }).issues[0]?.code).toBe(
-      "resolve.release_missing",
+      "publish.dependency_unavailable",
     );
   });
 });

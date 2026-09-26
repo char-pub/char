@@ -14,6 +14,12 @@ import { Button } from "./ui/button";
 
 /** 开放创作的三种类型的复数名称，用于类型筛选（All / Characters / Worlds / Lorebooks）。 */
 export const OPEN_TYPE_PLURAL: Record<(typeof OPEN_CREATION_TYPES)[number], string> = {
+  preset: "Presets",
+  "prompt-module": "Prompt modules",
+  scenario: "Scenarios",
+  relationship: "Relationships",
+  persona: "Personas",
+  style: "Styles",
   character: "Characters",
   world: "Worlds",
   lorebook: "Lorebooks",

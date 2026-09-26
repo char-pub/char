@@ -5,11 +5,12 @@
  * 参考 Assembler 组装一次，结果只保留 Trace 中每个 entry 的 `id`、`decision`、`reason`：
  * token 数取决于 tokenizer，region 取决于 layout，都不属于规范要求。组装失败时记录错误码。
  *
- * 另有一条与 Trace 无关的硬性要求：组装成功时，发给模型的消息里不能残留 `{{late:*}}`
- * 占位符。违反时整个用例直接失败，与预期是否审阅无关。
+ * 另有一条与 Trace 无关的硬性要求：组装成功时，Creative / Session 消息里不能残留
+ * `{{late:*}}` 占位符。Policy 是字面文本，按实际 source 边界排除，不能跳过整条合并消息。
+ * 违反时整个用例直接失败，与预期是否审阅无关。
  */
-import { assemble } from "@char-pub/assembler";
-import { type ContextIR, isCharError } from "@char-pub/core";
+import { type AssembledMessage, assemble } from "@char-pub/assembler";
+import { type ContextIR, isCharError, type ResolvedPreset, resolvePreset } from "@char-pub/core";
 import type { AssembleInput, ScenarioResult, TraceDecision, TraceExpectation } from "./types.js";
 
 export interface AssembleOutcome {
@@ -18,15 +19,56 @@ export interface AssembleOutcome {
   violations: string[];
 }
 
+/**
+ * 首版 Policy 只在消息序列的开头与末尾加入；合并 system 后仍是已知的前缀或后缀。
+ * 逐个 source 验证字节与分隔符后剥离，保留中间 Creative / Session 内容供门禁检查。
+ * 不能全局替换文本：正文可能恰好包含和 Policy 完全相同的未替换占位符。
+ */
+function nonPolicyText(message: AssembledMessage, preset: ResolvedPreset | undefined): string {
+  if (!preset) return message.content;
+  const literals = new Map(
+    preset.policy.blocks
+      .filter((block) => block.enabled !== false)
+      .map((block) => [`preset:${block.id}`, block.text]),
+  );
+  const sources = [...message.source];
+  let text = message.content;
+  while (sources.length > 0) {
+    const literal = literals.get(sources[0] as string);
+    if (literal === undefined) break;
+    if (!text.startsWith(literal)) return message.content;
+    text = text.slice(literal.length);
+    sources.shift();
+    if (sources.length > 0) {
+      if (!text.startsWith("\n\n")) return message.content;
+      text = text.slice(2);
+    }
+  }
+  while (sources.length > 0) {
+    const literal = literals.get(sources.at(-1) as string);
+    if (literal === undefined) break;
+    if (!text.endsWith(literal)) return message.content;
+    text = text.slice(0, -literal.length);
+    sources.pop();
+    if (sources.length > 0) {
+      if (!text.endsWith("\n\n")) return message.content;
+      text = text.slice(0, -2);
+    }
+  }
+  return text;
+}
+
 export function runAssembleScenarios(ir: ContextIR, input: AssembleInput): AssembleOutcome {
   const scenarios: ScenarioResult[] = [];
   const violations: string[] = [];
   for (const s of input.scenarios) {
     try {
+      const preset = s.preset ? resolvePreset(s.preset) : undefined;
       const out = assemble({
         ir,
         profile: s.profile as Parameters<typeof assemble>[0]["profile"],
         session: s.session as Parameters<typeof assemble>[0]["session"],
+        ...(preset ? { preset } : {}),
       });
       const entries: TraceDecision[] = out.trace.entries.map((e) => ({
         id: e.id,
@@ -35,7 +77,7 @@ export function runAssembleScenarios(ir: ContextIR, input: AssembleInput): Assem
       }));
       scenarios.push({ name: s.name, entries });
       for (const m of out.messages) {
-        if (m.content.includes("{{late:")) {
+        if (nonPolicyText(m, preset).includes("{{late:")) {
           violations.push(`${s.name}: a {{late:*}} placeholder reached the model messages`);
           break;
         }

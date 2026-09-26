@@ -101,14 +101,14 @@ describe("namespaces", () => {
 });
 
 describe("creations and drafts", () => {
-  it("only opens character, world and lorebook", async () => {
+  it("opens relationship creations and still rejects duplicate names", async () => {
     const r = await h.as(owner).post("/v1/namespaces/author/creations", {
       name: "duo",
       type: "relationship",
       display_name: "Duo",
     });
-    expect(r.status).toBe(422);
-    expect(await json(r)).toMatchObject({ code: "creation.type_not_open" });
+    expect(r.status).toBe(201);
+    expect(await json(r)).toMatchObject({ type: "relationship" });
     const dup = await h.as(owner).post("/v1/namespaces/author/creations", {
       name: "hero",
       type: "character",

@@ -6,7 +6,7 @@
  * `["creation", ns, name, meId | null]`：登录状态会改变能看到的版本（private），所以 key
  * 里带着当前用户。写操作之后按 `keys.creation(ns, name)` 前缀失效即可。
  */
-import type { ContextIR, Rating } from "@char-pub/core";
+import type { ContextIR, CreationArtifact, Rating } from "@char-pub/core";
 import { type QueryClient, queryOptions, useQueries, useQuery } from "@tanstack/react-query";
 import { createContext, useContext } from "react";
 import {
@@ -42,11 +42,30 @@ export function irQuery(
   ns: string,
   name: string,
   release: Pick<ReleaseSummary, "label" | "visibility"> | undefined,
+  identity: string | null = null,
 ) {
   const label = release?.label ?? "";
   return queryOptions({
-    queryKey: keys.ir(ns, name, label),
+    queryKey: [...keys.ir(ns, name, label), identity],
     queryFn: () => client.getIR(ns, name, label, { private: release?.visibility === "private" }),
+    enabled: !!release,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+}
+
+export function artifactQuery(
+  client: RegistryClient,
+  ns: string,
+  name: string,
+  release: Pick<ReleaseSummary, "label" | "visibility"> | undefined,
+  identity: string | null,
+) {
+  return queryOptions({
+    queryKey: [...keys.creation(ns, name), "artifact", release?.label ?? "", identity],
+    queryFn: () =>
+      client.getArtifact(ns, name, release?.label ?? "", {
+        private: release?.visibility === "private",
+      }),
     enabled: !!release,
     staleTime: Number.POSITIVE_INFINITY,
   });
@@ -93,11 +112,13 @@ export interface CreationState {
   release: ReleaseDetail | undefined;
   /** 所选版本已被移除（410）时的公开原因代码。 */
   tombstoned: { reason: string } | null;
+  artifact?: CreationArtifact | undefined;
+  artifactError?: unknown;
   ir: ContextIR | undefined;
   irState: "loading" | "ready" | "error" | "none";
   /** IR 加载失败后重试。 */
   retryIr: () => void;
-  /** 所选版本的 effective rating：IR 里的值最准，其次 Release 与作品详情里的值。 */
+  /** 所选版本的 effective rating：artifact 的聚合评级优先，其次 IR、Release 与作品详情。 */
   rating: Rating;
   /** 所选版本被 yank 时的公开理由（作者填写，可能没有）。 */
   yanked: { reason: string | undefined } | null;
@@ -133,7 +154,7 @@ export function useCreationLoad(ns: string, name: string, v: string | undefined)
   const selected = d?.releases.find((r) => r.label === label);
 
   const release = useQuery({
-    queryKey: keys.release(ns, name, label ?? ""),
+    queryKey: [...keys.release(ns, name, label ?? ""), meId],
     queryFn: () => client.release(ns, name, label ?? ""),
     enabled: !!selected,
   });
@@ -143,8 +164,16 @@ export function useCreationLoad(ns: string, name: string, v: string | undefined)
       ? { reason: selected.status_reason ?? "unspecified" }
       : null;
   const ir = useQuery({
-    ...irQuery(client, ns, name, selected),
-    enabled: !!selected && !tombstoned,
+    ...irQuery(client, ns, name, selected, meId),
+    enabled: !!selected && !tombstoned && d?.type !== "preset" && d?.type !== "prompt-module",
+  });
+
+  const artifact = useQuery({
+    ...artifactQuery(client, ns, name, selected, meId),
+    enabled:
+      !!selected &&
+      !tombstoned &&
+      (d?.type === "preset" || d?.type === "prompt-module" || !!release.data?.artifact_digest),
   });
 
   if (me.isPending || detail.isPending) return { status: "pending" };
@@ -168,11 +197,23 @@ export function useCreationLoad(ns: string, name: string, v: string | undefined)
       selected,
       release: rel,
       tombstoned,
-      ir: ir.data,
+      artifact: artifact.data,
+      artifactError: artifact.error,
+      ir: artifact.data?.kind === "content" ? artifact.data.ir : ir.data,
       irState:
-        !selected || tombstoned ? "none" : ir.data ? "ready" : ir.isError ? "error" : "loading",
-      retryIr: () => void ir.refetch(),
+        !selected || tombstoned
+          ? "none"
+          : artifact.data?.kind === "content" || ir.data
+            ? "ready"
+            : ir.isError
+              ? "error"
+              : "loading",
+      retryIr: () => {
+        void ir.refetch();
+        void artifact.refetch();
+      },
       rating:
+        artifact.data?.meta.rating ??
         ir.data?.meta.rating ??
         rel?.effective_rating ??
         selected?.effective_rating ??

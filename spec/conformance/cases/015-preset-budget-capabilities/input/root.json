@@ -1,0 +1,46 @@
+{
+  "release": "rel_01h455vb4pex5vsknk084sn001",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01h455vb4pex5vsknk084sn001",
+    "ref": "@fixture/alice",
+    "type": "character",
+    "display_name": "Alice",
+    "meta": {
+      "default_locale": "en",
+      "rights": "original",
+      "rating": "general",
+      "license": "CC-BY-4.0"
+    },
+    "fragments": [
+      {
+        "id": "character",
+        "stable": true,
+        "kind": "character",
+        "importance": "pinned",
+        "content": {
+          "type": "text",
+          "text": "Alice is a courier."
+        }
+      },
+      {
+        "id": "knowledge",
+        "stable": true,
+        "kind": "knowledge",
+        "content": {
+          "type": "text",
+          "text": "The bridge is closed."
+        }
+      },
+      {
+        "id": "style",
+        "stable": true,
+        "kind": "style",
+        "content": {
+          "type": "text",
+          "text": "Use concise dialogue."
+        }
+      }
+    ]
+  }
+}

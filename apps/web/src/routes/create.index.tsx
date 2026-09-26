@@ -42,6 +42,42 @@ const TYPES: Record<
     placeholder: "e.g. Corps of Night City",
     icon: BookOpen,
   },
+  persona: {
+    body: "The identity a reader brings into a story.",
+    example: "e.g. A visiting doctor",
+    placeholder: "e.g. The investigator",
+    icon: UserRound,
+  },
+  style: {
+    body: "A reusable narrative voice and way of writing.",
+    example: "e.g. Restrained noir",
+    placeholder: "e.g. Quiet suspense",
+    icon: BookOpen,
+  },
+  relationship: {
+    body: "A relationship between roles that you can bind to different characters.",
+    example: "e.g. Former mentor and apprentice",
+    placeholder: "e.g. Old rivals",
+    icon: UserRound,
+  },
+  scenario: {
+    body: "A cast, a starting situation and an optional reproducible assembly setup.",
+    example: "e.g. Snowbound inn",
+    placeholder: "e.g. Rain at midnight",
+    icon: Globe,
+  },
+  preset: {
+    body: "Instructions, reusable modules and a layout for the model context.",
+    example: "e.g. Limited-view narration",
+    placeholder: "e.g. Suspense preset",
+    icon: BookOpen,
+  },
+  "prompt-module": {
+    body: "Versioned instructions that presets and other modules can reuse.",
+    example: "e.g. Leave the player's choices open",
+    placeholder: "e.g. Player agency",
+    icon: BookOpen,
+  },
 };
 
 function Create() {

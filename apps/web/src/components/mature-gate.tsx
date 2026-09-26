@@ -3,20 +3,22 @@
  *
  * - 账号开启了“显示成人内容”（并确认过满 18 岁）时由调用方传 `allowed`，不遮挡。
  * - “Show this once” 只在当前浏览器会话里有效：传了 `remember`（作品的 ref）时记在
- *   sessionStorage 里，刷新页面或在这个作品的标签页之间切换都不再遮挡；关掉标签页就失效。
+ *   sessionStorage 里，按账号与评级隔离；刷新或切换作品标签页仍有效，关掉标签页就失效。
+ * - 嵌套预览继承同账号外层已确认的评级；选择更高评级的 Preset 时仍需额外确认。
  * - 想一直显示的用户：登录用户去账号设置，未登录用户先登录。`signedIn` 不传时不显示这个入口
  *   （例如没有路由的单独渲染）。
  */
 import type { Rating } from "@char-pub/core";
 import { Link } from "@tanstack/react-router";
 import { Eye, EyeOff } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { isAdultRating, RATING_LABEL } from "./rating";
+import { highestRating, isAdultRating, RATING_LABEL } from "./rating";
 import { SignInButton } from "./sign-in";
 import { StatePanel } from "./states";
 
 const STORAGE_PREFIX = "charpub.mature-shown:";
+const ConfirmedRating = createContext<{ identity: string; rating: Rating } | null>(null);
 
 function session(): Storage | null {
   try {
@@ -51,6 +53,7 @@ export function MatureGate({
   remember,
   reason,
   signedIn,
+  identity = "anonymous",
   children,
 }: {
   rating: Rating;
@@ -62,11 +65,28 @@ export function MatureGate({
   reason?: ReactNode;
   /** 当前是否登录，决定“一直显示”去设置页还是打开登录对话框。 */
   signedIn?: boolean | undefined;
+  /** 将临时确认隔离到当前账号；匿名访问使用默认值。 */
+  identity?: string | undefined;
   children: ReactNode;
 }) {
-  const [confirmed, setConfirmed] = useState(() => shownBefore(remember));
-  if (!isAdultRating(rating) || allowed || confirmed || shownBefore(remember)) {
-    return <>{children}</>;
+  const parent = useContext(ConfirmedRating);
+  const inherited = parent?.identity === identity ? parent.rating : "general";
+  // 组件复用、账号切换或评级提升都不能沿用上一次局部确认。
+  const scope = JSON.stringify([identity, remember ?? null, rating]);
+  const storageKey = remember ? scope : undefined;
+  const [confirmed, setConfirmed] = useState<string>();
+  if (
+    !isAdultRating(rating) ||
+    allowed ||
+    confirmed === scope ||
+    shownBefore(storageKey) ||
+    highestRating(inherited, rating) === inherited
+  ) {
+    return (
+      <ConfirmedRating.Provider value={{ identity, rating: highestRating(inherited, rating) }}>
+        {children}
+      </ConfirmedRating.Provider>
+    );
   }
   const label = RATING_LABEL[rating];
   return (
@@ -86,8 +106,8 @@ export function MatureGate({
       <Button
         variant="outline"
         onClick={() => {
-          rememberShown(remember);
-          setConfirmed(true);
+          rememberShown(storageKey);
+          setConfirmed(scope);
         }}
       >
         <Eye aria-hidden /> Show this once

@@ -27,6 +27,8 @@
  * 声明 license 或 rating）：`sensitive` 由这里计算，不信任客户端提交的值；接受时作者
  * 必须逐项单独确认。
  */
+
+import { z } from "zod";
 import {
   type CanonicalCreation,
   type CanonicalResult,
@@ -35,10 +37,13 @@ import {
   canonicalEdge,
   canonicalFragment,
   canonicalizeCreation,
+  canonicalPolicy,
+  canonicalPromptModule,
   digestOf,
   normalizeValue,
 } from "./canonical.js";
 import { CharError } from "./errors.js";
+import { AssemblyConfigSchema, AssemblyFixtureSchema } from "./schema/assembly.js";
 import {
   type AssetSlot,
   type AssetVariant,
@@ -50,6 +55,7 @@ import {
   LocalizedTextSchema,
   type ReferenceEdge,
 } from "./schema/creation.js";
+import { PresetPolicySchema, PromptModuleSchema } from "./schema/policy.js";
 import {
   type Change,
   ChangeSchema,
@@ -102,6 +108,8 @@ export function changeKey(c: Change): string {
       return c.variant === undefined ? `asset:${c.slot}` : `asset:${c.slot}/${c.variant}`;
     case "metadata":
       return `metadata:${c.field}`;
+    case "configuration":
+      return `configuration:${c.field}`;
   }
 }
 
@@ -125,6 +133,24 @@ export function computeSensitive(c: Change): boolean {
 
 function invalid(subject: string, detail: string): CharError {
   return new CharError({ code: "contribution.invalid_change", subject, detail });
+}
+
+function canonicalConfiguration(c: Extract<Change, { on: "configuration" }>): unknown {
+  if (c.after === undefined) return undefined;
+  const schemas = {
+    policy: PresetPolicySchema,
+    prompt_module: PromptModuleSchema,
+    assembly: AssemblyConfigSchema,
+    assembly_tests: z.array(AssemblyFixtureSchema),
+  };
+  const parsed = schemas[c.field].safeParse(c.after);
+  if (!parsed.success) throw invalid(changeKey(c), `invalid ${c.field}: ${parsed.error.message}`);
+  if (c.field === "policy") return canonicalPolicy(PresetPolicySchema.parse(parsed.data));
+  if (c.field === "prompt_module")
+    return canonicalPromptModule(PromptModuleSchema.parse(parsed.data));
+  if (c.field === "assembly_tests" && Array.isArray(parsed.data) && parsed.data.length === 0)
+    throw invalid(changeKey(c), "empty assembly_tests must be unset");
+  return parsed.data;
 }
 
 /** 这些 metadata 字段在 canonical 形式中省略空列表，“设为空列表”要写成 unset。 */
@@ -209,6 +235,11 @@ function checkShape(c: Change, key: string): void {
         if (c.after.id !== c.variant) throw invalid(key, "after.id must equal variant");
       }
       break;
+    case "configuration":
+      if (c.op === "unset" && (c.field === "policy" || c.field === "prompt_module"))
+        throw new CharError({ code: "contribution.required_field", subject: key });
+      if (c.after !== undefined) canonicalConfiguration(c);
+      break;
     case "metadata":
       if (c.op === "unset" && REQUIRED_METADATA_FIELDS.includes(c.field)) {
         throw new CharError({
@@ -236,6 +267,8 @@ function afterDigest(c: Change): string | undefined {
         : digestOf(canonicalAssetVariant(c.after));
     case "metadata":
       return digestOf(c.after);
+    case "configuration":
+      return digestOf(canonicalConfiguration(c));
   }
 }
 
@@ -263,6 +296,10 @@ function currentOf(base: CanonicalResult, c: Change): Current {
       if (c.variant === undefined) return { digest: slot ? digestOf(slot) : undefined };
       const v = slot?.variants.find((x) => x.id === c.variant);
       return { digest: v ? digestOf(v) : undefined, slotExists: slot !== undefined };
+    }
+    case "configuration": {
+      const value = (base.json as Record<string, JSONValue>)[c.field];
+      return { digest: value === undefined ? undefined : digestOf(value) };
     }
     case "metadata": {
       // 读 canonical JSON：默认值和空列表在那里已被省略，视为缺失。
@@ -338,6 +375,11 @@ function apply(w: Working, c: Change): void {
       const slot = w.assets.find((s) => s.slot === c.slot) as AssetSlot;
       const after = c.after as AssetVariant | undefined;
       upsert(slot.variants, (v) => v.id === c.variant, after && canonicalAssetVariant(after));
+      return;
+    }
+    case "configuration": {
+      if (c.after === undefined) delete w[c.field];
+      else w[c.field] = canonicalConfiguration(c);
       return;
     }
     case "metadata": {

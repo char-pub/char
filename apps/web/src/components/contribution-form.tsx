@@ -5,11 +5,17 @@
  * 这里会提前说明。贡献内容的授权方式随作品的许可而定：作品是开放许可时，贡献按同一许可
  * 授权；作品使用自定义许可（包括保留所有权利）时，贡献者必须显式授权。
  */
-import { type Fragment, type FragmentKind, RATINGS, type Rating } from "@char-pub/core";
+import {
+  canonicalizeCreation,
+  type Fragment,
+  type FragmentKind,
+  RATINGS,
+  type Rating,
+} from "@char-pub/core";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { GitBranch, Plus, Send, ShieldAlert, Trash2, X } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { type ComponentProps, useEffect, useId, useMemo, useState } from "react";
 import { ListSkeleton } from "@/components/skeletons";
 import { ErrorState } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
@@ -21,13 +27,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { isApiError } from "@/lib/api";
 import {
   buildChanges,
+  CONFIGURATION_FIELDS,
   type ContributionEdit,
   contributionBase,
   needsExplicitGrant,
 } from "@/lib/contribution";
+import type { Working } from "@/lib/draft";
 import { newFragment, nextId } from "@/lib/draft";
-import { keys, useRegistry } from "@/lib/registry";
+import { keys, useMe, useRegistry } from "@/lib/registry";
 import { cn } from "@/lib/utils";
+import { AssemblyEditor, AuthorTestsEditor } from "./editor/assembly-editor";
+import { PolicyEditor } from "./editor/policy-editor";
 import { RATING_LABEL } from "./rating";
 
 const DEFAULT_KIND: Record<string, FragmentKind> = {
@@ -160,7 +170,16 @@ function TagInput({
   );
 }
 
-export function ContributionForm({
+export function ContributionForm(props: ComponentProps<typeof ContributionSession>) {
+  const me = useMe();
+  return (
+    <ContributionSession
+      key={`${me.data?.id ?? "anonymous"}:${props.ns}:${props.name}:${props.label}`}
+      {...props}
+    />
+  );
+}
+function ContributionSession({
   ns,
   name,
   label,
@@ -175,6 +194,7 @@ export function ContributionForm({
   onSubmitted?: (number: number) => void;
 }) {
   const client = useRegistry();
+  const me = useMe();
   const navigate = useNavigate();
   const ids = {
     title: useId(),
@@ -185,7 +205,7 @@ export function ContributionForm({
     agent: useId(),
   };
   const source = useQuery({
-    queryKey: keys.source(ns, name, label),
+    queryKey: [...keys.source(ns, name, label), me.data?.id ?? null],
     queryFn: () => client.releaseSource(ns, name, label),
     staleTime: Number.POSITIVE_INFINITY,
   });
@@ -222,6 +242,22 @@ export function ContributionForm({
     );
   }
 
+  const configurationWorking = { ...base.canonical.creation, ...edit.configuration } as Working;
+  for (const field of CONFIGURATION_FIELDS)
+    if (edit.configuration && edit.configuration[field] === undefined)
+      delete configurationWorking[field];
+  const updateConfiguration = (fn: (w: Working) => Working) => {
+    const next = fn(configurationWorking);
+    setEdit({
+      ...edit,
+      configuration: Object.fromEntries(
+        CONFIGURATION_FIELDS.filter((field) => next[field] !== undefined).map((field) => [
+          field,
+          next[field],
+        ]),
+      ),
+    });
+  };
   const changes = buildChanges(base.canonical, edit);
   const license = base.canonical.creation.meta.license;
   const explicit = needsExplicitGrant(license);
@@ -233,6 +269,11 @@ export function ContributionForm({
     setBusy(true);
     setError(null);
     try {
+      canonicalizeCreation({
+        ...configurationWorking,
+        fragments: edit.fragments,
+        meta: { ...base.canonical.creation.meta, rating: edit.rating, tags: edit.tags },
+      });
       const res = await client.submitContribution(ns, name, {
         title: title.trim(),
         ...(description.trim() ? { description: description.trim() } : {}),
@@ -279,48 +320,62 @@ export function ContributionForm({
         </span>
       </p>
 
-      <section aria-labelledby="cf-text" className="space-y-3">
-        <h3 id="cf-text" className="text-base font-semibold">
-          Passages
-        </h3>
-        <ul className="space-y-3">
-          {edit.fragments.map((f, i) => (
-            <FragmentCard
-              key={f.id}
-              fragment={f}
-              original={originals.get(f.id)}
-              onChange={(next) => setFragment(i, next)}
-              onRemove={() =>
-                setEdit({ ...edit, fragments: edit.fragments.filter((_, j) => j !== i) })
-              }
-            />
-          ))}
-        </ul>
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          className="px-0"
-          onClick={() =>
-            setEdit({
-              ...edit,
-              fragments: [
-                ...edit.fragments,
-                newFragment(
-                  nextId(
-                    edit.fragments.map((f) => f.id),
-                    "contrib",
+      {type !== "preset" && type !== "prompt-module" ? (
+        <section aria-labelledby="cf-text" className="space-y-3">
+          <h3 id="cf-text" className="text-base font-semibold">
+            Passages
+          </h3>
+          <ul className="space-y-3">
+            {edit.fragments.map((f, i) => (
+              <FragmentCard
+                key={f.id}
+                fragment={f}
+                original={originals.get(f.id)}
+                onChange={(next) => setFragment(i, next)}
+                onRemove={() =>
+                  setEdit({ ...edit, fragments: edit.fragments.filter((_, j) => j !== i) })
+                }
+              />
+            ))}
+          </ul>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="px-0"
+            onClick={() =>
+              setEdit({
+                ...edit,
+                fragments: [
+                  ...edit.fragments,
+                  newFragment(
+                    nextId(
+                      edit.fragments.map((f) => f.id),
+                      "contrib",
+                    ),
+                    DEFAULT_KIND[type] ?? "character",
                   ),
-                  DEFAULT_KIND[type] ?? "character",
-                ),
-              ],
-            })
-          }
-        >
-          <Plus aria-hidden /> Add a passage
-        </Button>
-      </section>
-
+                ],
+              })
+            }
+          >
+            <Plus aria-hidden /> Add a passage
+          </Button>
+        </section>
+      ) : null}
+      {type === "preset" || type === "prompt-module" ? (
+        <PolicyEditor
+          working={configurationWorking}
+          update={updateConfiguration}
+          module={type === "prompt-module"}
+        />
+      ) : null}
+      {type === "scenario" ? (
+        <AssemblyEditor working={configurationWorking} update={updateConfiguration} />
+      ) : null}
+      {type === "scenario" || type === "preset" ? (
+        <AuthorTestsEditor working={configurationWorking} update={updateConfiguration} />
+      ) : null}
       <section
         aria-labelledby="cf-meta"
         className="grid gap-4 rounded-lg border bg-surface p-5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]"

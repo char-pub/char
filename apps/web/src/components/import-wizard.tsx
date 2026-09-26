@@ -1,3 +1,4 @@
+import { Label } from "@/components/ui/label";
 /**
  * 角色卡导入向导，三步：上传（选择文件并决定地址，原件交给服务端解析）→ 查看 Import Report
  * 并确认 → 进入编辑器。
@@ -10,14 +11,15 @@ import type { ImportStatus } from "@char-pub/contracts";
 import { NAME_RE, type Rating } from "@char-pub/core";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Check, FileJson, FileUp, Loader2 } from "lucide-react";
-import { type ReactNode, useEffect, useId, useState } from "react";
+import { type ComponentProps, type ReactNode, useEffect, useId, useState } from "react";
 import { AddressField, type Availability, useNameAvailability } from "@/components/address-field";
 import { ChoiceCard } from "@/components/choice-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { isApiError } from "@/lib/api";
 import { importErrorMessage, uploadCard, waitForImport } from "@/lib/import";
-import { useRegistry } from "@/lib/registry";
+import { useMe, useRegistry } from "@/lib/registry";
 import { slugify } from "@/lib/text";
 import { UploadError } from "@/lib/upload";
 import { cn } from "@/lib/utils";
@@ -158,9 +160,9 @@ function ConfirmChoices({
       </fieldset>
 
       <div className="space-y-1.5">
-        <label htmlFor={ids.license} className="text-sm font-semibold">
+        <Label htmlFor={ids.license} className="text-sm font-semibold">
           License
-        </label>
+        </Label>
         <NativeSelect
           id={ids.license}
           value={value.license}
@@ -252,9 +254,9 @@ function UploadStep({
     <div className="space-y-6">
       <ImportSteps current={0} />
       <section className="space-y-5" aria-label="Choose a card">
-        <label htmlFor={ids.file} className="sr-only">
+        <Label htmlFor={ids.file} className="sr-only">
           Character card
-        </label>
+        </Label>
         <input
           id={ids.file}
           type="file"
@@ -278,12 +280,12 @@ function UploadStep({
             }
             action={
               <Button type="button" variant="link" size="sm" asChild>
-                <label
+                <Label
                   htmlFor={ids.file}
                   className={cn(busy ? "pointer-events-none opacity-50" : "cursor-pointer")}
                 >
                   Choose another file
-                </label>
+                </Label>
               </Button>
             }
           />
@@ -298,17 +300,17 @@ function UploadStep({
             <p className="font-semibold">Choose a Character Card V2 or V3</p>
             <p className="text-sm text-text-2">PNG or CHARX up to 20 MiB; JSON up to 5 MiB.</p>
             <Button type="button" variant="outline" asChild>
-              <label htmlFor={ids.file} className="cursor-pointer">
+              <Label htmlFor={ids.file} className="cursor-pointer">
                 <FileUp aria-hidden /> Choose a file
-              </label>
+              </Label>
             </Button>
           </div>
         )}
         {file ? (
           <div className="max-w-md space-y-1.5">
-            <label htmlFor={ids.slug} className="text-sm font-medium">
+            <Label htmlFor={ids.slug} className="text-sm font-medium">
               Address
-            </label>
+            </Label>
             <AddressField
               id={ids.slug}
               hintId={ids.hint}
@@ -331,7 +333,11 @@ function UploadStep({
   );
 }
 
-export function ImportWizard({
+export function ImportWizard(props: ComponentProps<typeof ScopedImportWizard>) {
+  const me = useMe();
+  return <ScopedImportWizard key={me.data?.id ?? "anonymous"} {...props} />;
+}
+function ScopedImportWizard({
   ns,
   onCreated,
   resume,
@@ -341,6 +347,7 @@ export function ImportWizard({
   resume?: string | undefined;
 }) {
   const client = useRegistry();
+  const me = useMe();
   const [file, setFile] = useState<File | null>(null);
   const [slug, setSlug] = useState("");
   const [status, setStatus] = useState<ImportStatus | null>(null);
@@ -352,7 +359,7 @@ export function ImportWizard({
   const availability = useNameAvailability(ns, slug, !!file && !status);
 
   const resumed = useQuery({
-    queryKey: ["import-resume", resume],
+    queryKey: ["import-resume", me.data?.id ?? null, resume],
     queryFn: async () => {
       const done = await waitForImport(client, await client.importStatus(resume as string));
       if (done.status !== "succeeded" || !done.creation) throw new Error("Import not ready");
@@ -370,6 +377,8 @@ export function ImportWizard({
       (resumed.data.working.fragments ?? []).filter((f) => f.stable === false).map((f) => f.id),
     );
   }, [resumed.data]);
+  const [importPolicy, setImportPolicy] = useState(false);
+  const [presetName, setPresetName] = useState("");
   const name = status?.creation?.split("/")[1] ?? slug;
 
   const start = async () => {
@@ -433,8 +442,16 @@ export function ImportWizard({
     setError(null);
     try {
       setStep("Saving your choices…");
-      await client.confirmImport(status.import, { rating, rights, license });
-      onCreated(name);
+      const confirmed = await client.confirmImport(status.import, {
+        rating,
+        rights,
+        license,
+        ...(importPolicy ? { policy_preset: { name: presetName || `${name}-preset` } } : {}),
+      });
+      if (confirmed.policy_preset) {
+        setStatus(confirmed);
+        setStep(null);
+      } else onCreated(name);
     } catch (e) {
       setStep(null);
       setError(
@@ -479,6 +496,14 @@ export function ImportWizard({
     return (
       <div className="space-y-3">
         <p>This import is already confirmed.</p>
+        {status.policy_preset ? (
+          <p className="text-sm">
+            Independent preset draft:{" "}
+            <a className="underline" href={`/c/${status.policy_preset.ref.slice(1)}/edit`}>
+              {status.policy_preset.ref}
+            </a>
+          </p>
+        ) : null}
         <Button onClick={() => onCreated(name)}>Open the editor</Button>
       </div>
     );
@@ -526,6 +551,37 @@ export function ImportWizard({
         <ImportReport report={report} unstable={unstable} />
       </section>
 
+      {report.omitted_policy_fields.length > 0 ? (
+        <section className="space-y-3 rounded-xl border bg-surface p-5">
+          <h2 className="font-semibold">Import the prompt policy separately</h2>
+          <Label className="flex gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={importPolicy}
+              onChange={(e) => setImportPolicy(e.target.checked)}
+            />
+            Create an independent preset draft from the omitted policy fields
+          </Label>
+          <p className="text-xs text-text-2">
+            Off by default. The original text stays private unless you choose this conversion. The
+            new preset uses the rights, rating and license you explicitly confirm below.
+          </p>
+          {importPolicy ? (
+            <Label className="block text-sm">
+              Preset address
+              <Input
+                value={presetName}
+                placeholder={`${name}-preset`}
+                onChange={(e) => setPresetName(e.target.value)}
+              />
+              <span className="text-xs">
+                @{ns}/{presetName || `${name}-preset`}
+              </span>
+            </Label>
+          ) : null}
+        </section>
+      ) : null}
+
       <section
         aria-labelledby={ids.confirm}
         className="space-y-5 rounded-xl border bg-surface p-5 sm:p-6"
@@ -551,7 +607,11 @@ export function ImportWizard({
         )}
         <Button
           type="button"
-          disabled={missing.length > 0 || step !== null}
+          disabled={
+            missing.length > 0 ||
+            step !== null ||
+            (importPolicy && !NAME_RE.test(presetName || `${name}-preset`))
+          }
           onClick={() => void confirm()}
         >
           Save and open the editor <ArrowRight aria-hidden />

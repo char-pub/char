@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /** `char` 命令行入口：只负责解析参数，逻辑在 commands.ts。 */
+import { OPEN_CREATION_TYPES } from "@char-pub/core";
 import { Command, InvalidArgumentError, Option } from "commander";
-import { cmdBuild, cmdCheck, cmdInit, cmdPreview, consoleOutput } from "./commands.js";
+import { cmdBuild, cmdCheck, cmdInit, cmdPreview, cmdTest, consoleOutput } from "./commands.js";
 import { cmdLogin, cmdPublish, DEFAULT_REGISTRY } from "./remote.js";
 
 const program = new Command()
@@ -24,7 +25,7 @@ program
   .requiredOption("--ref <ref>", "public identifier, e.g. @you/alice")
   .addOption(
     new Option("--type <type>", "creation type")
-      .choices(["character", "world", "lorebook"])
+      .choices([...OPEN_CREATION_TYPES])
       .default("character"),
   )
   .option("--name <name>", "display name", "Untitled")
@@ -52,7 +53,7 @@ program
 
 program
   .command("build")
-  .description("resolve char.yaml into a Context IR")
+  .description("build a creation artifact and exact dependency lock")
   .option("-f, --file <file>", "path to char.yaml", "char.yaml")
   .option("--dep <file>", "dependency release snapshot (repeatable)", collect, [])
   .option("-o, --out <dir>", "output directory", "dist")
@@ -77,6 +78,8 @@ program
       .default("narrator"),
   )
   .option("--locale <locale>", "session locale")
+  .option("--preset <file>", "explicit Preset char.yaml")
+  .option("--session <file>", "Session JSON with individual slot bindings")
   .option("--persona <name>", "name of the user persona", "User")
   .option("-m, --message <text>", "chat message (repeatable)", collect, [])
   .action(async (o) => {
@@ -89,10 +92,21 @@ program
         mode: o.mode,
         persona: o.persona,
         messages: o.message,
+        ...(o.preset ? { preset: o.preset } : {}),
+        ...(o.session ? { session: o.session } : {}),
         ...(o.locale ? { locale: o.locale } : {}),
       },
       consoleOutput,
     );
+  });
+
+program
+  .command("test")
+  .description("run published deterministic assembly fixtures without calling a model")
+  .option("-f, --file <file>", "path to char.yaml", "char.yaml")
+  .option("--dep <file>", "dependency release snapshot (repeatable)", collect, [])
+  .action(async (o) => {
+    process.exitCode = await cmdTest({ file: o.file, deps: o.dep }, consoleOutput);
   });
 
 program

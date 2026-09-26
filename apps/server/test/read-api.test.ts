@@ -338,3 +338,12 @@ describe("dependents", () => {
     expect(refs).not.toContain("@djj/private-visitor");
   });
 });
+
+it("wraps legacy releases as artifacts without recompiling their stored IR output", async () => {
+  const result = await h.request("/v1/creations/@djj/alice/releases/1.0.0/artifact");
+  expect(result.status, await result.clone().text()).toBe(200);
+  const artifact = (await result.json()) as { kind: string; ir: unknown };
+  expect(artifact.kind).toBe("content");
+  const bytes = await h.services.cas.getBlob("public", alice.irDigest);
+  expect(artifact.ir).toEqual(JSON.parse(new TextDecoder().decode(bytes)));
+});

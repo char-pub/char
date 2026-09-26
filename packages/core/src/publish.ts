@@ -17,8 +17,16 @@
  * 这些规则需要 Registry 的状态（label 是否被占用、asset 状态、黑名单），由调用方
  * 以纯数据形式传入；core 本身不做 IO。
  */
-import { type CanonicalCreation, canonicalizeCreation, type Digest } from "./canonical.js";
+
+import { type BuildCreationOutput, buildCreation } from "./build.js";
+import {
+  type CanonicalCreation,
+  canonicalizeCreation,
+  type Digest,
+  digestOf,
+} from "./canonical.js";
 import { checkCreation, checkEdgeBindings, checkOverrideTargets } from "./check.js";
+import { getCreationDependencies } from "./dependencies.js";
 import { CharError, compareStrings, isCharError } from "./errors.js";
 import { parseCreationRef } from "./ids.js";
 import {
@@ -28,7 +36,8 @@ import {
   type LicenseCheck,
 } from "./license.js";
 import { resolveUseRef } from "./resolve/graph.js";
-import { type ReleaseInput, type ResolveOutput, resolve } from "./resolve/index.js";
+import type { ReleaseInput, ResolveOutput } from "./resolve/index.js";
+import type { CreationArtifact } from "./schema/artifact.js";
 
 export type PublishSeverity = "error" | "warning";
 
@@ -69,6 +78,8 @@ export interface PublishReport {
   license_check: "pass" | "warn" | "fail";
   semantic_digest?: Digest;
   resolved?: ResolveOutput;
+  artifact?: CreationArtifact;
+  build?: BuildCreationOutput;
 }
 
 class Issues {
@@ -141,7 +152,7 @@ export function checkPublish(input: PublishInput): PublishReport {
   }
 
   // 规则 1：pin 必须精确。先于 resolve 检查，给出所有未 pin 的 edge，而不是只报第一条。
-  for (const edge of creation.references) {
+  for (const edge of getCreationDependencies(creation)) {
     if (!edge.pin || !("release" in edge.pin)) {
       issues.error(
         "publish.unpinned",
@@ -163,6 +174,10 @@ export function checkPublish(input: PublishInput): PublishReport {
         issues.error("publish.blocked_content", `assets[${s.slot}/${v.id}]`);
       }
     }
+  }
+  for (const block of creation.policy?.blocks ?? creation.prompt_module?.blocks ?? []) {
+    if (blocked.has(digestOf(block)))
+      issues.error("publish.blocked_content", `policy.blocks[${block.id}]`);
   }
   if (issues.hasErrors) return fail();
 
@@ -200,9 +215,9 @@ export function checkPublish(input: PublishInput): PublishReport {
   if (issues.hasErrors) return fail();
 
   // 规则 2、4 以及 pin 的一致性由 Resolver 检查；它的错误带有解释用的路径。
-  let resolved: ResolveOutput;
+  let built: BuildCreationOutput;
   try {
-    resolved = resolve({
+    built = buildCreation({
       root: { release: input.release, visibility: input.visibility, creation },
       dependencies: input.dependencies,
       ...(input.publicAssetBaseUrl ? { publicAssetBaseUrl: input.publicAssetBaseUrl } : {}),
@@ -218,18 +233,18 @@ export function checkPublish(input: PublishInput): PublishReport {
     issues.error(code, e.subject, e.detail, e.data);
     return fail();
   }
-  for (const w of resolved.warnings) {
+  for (const w of built.warnings) {
     if (w.code === "resolve.yanked")
       issues.warn("publish.yanked_dependency", w.subject, w.detail, w.data);
   }
 
-  const closure = resolved.lock
+  const closure = built.lock
     .map((l) => byRelease.get(l.release))
     .filter((d): d is ReleaseInput => d !== undefined);
 
   // 规则 3：public 只能依赖 public。
   if (input.visibility === "public") {
-    for (const l of resolved.lock) {
+    for (const l of built.lock) {
       const d = byRelease.get(l.release);
       if (d?.visibility !== "public") {
         issues.error(
@@ -243,7 +258,7 @@ export function checkPublish(input: PublishInput): PublishReport {
   }
 
   // 规则 7：asset 必须 ready。闭包中所有被纳入 IR 的 asset 都要检查。
-  for (const a of resolved.ir.assets) {
+  for (const a of built.artifact.assets) {
     if (a.availability === "linked") continue;
     const status = input.registry.assetStatus[a.digest];
     if (status !== "ready") {
@@ -259,6 +274,12 @@ export function checkPublish(input: PublishInput): PublishReport {
   // 所以检查闭包中依赖的原始 fragment。
   for (const d of closure) {
     const c = depCreations.get(d.release);
+    if (c && blocked.has(canonicalizeCreation(c).semantic_digest))
+      issues.error("publish.blocked_content", c.ref);
+    for (const block of c?.policy?.blocks ?? c?.prompt_module?.blocks ?? []) {
+      if (blocked.has(digestOf(block)))
+        issues.error("publish.blocked_content", `${c?.ref}#${block.id}`);
+    }
     for (const f of c?.fragments ?? []) {
       if (blocked.has(f.digest)) issues.error("publish.blocked_content", `${c?.ref}#${f.id}`);
     }
@@ -283,7 +304,7 @@ export function checkPublish(input: PublishInput): PublishReport {
     const c = depCreations.get(d.release);
     if (c) collectModified(c);
   }
-  for (const l of resolved.ir.meta.licenses) {
+  for (const l of built.artifact.meta.licenses) {
     if (l.ref === creation.ref && l.asset === undefined) continue;
     const check =
       l.ref === creation.ref
@@ -295,6 +316,27 @@ export function checkPublish(input: PublishInput): PublishReport {
             modified: l.asset === undefined && modifiedRefs.has(l.ref),
           });
     licenseChecks.push(check);
+  }
+  // A compatible root license must not hide a dependency's own incompatible declaration.
+  for (const dependency of closure) {
+    const dependent = depCreations.get(dependency.release);
+    if (!dependent || dependent.meta.license === creation.meta.license) continue;
+    for (const edge of getCreationDependencies(dependent)) {
+      if (!edge.pin || !("release" in edge.pin)) continue;
+      const target = depCreations.get(edge.pin.release);
+      if (!target) continue;
+      const reference = dependent.references.find((item) => item.id === edge.id);
+      licenseChecks.push(
+        checkDependencyLicense({
+          dependent: dependent.meta.license,
+          dependency: target.meta.license,
+          same_owner: sameOwner(target.ref),
+          modified:
+            edge.domain === "content" &&
+            (reference?.override ?? []).some((item) => item.op !== "patch"),
+        }),
+      );
+    }
   }
   const license = combineLicenseChecks(licenseChecks);
   for (const r of license.reasons) {
@@ -310,7 +352,11 @@ export function checkPublish(input: PublishInput): PublishReport {
     license_check: license.verdict,
     semantic_digest,
   };
-  if (ok) report.resolved = resolved;
+  if (ok) {
+    report.artifact = built.artifact;
+    report.build = built;
+    if (built.resolved) report.resolved = built.resolved;
+  }
   return report;
 }
 

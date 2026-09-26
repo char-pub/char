@@ -1,0 +1,11 @@
+{
+  "id": "015-preset-budget-capabilities",
+  "title": "Preset budgets and capability mismatches fail explicitly",
+  "kind": "assembler",
+  "expect": "trace",
+  "spec_refs": [
+    "context-ir §11 Preset assembly"
+  ],
+  "status": "draft",
+  "notes": "knowledge-cap skips only knowledge; pinned-region-cap fails preset_region_over_budget; fixed-over-budget fails fixed_over_budget; missing-system and split-system-unsupported fail preset_incompatible. Snapshots are canonicalized and digest-checked before assembly. These are draft cases, not accepted expected outputs."
+}

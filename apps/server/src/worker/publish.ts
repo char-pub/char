@@ -16,12 +16,17 @@
  * 发布功能被 kill switch 关闭时，任务不做任何事，Release 保持 pending；开关恢复后由
  * `requeuePendingPublishes` 重新入队。这样关闭多久都不会耗尽重试次数。
  */
+import { runAssemblyTests } from "@char-pub/assembler";
 import {
+  type BuildCreationOutput,
+  canonicalizeCreation,
   checkPublish,
+  digestOf,
+  getCreationDependencies,
   isCharError,
   type JSONValue,
+  jcs,
   normalizeValue,
-  type ResolveOutput,
 } from "@char-pub/core";
 import { and, eq, lt } from "drizzle-orm";
 import { appendAudit } from "../audit/audit.js";
@@ -121,7 +126,26 @@ export async function handlePublish(
     return "failed";
   }
   const creation = canonical.creation;
-  const closure = await loadClosure(db, cas, creation);
+  const publisher = publisherUserId(row);
+  const closure = await loadClosure(
+    db,
+    cas,
+    creation,
+    publisher
+      ? { kind: "user", user_id: publisher, banned: false }
+      : { kind: "oidc", creation_id: row.creationId, binding_id: "publish-worker" },
+  );
+  if (closure.denied.length > 0) {
+    await markFailed(deps, row, {
+      issues: closure.denied.map((release) => ({
+        code: "publish.dependency_unavailable",
+        subject: release,
+        severity: "error",
+      })),
+      license_check: "fail",
+    });
+    return "failed";
+  }
   // 快照已被删除的依赖（例如被 tombstone 后可分发副本已清除）无法重建，直接给出明确原因。
   if (closure.unavailable.length > 0) {
     await markFailed(deps, row, {
@@ -146,13 +170,22 @@ export async function handlePublish(
   };
   addAssets(creation);
   for (const r of closure.releases.values()) addAssets(r.creation as never);
-  const fragmentDigests = creation.fragments.map((f) => f.digest);
+  const contentDigests = new Set<string>([row.semanticDigest]);
+  for (const c of [
+    creation,
+    ...[...closure.releases.values()].map((r) => canonicalizeCreation(r.creation).creation),
+  ]) {
+    contentDigests.add(canonicalizeCreation(c).semantic_digest);
+    for (const fragment of c.fragments) contentDigests.add(fragment.digest);
+    for (const block of c.policy?.blocks ?? c.prompt_module?.blocks ?? [])
+      contentDigests.add(digestOf(block));
+  }
 
   const state = await loadRegistryState(db, {
     release: row,
     namespaceSlug: owner.nsSlug,
     publisherUserId: publisherUserId(row),
-    digests: [row.semanticDigest, ...fragmentDigests, ...assetDigests],
+    digests: [...contentDigests, ...assetDigests],
     assetDigests: [...assetDigests],
   });
 
@@ -166,12 +199,39 @@ export async function handlePublish(
     publicAssetBaseUrl: deps.publicAssetBaseUrl,
   });
   const reportJson = { issues: report.issues, license_check: report.license_check };
-  if (!report.ok || !report.resolved) {
+  if (!report.ok || !report.build) {
     await markFailed(deps, row, reportJson);
     return "failed";
   }
 
-  await writeArtifacts(deps, row, owner.creation.id, canonical, closure, report.resolved, {
+  if ((creation.assembly_tests?.length ?? 0) > 0) {
+    const tests = await runAssemblyTests({
+      root: {
+        release: encodeId("release", row.id),
+        visibility: row.visibility,
+        creation: canonical.json,
+        semantic_digest: row.semanticDigest,
+      },
+      dependencies,
+      publicAssetBaseUrl: deps.publicAssetBaseUrl,
+    });
+    if (!tests.ok) {
+      await markFailed(deps, row, {
+        issues: [
+          {
+            code: "publish.assembly_tests_failed",
+            subject: creation.ref,
+            severity: "error",
+            data: { results: tests.results },
+          },
+        ],
+        license_check: report.license_check,
+      });
+      return "failed";
+    }
+  }
+
+  await writeArtifacts(deps, row, owner.creation.id, canonical, closure, report.build, {
     ...reportJson,
     license_check: report.license_check,
   });
@@ -183,11 +243,17 @@ async function writeArtifacts(
   row: ReleaseRow,
   creationId: string,
   canonical: Awaited<ReturnType<typeof loadRevisionContent>>,
-  closure: Awaited<ReturnType<typeof loadClosure>>,
-  resolved: ResolveOutput,
+  loadedClosure: Awaited<ReturnType<typeof loadClosure>>,
+  built: BuildCreationOutput,
   report: { issues: unknown[]; license_check: "pass" | "warn" | "fail" },
 ): Promise<void> {
   const { db, cas, clock } = deps;
+  const artifact = built.artifact;
+  const selected = new Set(built.lock.map((entry) => entry.release));
+  const closure = {
+    ...loadedClosure,
+    releases: new Map([...loadedClosure.releases].filter(([release]) => selected.has(release))),
+  };
   const bucket = row.visibility === "public" ? ("public" as const) : ("private" as const);
   const snapshotBytes = buildSnapshot(
     canonical.json,
@@ -204,12 +270,21 @@ async function writeArtifacts(
     mediaType: "application/json",
     kind: "snapshot",
   });
-  const ir = await cas.putBlob(db, {
+  const artifactBlob = await cas.putBlob(db, {
     bucket,
-    bytes: irBytes(resolved.json),
-    mediaType: "application/vnd.char.context-ir+json; version=0-draft",
-    kind: "ir",
+    bytes: irBytes(built.json),
+    mediaType: "application/vnd.char.creation-artifact+json; version=0-draft",
+    kind: "artifact",
   });
+  const ir =
+    artifact.kind === "content"
+      ? await cas.putBlob(db, {
+          bucket,
+          bytes: irBytes(jcs(artifact.ir as unknown as JSONValue)),
+          mediaType: "application/vnd.char.context-ir+json; version=0-draft",
+          kind: "ir",
+        })
+      : null;
   if (bucket === "public") {
     // 公开发布时，Revision 的内容（fragment 与 manifest）也随之公开。
     for (const f of canonical.creation.fragments) await cas.copyToPublic(db, f.digest);
@@ -217,7 +292,7 @@ async function writeArtifacts(
     // Uploaded assets start private. Publish their mirrored bytes before exposing CDN URLs.
     // Linked assets stay at their external source and must not be read from private CAS.
     for (const digest of new Set(
-      resolved.ir.assets.filter((a) => a.availability === "mirrored").map((a) => a.digest),
+      artifact.assets.filter((a) => a.availability === "mirrored").map((a) => a.digest),
     )) {
       await cas.copyToPublic(db, digest);
     }
@@ -236,9 +311,9 @@ async function writeArtifacts(
     const c = r.creation as { ref: string; fragments?: { id: string; digest?: string }[] };
     addFragments(c.ref, c.fragments);
   }
-  const assets = new Set<string>(resolved.ir.assets.map((a) => a.digest));
+  const assets = new Set<string>(artifact.assets.map((a) => a.digest));
 
-  const lockRows = resolved.lock.map((l) => {
+  const lockRows = built.lock.map((l) => {
     const dep = closure.releases.get(l.release);
     return {
       releaseId: row.id,
@@ -248,10 +323,21 @@ async function writeArtifacts(
       via: l.via as unknown as JSONValue,
     };
   });
-  const directEdges = canonical.creation.references.flatMap((e) => {
+  const directEdges = getCreationDependencies(canonical.creation).flatMap((e) => {
     const pin = e.pin && "release" in e.pin ? e.pin.release : null;
     const dep = pin ? closure.releases.get(pin) : undefined;
-    return dep ? [{ dep, mode: e.mode, rel: e.rel ?? null }] : [];
+    const content = canonical.creation.references.find(
+      (edge) => e.domain === "content" && edge.id === e.id,
+    );
+    return dep
+      ? [
+          {
+            dep,
+            mode: content?.mode ?? ("intrinsic" as const),
+            rel: e.domain === "content" ? (content?.rel ?? null) : e.domain,
+          },
+        ]
+      : [];
   });
 
   const now = clock.now();
@@ -262,13 +348,14 @@ async function writeArtifacts(
         .set({
           publishState: "done",
           publishReport: normalizeValue(report),
-          lockDigest: resolved.ir.lock_digest,
+          lockDigest: artifact.lock_digest,
           snapshotDigest: snapshot.digest,
-          contextIrDigest: ir.digest,
-          availability: resolved.ir.assets.some((a) => a.availability === "linked")
+          contextIrDigest: ir?.digest ?? null,
+          artifactDigest: artifactBlob.digest,
+          availability: artifact.assets.some((a) => a.availability === "linked")
             ? "linked"
             : "complete",
-          effectiveRating: resolved.ir.meta.rating,
+          effectiveRating: artifact.meta.rating,
           licenseCheck: report.license_check === "warn" ? "warn" : "pass",
           updatedAt: now,
         })
@@ -298,7 +385,8 @@ async function writeArtifacts(
         await tx.insert(releaseFragments).values(fragmentRows).onConflictDoNothing();
       const refs = [
         { digest: snapshot.digest, role: "snapshot" },
-        { digest: ir.digest, role: "ir" },
+        ...(ir ? [{ digest: ir.digest, role: "ir" }] : []),
+        { digest: artifactBlob.digest, role: "artifact" },
         { digest: row.semanticDigest, role: "manifest" },
         ...[...fragments.values()].map((f) => ({ digest: f.digest, role: "fragment" })),
         ...[...assets].map((d) => ({ digest: d, role: "asset" })),
@@ -311,7 +399,7 @@ async function writeArtifacts(
         .update(creations)
         .set({
           latestReleaseId: row.id,
-          effectiveRating: resolved.ir.meta.rating,
+          effectiveRating: artifact.meta.rating,
           rating: canonical.creation.meta.rating,
           displayName: canonical.creation.display_name,
           summary: canonical.creation.summary ?? null,
@@ -330,8 +418,9 @@ async function writeArtifacts(
           label: row.label,
           visibility: row.visibility,
           semantic_digest: row.semanticDigest,
-          context_ir: ir.digest,
-          effective_rating: resolved.ir.meta.rating,
+          context_ir: ir?.digest ?? null,
+          artifact: artifactBlob.digest,
+          effective_rating: artifact.meta.rating,
         },
       });
     });

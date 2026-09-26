@@ -1,8 +1,9 @@
 ---
-description: "Registry draft Revision Release 发布、If-Match 并发、label 幂等、pending worker、依赖闭包与失败恢复"
+description: "九类资产的Registry发布状态机：聚合依赖授权、作者测试门禁、CreationArtifact/CAS、If-Match与异步失败恢复"
 kind: architecture
 code:
   paths:
+    - "apps/server/src/db/schema/common.ts"
     - "apps/server/src/api/routes/drafts.ts"
     - "apps/server/src/registry/drafts.ts"
     - "apps/server/src/registry/publish.ts"
@@ -14,6 +15,7 @@ code:
     - "apps/server/test/api-publish.test.ts"
 relations:
   requires:
+    - "runtime/assembly.mdx"
     - "model/publish-integrity.mdx"
     - "content/upload-and-storage.mdx"
     - "registry/http-contract.mdx"
@@ -26,8 +28,10 @@ relations:
 
 草稿可编辑，Revision 是私有内容寻址快照，Release 是一经完成不可变的公开或私有发布。草稿写入带 `If-Match`，冲突必须交给作者解决；发布请求以幂等键和 Creation 下的 label 约束重试，同一内容可返回已有 Release，不同内容争用 label 则失败。
 
-请求被接受后先进入 pending，worker 从持久 Revision 重新构建规范化内容和依赖闭包，而不是信任客户端提交的预览。worker 重新运行发布完整性检查，确保 public 闭包只含 public 依赖、资产已 ready、许可可再分发、黑名单未命中，再生成锁定快照、Context IR 和反向引用。完成才进入可读取的 active；失败记录原因并释放未完成的 label 占位，使作者可修正后重试。
+请求被接受后先进入 pending，worker 从持久 Revision 重新构建规范化内容和依赖闭包，而不是信任客户端提交的预览。worker 重新运行发布完整性检查，确保 public 闭包只含 public 依赖、资产已 ready、许可可再分发、黑名单未命中，再运行根作品的确定性作者测试，生成锁定快照、统一 artifact、内容分支的 Context IR 和反向引用。作者测试失败不能进入 active，也不能自动接受观察到的期望。完成才进入可读取的 active；失败记录原因并释放未完成的 label 占位，使作者可修正后重试。
 
-公开 Release 进入 active 前，worker 必须把正文、清单与已解析 IR 中的 mirrored 资产字节复制到公共 CAS；只生成可访问形状的 URL 不构成发布完成。任一步复制失败都应沿持久任务恢复，不能先暴露缺失对象的成功 Release。
+无论根作品是否私有，加载精确依赖仍逐项验证发布者读取权；持有快照或 CAS digest 不是授权。public 闭包还必须全部 public，模块与测试依赖不能成为绕过许可或分级的侧门。
+
+公开 Release 进入 active 前，worker 必须把正文、清单与统一 artifact 聚合的 mirrored 资产字节复制到公共 CAS；只生成可访问形状的 URL 不构成发布完成。任一步复制失败都应沿持久任务恢复，不能先暴露缺失对象的成功 Release。
 
 功能开关关闭发布时，不应把 pending 当作成功或永久丢失；队列恢复要按持久状态重投。浏览器和 CLI 必须区分请求已接受、后台构建完成与失败。

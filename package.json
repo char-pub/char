@@ -34,7 +34,7 @@
     "secrets": "gitleaks git --redact --no-banner . && gitleaks dir --redact --no-banner .",
     "ci:all": "pnpm lint && pnpm typecheck && pnpm deps && pnpm test:unit && pnpm test:web && pnpm test:conformance && pnpm test:integration && pnpm build && pnpm test:e2e && pnpm check:action-dist && pnpm secrets",
     "prepare": "lefthook install || true",
-    "check:action-dist": "pnpm --filter @char-pub/publish-action build && git diff --exit-code -- actions/publish/dist",
+    "check:action-dist": "pnpm --filter @char-pub/publish-action build --check",
     "smoke": "tsx scripts/smoke.ts",
     "e2e:fullstack": "pnpm --filter @char-pub/web e2e:fullstack"
   },

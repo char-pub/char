@@ -13,6 +13,26 @@ import { estimateTokenCount } from "tokenx";
 export const TOKENIZER_NAMES = ["estimate", "o200k_base", "cl100k_base"] as const;
 export type TokenizerName = (typeof TOKENIZER_NAMES)[number];
 
+/** Versions form part of reproducible assembly fixtures; update when the pinned implementation changes. */
+export const TOKENIZER_VERSIONS = {
+  estimate: "tokenx@2.1.0",
+  o200k_base: "gpt-tokenizer@4.0.0",
+  cl100k_base: "gpt-tokenizer@4.0.0",
+} as const;
+
+export async function createPinnedTokenCounter(identity: {
+  name: string;
+  version: string;
+}): Promise<TokenCounter> {
+  if (!isTokenizerName(identity.name) || TOKENIZER_VERSIONS[identity.name] !== identity.version)
+    throw new CharError({
+      code: "assembly.tokenizer_version_unsupported",
+      subject: identity.name,
+      detail: identity.version,
+    });
+  return createTokenCounter(identity.name);
+}
+
 export interface TokenCounter {
   /** 实际使用的 tokenizer；Preview 必须把它展示给用户。 */
   readonly tokenizer: string;

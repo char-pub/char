@@ -4,16 +4,17 @@
 
 [English](README.md) · **简体中文**
 
-创作角色、世界与世界书，组合可复用的内容，发布其他工具能够理解和运行的版本。
+创作角色、世界、世界书、关系、情境、用户身份、文风、Preset 与 Prompt Module，组合可复用的内容和策略，发布其他工具能够理解和运行的版本。
 
 > GitHub 可以托管 Char，char.pub 可以发现 Char，Agent 可以理解 Char，Runtime 可以运行 Char，但没有任何一个平台拥有它。
 
-[Canonical Model](spec/canonical-model.md) · [Context IR](spec/context-ir-v0.md) · [架构](llmdoc/execution-model.mdx) · [发布就绪条件](llmdoc/engineering/release-readiness.mdx)
+[Canonical Model](spec/canonical-model.md) · [Context IR](spec/context-ir-v0.md) · [组装资产与作者测试](spec/assembly-assets-v0.md) · [架构](llmdoc/execution-model.mdx) · [发布就绪条件](llmdoc/engineering/release-readiness.mdx)
 
 ## 可以做什么
 
 - **选择适合自己的创作入口。** 使用 Web 编辑器、导入 CCv3 卡片或 PNG，或通过 GitHub、CLI 和 Publish Action 创作。这些入口共享同一个规范化内容模型。
 - **组合并发布作品。** 引用世界与世界书的指定版本，检查依赖，发布带有内容摘要的不可变 Release。
+- **固定并验证运行搭配。** 在 Scenario 中锁定精确 Preset、运行配置与实现版本；用公开合成 Session 测试激活、顺序、预算与可见性，无需调用模型。
 - **通过审阅进行协作。** 用 Contribution 提交修改，检查冲突和敏感变更，接受到草稿后再发布。
 - **理解最终生成的上下文。** 预览解析后的内容及其来源，查看组装 Trace，用 Context Diff 比较版本差异。
 - **在不同 Runtime 中使用内容。** 无需登录即可下载公开 Context IR 与资产；也可导出 CCv3，并通过 Loss Report 了解转换损失。
@@ -40,6 +41,8 @@ pnpm dev
 如果已有仓库，先执行 `git submodule update --init`。前端依赖 brand-assets 子模块中的品牌资源。
 
 `pnpm dev` 会按需启动本地 Postgres、MinIO 和 Mailpit，执行数据库迁移，然后启动 API、worker 与 Web 开发服务器。打开 **http://localhost:5173**。
+
+开发和集成测试共用从固定上游源码构建的 MinIO 镜像。首次运行需要联网并花费额外构建时间，之后复用 Docker 构建缓存。
 
 在另一个终端创建本地账号：
 

@@ -1,6 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { buildLocal, cmdInit } from "@char-pub/cli";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type ActionDeps, type ActionEnv, defaultLabel, run } from "./run.js";
 
@@ -83,6 +84,29 @@ describe("publish action", () => {
     expect(body.semantic_digest).toMatch(/^sha256:/);
     expect(outputs.release).toBe("rel_01h455vb4pex5vsknk084sn0r1");
   });
+
+  it.each(["preset", "prompt-module"] as const)(
+    "publishes %s with the same semantic digest as the shared build",
+    async (type) => {
+      const projectDir = path.join(dir, type);
+      await cmdInit(
+        { dir: projectDir, ref: `@djj/${type}`, type, name: type },
+        { log: () => {}, error: () => {} },
+      );
+      const projectFile = path.join(projectDir, "char.yaml");
+      const built = await buildLocal(projectFile);
+      const { d, calls, outputs } = deps({
+        status: 202,
+        body: { release: "rel_01h455vb4pex5vsknk084sn0r1", state: "pending", idempotent: false },
+      });
+      await run(inputs({ path: projectFile }), ENV, d);
+      expect(JSON.parse(String(calls[0]?.init.body)).semantic_digest).toBe(
+        built.artifact.root.semantic_digest,
+      );
+      expect(outputs["semantic-digest"]).toBe(built.artifact.root.semantic_digest);
+      expect(built.artifact.kind).toBe(type);
+    },
+  );
 
   it("does not publish in dry-run mode", async () => {
     const { d, calls, outputs } = deps({ status: 500, body: {} });

@@ -48,11 +48,28 @@ function sharesOf(trace: AssemblyTrace, ir: ContextIR | undefined): Share[] {
   for (const e of trace.entries) {
     if (e.decision !== "included") continue;
     const ref = e.origin?.creation;
-    const key = ref ?? "session";
+    const key =
+      ref ??
+      (e.id.startsWith("preset:")
+        ? "policy"
+        : e.id === "assembly:formatting"
+          ? "formatting"
+          : "session");
     const prev = map.get(key);
     if (prev) prev.tokens += e.tokens;
     else
-      map.set(key, { key, label: ref ?? "Session & chat", tokens: e.tokens, dot: dotFor(ir, ref) });
+      map.set(key, {
+        key,
+        label:
+          ref ??
+          (key === "policy"
+            ? "Prompt policy"
+            : key === "formatting"
+              ? "Message formatting"
+              : "Session & chat"),
+        tokens: e.tokens,
+        dot: dotFor(ir, ref),
+      });
   }
   return [...map.values()];
 }

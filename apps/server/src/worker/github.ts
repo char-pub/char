@@ -45,7 +45,12 @@ export async function runGitHubSync(
   job: SyncJob,
 ): Promise<SyncCheck | null> {
   const [row] = await deps.db
-    .select({ b: sourceBindings, name: creations.name, slug: namespaces.slug })
+    .select({
+      b: sourceBindings,
+      name: creations.name,
+      type: creations.type,
+      slug: namespaces.slug,
+    })
     .from(sourceBindings)
     .innerJoin(creations, eq(creations.id, sourceBindings.creationId))
     .innerJoin(namespaces, eq(namespaces.id, creations.namespaceId))
@@ -63,7 +68,11 @@ export async function runGitHubSync(
         commit: job.commit,
         path: b.path,
       },
-      { ref: `@${row.slug}/${row.name}`, creationId: encodeId("creation", b.creationId) },
+      {
+        ref: `@${row.slug}/${row.name}`,
+        creationId: encodeId("creation", b.creationId),
+        type: row.type,
+      },
     );
     const result = checkCreation(loaded.creation, { source: "github" });
     check = {

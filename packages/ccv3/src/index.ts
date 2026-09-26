@@ -5,4 +5,5 @@ export * from "./charx.js";
 export * from "./export.js";
 export * from "./import.js";
 export * from "./png.js";
+export * from "./policy.js";
 export * from "./text.js";

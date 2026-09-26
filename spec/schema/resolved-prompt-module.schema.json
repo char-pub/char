@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v0-draft/resolved-prompt-module.schema.json",
+  "title": "char.pub Resolved Prompt Module",
+  "type": "object",
+  "properties": {
+    "ref": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "release": {
+      "type": "string",
+      "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+    },
+    "semantic_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "resolver": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "version": {
+      "type": "string",
+      "const": "0-draft"
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ResolvedPolicyBlock"
+      }
+    },
+    "lock": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LockEntry"
+      }
+    },
+    "lock_digest": {
+      "$ref": "#/$defs/Digest"
+    }
+  },
+  "required": [
+    "ref",
+    "release",
+    "semantic_digest",
+    "resolver",
+    "version",
+    "blocks",
+    "lock",
+    "lock_digest"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "ResolvedPolicyBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            {
+              "type": "string",
+              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "main",
+            "after-history"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            },
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            },
+            "semantic_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "block": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            "via": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            }
+          },
+          "required": [
+            "ref",
+            "release",
+            "semantic_digest",
+            "block",
+            "via"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "position"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "text": {
+              "pattern": "\\S"
+            }
+          }
+        }
+      ]
+    },
+    "LockEntry": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/UnversionedRef"
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "semantic_digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          }
+        }
+      },
+      "required": [
+        "ref",
+        "release",
+        "semantic_digest",
+        "via"
+      ],
+      "additionalProperties": false
+    },
+    "UnversionedRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

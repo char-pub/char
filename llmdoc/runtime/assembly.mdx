@@ -1,23 +1,48 @@
 ---
-description: "Reference Assembler late binding, activation, visibility, budget policy and per-turn provenance from Context IR"
+description: "Scenario 锁定搭配与确定性作者测试、预期错误边界；Preset/Module解析、SDK组装、tokenizer版本、最终文本预算和Trace"
 kind: architecture
 code:
   paths:
+    - "spec/assembly-assets-v0.md"
+    - "packages/core/src/schema/assembly.ts"
+    - "packages/core/src/schema/runtime.ts"
+    - "packages/core/src/schema/session.ts"
+    - "packages/assembler/src/fixtures.ts"
+    - "spec/preset-v0.md"
+    - "packages/core/src/preset.ts"
+    - "packages/core/src/preset-diff.ts"
+    - "packages/core/src/schema/preset.ts"
+    - "packages/core/src/schema/ir.ts"
     - "packages/assembler/src/assemble.ts"
     - "packages/assembler/src/activation.ts"
     - "packages/assembler/src/render.ts"
     - "packages/assembler/src/session.ts"
     - "packages/assembler/src/tokens.ts"
     - "packages/assembler/test/assemble.test.ts"
+    - "packages/assembler/test/preset.test.ts"
 relations:
   requires:
     - "runtime/resolution.mdx"
 ---
 
-# 逐轮 Context 组装
+# 策略组装、锁定搭配与作者测试
 
-Assembler 消费不可变 Context IR 和本轮 Session 输入，完成 late binding、activation、visibility 过滤、预算和最终渲染。它不重新解释 Creation、选择依赖版本或改变 Creative Truth。Session 提供可变的当前状态；同一 IR 在不同轮次可以产生不同的可见片段。
+Assembler 消费不可变 Context IR 和本轮 Session 输入，完成 late binding、activation、visibility 过滤、预算和最终渲染。它不重新解释 Creation、选择内容依赖版本或改变 Creative Truth。Session 提供可变状态；visibility 与激活先于预算，Preset 不能重新加入被排除片段。narrator 对 private 内容的知情者标注不构成模型内隔离，semantic 激活不可用也不能悄悄当作精确匹配。
 
-Pinned 内容与激活片段有不同预算语义：必须保留的内容超预算应显式失败，不能静默截断；其他候选按实现的确定性优先级选择，并把激活和舍弃原因留在 trace 中。visibility 在组装前隔离不同消费视角，尤其不能把仅供 narrator 的内容泄给其他视角。keyword 与 semantic 激活是两条策略，不能把不可用的语义能力悄悄当成精确匹配。
+Preset 是独立的 Policy 输入。调用方先把完整作品快照、精确 Release 和期望摘要交给纯计算 `resolvePreset`，经严格校验、规范化与完整 semantic digest 比对后取得 `ResolvedPreset`。数据读取、可见性、发布状态及 Release 到快照的可信映射仍归调用方或 Registry；摘要不证明授权或作者真实性。Assembler 只校验解析结果结构，不能从 policy 重算完整作品摘要，也不能替代上游完整性校验。
 
-当前包是参考 Assembler。完整 Preset 结构尚未定义，tokenizer 回退和具体预算顺序属于实现取值，修改时应对照 IR 语义与 conformance 用例。
+显式 Preset 按完整布局组织区域；main 块在所有区域之前，after-history 块在所有区域之后，历史内部顺序和角色保持不变。Runtime 必须明确支持所需 system 能力；仅支持单 system 消息时只能合并相邻消息，不能跨历史挪动内容，不兼容时显式失败。无 Preset 时保留既有默认布局、预算顺序与能力降级，不能把显式策略的严格保证外推到默认路径。
+
+显式策略先扣历史、Session 与启用块等固定成本，再预留全部可见 pinned。固定内容或 pinned 超全局预算、pinned 超区域上限均失败；其余按 normal、opportunistic、布局及区域内 IR 顺序整条纳入或跳过。区域上限只约束 Creative 片段本身，不是预留份额，不重复扣 Session 或策略成本。
+
+全局成本取逐来源文本计数总和与最终各消息文本计数总和的较大值，固定内容、全部 pinned 和每次加入普通候选后都要满足预算。这样覆盖合并分隔符、示例标题与分词拼接边界，且不利用合并偶然减少的 token 扩容。最终文本比来源多出的正差额记为 `assembly:formatting`，使 Trace 总数等于 included 成本之和；不含供应商消息封装或图片计费，Runtime 仍需预留。默认路径保留原逐来源口径。
+
+Trace 分别记录内容 IR 锁、实际 Preset 身份、Assembler 与布局版本，并保留片段选择原因和策略块来源；审计 entry 顺序不等于最终消息顺序。推荐 Preset 不意味着已选用或已锁版本。复现组装还须固定 Session、Profile、Assembler 和 tokenizer，不保证模型生成相同文本。
+
+`diffPresets` 按稳定块 ID、共同块相对顺序、导入锁与块来源比较规范化策略，与 Creative Context Diff 分开；正文未变的模块升级也不能隐藏锁和来源差异。默认值等价形式不产生差异。它不比较完整作品元数据，也不重新验证快照摘要；调用方仍需先走独立解析器，不能把无策略差异解释为作品未变。
+
+Preset 只能导入 Module，Module 可继续导入 Module。解析按声明顺序深度优先，依赖块先于本地块；同 ref 同 Release 只注入一次，首条路径决定顺序，不同 Release 的菱形冲突、环和超限图失败。导入块使用全限定 ID 并保留精确 origin/via；去重不能跳过环检测或摘要验证。
+
+Scenario 的 assembly 固定精确 Preset、Profile、Assembler 和 tokenizer 身份；`assembleArtifact` 严格使用该配置，Session 由消费者独立提供。未知或不匹配的实现版本不得回退估算。narrator 不要求存在 self，per-agent 和显式指定的参与者必须存在；每个必需 late slot 独立绑定。搭配不保存真实 history、memory、state 或用户身份，也不保证模型回复相同。
+
+Preset/Scenario 的 assembly_tests 是随作品发布的合成输入与显式期望。SDK 的 `runAssemblyTests`/`runAssemblyFixture` 验证有序消息摘要、Trace 选择或实际组装错误；配置、缺依赖、pin 或版本失败不能由预期错误吸收。测试省略 preset 表示默认策略，不继承 Scenario 的搭配；self 避免作品把自己的摘要纳入自身。消息摘要保留附件内容身份与描述而排除部署相关 URL，因此本地、公共 CDN 与私有签名地址不会制造内容差异。运行结果不能自动写回期望；作者测试与需人工接受 expected 的规范 conformance 是两种独立基线。

@@ -266,23 +266,7 @@ export type ContextIR = z.infer<typeof ContextIRSchema>;
 // Runtime Profile 与 Assembly Trace（Assembler 的输入与输出，不属于 IR）
 // ---------------------------------------------------------------------------
 
-export const RuntimeProfileSchema = z.strictObject({
-  runtime: z.strictObject({ name: z.string(), version: z.string() }),
-  model: z.string().optional(),
-  /** 具体 tokenizer 名，或 `estimate` 表示只做估算。 */
-  tokenizer: z.string(),
-  context_window: z.number().int().positive(),
-  reserve_for_output: z.number().int().nonnegative(),
-  /** per-agent 模式下 private visibility 是隔离边界；narrator 模式下只是提示。 */
-  mode: z.enum(["narrator", "per-agent"]),
-  capabilities: z.strictObject({
-    images: z.boolean().optional(),
-    system_role: z.boolean().optional(),
-    multiple_system_messages: z.boolean().optional(),
-  }),
-  locale: LocaleSchema.optional(),
-});
-export type RuntimeProfile = z.infer<typeof RuntimeProfileSchema>;
+export { type RuntimeProfile, RuntimeProfileSchema } from "./runtime.js";
 
 export const TRACE_REASONS = [
   "always",
@@ -301,6 +285,23 @@ export const TraceReasonSchema = z.union([z.enum(TRACE_REASONS), z.string().rege
 
 export const AssemblyTraceSchema = z.strictObject({
   ir: z.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema }),
+  /** 实际采用的运行策略身份；推荐列表不构成已选用的 Preset。 */
+  preset: z
+    .strictObject({
+      ref: UnversionedRefSchema,
+      release: ReleaseIdSchema,
+      semantic_digest: DigestSchema,
+      resolver: z.strictObject({ name: z.string(), version: z.string() }),
+    })
+    .optional(),
+  /** 可选以兼容旧 Trace；参考 Assembler 的新输出始终携带。 */
+  assembler: z
+    .strictObject({
+      name: z.string(),
+      version: z.string(),
+      layout: z.enum(["default-v1", "preset-v1"]),
+    })
+    .optional(),
   profile: z.strictObject({ tokenizer: z.string(), context_window: z.number(), mode: z.string() }),
   total_tokens: z.number(),
   estimated: z.boolean(),

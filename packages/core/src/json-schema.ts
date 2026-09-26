@@ -10,17 +10,31 @@
  * 无法表达为 JSON Schema，只存在于 zod 校验中；JSON Schema 描述的是结构与字段格式。
  */
 import { type ZodType, z } from "zod";
+import * as A from "./schema/artifact.js";
+import * as F from "./schema/assembly.js";
 import * as C from "./schema/creation.js";
+import * as ID from "./schema/identity.js";
 import * as IR from "./schema/ir.js";
+import * as P from "./schema/policy.js";
+import * as PR from "./schema/preset.js";
 import * as R from "./schema/release.js";
 
 export const SCHEMA_BASE_URL = "https://char.pub/schema/v0-draft";
 
 export const PUBLISHED_SCHEMAS = {
   creation: { schema: C.CreationSchema, title: "char.pub Creation (Canonical Model)" },
+  "creation-artifact": { schema: A.CreationArtifactSchema, title: "char.pub Creation Artifact" },
+  "resolved-prompt-module": {
+    schema: PR.ResolvedPromptModuleSchema,
+    title: "char.pub Resolved Prompt Module",
+  },
+  "assembly-fixture": { schema: F.AssemblyFixtureSchema, title: "char.pub Assembly Fixture" },
   release: { schema: R.ReleaseSchema, title: "char.pub Release" },
   contribution: { schema: R.ContributionSchema, title: "char.pub Contribution" },
   "context-ir": { schema: IR.ContextIRSchema, title: "char.pub Context IR" },
+  "resolved-preset": { schema: PR.ResolvedPresetSchema, title: "char.pub Resolved Preset" },
+  "preset-diff": { schema: PR.PresetDiffSchema, title: "char.pub Preset Diff" },
+  "assembly-trace": { schema: IR.AssemblyTraceSchema, title: "char.pub Assembly Trace" },
 } as const;
 
 export type PublishedSchemaName = keyof typeof PUBLISHED_SCHEMAS;
@@ -61,6 +75,17 @@ const NAMED_DEFS: [ZodType, string][] = [
   [C.GuestAuthorSchema, "GuestAuthor"],
   [C.ProvenanceSchema, "Provenance"],
   [C.CastMemberSchema, "CastMember"],
+  [P.PresetBlockSchema, "PresetBlock"],
+  [P.PromptModuleSchema, "PromptModule"],
+  [ID.ExactRefSchema, "ExactRef"],
+  [ID.PolicyImportSchema, "PolicyImport"],
+  [F.AssemblyConfigSchema, "AssemblyConfig"],
+  [F.AssemblyFixtureSchema, "AssemblyFixture"],
+  [PR.ResolvedPolicySchema, "ResolvedPolicy"],
+  [PR.ResolvedPolicyBlockSchema, "ResolvedPolicyBlock"],
+  [PR.ResolvedPresetSchema, "ResolvedPreset"],
+  [P.PresetPolicySchema, "PresetPolicy"],
+  [PR.PresetIdentitySchema, "PresetIdentity"],
   [R.LockEntrySchema, "LockEntry"],
   [R.SourceRecordSchema, "SourceRecord"],
   [R.GitHubOIDCClaimsSchema, "GitHubOIDCClaims"],
@@ -96,6 +121,68 @@ export function buildJsonSchema(name: PublishedSchemaName): Record<string, unkno
     // 字符串上叠加的 regex 会覆盖掉 URL 的 format，这里补回来，让两条约束都出现在输出里。
     override: (ctx) => {
       if (ctx.zodSchema === C.HttpsUrlSchema) ctx.jsonSchema.format = "uri";
+      if (ctx.zodSchema === P.PresetPolicySchema || ctx.zodSchema === PR.ResolvedPolicySchema) {
+        ctx.jsonSchema.allOf = [{ properties: { layout: { uniqueItems: true } } }];
+      }
+      if (ctx.zodSchema === P.PresetBlockSchema || ctx.zodSchema === PR.ResolvedPolicyBlockSchema) {
+        ctx.jsonSchema.allOf = [{ properties: { text: { pattern: "\\S" } } }];
+      }
+      if (ctx.zodSchema === F.AssemblySuccessExpectationSchema)
+        ctx.jsonSchema.anyOf = [{ required: ["messages_digest"] }, { required: ["trace"] }];
+      if (ctx.zodSchema === C.CreationSchema) {
+        const policyBounds = {
+          not: { required: ["bootstrap"] },
+          properties: {
+            fragments: { maxItems: 0 },
+            references: { maxItems: 0 },
+            cast: { maxItems: 0 },
+            slots: { maxProperties: 0 },
+            params: { maxProperties: 0 },
+            assets: { items: { properties: { role: { const: "presentation" } } } },
+          },
+        };
+        ctx.jsonSchema.allOf = [
+          ...(
+            [
+              ["preset", "policy"],
+              ["prompt-module", "prompt_module"],
+            ] as const
+          ).map(([type, field]) => ({
+            if: { properties: { type: { const: type } }, required: ["type"] },
+            // biome-ignore lint/suspicious/noThenProperty: JSON Schema condition.
+            then: { required: [field], ...policyBounds },
+            else: { not: { required: [field] } },
+          })),
+          {
+            if: { properties: { type: { not: { const: "scenario" } } } },
+            // biome-ignore lint/suspicious/noThenProperty: JSON Schema condition.
+            then: { not: { required: ["assembly"] } },
+          },
+          {
+            if: { properties: { type: { not: { enum: ["scenario", "preset"] } } } },
+            // biome-ignore lint/suspicious/noThenProperty: JSON Schema condition.
+            then: { properties: { assembly_tests: { maxItems: 0 } } },
+          },
+          {
+            if: { properties: { type: { const: "preset" } } },
+            // biome-ignore lint/suspicious/noThenProperty: JSON Schema condition.
+            then: {
+              properties: {
+                assembly_tests: { items: { properties: { root: { not: { const: "self" } } } } },
+              },
+            },
+          },
+          {
+            if: { properties: { type: { not: { const: "preset" } } } },
+            // biome-ignore lint/suspicious/noThenProperty: JSON Schema condition.
+            then: {
+              properties: {
+                assembly_tests: { items: { properties: { preset: { not: { const: "self" } } } } },
+              },
+            },
+          },
+        ];
+      }
     },
   }) as Record<string, unknown>;
   const { $schema, ...rest } = body;

@@ -498,3 +498,71 @@ describe("images inside the card", () => {
     expect(created).toBeUndefined();
   });
 });
+
+describe("explicit policy preset import", () => {
+  it("atomically creates an independently publishable Preset and persists the link for later reads", async () => {
+    const uploaded = await upload(alice, utf8Encode(JSON.stringify(card())), "application/json");
+    const { body } = await startImport(alice, uploaded, "alice", "with-policy");
+    await handleImportJob(deps(), { import_id: uuidOf(body.import) });
+    const me = h.as(alice);
+    const request = {
+      rating: "general",
+      rights: "original",
+      license: "CC-BY-4.0",
+      policy_preset: { name: "imported-policy", display_name: "Imported policy" },
+    };
+    expect((await h.as(bob).post(`/v1/imports/${body.import}/confirm`, request)).status).toBe(404);
+    const confirmed = await me.post(`/v1/imports/${body.import}/confirm`, request);
+    expect(confirmed.status, await confirmed.clone().text()).toBe(200);
+    const confirmedBody = (await confirmed.json()) as {
+      policy_preset: { id: string; ref: string };
+    };
+    expect(confirmedBody.policy_preset).toMatchObject({ ref: "@alice/imported-policy" });
+    expect((await status(alice, body.import)).body).toMatchObject({
+      policy_preset: confirmedBody.policy_preset,
+      needs_confirmation: [],
+    });
+    const draft = (await (await me.get("/v1/creations/@alice/imported-policy/draft")).json()) as {
+      working: { type: string; authors: unknown[]; policy: { blocks: { text: string }[] } };
+    };
+    expect(draft.working.type).toBe("preset");
+    expect(draft.working.authors).toEqual([{ name: "someone" }]);
+    expect(draft.working.policy.blocks.map((block) => block.text)).toContain(SECRET);
+    const character = await (await me.get("/v1/creations/@alice/with-policy/draft")).json();
+    expect(JSON.stringify(character)).not.toContain(SECRET);
+    const revision = (await (
+      await me.post("/v1/creations/@alice/imported-policy/revisions", {})
+    ).json()) as { id: string };
+    const queued = await me.post(
+      "/v1/creations/@alice/imported-policy/releases",
+      { revision: revision.id, label: "1.0.0", visibility: "public" },
+      { "idempotency-key": "explicit-policy-publish" },
+    );
+    expect(queued.status, await queued.text()).toBe(202);
+    expect(await h.runPublishJobs()).toEqual(["published"]);
+  });
+
+  it("keeps confirmation retryable when the explicit Preset name is already taken", async () => {
+    const uploaded = await upload(alice, utf8Encode(JSON.stringify(card())), "application/json");
+    const { body } = await startImport(alice, uploaded, "alice", "policy-collision");
+    await handleImportJob(deps(), { import_id: uuidOf(body.import) });
+    const request = {
+      rating: "general",
+      rights: "original",
+      license: "CC-BY-4.0",
+      policy_preset: { name: "imported-policy" },
+    };
+    expect((await h.as(alice).post(`/v1/imports/${body.import}/confirm`, request)).status).toBe(
+      409,
+    );
+    expect((await status(alice, body.import)).body.confirmed_at).toBeNull();
+    expect(
+      (
+        await h.as(alice).post(`/v1/imports/${body.import}/confirm`, {
+          ...request,
+          policy_preset: { name: "policy-retry" },
+        })
+      ).status,
+    ).toBe(200);
+  });
+});

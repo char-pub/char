@@ -30,9 +30,12 @@ import {
   CharError,
   type ContextIR,
   ContextIRSchema,
+  type CreativeRegion,
   compareStrings,
   type IRFragment,
   type Origin,
+  type ResolvedPreset,
+  ResolvedPresetSchema,
   type RuntimeProfile,
   RuntimeProfileSchema,
   SELF_PARTICIPANT,
@@ -61,8 +64,8 @@ export interface AssembleInput {
   ir: ContextIR;
   profile: RuntimeProfile;
   session: SessionInput;
-  /** Preset 的结构尚未定义；目前只支持默认布局。 */
-  preset?: undefined;
+  /** 由 resolvePreset 校验快照完整性后生成的独立策略输入。 */
+  preset?: ResolvedPreset;
   /** 已加载的 tokenizer，缺省使用估算。 */
   counter?: TokenCounter;
   labels?: Labels;
@@ -90,6 +93,8 @@ export const SYSTEM_REGION_ORDER = [
   "session:variants",
 ] as const;
 export type Region = (typeof SYSTEM_REGION_ORDER)[number] | "history";
+
+export const ASSEMBLER = { name: "@char-pub/assembler", version: "0.0.0" } as const;
 
 export function regionFor(f: Pick<IRFragment, "placement_hint" | "subject">): Region {
   switch (f.placement_hint) {
@@ -225,6 +230,22 @@ export function assemble(input: AssembleInput): AssembleResult {
   const ir = parseOrThrow(ContextIRSchema, input.ir, "ir");
   const profile = parseOrThrow(RuntimeProfileSchema, input.profile, "profile");
   const session = parseOrThrow(SessionSchema, input.session, "session");
+  const preset =
+    input.preset === undefined
+      ? undefined
+      : parseOrThrow(ResolvedPresetSchema, input.preset, "preset");
+  if (
+    preset &&
+    (profile.capabilities.system_role !== true ||
+      (preset.policy.requires.multiple_system_messages === true &&
+        profile.capabilities.multiple_system_messages !== true))
+  ) {
+    throw new CharError({
+      code: "assemble.preset_incompatible",
+      subject: preset.ref,
+      detail: "the runtime must explicitly support the preset's required message capabilities",
+    });
+  }
   const counter = input.counter ?? estimateCounter;
   const labels = input.labels ?? DEFAULT_LABELS;
 
@@ -232,7 +253,10 @@ export function assemble(input: AssembleInput): AssembleResult {
   const locale = chooseLocale(ir, profile, session);
   const ctx = new RenderContext(ir, session, locale, profile.capabilities.images === true, labels);
   const forParticipant = session.for_participant ?? SELF_PARTICIPANT;
-  if (!ctx.hasParticipant(forParticipant)) {
+  if (
+    (profile.mode === "per-agent" || session.for_participant !== undefined) &&
+    !ctx.hasParticipant(forParticipant)
+  ) {
     throw new CharError({ code: "assemble.unknown_participant", subject: forParticipant });
   }
   const manual = new Set(session.manual_enabled ?? []);
@@ -311,28 +335,154 @@ export function assemble(input: AssembleInput): AssembleResult {
   });
   const historyTokens = history.reduce((n, m) => n + m.tokens, 0);
   const blocks = sessionBlocks(ctx, session, labels, counter);
-  const fixed = historyTokens + blocks.reduce((n, b) => n + b.tokens, 0);
-  const available = profile.context_window - profile.reserve_for_output - fixed;
+  const policyBlocks = (preset?.policy.blocks ?? []).map((b) => ({
+    ...b,
+    source: `preset:${b.id}`,
+    tokens: b.enabled === false ? 0 : counter.count(b.text),
+  }));
+  const fixed =
+    historyTokens +
+    blocks.reduce((n, b) => n + b.tokens, 0) +
+    policyBlocks.reduce((n, b) => n + b.tokens, 0);
+  const inputBudget = profile.context_window - profile.reserve_for_output;
+  const available = inputBudget - fixed;
+  const makeMessages = (chosen: Set<Candidate>): AssembledMessage[] => {
+    // 默认布局保留既有降级语义；显式 Preset 的能力要求与位置不能被静默改变。
+    const systemRole = profile.capabilities.system_role === false ? "user" : "system";
+    const renderRegion = (region: Region): AssembledMessage | undefined => {
+      const parts: string[] = [];
+      const source: string[] = [];
+      const attachments: Attachment[] = [];
+      for (const b of blocks) {
+        if (b.region !== region) continue;
+        parts.push(b.text);
+        source.push(b.id);
+      }
+      const inRegion = candidates.filter((c) => c.region === region && chosen.has(c));
+      if (region === "system:examples" && inRegion.length > 0) parts.push(labels.examplesHeader);
+      for (const c of inRegion) {
+        // 只有图片的 fragment 没有文本，但仍然要作为来源记录，并带上它的附件。
+        if (c.text.length > 0) parts.push(c.text);
+        source.push(c.fragment.id);
+        attachments.push(...c.attachments);
+      }
+      if (source.length === 0) return undefined;
+      const msg: AssembledMessage = { role: systemRole, content: parts.join("\n\n"), source };
+      if (attachments.length > 0) msg.attachments = attachments;
+      return msg;
+    };
+    const historyMessages: AssembledMessage[] = history.map((m) => ({
+      role: m.role,
+      content: m.content,
+      source: ["history"],
+    }));
+    let messages: AssembledMessage[];
+    if (preset) {
+      const policyMessages = (position: "main" | "after-history"): AssembledMessage[] =>
+        policyBlocks
+          .filter((b) => b.enabled !== false && b.position === position)
+          .map((b) => ({ role: "system", content: b.text, source: [b.source] }));
+      messages = policyMessages("main");
+      for (const region of preset.policy.layout) {
+        if (region === "history") messages.push(...historyMessages);
+        else {
+          const msg = renderRegion(region);
+          if (msg) messages.push(msg);
+        }
+      }
+      messages.push(...policyMessages("after-history"));
+      if (profile.capabilities.multiple_system_messages !== true) {
+        messages = mergeAdjacentSystemMessages(messages);
+        if (messages.filter((m) => m.role === "system").length > 1) {
+          throw new CharError({
+            code: "assemble.preset_incompatible",
+            subject: preset.ref,
+            detail: "system messages separated by history require multiple_system_messages",
+          });
+        }
+      }
+    } else {
+      const regionMessages = SYSTEM_REGION_ORDER.flatMap((region) => {
+        const msg = renderRegion(region);
+        return msg ? [msg] : [];
+      });
+      messages =
+        profile.capabilities.multiple_system_messages === false && regionMessages.length > 1
+          ? [mergeMessages(regionMessages, systemRole)]
+          : regionMessages;
+      messages.push(...historyMessages);
+    }
+    return messages;
+  };
+  // 取逐来源成本与最终消息文本成本中的较大值，避免合并分隔符和区域标题漏计。
+  const presetCost = (chosen: Set<Candidate>): number => {
+    const sourceTokens = fixed + [...chosen].reduce((n, c) => n + c.tokens, 0);
+    const messageTokens = makeMessages(chosen).reduce((n, m) => n + counter.count(m.content), 0);
+    return Math.max(sourceTokens, messageTokens);
+  };
+  const fixedInputCost = preset ? presetCost(new Set()) : fixed;
+  if (preset && fixedInputCost > inputBudget) {
+    throw new CharError({
+      code: "assemble.fixed_over_budget",
+      subject: preset.ref,
+      detail: "history, session content and enabled policy blocks exceed the input budget",
+      data: { fixed_tokens: fixedInputCost, input_budget: inputBudget },
+    });
+  }
 
   // 3. 预算：pinned 必须全部放下；其余按 normal → opportunistic、IR 顺序整条纳入或跳过。
   const pinned = candidates.filter((c) => c.fragment.importance === "pinned");
   const pinnedTokens = pinned.reduce((n, c) => n + c.tokens, 0);
-  if (pinnedTokens > available) {
+  const pinnedInputCost = preset ? presetCost(new Set(pinned)) : fixed + pinnedTokens;
+  if (pinnedInputCost > inputBudget) {
     throw new CharError({
       code: "assemble.pinned_over_budget",
       subject: ir.root.ref,
-      detail: `pinned fragments need ${pinnedTokens} tokens, only ${Math.max(0, available)} available`,
-      data: { pinned_tokens: pinnedTokens, available, fragments: pinned.map((c) => c.fragment.id) },
+      detail: preset
+        ? "fixed content, pinned fragments and message formatting exceed the input budget"
+        : `pinned fragments need ${pinnedTokens} tokens, only ${Math.max(0, available)} available`,
+      data: {
+        pinned_tokens: pinnedTokens,
+        available,
+        fragments: pinned.map((c) => c.fragment.id),
+        ...(preset ? { required_input_tokens: pinnedInputCost, input_budget: inputBudget } : {}),
+      },
     });
   }
   const included = new Set<Candidate>(pinned);
+  const regionUsage = new Map<Region, number>();
+  const regionLimit = (region: Region) => preset?.policy.region_budgets?.[region as CreativeRegion];
+  for (const c of pinned) {
+    const used = (regionUsage.get(c.region) ?? 0) + c.tokens;
+    regionUsage.set(c.region, used);
+    const limit = regionLimit(c.region);
+    if (limit !== undefined && used > limit) {
+      throw new CharError({
+        code: "assemble.preset_region_over_budget",
+        subject: c.region,
+        detail: "pinned fragments exceed the preset's region budget",
+        data: { pinned_tokens: used, limit },
+      });
+    }
+  }
+  // 默认布局保持原 IR 顺序；显式 Preset 按布局顺序分配预算，区域内保留 IR 顺序。
+  const orderedCandidates = preset
+    ? preset.policy.layout.flatMap((region) => candidates.filter((c) => c.region === region))
+    : candidates;
   let remaining = available - pinnedTokens;
   for (const tier of ["normal", "opportunistic"] as const) {
-    for (const c of candidates) {
+    for (const c of orderedCandidates) {
       if (c.fragment.importance !== tier) continue;
-      if (c.tokens <= remaining) {
+      const used = regionUsage.get(c.region) ?? 0;
+      const limit = regionLimit(c.region);
+      if (c.tokens <= remaining && (limit === undefined || used + c.tokens <= limit)) {
         included.add(c);
+        if (preset && presetCost(included) > inputBudget) {
+          included.delete(c);
+          continue;
+        }
         remaining -= c.tokens;
+        regionUsage.set(c.region, used + c.tokens);
       }
     }
   }
@@ -341,36 +491,15 @@ export function assemble(input: AssembleInput): AssembleResult {
     else entry(c.fragment, c.region, "skipped", "budget", c.tokens);
   }
 
-  // 4. 按默认布局生成消息。
-  const systemRole = profile.capabilities.system_role === false ? "user" : "system";
-  const regionMessages: AssembledMessage[] = [];
-  for (const region of SYSTEM_REGION_ORDER) {
-    const parts: string[] = [];
-    const source: string[] = [];
-    const attachments: Attachment[] = [];
-    for (const b of blocks) {
-      if (b.region !== region) continue;
-      parts.push(b.text);
-      source.push(b.id);
-    }
-    const inRegion = candidates.filter((c) => c.region === region && included.has(c));
-    if (region === "system:examples" && inRegion.length > 0) parts.push(labels.examplesHeader);
-    for (const c of inRegion) {
-      // 只有图片的 fragment 没有文本，但仍然要作为来源记录，并带上它的附件。
-      if (c.text.length > 0) parts.push(c.text);
-      source.push(c.fragment.id);
-      attachments.push(...c.attachments);
-    }
-    if (source.length === 0) continue;
-    const msg: AssembledMessage = { role: systemRole, content: parts.join("\n\n"), source };
-    if (attachments.length > 0) msg.attachments = attachments;
-    regionMessages.push(msg);
-  }
-  const messages =
-    profile.capabilities.multiple_system_messages === false && regionMessages.length > 1
-      ? [mergeMessages(regionMessages, systemRole)]
-      : regionMessages;
-  for (const m of history) messages.push({ role: m.role, content: m.content, source: ["history"] });
+  const messages = makeMessages(included);
+  const formattingTokens = preset
+    ? Math.max(
+        0,
+        messages.reduce((n, m) => n + counter.count(m.content), 0) -
+          fixed -
+          [...included].reduce((n, c) => n + c.tokens, 0),
+      )
+    : 0;
 
   // 5. Trace：fragment 按 IR 顺序，随后是 Session 内容与对话历史。
   const traceEntries: TraceEntry[] = ir.fragments.map((f) => {
@@ -396,12 +525,41 @@ export function assemble(input: AssembleInput): AssembleResult {
       reason: "always",
     });
   }
+  for (const b of policyBlocks) {
+    traceEntries.push({
+      id: b.source,
+      region: `preset:${b.position}`,
+      tokens: b.tokens,
+      decision: b.enabled === false ? "skipped" : "included",
+      reason: b.enabled === false ? "inactive" : "always",
+    });
+  }
+  if (formattingTokens > 0) {
+    traceEntries.push({
+      id: "assembly:formatting",
+      region: "assembly:formatting",
+      tokens: formattingTokens,
+      decision: "included",
+      reason: "always",
+    });
+  }
   const total = traceEntries.reduce((n, e) => (e.decision === "included" ? n + e.tokens : n), 0);
 
   return {
     messages,
     trace: {
       ir: { root: ir.root.ref, lock_digest: ir.lock_digest },
+      assembler: { ...ASSEMBLER, layout: preset ? "preset-v1" : "default-v1" },
+      ...(preset
+        ? {
+            preset: {
+              ref: preset.ref,
+              release: preset.release,
+              semantic_digest: preset.semantic_digest,
+              resolver: preset.resolver,
+            },
+          }
+        : {}),
       profile: {
         tokenizer: counter.tokenizer,
         context_window: profile.context_window,
@@ -412,6 +570,26 @@ export function assemble(input: AssembleInput): AssembleResult {
       entries: traceEntries,
     },
   };
+}
+
+/** 只合并相邻 system 消息；绝不把历史前后的指令挪到同一个位置。 */
+function mergeAdjacentSystemMessages(messages: AssembledMessage[]): AssembledMessage[] {
+  const result: AssembledMessage[] = [];
+  let run: AssembledMessage[] = [];
+  const flush = () => {
+    if (run.length > 0)
+      result.push(run.length === 1 ? (run[0] as AssembledMessage) : mergeMessages(run, "system"));
+    run = [];
+  };
+  for (const message of messages) {
+    if (message.role === "system") run.push(message);
+    else {
+      flush();
+      result.push(message);
+    }
+  }
+  flush();
+  return result;
 }
 
 function mergeMessages(list: AssembledMessage[], role: AssembledMessage["role"]): AssembledMessage {

@@ -36,97 +36,125 @@ function status(state: string, extra: Record<string, unknown> = {}) {
   };
 }
 
-test("imports a card through the registry and requires explicit choices", async ({ page }) => {
-  const api = await mockApi(page, ORIGIN);
-  api.on("GET /v1/me", { body: ME });
-  api.on("POST /v1/uploads", {
-    status: 201,
-    body: {
-      upload: "0199a000-0000-7000-8000-000000000001",
-      put_url: "https://uploads.example.test/put",
-      headers: { "content-type": "image/png" },
-      expires_at: "2026-09-22T12:10:00.000Z",
-    },
-  });
-  api.on("POST /v1/uploads/*/complete", {
-    body: { upload: "0199a000-0000-7000-8000-000000000001", status: "ready" },
-  });
-  api.on("POST /v1/imports", { status: 202, body: status("pending") });
-  api.on(`GET /v1/imports/${IMPORT_ID}`, {
-    body: status("succeeded", { creation: "@writer/mira", report: REPORT }),
-  });
-  api.on("GET /v1/creations/@writer/mira/draft", {
-    body: {
-      version: 1,
-      working: {
-        fragments: [{ id: "lore-1", stable: false }],
-        meta: { rating: "general", rights: "original", license: "LicenseRef-All-Rights-Reserved" },
+for (const withPolicy of [false, true]) {
+  test(`imports a card with explicit policy choice: ${withPolicy}`, async ({ page }) => {
+    const api = await mockApi(page, ORIGIN);
+    api.on("GET /v1/me", { body: ME });
+    api.on("POST /v1/uploads", {
+      status: 201,
+      body: {
+        upload: "0199a000-0000-7000-8000-000000000001",
+        put_url: "https://uploads.example.test/put",
+        headers: { "content-type": "image/png" },
+        expires_at: "2026-09-22T12:10:00.000Z",
       },
-      base_revision_id: null,
-      updated_at: "2026-09-22T12:00:00.000Z",
-    },
-  });
-  api.on(`POST /v1/imports/${IMPORT_ID}/confirm`, {
-    body: status("succeeded", {
-      creation: "@writer/mira",
-      needs_confirmation: [],
-      confirmed_at: "2026-09-22T12:01:00.000Z",
-    }),
-  });
-  let uploaded = 0;
-  await page.route("https://uploads.example.test/**", (route) => {
-    const cors = {
-      "access-control-allow-origin": ORIGIN,
-      "access-control-allow-methods": "PUT",
-      "access-control-allow-headers": "content-type",
-    };
-    if (route.request().method() === "PUT") uploaded++;
-    return route.fulfill({
-      status: route.request().method() === "OPTIONS" ? 204 : 200,
-      headers: cors,
+    });
+    api.on("POST /v1/uploads/*/complete", {
+      body: { upload: "0199a000-0000-7000-8000-000000000001", status: "ready" },
+    });
+    api.on("POST /v1/imports", { status: 202, body: status("pending") });
+    api.on(`GET /v1/imports/${IMPORT_ID}`, {
+      body: status("succeeded", { creation: "@writer/mira", report: REPORT }),
+    });
+    api.on("GET /v1/creations/@writer/mira/draft", {
+      body: {
+        version: 1,
+        working: {
+          fragments: [{ id: "lore-1", stable: false }],
+          meta: {
+            rating: "general",
+            rights: "original",
+            license: "LicenseRef-All-Rights-Reserved",
+          },
+        },
+        base_revision_id: null,
+        updated_at: "2026-09-22T12:00:00.000Z",
+      },
+    });
+    api.on(`POST /v1/imports/${IMPORT_ID}/confirm`, {
+      body: status("succeeded", {
+        creation: "@writer/mira",
+        needs_confirmation: [],
+        confirmed_at: "2026-09-22T12:01:00.000Z",
+        ...(withPolicy
+          ? {
+              policy_preset: {
+                id: "cr_01j00000000000000000000008",
+                ref: "@writer/mira-instructions",
+              },
+            }
+          : {}),
+      }),
+    });
+    let uploaded = 0;
+    await page.route("https://uploads.example.test/**", (route) => {
+      const cors = {
+        "access-control-allow-origin": ORIGIN,
+        "access-control-allow-methods": "PUT",
+        "access-control-allow-headers": "content-type",
+      };
+      if (route.request().method() === "PUT") uploaded++;
+      return route.fulfill({
+        status: route.request().method() === "OPTIONS" ? 204 : 200,
+        headers: cors,
+      });
+    });
+
+    await page.goto("/create/import");
+    await page.getByLabel("Character card").setInputFiles({
+      name: "Mira.png",
+      mimeType: "image/png",
+      buffer: Buffer.concat([
+        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+        Buffer.from("not really an image, the registry is mocked"),
+      ]),
+    });
+    await expect(page.getByLabel("Address")).toHaveValue("mira");
+    await page.getByRole("button", { name: "Read the card" }).click();
+
+    const omitted = page.getByRole("list", { name: "Omitted fields" });
+    await expect(omitted.getByText("system_prompt")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("body")).not.toContainText(SECRET);
+    await expect(page.getByText("lore-1")).toBeVisible();
+    expect(uploaded).toBe(1);
+    expect(api.calls.find((c) => c.path === "/v1/uploads")?.body).toMatchObject({
+      purpose: "import",
+      content_type: "image/png",
+    });
+
+    const confirm = page.getByRole("button", { name: "Save and open the editor" });
+    await expect(confirm).toBeDisabled();
+    await expect(
+      page.getByText("Choose a rating, the rights and a license to continue."),
+    ).toBeVisible();
+    await page.getByRole("radio", { name: /^Teen/ }).check();
+    await page.getByRole("radio", { name: /^Fan work/ }).check();
+    await expect(confirm).toBeDisabled();
+    await expect(page.getByText("Choose a license to continue.")).toBeVisible();
+    await page.getByLabel("License", { exact: true }).selectOption("CC-BY-4.0");
+    if (withPolicy) {
+      await page
+        .getByLabel("Create an independent preset draft from the omitted policy fields")
+        .check();
+      await page.getByLabel("Preset address").fill("mira-instructions");
+    }
+    await confirm.click();
+    if (withPolicy) {
+      await expect(page.getByRole("link", { name: "@writer/mira-instructions" })).toHaveAttribute(
+        "href",
+        "/c/writer/mira-instructions/edit",
+      );
+      await page.getByRole("button", { name: "Open the editor", exact: true }).click();
+    }
+    await expect(page).toHaveURL(/\/c\/writer\/mira\/edit$/);
+    expect(api.calls.find((c) => c.path.endsWith("/confirm"))?.body).toEqual({
+      rating: "teen",
+      rights: "fan-work",
+      license: "CC-BY-4.0",
+      ...(withPolicy ? { policy_preset: { name: "mira-instructions" } } : {}),
     });
   });
-
-  await page.goto("/create/import");
-  await page.getByLabel("Character card").setInputFiles({
-    name: "Mira.png",
-    mimeType: "image/png",
-    buffer: Buffer.concat([
-      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-      Buffer.from("not really an image, the registry is mocked"),
-    ]),
-  });
-  await expect(page.getByLabel("Address")).toHaveValue("mira");
-  await page.getByRole("button", { name: "Read the card" }).click();
-
-  const omitted = page.getByRole("list", { name: "Omitted fields" });
-  await expect(omitted.getByText("system_prompt")).toBeVisible({ timeout: 10_000 });
-  await expect(page.locator("body")).not.toContainText(SECRET);
-  await expect(page.getByText("lore-1")).toBeVisible();
-  expect(uploaded).toBe(1);
-  expect(api.calls.find((c) => c.path === "/v1/uploads")?.body).toMatchObject({
-    purpose: "import",
-    content_type: "image/png",
-  });
-
-  const confirm = page.getByRole("button", { name: "Save and open the editor" });
-  await expect(confirm).toBeDisabled();
-  await expect(
-    page.getByText("Choose a rating, the rights and a license to continue."),
-  ).toBeVisible();
-  await page.getByRole("radio", { name: /^Teen/ }).check();
-  await page.getByRole("radio", { name: /^Fan work/ }).check();
-  await expect(confirm).toBeDisabled();
-  await expect(page.getByText("Choose a license to continue.")).toBeVisible();
-  await page.getByLabel("License", { exact: true }).selectOption("CC-BY-4.0");
-  await confirm.click();
-  await expect(page).toHaveURL(/\/c\/writer\/mira\/edit$/);
-  expect(api.calls.find((c) => c.path.endsWith("/confirm"))?.body).toEqual({
-    rating: "teen",
-    rights: "fan-work",
-    license: "CC-BY-4.0",
-  });
-});
+}
 
 test("a failed import explains why", async ({ page }) => {
   const api = await mockApi(page, ORIGIN);

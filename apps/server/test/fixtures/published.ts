@@ -31,6 +31,7 @@ import {
   reverseEdges,
   userSettings,
 } from "../../src/db/schema/index.js";
+import { buildSnapshot } from "../../src/registry/content.js";
 import { toPublicId } from "../../src/registry/read.js";
 import { refreshSearchColumns } from "../../src/registry/search.js";
 import type { Cas } from "../../src/storage/cas.js";
@@ -131,11 +132,14 @@ export async function publishRelease(o: PublishOptions): Promise<PublishedReleas
     ...(o.publicAssetBaseUrl ? { publicAssetBaseUrl: o.publicAssetBaseUrl } : {}),
   });
 
-  const snapshot = enc.encode(
-    jcs({
-      creation: json,
-      closure: [...closure.values()].map((d) => d.input.creation) as JSONValue[],
-    } as JSONValue),
+  const snapshot = buildSnapshot(
+    json,
+    [...closure.values()].map((d) => ({
+      release: d.publicReleaseId,
+      ref: d.ref,
+      semantic_digest: d.semanticDigest,
+      creation: canonicalizeCreation(d.creation).json,
+    })),
   );
   const snap = await cas.putBlob(db, {
     bucket,

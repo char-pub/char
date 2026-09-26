@@ -10,6 +10,6 @@ export default defineProject({
   ssr: { resolve: { conditions } },
   test: {
     name: "conformance-workerd",
-    include: ["runner/conformance.test.ts"],
+    include: ["runner/conformance.test.ts", "runner/preset.test.ts"],
   },
 });

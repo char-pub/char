@@ -27,7 +27,11 @@ export async function nameTaken(db: Executor, namespaceId: string, name: string)
 
 export function importStatusBody(
   row: ImportRow,
-  extra: { creation?: string | undefined; report?: ImportStatus["report"] | undefined } = {},
+  extra: {
+    creation?: string | undefined;
+    report?: ImportStatus["report"] | undefined;
+    policy_preset?: ImportStatus["policy_preset"] | undefined;
+  } = {},
 ): ImportStatus {
   const out: ImportStatus = {
     import: encodeId("import", row.id),
@@ -42,6 +46,7 @@ export function importStatusBody(
   if (row.errorDetail) out.error_detail = row.errorDetail;
   if (extra.creation) out.creation = extra.creation;
   if (extra.report) out.report = extra.report;
+  if (extra.policy_preset) out.policy_preset = extra.policy_preset;
   return out;
 }
 

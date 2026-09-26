@@ -1,75 +1,226 @@
-/**
- * Context Preview 面板：对一份已解析好的 Context IR 调整 Session，在浏览器里运行参考
- * Assembler，展示 Assembly Trace（每段内容为什么进入或没有进入上下文、来自哪条依赖、被谁
- * 覆盖）。Playground 的示例作品和作品页上已发布的版本共用它；组装不经过服务器。
- */
-import type { TokenizerName } from "@char-pub/assembler";
-import type { ContextIR } from "@char-pub/core";
+import { assembleArtifact, type TokenizerName } from "@char-pub/assembler";
+import {
+  type ContextIR,
+  type CreationArtifact,
+  isCharError,
+  type Rating,
+  type ResolvedPreset,
+} from "@char-pub/core";
 import { TriangleAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ComponentProps, useEffect, useMemo, useState } from "react";
+import { ArtifactPicker } from "@/components/artifact-picker";
+import { allowsMature } from "@/components/creation-context";
+import { MatureGate } from "@/components/mature-gate";
+import { highestRating } from "@/components/rating";
 import { SessionControls } from "@/components/session-controls";
 import { TraceSummary, TraceTable } from "@/components/trace-table";
-import { DEFAULT_SETTINGS, type PreviewSettings, runPreview } from "@/lib/preview";
+import {
+  bindingsFor,
+  DEFAULT_SETTINGS,
+  type PreviewOutcome,
+  type PreviewSettings,
+  parseHistory,
+  runPreview,
+} from "@/lib/preview";
+import { useMe } from "@/lib/registry";
 import { useTokenCounter } from "@/lib/use-token-counter";
 
-export function PreviewPanel({
+export function PreviewPanel(props: ComponentProps<typeof PreviewSession>) {
+  const me = useMe();
+  return <PreviewSession key={me.data?.id ?? "anonymous"} {...props} />;
+}
+
+function PreviewSession({
   ir,
   headingLevel = 2,
   initialSettings = DEFAULT_SETTINGS,
   note = "Nothing here is sent anywhere — the context is assembled in your browser.",
+  preset: initialPreset,
+  artifact,
 }: {
   ir: ContextIR;
   headingLevel?: 2 | 3;
   initialSettings?: PreviewSettings;
-  /** 表格下方的一句说明。 */
   note?: string;
+  preset?: ResolvedPreset;
+  artifact?: CreationArtifact | undefined;
 }) {
+  const me = useMe();
+  const [selectedRating, setSelectedRating] = useState<Rating>("general");
   const [settings, setSettings] = useState<PreviewSettings>(initialSettings);
   const [tokenizer, setTokenizer] = useState<TokenizerName>("estimate");
+  const [preset, setPreset] = useState<ResolvedPreset | undefined>(initialPreset);
+  const hasLocked = artifact?.kind === "content" && !!artifact.assembly;
+  const [lockPreference, setLockPreference] = useState<boolean | null>(null);
+  const locked = hasLocked && (lockPreference ?? true);
+  const lockedConfig = artifact?.kind === "content" ? artifact.assembly : undefined;
+  const activeSettings =
+    locked && lockedConfig
+      ? {
+          ...settings,
+          mode: lockedConfig.profile.mode,
+          contextWindow: lockedConfig.profile.context_window,
+          reserveForOutput: lockedConfig.profile.reserve_for_output,
+        }
+      : settings;
+  const [lockedOutcome, setLockedOutcome] = useState<PreviewOutcome | null>(null);
   const { counter, status } = useTokenCounter(tokenizer);
-  const outcome = useMemo(() => runPreview(ir, settings, counter), [ir, settings, counter]);
+  const localOutcome = useMemo(
+    () => runPreview(ir, settings, counter, preset),
+    [ir, settings, counter, preset],
+  );
+  useEffect(() => {
+    if (!locked || !artifact || artifact.kind !== "content" || !artifact.assembly) return;
+    let active = true;
+    setLockedOutcome(null);
+    void assembleArtifact({
+      artifact,
+      session: {
+        locale: settings.locale,
+        bindings: bindingsFor(ir, settings.persona, settings.lateBindings),
+        history: parseHistory(settings.historyText),
+        manual_enabled: settings.manualEnabled,
+        ...(lockedConfig?.profile.mode === "per-agent" && settings.forParticipant
+          ? { for_participant: settings.forParticipant }
+          : {}),
+      },
+    })
+      .then((result) => {
+        if (active) setLockedOutcome({ ok: true, result });
+      })
+      .catch((error: unknown) => {
+        if (active)
+          setLockedOutcome({
+            ok: false,
+            code: isCharError(error) ? error.code : "assembly.failed",
+            title: "The locked setup could not be assembled",
+            detail: error instanceof Error ? error.message : String(error),
+          });
+      });
+    return () => {
+      active = false;
+    };
+  }, [locked, artifact, ir, settings]);
+  const outcome = locked ? lockedOutcome : localOutcome;
   const Heading = headingLevel === 2 ? "h2" : "h3";
-
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[20rem_1fr]">
       <section
         aria-labelledby="pv-session"
         className="h-fit space-y-4 rounded-lg border bg-surface px-5 py-4"
       >
-        <div className="space-y-0.5">
-          <Heading id="pv-session" className="text-base font-semibold">
-            Session
-          </Heading>
-          <p className="text-xs text-text-2">Change these to see what a runtime would send.</p>
-        </div>
+        <Heading id="pv-session" className="font-semibold">
+          Session
+        </Heading>
+        {hasLocked ? (
+          <label className="flex gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={locked}
+              onChange={(e) => setLockPreference(e.target.checked)}
+            />
+            Use the author's locked setup
+          </label>
+        ) : null}
+        {locked && artifact?.kind === "content" && artifact.assembly ? (
+          <p className="text-xs">
+            Locked: {artifact.assembly.preset.ref} · {artifact.assembly.profile.context_window}{" "}
+            tokens · {artifact.assembly.tokenizer.name} {artifact.assembly.tokenizer.version}.
+            Session inputs below stay local.
+          </p>
+        ) : null}
+        {!locked ? (
+          <div className="space-y-2">
+            <p className="text-xs font-mono break-all">
+              {preset ? `${preset.ref} · ${preset.release}` : "Default layout — no preset selected"}
+            </p>
+            {preset ? (
+              <button
+                type="button"
+                className="text-xs underline"
+                onClick={() => {
+                  setPreset(undefined);
+                  setSelectedRating("general");
+                }}
+              >
+                Use default layout
+              </button>
+            ) : null}
+            <ArtifactPicker
+              label="Choose a preset"
+              types={["preset"]}
+              onPick={({ artifact: selected }) => {
+                if (selected.kind === "preset") {
+                  setPreset(selected.preset);
+                  setSelectedRating(selected.meta.rating);
+                }
+              }}
+            />
+          </div>
+        ) : null}
         <SessionControls
           ir={ir}
-          settings={settings}
+          settings={activeSettings}
           onChange={setSettings}
-          tokenizer={tokenizer}
+          tokenizer={
+            locked && lockedConfig ? (lockedConfig.tokenizer.name as TokenizerName) : tokenizer
+          }
           onTokenizer={setTokenizer}
           tokenizerStatus={status}
+          locked={locked}
         />
       </section>
-
       <section aria-labelledby="pv-trace" className="min-w-0 space-y-4">
         <Heading id="pv-trace" className="sr-only">
           Context Preview
         </Heading>
-        {outcome.ok ? (
-          <>
-            <TraceSummary trace={outcome.result.trace} ir={ir} />
-            <TraceTable trace={outcome.result.trace} ir={ir} />
-          </>
-        ) : (
-          <PreviewProblem title={outcome.title} detail={outcome.detail} code={outcome.code} />
-        )}
+        <MatureGate
+          identity={me.data?.id}
+          key={`${me.data?.id}:${ir.root.release}:${preset?.semantic_digest}:${artifact?.root.semantic_digest}`}
+          rating={highestRating(ir.meta.rating, artifact?.meta.rating, selectedRating)}
+          allowed={allowsMature(me.data)}
+          signedIn={!!me.data}
+        >
+          {!outcome ? (
+            <p role="status">Assembling the locked setup…</p>
+          ) : outcome.ok ? (
+            <>
+              <TraceSummary trace={outcome.result.trace} ir={ir} />
+              {outcome.result.trace.preset ? (
+                <p className="rounded border p-3 text-xs font-mono break-all">
+                  Policy: {outcome.result.trace.preset.ref} · {outcome.result.trace.preset.release}{" "}
+                  · {outcome.result.trace.preset.semantic_digest}
+                </p>
+              ) : null}
+              <section className="space-y-2">
+                <h3 className="font-semibold">Messages sent to the model, in order</h3>
+                <ol aria-label="Assembled messages" className="space-y-3">
+                  {outcome.result.messages.map((message, index) => (
+                    <li key={index} className="rounded-lg border bg-surface p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase">
+                        {index + 1}. {message.role}
+                      </p>
+                      <pre className="whitespace-pre-wrap break-words font-sans text-sm">
+                        {message.content}
+                      </pre>
+                      {message.attachments?.length ? (
+                        <p className="mt-2 text-xs">{message.attachments.length} attachment(s)</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+              <TraceTable trace={outcome.result.trace} ir={ir} />
+            </>
+          ) : (
+            <PreviewProblem title={outcome.title} detail={outcome.detail} code={outcome.code} />
+          )}
+        </MatureGate>
         <p className="text-xs text-text-3">{note}</p>
       </section>
     </div>
   );
 }
-
 export function PreviewProblem({
   title,
   detail,

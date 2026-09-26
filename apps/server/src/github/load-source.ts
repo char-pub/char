@@ -9,6 +9,7 @@ import { parseCharYaml } from "@char-pub/cli";
 import {
   type CanonicalCreation,
   CharError,
+  type CreationType,
   canonicalizeCreation,
   type Digest,
 } from "@char-pub/core";
@@ -43,7 +44,7 @@ export interface LoadedSource {
 export async function loadSourceAtCommit(
   gh: GitHubSource,
   at: SourceAtCommit,
-  expected: { ref: string; creationId: string },
+  expected: { ref: string; creationId: string; type?: CreationType },
 ): Promise<LoadedSource> {
   const yamlPath = normalizeRepoPath(at.path);
   const files: string[] = [];
@@ -73,5 +74,12 @@ export async function loadSourceAtCommit(
     id: expected.creationId,
   });
   const reported_digest = canonicalizeCreation(parsed.creation).semantic_digest;
+  if (expected.type !== undefined && creation.type !== expected.type) {
+    throw new CharError({
+      code: "github.type_mismatch",
+      subject: creation.ref,
+      detail: `the bound Creation is a ${expected.type}, source declares ${creation.type}`,
+    });
+  }
   return { creation, semantic_digest, reported_digest, files: [...new Set(files)].sort() };
 }

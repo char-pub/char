@@ -27,6 +27,10 @@ import { DiagnosticList, diagnosticsFor } from "./diagnostics";
 import { ListInput } from "./list-input";
 
 const DEFAULT_KIND: Record<string, FragmentKind> = {
+  persona: "persona",
+  style: "style",
+  relationship: "relationship",
+  scenario: "scenario",
   character: "character",
   world: "world",
   lorebook: "knowledge",

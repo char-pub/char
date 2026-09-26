@@ -7,9 +7,10 @@
  * 在 `GITHUB_SHA` 对应的 commit 上重新读取源文件并重新计算，不一致就拒绝。
  */
 import * as core from "@actions/core";
-import { buildLocal } from "@char-pub/cli";
+import { buildLocal, cmdTest } from "@char-pub/cli";
 import { type OidcPublishRequest, ProblemSchema, PublishResponseSchema } from "@char-pub/contracts";
 import { CharError, isCharError, isLabel } from "@char-pub/core";
+import { setOutput } from "./output.js";
 
 export interface ActionEnv {
   GITHUB_SHA?: string;
@@ -26,6 +27,7 @@ export interface ActionInputs {
   visibility: string;
   registry: string;
   dryRun: boolean;
+  dependencies?: string[];
 }
 
 export interface ActionDeps {
@@ -72,10 +74,16 @@ export async function run(inputs: ActionInputs, env: ActionEnv, deps: ActionDeps
     throw new CharError({ code: "action.invalid_visibility", subject: inputs.visibility });
   }
 
-  const { creation, resolved } = await buildLocal(inputs.path);
-  deps.log(`built ${creation.ref}@${label}  ${resolved.ir.root.semantic_digest}`);
-  for (const w of resolved.warnings) deps.log(`warning: ${w.code} ${w.subject}`);
-  deps.setOutput("semantic-digest", resolved.ir.root.semantic_digest);
+  const { creation, artifact, warnings } = await buildLocal(inputs.path, inputs.dependencies);
+  const testStatus = await cmdTest(
+    { file: inputs.path, ...(inputs.dependencies ? { deps: inputs.dependencies } : {}) },
+    { log: deps.log, error: deps.log },
+  );
+  if (testStatus !== 0)
+    throw new CharError({ code: "action.assembly_tests_failed", subject: inputs.path });
+  deps.log(`built ${creation.ref}@${label}  ${artifact.root.semantic_digest}`);
+  for (const w of warnings) deps.log(`warning: ${w.code} ${w.subject}`);
+  deps.setOutput("semantic-digest", artifact.root.semantic_digest);
   if (inputs.dryRun) {
     deps.log("dry run: not publishing");
     return;
@@ -89,7 +97,7 @@ export async function run(inputs: ActionInputs, env: ActionEnv, deps: ActionDeps
     visibility: inputs.visibility,
     commit,
     path: inputs.path,
-    semantic_digest: resolved.ir.root.semantic_digest,
+    semantic_digest: artifact.root.semantic_digest,
   };
   const res = await deps.fetch(`${registry}/v1/publish/oidc`, {
     method: "POST",
@@ -131,13 +139,14 @@ export async function main(): Promise<void> {
         visibility: core.getInput("visibility") || "public",
         registry: core.getInput("registry") || "https://api.char.pub",
         dryRun: core.getBooleanInput("dry-run"),
+        dependencies: core.getMultilineInput("dependencies"),
       },
       env,
       {
         getIdToken: (aud) => core.getIDToken(aud),
         fetch,
         log: (l) => core.info(l),
-        setOutput: (n, v) => core.setOutput(n, v),
+        setOutput,
         idempotencyKey: `gha:${process.env.GITHUB_REPOSITORY_ID ?? ""}:${process.env.GITHUB_RUN_ID ?? ""}:${process.env.GITHUB_RUN_ATTEMPT ?? ""}`,
       },
     );

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCreation } from "@/components/creation-context";
 import { matureReason } from "@/components/creation-facts";
 import { MatureGate } from "@/components/mature-gate";
+import { PolicyPreview } from "@/components/policy-artifact";
 import { PreviewPanel } from "@/components/preview-panel";
 import { ErrorState } from "@/components/states";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/c/$ns/$name/preview")({
  */
 function PreviewTab() {
   const c = useCreation();
+  if (c.detail.type === "preset" || c.detail.type === "prompt-module") return <PolicyPreview />;
   if (!c.ir) {
     return c.irState === "error" ? (
       <ErrorState
@@ -41,6 +43,7 @@ function PreviewTab() {
   }
   return (
     <MatureGate
+      identity={c.me?.id}
       rating={c.rating}
       allowed={c.allowMature}
       remember={c.detail.ref}
@@ -51,6 +54,7 @@ function PreviewTab() {
       <PreviewPanel
         key={c.label}
         ir={c.ir}
+        artifact={c.artifact}
         note={`Nothing here is sent anywhere — the context is assembled in your browser from ${c.selected?.visibility === "private" ? "this private" : "the public"} release.`}
       />
     </MatureGate>

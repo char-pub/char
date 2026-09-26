@@ -9,7 +9,7 @@ import {
   type LateBindingValue,
   type TokenCounter,
 } from "@char-pub/assembler";
-import { type ContextIR, isCharError, USER_LATE_SLOT } from "@char-pub/core";
+import { type ContextIR, isCharError, type ResolvedPreset, USER_LATE_SLOT } from "@char-pub/core";
 
 export interface PreviewSettings {
   locale: string;
@@ -20,6 +20,8 @@ export interface PreviewSettings {
   /** 每行一条消息，以 `user:` 或 `assistant:` 开头；没有前缀的按 user 处理。 */
   historyText: string;
   manualEnabled: string[];
+  lateBindings?: Record<string, { name: string; description: string; kind: string }>;
+  forParticipant?: string;
 }
 
 export const DEFAULT_SETTINGS: PreviewSettings = {
@@ -51,21 +53,24 @@ export function parseHistory(text: string) {
 
 /**
  * 为界面生成 late slot 绑定：隐式用户绑定到界面上填写的 Persona；其他 late slot
- * 也用同一个 Persona 演示（真实 Runtime 会让用户分别选择）。
+ * 必须由用户逐槽填写，不能用同一个 Persona 隐式填满。
  */
 export function bindingsFor(
   ir: ContextIR,
   persona: PreviewSettings["persona"],
+  bindings: NonNullable<PreviewSettings["lateBindings"]> = {},
 ): Record<string, LateBindingValue> {
   const out: Record<string, LateBindingValue> = {};
-  const name = persona.name.trim();
-  if (name.length === 0) return out;
   for (const slot of ir.late_slots) {
-    const kind = slot.accepts.includes("persona") ? "persona" : (slot.accepts[0] ?? "persona");
-    const value: LateBindingValue = { kind, display_name: name };
-    const description = persona.description.trim();
-    if (description && slot.key === USER_LATE_SLOT) value.description = description;
-    out[slot.key] = value;
+    const explicit = bindings[slot.key];
+    const selected =
+      explicit ?? (slot.key === USER_LATE_SLOT ? { ...persona, kind: "persona" } : undefined);
+    if (!selected?.name.trim()) continue;
+    out[slot.key] = {
+      kind: selected.kind as LateBindingValue["kind"],
+      display_name: selected.name.trim(),
+      ...(selected.description.trim() ? { description: selected.description.trim() } : {}),
+    };
   }
   return out;
 }
@@ -77,7 +82,7 @@ const FRIENDLY: Record<string, { title: string; hint: string }> = {
   },
   "assemble.late_slot_unbound": {
     title: "A required role is not bound",
-    hint: "Fill in the persona name so the {{user}} role and other late slots can be bound.",
+    hint: "Fill in a name for each required role in the Session controls.",
   },
   "assemble.late_slot_kind_mismatch": {
     title: "Wrong kind of binding",
@@ -89,11 +94,13 @@ export function runPreview(
   ir: ContextIR,
   settings: PreviewSettings,
   counter: TokenCounter = estimateCounter,
+  preset?: ResolvedPreset,
 ): PreviewOutcome {
   try {
     const result = assemble({
       ir,
       counter,
+      ...(preset ? { preset } : {}),
       profile: {
         runtime: { name: "char.pub playground", version: "0" },
         tokenizer: counter.tokenizer,
@@ -104,8 +111,11 @@ export function runPreview(
         locale: settings.locale,
       },
       session: {
+        ...(settings.mode === "per-agent" && settings.forParticipant
+          ? { for_participant: settings.forParticipant }
+          : {}),
         locale: settings.locale,
-        bindings: bindingsFor(ir, settings.persona),
+        bindings: bindingsFor(ir, settings.persona, settings.lateBindings),
         history: parseHistory(settings.historyText),
         manual_enabled: settings.manualEnabled,
       },

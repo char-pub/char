@@ -17,6 +17,8 @@ relations:
 
 `checkCreation` 检查单件内容的静态结构。`checkPublish` 接收调用者提供的 Registry 状态快照，纯计算 Revision 是否可成为 Release；它本身不查询数据库，也不授予发布权限。真实发布必须由 Registry 在事务及 worker 流程中重新构造这些输入并再次检查。
 
-发布要求每条 reference 精确 pin、闭包没有 tombstone、单图同一 Creation 只有一个 Release、override 指向稳定 fragment，且所需 slot 已绑定或明确 late。public Release 的依赖闭包必须都是 public。所引用的 asset 必须 ready，Creation、依赖和 asset 的许可必须相容且可再分发。manifest、fragment 和资产 digest 命中下架黑名单时拒绝重新发布。yanked 依赖提供警告；tombstoned 依赖是错误。
+发布判定经统一 buildCreation 支持内容、Preset 和 Prompt Module，检查聚合依赖锁、meta 与 assets，不能只审阅内容 IR。Creative references、模块导入、Scenario 搭配和作者测试外部引用均进入闭包。独立策略解析与本地测试不替代 Registry 的发布授权；纯 Core 不执行异步作者测试，由发布 worker 在 active 前运行并拒绝失败。
+
+发布要求每条依赖精确 pin、闭包没有 tombstone、单图同一 Creation 只有一个 Release、override 指向稳定 fragment，且所需 slot 已绑定或明确 late。public Release 的依赖闭包必须都是 public。所引用的 asset 必须 ready，Creation、依赖和 asset 的许可必须相容且可再分发。manifest、fragment 和资产 digest 命中下架黑名单时拒绝重新发布。yanked 依赖提供警告；tombstoned 依赖是错误。
 
 同一 Creation 的 label 已对应相同 semantic digest 时是幂等结果；指向不同内容则冲突。报告区分错误与警告，并保留问题代码，客户端不应凭无错误之外的显示文案推断成功。

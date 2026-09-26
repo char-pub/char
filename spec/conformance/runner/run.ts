@@ -161,6 +161,10 @@ export function validateInput(c: BundledCase): string[] {
       names.add(s.name);
       const parsed = RuntimeProfileSchema.safeParse(s.profile);
       if (!parsed.success) problems.push(`${s.name}: ${parsed.error.issues[0]?.message}`);
+      if (s.preset) {
+        const policy = CreationSchema.safeParse(s.preset.creation);
+        if (!policy.success) problems.push(`${s.name}: invalid preset creation`);
+      }
     }
   }
   if (c.meta.kind === "ccv3" && c.input.card === undefined) problems.push("ccv3: missing card");

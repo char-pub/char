@@ -2,7 +2,7 @@
  * 一致性测试集的数据格式。用例在仓库里是一个个目录，`conformance:bundle` 把它们打包成
  * 一个 JSON 文件，这样没有文件系统的运行时（浏览器、workerd）也能加载全部用例。
  */
-import type { ReleaseInput } from "@char-pub/core";
+import type { ReleaseInput, resolvePreset } from "@char-pub/core";
 
 export type CaseKind = "resolver" | "assembler" | "publish" | "ccv3";
 
@@ -71,6 +71,8 @@ export interface AssembleScenario {
   name: string;
   profile: unknown;
   session: unknown;
+  /** 完整策略快照，由真实解析器验证摘要后使用，不信任手写 ResolvedPreset。 */
+  preset?: Parameters<typeof resolvePreset>[0];
 }
 
 export interface AssembleInput {

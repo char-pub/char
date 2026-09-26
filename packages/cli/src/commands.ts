@@ -2,17 +2,25 @@
  * `char` 命令的实现。每个命令都是一个可测试的函数，接收参数和一个输出接口，
  * 返回进程退出码；`bin.ts` 只负责解析命令行并调用它们。
  */
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { assemble, createTokenCounter, type SessionInput } from "@char-pub/assembler";
 import {
+  assemble,
+  assembleArtifact,
+  createTokenCounter,
+  runAssemblyTests,
+  type SessionInput,
+} from "@char-pub/assembler";
+import {
+  buildCreation,
   CharError,
   type CheckDiagnostic,
+  type CreationType,
   canonicalizeCreation,
   checkCreation,
   isCharError,
+  PRESET_REGIONS,
   type ReleaseInput,
-  resolve,
 } from "@char-pub/core";
 import { stringify } from "yaml";
 import { generateFragmentIds, loadCharYaml, writeIdsIntoDocument } from "./project.js";
@@ -49,8 +57,25 @@ function reportError(out: Output, e: unknown): number {
 export interface InitOptions {
   dir: string;
   ref: string;
-  type: "character" | "world" | "lorebook";
+  type: CreationType;
   name: string;
+}
+
+function baseTemplate(o: InitOptions) {
+  return {
+    ref: o.ref,
+    type: o.type,
+    display_name: o.name,
+    meta: { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" },
+  };
+}
+function contentTemplate(o: InitOptions, kind: string) {
+  return {
+    ...baseTemplate(o),
+    fragments: [
+      { id: "main", kind, content: { type: "text", text: "Describe the setting here." } },
+    ],
+  };
 }
 
 const TEMPLATES: Record<InitOptions["type"], (o: InitOptions) => Record<string, unknown>> = {
@@ -84,6 +109,35 @@ const TEMPLATES: Record<InitOptions["type"], (o: InitOptions) => Record<string, 
       },
     ],
     meta: { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" },
+  }),
+  persona: (o) => contentTemplate(o, "persona"),
+  style: (o) => contentTemplate(o, "style"),
+  relationship: (o) => ({
+    ...contentTemplate(o, "relationship"),
+    slots: {
+      first: { accepts: ["character", "persona"], required: false },
+      second: { accepts: ["character", "persona"], required: false },
+    },
+  }),
+  scenario: (o) => ({
+    ...contentTemplate(o, "scenario"),
+    cast: [{ key: "lead", who: { late: "character", hint: "Lead" }, role: "lead" }],
+  }),
+  preset: (o) => ({
+    ...baseTemplate(o),
+    policy: {
+      version: "0-draft",
+      blocks: [{ id: "main", text: "Write the next turn of the story.", position: "main" }],
+      layout: [...PRESET_REGIONS],
+      requires: { system_role: true },
+    },
+  }),
+  "prompt-module": (o) => ({
+    ...baseTemplate(o),
+    prompt_module: {
+      version: "0-draft",
+      blocks: [{ id: "main", text: "Use concrete sensory details.", position: "main" }],
+    },
   }),
 };
 
@@ -174,7 +228,17 @@ async function loadDeps(files: readonly string[]): Promise<ReleaseInput[]> {
   return deps;
 }
 
-export async function buildLocal(file: string, depFiles: readonly string[] = []) {
+export async function buildLocal(
+  file: string,
+  depFiles: readonly string[] = [],
+): Promise<
+  ReturnType<typeof buildCreation> & {
+    project: Awaited<ReturnType<typeof loadCharYaml>>;
+    creation: ReturnType<typeof canonicalizeCreation>["creation"];
+    root: ReleaseInput;
+    dependencies: ReleaseInput[];
+  }
+> {
   const project = await loadCharYaml(file);
   if (project.missingIds.length > 0) {
     throw new CharError({
@@ -195,21 +259,40 @@ export async function buildLocal(file: string, depFiles: readonly string[] = [])
   }
   const dependencies = await loadDeps(depFiles);
   const root: ReleaseInput = { release: LOCAL_RELEASE, visibility: "private", creation };
-  return { project, creation, resolved: resolve({ root, dependencies }) };
+  const build = buildCreation({ root, dependencies });
+  return { project, creation, root, dependencies, ...build };
 }
 
 export async function cmdBuild(o: BuildOptions, out: Output): Promise<number> {
   try {
-    const { resolved, creation } = await buildLocal(o.file, o.deps);
+    const build = await buildLocal(o.file, o.deps);
+    const { artifact, creation } = build;
     await mkdir(o.outDir, { recursive: true });
-    const irFile = path.join(o.outDir, "context-ir.json");
-    await writeFile(irFile, resolved.json);
-    await writeFile(
-      path.join(o.outDir, "lock.json"),
-      `${JSON.stringify(resolved.lock, null, 2)}\n`,
-    );
-    for (const w of resolved.warnings) out.log(`warn   ${w.code}  ${w.subject}`);
-    out.log(`built  ${creation.ref}  ${resolved.digest}`);
+    const irFile = path.join(o.outDir, "artifact.json");
+    await writeFile(irFile, build.json);
+    // These are exclusively generated outputs; do not leave an old kind beside the new lock.
+    for (const [kind, name] of [
+      ["content", "context-ir.json"],
+      ["preset", "preset.json"],
+      ["prompt-module", "prompt-module.json"],
+    ] as const) {
+      if (artifact.kind !== kind) await rm(path.join(o.outDir, name), { force: true });
+    }
+    if (build.resolved)
+      await writeFile(path.join(o.outDir, "context-ir.json"), build.resolved.json);
+    if (artifact.kind === "preset")
+      await writeFile(
+        path.join(o.outDir, "preset.json"),
+        `${JSON.stringify(artifact.preset, null, 2)}\n`,
+      );
+    if (artifact.kind === "prompt-module")
+      await writeFile(
+        path.join(o.outDir, "prompt-module.json"),
+        `${JSON.stringify(artifact.module, null, 2)}\n`,
+      );
+    await writeFile(path.join(o.outDir, "lock.json"), `${JSON.stringify(build.lock, null, 2)}\n`);
+    for (const w of build.warnings) out.log(`warn   ${w.code}  ${w.subject}`);
+    out.log(`built  ${creation.ref}  ${build.digest}`);
     out.log(`       ${irFile}`);
     return 0;
   } catch (e) {
@@ -230,31 +313,46 @@ export interface PreviewOptions {
   locale?: string;
   persona: string;
   messages: string[];
+  /** Local Preset char.yaml, with exact imported module snapshots in deps. */
+  preset?: string;
+  /** Public or private local Session JSON; never written into Creation. */
+  session?: string;
 }
 
 export async function cmdPreview(o: PreviewOptions, out: Output): Promise<number> {
   try {
-    const { resolved } = await buildLocal(o.file, o.deps);
+    const { artifact } = await buildLocal(o.file, o.deps);
+    if (artifact.kind !== "content")
+      throw new CharError({ code: "cli.content_required", subject: o.file });
+    const policy = o.preset ? (await buildLocal(o.preset, o.deps)).artifact : undefined;
+    if (policy && policy.kind !== "preset")
+      throw new CharError({ code: "cli.preset_required", subject: o.preset ?? "preset" });
     const counter = await createTokenCounter(o.tokenizer);
-    const session: SessionInput = {
-      bindings: { user: { kind: "persona", display_name: o.persona } },
-      history: o.messages.map((text) => ({ role: "user" as const, text })),
-      ...(o.locale ? { locale: o.locale } : {}),
-    };
-    const result = assemble({
-      ir: resolved.ir,
-      profile: {
-        runtime: { name: "char-cli", version: "0.0.0" },
-        tokenizer: o.tokenizer,
-        context_window: o.contextWindow,
-        reserve_for_output: Math.min(1024, Math.floor(o.contextWindow / 4)),
-        mode: o.mode,
-        capabilities: {},
-        ...(o.locale ? { locale: o.locale } : {}),
-      },
-      session,
-      counter,
-    });
+    const session: SessionInput = o.session
+      ? (JSON.parse(await readFile(o.session, "utf8")) as SessionInput)
+      : {
+          bindings: { user: { kind: "persona", display_name: o.persona } },
+          history: o.messages.map((text) => ({ role: "user" as const, text })),
+          ...(o.locale ? { locale: o.locale } : {}),
+        };
+    const result =
+      artifact.assembly && !policy
+        ? await assembleArtifact({ artifact, session })
+        : assemble({
+            ir: artifact.ir,
+            ...(policy?.kind === "preset" ? { preset: policy.preset } : {}),
+            profile: {
+              runtime: { name: "char-cli", version: "0.0.0" },
+              tokenizer: o.tokenizer,
+              context_window: o.contextWindow,
+              reserve_for_output: Math.min(1024, Math.floor(o.contextWindow / 4)),
+              mode: o.mode,
+              capabilities: { system_role: true, multiple_system_messages: true },
+              ...(o.locale ? { locale: o.locale } : {}),
+            },
+            session,
+            counter,
+          });
     const t = result.trace;
     out.log(
       `Context Preview · ${t.total_tokens} tokens · tokenizer: ${t.profile.tokenizer}${t.estimated ? " (estimate)" : ""}`,
@@ -269,8 +367,27 @@ export async function cmdPreview(o: PreviewOptions, out: Output): Promise<number
         out.log(`${" ".repeat(34)}overridden by: ${ob.creation} (${ob.op})`);
       }
     }
+    out.log("\nMessages");
+    for (const message of result.messages) out.log(`[${message.role}] ${message.content}`);
     return 0;
   } catch (e) {
     return reportError(out, e);
+  }
+}
+
+export async function cmdTest(o: { file: string; deps?: string[] }, out: Output): Promise<number> {
+  try {
+    const build = await buildLocal(o.file, o.deps);
+    const report = await runAssemblyTests({ root: build.root, dependencies: build.dependencies });
+    for (const result of report.results) {
+      out.log(
+        `${result.ok ? "PASS" : "FAIL"} ${result.id}${result.messages_digest ? ` ${result.messages_digest}` : ""}`,
+      );
+      for (const issue of result.issues) out.error(`  ${issue}`);
+    }
+    out.log(`${report.results.length} assembly test(s)`);
+    return report.ok ? 0 : 1;
+  } catch (error) {
+    return reportError(out, error);
   }
 }

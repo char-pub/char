@@ -9,6 +9,7 @@ import {
   type PublishedSchemaName,
   renderJsonSchema,
 } from "../src/json-schema.js";
+import { PRESET_REGIONS } from "../src/schema/policy.js";
 import { level0Character, tid } from "./fixtures.js";
 
 const specDir = join(dirname(fileURLToPath(import.meta.url)), "../../../spec/schema");
@@ -37,6 +38,38 @@ describe("published JSON Schema", () => {
       const input = level0Character();
       expect(validate(input)).toBe(true);
       expect(validate(canonicalizeCreation(input).json)).toBe(true);
+    });
+
+    it("expresses Preset domain boundaries and complete layouts in the published schema", () => {
+      const input = {
+        ...level0Character({ type: "preset", fragments: [], bootstrap: undefined }),
+        policy: {
+          version: "0-draft",
+          blocks: [{ id: "main", text: "Narrate", position: "main" }],
+          layout: [...PRESET_REGIONS],
+          requires: { system_role: true },
+        },
+      };
+      expect(validate(input)).toBe(true);
+      expect(validate(canonicalizeCreation(input).json)).toBe(true);
+      expect(validate({ ...input, policy: undefined })).toBe(false);
+      expect(validate({ ...input, type: "character" })).toBe(false);
+      expect(validate({ ...input, fragments: level0Character().fragments })).toBe(false);
+      expect(
+        validate({
+          ...input,
+          policy: { ...input.policy, layout: PRESET_REGIONS.map(() => "history") },
+        }),
+      ).toBe(false);
+      expect(
+        validate({
+          ...input,
+          policy: { ...input.policy, blocks: [{ id: "main", text: "  ", position: "main" }] },
+        }),
+      ).toBe(false);
+      expect(
+        validate({ ...input, policy: { ...input.policy, region_budgets: { history: 5 } } }),
+      ).toBe(false);
     });
 
     it.each([

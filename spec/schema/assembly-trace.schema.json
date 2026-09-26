@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v0-draft/assembly-trace.schema.json",
+  "title": "char.pub Assembly Trace",
+  "type": "object",
+  "properties": {
+    "ir": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/UnversionedRef"
+        },
+        "lock_digest": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "root",
+        "lock_digest"
+      ],
+      "additionalProperties": false
+    },
+    "preset": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/UnversionedRef"
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "semantic_digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "resolver": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "ref",
+        "release",
+        "semantic_digest",
+        "resolver"
+      ],
+      "additionalProperties": false
+    },
+    "assembler": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "layout": {
+          "type": "string",
+          "enum": [
+            "default-v1",
+            "preset-v1"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "layout"
+      ],
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "tokenizer": {
+          "type": "string"
+        },
+        "context_window": {
+          "type": "number"
+        },
+        "mode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tokenizer",
+        "context_window",
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "total_tokens": {
+      "type": "number"
+    },
+    "estimated": {
+      "type": "boolean"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "tokens": {
+            "type": "number"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "included",
+              "skipped"
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "always",
+                  "pinned",
+                  "semantic",
+                  "manual",
+                  "budget",
+                  "visibility",
+                  "locale-fallback",
+                  "unsupported-media",
+                  "inactive"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^keyword:.+$"
+              }
+            ]
+          },
+          "origin": {
+            "$ref": "#/$defs/Origin"
+          }
+        },
+        "required": [
+          "id",
+          "region",
+          "tokens",
+          "decision",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "ir",
+    "profile",
+    "total_tokens",
+    "estimated",
+    "entries"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "UnversionedRef": {
+      "type": "string",
+      "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "Origin": {
+      "type": "object",
+      "properties": {
+        "creation": {
+          "$ref": "#/$defs/UnversionedRef"
+        },
+        "release": {
+          "type": "string",
+          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        },
+        "fragment": {
+          "$ref": "#/$defs/FragmentId"
+        },
+        "via": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          }
+        },
+        "instance_key": {
+          "type": "string"
+        },
+        "overridden_by": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "creation": {
+                "$ref": "#/$defs/UnversionedRef"
+              },
+              "edge": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "op": {
+                "type": "string",
+                "enum": [
+                  "replace",
+                  "patch",
+                  "add"
+                ]
+              }
+            },
+            "required": [
+              "creation",
+              "op"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "stable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "creation",
+        "release",
+        "fragment",
+        "via",
+        "instance_key",
+        "stable"
+      ],
+      "additionalProperties": false
+    },
+    "FragmentId": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}$"
+    }
+  }
+}

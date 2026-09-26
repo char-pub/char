@@ -525,7 +525,7 @@ v0 基于 Postgres 做 name / description / tags / author / type 搜索。中日
 | O-4 | Registry Content Policy 正文 |
 | O-5 | `char.yaml` authoring syntax（在 IR 之后冻结） |
 | O-6 | 第二个 IR 消费者的最终选择 |
-| O-7 | Preset 的 Canonical 结构（v0.5 前） |
+| O-7 | Preset 的最小 Canonical 结构与参考组装由 D-159 定义；独立模块、发布 UI 与完整运行搭配锁定延后 |
 
 ---
 
@@ -945,3 +945,22 @@ CLI 与 GitHub Source 需要一种文件格式，所以 v0 先采用最直接的
 3. **GitHub 绑定**：以登录账号已关联的 GitHub 数字 ID 为身份依据，查找、绑定及重新绑定均验证其对安装仓库的当前写入权限，不以知道安装 ID 或仓库 ID 作为授权。
 4. **头像存储**：草稿预览要求图片来自当前用户已处理的上传记录，不能用草稿内任意 digest 读取他人私有对象。公开发布时同步把 IR 引用的镜像资产复制到公共 CAS，确保发布后的图片链接可用。
 5. **待定信息**：用户尚未确定运营主体和公开联系邮箱，政策页面保留待补提示，不捏造身份或联系方式。
+
+### D-159 Preset 协议与参考实现 — Accepted（用户指示，2026-09-25）
+
+1. **交付顺序**：按用户“开始实现”的指示，先完成 Preset 协议、纯计算参考解析与组装、策略 Diff、Schema 和验证。Web 创作、Registry 发布读取、CLI build/publish/preview、policy Contribution 和 CCv3 policy 转换后续接入；不改变 v0 仅开放三种创作类型的决定。
+2. **独立 Policy**：`preset` Creation 声明专门的 `policy`，参与 semantic digest；它不包含 Creative fragments、内容依赖、slots、params、cast、bootstrap 或 context assets。允许展示资源。Creative `instruction` 仍是扮演说明，不承载运行策略。Preset 经 `resolvePreset` 验证完整快照摘要后单独输入 Assembler，不进入内容 IR 或内容 lock；内容 Resolver 明确拒绝 Preset 根与依赖。
+3. **首版结构**：有稳定 ID 的字面提示词块、main/after-history 位置、完整区域布局、Creative 区域预算上限和明确的 Runtime 能力需求。首版不引入独立 Prompt Module、继承、外部模块引用、脚本或变量插值。字段与边界见 [Preset 规范](spec/preset-v0.md)。
+4. **预算与兼容**：显式 Preset 先扣固定输入，再预留全部可见 pinned，之后按重要性、布局、区域内 IR 顺序选择完整片段；同时校验最终消息文本成本，格式差额进入 Trace。system 能力必须明确；不能跨 history 合并 system 文本。无 Preset 时保持旧默认布局、预算优先顺序与能力降级语义。
+5. **组合与版本**：Scenario 继续承担创作组合职责，不增加 Experience/Composition 类型。推荐 Preset 不自动选用或锁版本；实际策略身份写入 Trace。完整运行搭配锁定和独立模块需要后续单独设计。
+6. **验收边界**：新增跨 Runtime fixture 保持 draft；实质断言验证消息、预算、身份与拒绝行为。自动执行不代替人工接受 expected，也不等同于线上发布或真实第三方 Runtime 验收。
+
+### D-160 补齐全部一等创作资产与各端接入 — Accepted（用户指示，2026-09-26）
+
+1. **范围**：用户授权补齐 Preset 完整使用链路、Style/Scenario/Persona/Relationship 创作消费、独立 Prompt Module、完整搭配锁定及作者测试，再统一调整 Web、Server 和 Client。Client 已明确为 CLI、SDK、Publish Action。该授权取代 D-021 与 D-159 对本次创作类型接入的延期安排，不改变内容治理、部署或对外发布授权边界。
+2. **模块**：独立类型为 `prompt-module`，只有 Policy 内容。Preset 与 Module 可精确引用 Module；按声明顺序遍历依赖、先依赖后本地，同 Release 只注入一次，同作品不同版本和依赖环拒绝。模块来源与聚合锁必须可审计。
+3. **统一产物**：内容 IR、ResolvedPreset 与 ResolvedPromptModule 通过判别式 CreationArtifact 分发，共享 Release、权限、依赖完整性、资产、许可和评级检查；内容 IR 保持独立，不将运行策略伪装成 Creative 片段。
+4. **搭配**：Scenario 继续是唯一组合 Creation。assembly 锁定策略及运行配置，真实 Session 保持 Runtime 私有；推荐与精确配置分别表达。
+5. **作者测试**：用户明确选择确定性的组装验证，包括激活、顺序、预算、可见性及错误预期。作者只能显式编写并发布合成输入，不自动复制真实会话，不调用真实模型、不引入模型凭据和费用。
+6. **协作与兼容**：新增配置 Contribution domain，第一版整字段原子三方合并。CCv3 Policy 只在显式选择后转换，并保留权利确认和损失说明；旧内容作品的读取、导出、发布和权限流程继续兼容。
+7. **验收**：按 [完整接入执行记录](spec/proposals/first-class-assets-rollout.md) 完成核心、服务端、各客户端和完整旅程验证；部署、npm 发布、人工接受 conformance expected 不包含在本次实现授权内。

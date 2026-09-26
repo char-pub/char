@@ -445,6 +445,9 @@ importers:
       '@char-pub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -543,6 +546,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: 'catalog:'
         version: 3.1136.0
+      '@char-pub/assembler':
+        specifier: workspace:*
+        version: link:../../packages/assembler
       '@char-pub/ccv3':
         specifier: workspace:*
         version: link:../../packages/ccv3

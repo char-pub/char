@@ -40,6 +40,7 @@ export const creationTypeEnum = app.enum("creation_type", [
   "persona",
   "style",
   "preset",
+  "prompt-module",
 ]);
 export const fragmentKindEnum = app.enum("fragment_kind", [
   "character",
@@ -68,6 +69,7 @@ export const blobKindEnum = app.enum("blob_kind", [
   "manifest",
   "snapshot",
   "ir",
+  "artifact",
   "export",
   "asset",
   "thumbnail",

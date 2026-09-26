@@ -295,7 +295,7 @@ interface RuntimeProfile {
 ContextIR + ResolvedPreset? + RuntimeProfile + Session
 ```
 
-Preset 缺省时，Assembler 使用自身的默认 layout。Preset 的结构待 O-7 定义，v0 只要求它能表达：各 kind 的 placement、各区域的预算、System / Post-history 文本。
+Preset 缺省时，Assembler 使用自身的默认 layout。Preset 的结构、独立解析、布局、区域预算、System / Post-history 文本及能力校验见 [`preset-v0.md`](preset-v0.md)。内容 Resolver 拒绝 Preset 和 Prompt Module 根与依赖；策略不进入内容 IR 的 lock。统一产物的聚合锁、Scenario 运行搭配和作者测试见 [`assembly-assets-v0.md`](assembly-assets-v0.md)。
 
 ### 11.2 必须满足
 
@@ -329,11 +329,16 @@ Preset 缺省时，Assembler 使用自身的默认 layout。Preset 的结构待 
 ```ts
 interface AssemblyTrace {
   ir: { root: CreationRef; lock_digest: Digest }
+  preset?: {
+    ref: CreationRef; release: ReleaseId; semantic_digest: Digest
+    resolver: { name: string; version: string }
+  }
+  assembler?: { name: string; version: string; layout: "default-v1" | "preset-v1" }
   profile: { tokenizer: string; context_window: number; mode: string }
   total_tokens: number
   estimated: boolean
   entries: {
-    id: IRFragmentId | "preset:*" | "session:*" | "history"
+    id: IRFragmentId | "preset:*" | "session:*" | "history" | "assembly:formatting"
     region: string                    // 实际放置区域
     tokens: number
     decision: "included" | "skipped"
@@ -458,7 +463,7 @@ expected/   context-ir.json（Resolver 用例，字节级比对）
 
 | # | 事项 |
 |---|---|
-| IR-1 | Preset 结构（O-7）以及它与 §11.1 的接口 |
+| IR-1（已解决） | Preset、Prompt Module、Scenario 运行搭配和作者测试已定义于 preset-v0.md / assembly-assets-v0.md；不支持 Preset 继承 |
 | IR-2 | 多 participant 在 `per-agent` 模式下，是否由 IR 预先切分出每个角色的视图（目前由 Assembler 负责） |
 | IR-3 | `structured` content 的 schema 注册机制 |
 | IR-4 | `semantic` activation 是否要在 IR 中携带预计算 embedding（这会使 IR 与模型绑定，倾向于不携带） |
