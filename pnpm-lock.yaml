@@ -445,6 +445,9 @@ importers:
       '@char-pub/core':
         specifier: workspace:*
         version: link:../../packages/core
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

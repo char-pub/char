@@ -29,4 +29,10 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
+          # Only dependency implementations are excluded. The build verifies that
+          # vendor contains no workspace code; our source and dist/index.js remain scanned.
+          # Dependency manifests/lockfiles continue through dependency-review.
+          config: |
+            paths-ignore:
+              - actions/publish/dist/vendor/**
       - uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1

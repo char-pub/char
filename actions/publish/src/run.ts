@@ -10,6 +10,7 @@ import * as core from "@actions/core";
 import { buildLocal, cmdTest } from "@char-pub/cli";
 import { type OidcPublishRequest, ProblemSchema, PublishResponseSchema } from "@char-pub/contracts";
 import { CharError, isCharError, isLabel } from "@char-pub/core";
+import { setOutput } from "./output.js";
 
 export interface ActionEnv {
   GITHUB_SHA?: string;
@@ -145,7 +146,7 @@ export async function main(): Promise<void> {
         getIdToken: (aud) => core.getIDToken(aud),
         fetch,
         log: (l) => core.info(l),
-        setOutput: (n, v) => core.setOutput(n, v),
+        setOutput,
         idempotencyKey: `gha:${process.env.GITHUB_REPOSITORY_ID ?? ""}:${process.env.GITHUB_RUN_ID ?? ""}:${process.env.GITHUB_RUN_ATTEMPT ?? ""}`,
       },
     );
