@@ -9,10 +9,12 @@
  *
  * 这里的口令只在本机临时容器中使用，测试结束后容器即被销毁。
  */
+import { fileURLToPath } from "node:url";
 import { CreateBucketCommand, PutBucketPolicyCommand, S3Client } from "@aws-sdk/client-s3";
 import { MinioContainer, type StartedMinioContainer } from "@testcontainers/minio";
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import pg from "pg";
+import { GenericContainer } from "testcontainers";
 import type { TestProject } from "vitest/node";
 import { runMigrations } from "../src/db/migrate.js";
 
@@ -57,6 +59,13 @@ async function startWithRetry<T>(start: () => Promise<T>): Promise<T> {
 }
 
 export default async function setup(project: TestProject) {
+  // Build from pinned upstream source so a warm local cache cannot hide a removed registry image.
+  const minioImage = "charpub-minio:2025-09-07";
+  await GenericContainer.fromDockerfile(
+    fileURLToPath(new URL("../../../infra/minio", import.meta.url)),
+  )
+    .withBuildkit()
+    .build(minioImage, { deleteOnExit: false });
   [postgres, minio] = await Promise.all([
     startWithRetry(() =>
       new PostgreSqlContainer("postgres:18-bookworm")
@@ -67,10 +76,7 @@ export default async function setup(project: TestProject) {
         .start(),
     ),
     startWithRetry(() =>
-      new MinioContainer("quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z")
-        .withUsername(MINIO_USER)
-        .withPassword(MINIO_PASSWORD)
-        .start(),
+      new MinioContainer(minioImage).withUsername(MINIO_USER).withPassword(MINIO_PASSWORD).start(),
     ),
   ]);
 

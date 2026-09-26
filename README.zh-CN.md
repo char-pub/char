@@ -42,6 +42,8 @@ pnpm dev
 
 `pnpm dev` 会按需启动本地 Postgres、MinIO 和 Mailpit，执行数据库迁移，然后启动 API、worker 与 Web 开发服务器。打开 **http://localhost:5173**。
 
+开发和集成测试共用从固定上游源码构建的 MinIO 镜像。首次运行需要联网并花费额外构建时间，之后复用 Docker 构建缓存。
+
 在另一个终端创建本地账号：
 
 ```sh

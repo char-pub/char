@@ -42,6 +42,8 @@ For an existing checkout, run `git submodule update --init` first. The brand-ass
 
 `pnpm dev` starts local Postgres, MinIO and Mailpit when needed, applies database migrations, then starts the API, worker and Web development server. Open **http://localhost:5173**.
 
+MinIO is built locally from pinned upstream source for both development and integration tests. The first run needs network access and extra build time; later runs reuse Docker build layers.
+
 In a second terminal, create a local account:
 
 ```sh
