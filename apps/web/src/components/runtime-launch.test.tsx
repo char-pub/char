@@ -104,35 +104,75 @@ it("requires an opening then opens the chosen Runtime with only exact static ide
   );
 });
 
-it("refuses a click after the draft changes and after the account cache changes before rendering", async () => {
-  let current = true;
+it("opens in the current tab only after an explicit valid click with the same exact envelope", async () => {
+  const artifact = fixture();
+  const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
   const open = vi.spyOn(window, "open").mockReturnValue(null);
-  const { queryClient } = renderWithApp(
-    <RuntimeLaunch artifact={fixture()} isCurrent={() => current} />,
-    fakeClient({ me: async () => ME }),
-  );
+  renderWithApp(<RuntimeLaunch artifact={artifact} />, fakeClient({ me: async () => ME }));
   await chooseRuntime();
-  await userEvent.selectOptions(screen.getByLabelText("Opening"), "day");
-  current = false;
-  await userEvent.click(screen.getByRole("button", { name: "Open Runtime" }));
-  expect(screen.getByRole("alert").textContent).toContain("account or work changed");
+  const button = screen.getByRole("button", { name: "Open Runtime in this tab" });
+  expect(assign).not.toHaveBeenCalled();
+  expect(button.hasAttribute("href")).toBe(false);
+  await userEvent.click(button);
+  expect(screen.getByRole("alert").textContent).toContain("Choose an opening");
+  expect(assign).not.toHaveBeenCalled();
+  await userEvent.selectOptions(screen.getByLabelText("Opening"), "night");
+  expect(assign).not.toHaveBeenCalled();
+  await userEvent.click(button);
+  expect(assign).toHaveBeenCalledTimes(1);
   expect(open).not.toHaveBeenCalled();
-  current = true;
-  const button = screen.getByRole("button", { name: "Open Runtime" });
-  await act(async () => {
-    queryClient.setQueryData(["me"], { ...ME, id: "usr_01j00000000000000000000002" });
-    button.click();
-  });
-  expect(open).not.toHaveBeenCalled();
+  const url = new URL(String(assign.mock.calls[0]?.[0]));
+  const payload = RuntimeLaunchRequestSchema.parse(
+    JSON.parse(decodeURIComponent(url.hash.slice("#launch=".length))),
+  );
+  expect(payload.source).toEqual(artifact.root);
+  expect(payload.lock_digest).toBe(artifact.lock_digest);
+  expect(payload.start).toBe("night");
+  expect(payload.view).toEqual({ mode: "narrator" });
+  expect(url.search).toBe("");
+  expect(url.href).not.toContain("PRIVATE_BODY");
 });
 
-it("does not open an expired build even if its dialog was already prepared", async () => {
-  const open = vi.spyOn(window, "open").mockReturnValue(null);
-  renderWithApp(<RuntimeLaunch artifact={fixture()} />, fakeClient({ me: async () => ME }));
-  await chooseRuntime();
-  await userEvent.selectOptions(screen.getByLabelText("Opening"), "day");
-  vi.spyOn(Date, "now").mockReturnValue(Date.parse(draftOrigin.expires_at));
-  await act(async () => screen.getByRole("button", { name: "Open Runtime" }).click());
-  expect(screen.getByRole("alert").textContent).toContain("expired");
-  expect(open).not.toHaveBeenCalled();
-});
+it.each(["Open Runtime", "Open Runtime in this tab"])(
+  "refuses %s after the draft or current account cache changes",
+  async (action) => {
+    let current = true;
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    const { queryClient } = renderWithApp(
+      <RuntimeLaunch artifact={fixture()} isCurrent={() => current} />,
+      fakeClient({ me: async () => ME }),
+    );
+    await chooseRuntime();
+    await userEvent.selectOptions(screen.getByLabelText("Opening"), "day");
+    current = false;
+    await userEvent.click(screen.getByRole("button", { name: action }));
+    expect(screen.getByRole("alert").textContent).toContain("account or work changed");
+    expect(open).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+    current = true;
+    const button = screen.getByRole("button", { name: action });
+    await act(async () => {
+      queryClient.setQueryData(["me"], { ...ME, id: "usr_01j00000000000000000000002" });
+      button.click();
+    });
+    expect(open).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["Open Runtime", "Open Runtime in this tab"])(
+  "blocks %s for an expired build even when the dialog is already prepared",
+  async (action) => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    renderWithApp(<RuntimeLaunch artifact={fixture()} />, fakeClient({ me: async () => ME }));
+    await chooseRuntime();
+    await userEvent.selectOptions(screen.getByLabelText("Opening"), "day");
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse(draftOrigin.expires_at));
+    await act(async () => screen.getByRole("button", { name: action }).click());
+    expect(screen.getByRole("alert").textContent).toContain("expired");
+    expect(open).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+  },
+);

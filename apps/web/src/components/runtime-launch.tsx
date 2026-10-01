@@ -99,7 +99,7 @@ function RuntimeLaunchSession({
   }, []);
   const id = useId();
   const starts = artifact.story?.starts ?? [];
-  const launch = () => {
+  const launch = (navigation: "new-tab" | "current-tab") => {
     setError("");
     setNotice("");
     try {
@@ -121,8 +121,10 @@ function RuntimeLaunchSession({
         view,
       });
       const target = runtimeLaunchDestination(destination);
+      const url = runtimeLaunchUrl(target, request);
+      if (navigation === "current-tab") window.location.assign(url);
       // noopener and noreferrer prevent the external Runtime from controlling or identifying this page.
-      window.open(runtimeLaunchUrl(target, request), "_blank", "noopener,noreferrer");
+      else window.open(url, "_blank", "noopener,noreferrer");
       const next = [target, ...destinations.filter((url) => url !== target)].slice(0, 5);
       setDestinations(next);
       try {
@@ -130,9 +132,10 @@ function RuntimeLaunchSession({
       } catch {
         /* Opening still works when browser storage is unavailable. */
       }
-      setNotice(
-        "Continue in your Runtime to authorize access and start a new session. If no tab opened, allow pop-ups and try again.",
-      );
+      if (navigation === "new-tab")
+        setNotice(
+          "Continue in your Runtime to authorize access and start a new session. If no tab opened, use Open Runtime in this tab below.",
+        );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not open this Runtime.");
     }
@@ -272,9 +275,19 @@ function RuntimeLaunchSession({
                 {notice}
               </p>
             ) : null}
-            <Button type="button" onClick={launch} disabled={!!disabledReason}>
-              Open Runtime
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => launch("new-tab")} disabled={!!disabledReason}>
+                Open Runtime
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => launch("current-tab")}
+                disabled={!!disabledReason}
+              >
+                Open Runtime in this tab
+              </Button>
+            </div>
           </div>
         </MatureGate>
       </DialogContent>

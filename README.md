@@ -40,7 +40,9 @@ pnpm dev
 
 For an existing checkout, run `git submodule update --init` first. The brand-assets submodule is required by the frontends.
 
-`pnpm dev` starts local Postgres, MinIO and Mailpit when needed, applies database migrations, then starts the API, worker and Web development server. Open **http://localhost:5173**.
+`pnpm dev` starts local Postgres, MinIO and Mailpit when needed, applies database migrations, publishes and pins a local development default Preset, then starts the API, worker and Web development server. Open **http://localhost:5173**.
+
+The development Preset enables real draft previews and Runtime launches without publishing the unreviewed Commons bundle. Subsequent starts reuse its exact version. An explicit `DEFAULT_PRESET` takes precedence; other databases and storage endpoints require an explicitly configured policy.
 
 MinIO is built locally from pinned upstream source for both development and integration tests. The first run needs network access and extra build time; later runs reuse Docker build layers.
 
