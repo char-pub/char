@@ -18,7 +18,7 @@ import { PolicyContent } from "@/components/policy-artifact";
 import { PreviewPanel } from "@/components/preview-panel";
 import { RuntimeLaunch } from "@/components/runtime-launch";
 import { Button } from "@/components/ui/button";
-import type { Me } from "@/lib/api";
+import { isApiError, type Me } from "@/lib/api";
 import { shareAuthorSource } from "@/lib/author-visibility";
 import { nextId, type Working } from "@/lib/draft";
 import { type BuildPhase, buildSavedDraft } from "@/lib/draft-build";
@@ -129,7 +129,13 @@ function DraftPreviewSession({
       if (current()) setSnapshot({ working: result.snapshot.working, artifact });
     } catch (e) {
       if (current())
-        setError(e instanceof Error ? e.message : "Could not build the draft preview.");
+        setError(
+          isApiError(e, "draft_build.default_policy_unavailable")
+            ? "This service has no available default context preset. Ask the administrator to configure it, then try again. Your saved draft is safe; editing it will not fix this service configuration."
+            : e instanceof Error
+              ? e.message
+              : "Could not build the draft preview.",
+        );
     } finally {
       if (current()) setPhase(null);
     }

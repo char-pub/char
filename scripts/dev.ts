@@ -3,9 +3,10 @@
  *
  *   1. 确认 docker compose 的 Postgres、MinIO、Mailpit 在运行，没有就启动；
  *   2. 迁移本地数据库 `charpub`，并创建自动处置使用的系统账号；
- *   3. 从 TypeScript 源码启动 api（默认端口 3000）与 worker（健康检查默认在 3001），
+ *   3. 通过真实发布流程准备仅本地使用的默认 Preset，并固定其精确版本；
+ *   4. 从 TypeScript 源码启动 api（默认端口 3000）与 worker（健康检查默认在 3001），
  *      改动代码后自动重启；
- *   4. 启动 web 的 Vite 开发服务器（默认 http://localhost:5173），`/v1` 转发给 api。
+ *   5. 启动 web 的 Vite 开发服务器（默认 http://localhost:5173），`/v1` 转发给 api。
  *
  * 端口被占用时可以用 `DEV_API_PORT`、`DEV_WORKER_PORT`、`DEV_WEB_PORT` 换一个。
  *
@@ -151,6 +152,28 @@ function ensureSystemActor(state: DevState, overrides: NodeJS.ProcessEnv): NodeJ
   }
 }
 
+/** Keep an explicit owner policy; otherwise publish and pin the local development policy before serving. */
+export function ensureDefaultPreset(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const configured = env.DEFAULT_PRESET ?? process.env.DEFAULT_PRESET;
+  if (configured?.trim()) return { ...env, DEFAULT_PRESET: configured };
+  const pin = execFileSync(
+    "pnpm",
+    ["exec", "tsx", "--conditions=@char-pub/source", "apps/server/scripts/dev-default-policy.ts"],
+    {
+      cwd: ROOT,
+      env: { ...process.env, ...env },
+      stdio: ["ignore", "pipe", "inherit"],
+      encoding: "utf8",
+    },
+  ).trim();
+  // The child validates ExactRef against its successfully published artifact.
+  JSON.parse(pin);
+  process.stdout.write(
+    "using the fixed local development default Preset (not the reviewed Commons distribution)\n",
+  );
+  return { ...env, DEFAULT_PRESET: pin };
+}
+
 const COLORS = { api: 36, worker: 35, web: 32 } as const;
 
 /** 启动一个长期运行的子进程，输出逐行加上带颜色的前缀。 */
@@ -215,7 +238,7 @@ async function main(): Promise<void> {
   const overrides = localOverrides();
   const state = loadOrCreateState();
   run([...SERVER_ENTRY, "migrate"], devEnv(state, overrides));
-  const env = ensureSystemActor(state, overrides);
+  const env = ensureDefaultPreset(ensureSystemActor(state, overrides));
 
   process.once("SIGINT", () => stop(0));
   process.once("SIGTERM", () => stop(0));

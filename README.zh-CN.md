@@ -40,7 +40,9 @@ pnpm dev
 
 如果已有仓库，先执行 `git submodule update --init`。前端依赖 brand-assets 子模块中的品牌资源。
 
-`pnpm dev` 会按需启动本地 Postgres、MinIO 和 Mailpit，执行数据库迁移，然后启动 API、worker 与 Web 开发服务器。打开 **http://localhost:5173**。
+`pnpm dev` 会按需启动本地 Postgres、MinIO 和 Mailpit，执行数据库迁移，发布并固定本地开发用的默认 Preset，然后启动 API、worker 与 Web 开发服务器。打开 **http://localhost:5173**。
+
+开发用 Preset 让草稿预览和 Runtime 启动可以使用真实构建流程，不发布尚未经人工审阅的 Commons 内容集。再次启动时复用精确版本。显式设置的 `DEFAULT_PRESET` 优先；其他数据库或对象存储地址需要明确配置策略。
 
 开发和集成测试共用从固定上游源码构建的 MinIO 镜像。首次运行需要联网并花费额外构建时间，之后复用 Docker 构建缓存。
 

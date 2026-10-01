@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useRef, useState } from "react";
 import { expect, it, vi } from "vitest";
 import { PreviewPanel } from "@/components/preview-panel";
+import { ApiError } from "@/lib/api";
 import type { Working } from "@/lib/draft";
 import { buildTestCreation } from "@/test/build";
 import { draftBuilt, draftOrigin, draftWorking, readyDraft } from "@/test/draft-build";
@@ -151,6 +152,50 @@ function captureClient() {
     draftArtifact: async () => contentBuilt.artifact,
   });
 }
+it.each(["Build draft preview", "Try draft in Runtime"])(
+  "explains missing service policy for %s and can retry without changing the draft",
+  async (action) => {
+    const original = structuredClone(contentWorking);
+    const receipt = {
+      ...readyDraft,
+      semantic_digest: contentBuilt.artifact.root.semantic_digest,
+      lock_digest: contentBuilt.artifact.lock_digest,
+      artifact_digest: contentBuilt.digest,
+    };
+    const createDraftBuild = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError(503, "draft_build.default_policy_unavailable"))
+      .mockResolvedValueOnce(receipt);
+    const draftArtifact = vi.fn(async () => contentBuilt.artifact);
+    renderWithApp(
+      <DraftPreview
+        ns="writer"
+        name="world"
+        working={contentWorking}
+        save={async () => ({ working: contentWorking, version: 2 })}
+      />,
+      fakeClient({ me: async () => ME, createDraftBuild, draftArtifact }),
+    );
+    await userEvent.click(await screen.findByRole("button", { name: action }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("default context preset");
+    expect(alert.textContent).toContain("administrator");
+    expect(alert.textContent).toContain("editing it will not fix this service configuration");
+    expect(alert.textContent).not.toContain("draft_build.default_policy_unavailable");
+    expect(draftArtifact).not.toHaveBeenCalled();
+    expect(contentWorking).toEqual(original);
+    await userEvent.click(screen.getByRole("button", { name: action }));
+    await waitFor(() => expect(draftArtifact).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(createDraftBuild).toHaveBeenNthCalledWith(
+      2,
+      "writer",
+      "world",
+      2,
+      expect.any(AbortSignal),
+    );
+  },
+);
 it("builds the saved draft before opening its exact Runtime handoff", async () => {
   const save = vi.fn(async () => ({ working: contentWorking, version: 2 }));
   const createDraftBuild = vi.fn(async () => ({

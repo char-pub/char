@@ -6,8 +6,8 @@
 - 执行包：`spec/goals/story-v1/`。
 - 状态：进行中；目标已创建，无 token budget。
 - 分支：`DJJ/creative-content-v1`；基点 edab49f。
-- 当前：M0–M6 工程实现及相应验收已完成；平台作者工作流、真实独立 Harness 启动消费、本地 AI 候选审阅与保存已验证。完整 `pnpm ci:all` 第四轮退出0，见末尾终态记录。尚未部署、发布或进行在线模型质量验收。
-- 验收：DOD 的 M0–M6 已勾选，G1/G2 保持未完成；35 个规范案例仍为 draft，105 todo 不计入通过，Commons 人工审阅尚待。
+- 当前：用户本地实操发现的默认Preset、跳转和可读性问题已修复，真实工作区浏览器已从创建草稿走到Harness开场，见末尾终态节。平台作者工作流、真实独立 Harness 启动消费、本地 AI 候选审阅与保存已验证。完整 `pnpm ci:all` 第四轮退出0，见末尾终态记录。尚未部署、发布或进行在线模型质量验收。
+- 验收：M0–M6工程证据具备；最新完整CI已通过，G1/G2仍待人工接受与本轮知识增量收尾；35 个规范案例仍为 draft，105 todo 不计入通过，Commons 人工审阅尚待。
 - 剩余：人工 expected/Commons 接受、稳定 llmdoc 正式同步与最终交付整理。Laya 身份、适配与固定协议验证已落实，不再作为身份待定项；真实模型质量未验收。
 - 下一步：完成原有全栈流程最终回归，记录本地候选功能及最终 CI；以完整人审包获取规范/内容审阅，并核定本地提交范围，按 llmdoc 工具要求完成知识同步。
 
@@ -1059,3 +1059,19 @@ recorder完成`.llmdoc-tmp/investigations/story-v1-runtime-continuation-dry-run.
 - recorder复核最终§17.9/D229–231后，仅在G2 scratch两篇identity稿补agent PAT禁发布、不预留label及普通技术Token/OIDC既有语义，patch检查通过。stable/meta仍未写。
 - 本轮对提交授权的判断：用户已授权按主规范实施完整破坏性重构，当前没有“禁止本地提交”的用户指令。此前对子代理的只scratch/不commit限制是职责分工，不应扩大成全局用户许可门槛。现用明确逐文件write-set保存已验实现，主规范及DECISIONS按原始字节整体保留，不能声称它们全由本轮原创。未归属Admin mock变化、历史archive及测试PNG不加入本次代码提交；它们保持原工作区内容。随后由recorder正式同步llmdoc，仍不代替人工expected/Commons接受。
 - 上一goal turn归类progress：启动并验证用户要求的两个本地入口，补D231/规范与最终CI记录；未发生因人工审阅等待而连续无进展的阻塞。
+
+### 用户实操反馈：真实本地启动缺默认策略
+
+- 用户明确要求“你自己操作浏览器，现在没办法操作”。root通过可见Superset页完成本地namespace注册、新建雪夜旅店Scenario、背景/Scene/明确开局模板与保存，然后真实点击Try draft in Runtime，页面返回 `draft_build.default_policy_unavailable`。这证明此前HTTP200启动检查不足以验证实际可操作，不能用隔离E2E配置成功替代默认pnpm dev。
+- investigator修本地development限定的真实默认Preset初始化与显式配置；recorder修该已知错误的可读提示；opening select/textarea定位另作核查；reflector修独立Harness空入口的可点击Registry导引与折叠高级JSON。不制造无策略fallback或假模型响应，不清用户本地稿/会话，重启由root协调。M5因此重新打开，后续实际浏览器从该草稿继续验证。
+- 正式知识同步曾对f6d8471完成：docs8f9c7cf/meta25c8c54，23改+7核验、30指纹、validate/15路由通过、五pending已归档，报告`.llmdoc-tmp/investigations/story-v1-g2-update-success.md`。当前新修复需追加真实知识检查，不能把旧success冒称新代码已同步。
+- 独立Harness本地提交5529d79e完成186明确路径，正常hooks全过，NOTICE生成器补SDK真实repository元数据；SDK/历史64保护路径bytes一致，未改指针或调用模型，服务仍运行。新欢迎入口修复发生在该提交之后，另计验证。
+
+- 开局控件ID核查更正：root先后看到fallback select与inline textarea使用同一诊断ID，曾误判为同时重复；recorder源码确认它们按模式条件分配，未复现同时重复。已要求撤销这项防御性改动及新增测试，不将未证实问题列为产品缺陷。
+
+### 实际本地工作流恢复可用（D232）
+
+- 默认启动初始化、可读错误、同tab跳转及Harness欢迎/明确前景底色已实现；根实际操作步骤、限制和已查看截图见`.llmdoc-tmp/investigations/story-v1-local-usable-browser/README.md`。真实草稿ready→当前页交接→授权读取精确产物→绑定合成旅人→新会话开场已通过，最后页面停在清晰可读的Session回复区；未配置模型key，未发送生成请求。M5因此重新闭合。
+- `pnpm ci:all`新单次**exit0**，日志`/tmp/story-user-readiness-ci.log`：unit93/1781、Web/Admin81/630、conformance28/316+105todo、integration87/1560、WebE2E62+27skip、Admin107、types/deps/build/Actioncheck/secrets均过。todo/skip仍单独待验；未降低门禁。README双语补真实本地Preset初始化规则。
+- 主仓新增3文件启动初始化切片真DB3/3、错误提示13、同tab入口9定向通过；Harness欢迎/HTTP/HTML交互6与contrast测试/lint/compiledbuild通过。关键日志和报告见实际浏览器README；代码改动不会靠旧f6d8471的CI结果冒称验证。
+- 当前char.pub服务句柄65379，Harness句柄62110，均保留运行；原67681/87825仅为根先前启动的进程，重启确认端口释放后再启动，没有杀其他服务。旧Session日志保留，重启后明确创建新合成开局。
