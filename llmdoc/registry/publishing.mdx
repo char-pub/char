@@ -1,8 +1,16 @@
 ---
-description: "九类资产的Registry发布状态机：聚合依赖授权、作者测试门禁、CreationArtifact/CAS、If-Match与异步失败恢复"
+description: "不可变Revision发布与私有dbld生命周期；固定默认策略、权限锁、资产grant、派生及精确对象引用影响"
 kind: architecture
 code:
   paths:
+    - "packages/core/src/reference-impact.ts"
+    - "apps/server/src/registry/reference-impact.ts"
+    - "apps/server/src/registry/derivations.ts"
+    - "apps/server/src/registry/asset-ownership.ts"
+    - "apps/server/src/db/schema/draft-builds.ts"
+    - "apps/server/src/api/routes/draft-builds.ts"
+    - "apps/server/src/worker/draft-build.ts"
+    - "apps/server/src/registry/draft-builds.ts"
     - "apps/server/src/db/schema/common.ts"
     - "apps/server/src/api/routes/drafts.ts"
     - "apps/server/src/registry/drafts.ts"
@@ -24,14 +32,28 @@ relations:
     - "operations/jobs-and-controls.mdx"
 ---
 
-# Registry 发布状态机
+# Registry 构建与发布
 
-草稿可编辑，Revision 是私有内容寻址快照，Release 是一经完成不可变的公开或私有发布。草稿写入带 `If-Match`，冲突必须交给作者解决；发布请求以幂等键和 Creation 下的 label 约束重试，同一内容可返回已有 Release，不同内容争用 label 则失败。
+可变草稿以 If-Match 防并发覆盖，Revision 是完整规范化的不可变快照，Release 只有 worker 完成后才是可分发版本。请求幂等身份绑定具体 Revision/label/visibility；未知结果重试同一请求，不能重新取最新稿替换已审阅内容。
 
-请求被接受后先进入 pending，worker 从持久 Revision 重新构建规范化内容和依赖闭包，而不是信任客户端提交的预览。worker 重新运行发布完整性检查，确保 public 闭包只含 public 依赖、资产已 ready、许可可再分发、黑名单未命中，再运行根作品的确定性作者测试，生成锁定快照、统一 artifact、内容分支的 Context IR 和反向引用。作者测试失败不能进入 active，也不能自动接受观察到的期望。完成才进入可读取的 active；失败记录原因并释放未完成的 label 占位，使作者可修正后重试。
+首次 pending 请求固定精确 defaultPolicy；它与模块/内容/作者测试依赖一起持久化、授权并进入锁/聚合元数据。worker 读取固定值而非当前环境默认；默认策略升级不改变既有产物。内容缺锁定策略时明确失败，不能生成内部 fallback。队列丢失可据持久业务状态重投。
 
-无论根作品是否私有，加载精确依赖仍逐项验证发布者读取权；持有快照或 CAS digest 不是授权。public 闭包还必须全部 public，模块与测试依赖不能成为绕过许可或分级的侧门。
+worker 从 Revision 和精确依赖重建，重验发布者当前读取权、闭包状态、资产来源、许可、黑名单与确定性作者测试，再写 artifact/snapshot、精确反向边及内容索引。公开完成前实际复制 mirrored bytes 到 public CAS；URL 形状或数据库任务完成不是分发完成。失败保持可恢复状态，不暴露半完成 Release。
 
-公开 Release 进入 active 前，worker 必须把正文、清单与统一 artifact 聚合的 mirrored 资产字节复制到公共 CAS；只生成可访问形状的 URL 不构成发布完成。任一步复制失败都应沿持久任务恢复，不能先暴露缺失对象的成功 Release。
+## 私有草稿构建
 
-功能开关关闭发布时，不应把 pending 当作成功或永久丢失；队列恢复要按持久状态重投。浏览器和 CLI 必须区分请求已接受、后台构建完成与失败。
+请求在作品权限锁内锁 draft，按 If-Match 原子取得/创建 Revision 并入队；构建记录绑定 requester、revision、实现、固定策略与有效期。worker 与读取重新检查主体、授权、封禁和内容/资产门禁。缓存命中不免校验，不跨请求主体复用 pending 授权。
+
+一致锁序为 creation → draft → build；撤销协作、许可变更、读取签名、删除和 worker 提交遵守同一作品级并发边界。GET 在校验、读 payload 与签发短期 URL 期间保持 build 锁；DELETE 后不能再新签名。已发出的有限 TTL URL 和已加载字节不能承诺被即时收回。
+
+payload 是 build 专属私有对象、no-store；删除/过期清理只移除专属产物，不删共享 CAS。异步清理失败保留明确回执并由周期任务重试。创建/保留配额及重投/过期队列属于独立生命周期，不能将 dbld 当发布标签。
+
+## 作品资产与派生
+
+资产绑定只由自己的 ready uploads、当前作品显式 grant、合法已发布历史或授权依赖的 mirrored 来源提供。保存/接受在作品锁中只绑定当前稿实际引用且属于提交者的 ready uploads，不授予所有历史上传。历史候选必须读取真实 Artifact 验证 availability 并排除 tombstone；linked 或仅 blob_refs 命中不提供托管字节权限。
+
+Remix/Sequel 从精确源 Release 的真实完整定义构造本人新 private draft；服务器核 root/ref/release/semantic、读取权与许可，不信请求任意 working/provenance。来源与当前 OAuth client 分开记录，agent 历史不因人工接受或后续保存而清除。from_play 仅接声明的场次、present、vars、knowing 与显式 opening；按原作者 cast/Story 校验，新起点重置进度，不复制聊天、重放旧开局/入场效果或暗中挂满背景 lore。
+
+## 发布前引用影响
+
+reference-impact 从同一作品旧精确 Release 与 reviewed dbld Revision 推导移除对象。只列调用者可读的已发布下游，授权先于分页且 cursor 不泄隐藏行。included 是产物保留，explicit 是静态作者引用；都不等于最终模型选中。旧 pin 不因新发布自动变化；uses=[]仅表示本次未找到静态使用，不能宣称没有 Runtime 影响。无法读可信 snapshot 时明确失败，不给伪空报告。

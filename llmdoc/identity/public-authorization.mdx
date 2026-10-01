@@ -1,8 +1,14 @@
 ---
-description: "新增 API 路由怎样做授权；公共 API principal、route 授权门禁、资源权限、私有资源 404、scope 与 Origin 校验"
+description: "中央授权、作品协作与许可同意、OAuth受限scope、撤权锁序和Cookie/Bearer的Origin边界"
 kind: architecture
 code:
   paths:
+    - "apps/server/src/db/schema/collaboration.ts"
+    - "apps/server/src/api/routes/collaborators.ts"
+    - "apps/server/src/registry/collaboration-policy.ts"
+    - "apps/server/src/registry/collaboration-access.ts"
+    - "apps/server/src/authz/oauth.test.ts"
+    - "apps/server/src/auth/oauth.ts"
     - "apps/server/src/api/server.ts"
     - "apps/server/src/api/app.ts"
     - "apps/server/src/authz/authorize.ts"
@@ -18,10 +24,16 @@ relations:
 
 # 公共 API 授权
 
-公开 API 在请求进入业务处理前完成源站与 Origin 检查、身份解析和路由声明约束。路由必须通过统一注册门禁声明所需能力；遗漏授权不是默认放行。对于资源级规则，先加载受保护对象，再用集中授权函数判断主体、作用域、所有权及可见性。浏览器角色显示和客户端 schema 校验都不能代替该判断。
+每条路由声明能力并通过统一注册门禁；加载资源后仍须以中央authorize核主体、scope、作品关系与可见性。匿名或不可见私有资源先404，不因Token scope或开关的不同错误泄露存在性；有权可见但缺能力、身份缺失、功能关闭分别按协议返回。
 
-匿名访问不可见私有资源时返回 404，避免存在性探测；身份缺失、已认证但能力不足、功能暂不可用分别使用协议约定的 401、403、503 语义。可见性优先于功能开关和 Token scope 的错误显示，不能让不同错误泄露私有资源是否存在。个人 Token、会话与其他 principal 进入同一资源授权边界，但各自能力来源不同。
+普通用户 namespace 的作品所有权与单作品协作分开。协作者必须显式接受当前许可，授权绑定作品/用户/许可；同namespace维护角色不自动获得私人作品权限。只有系统namespace保留相应维护授权。协作者可编辑获权内容和参与规定的接受流程，但不获得发布、删除请求、邀请管理或任意敏感元数据权限。
 
-添加新路由时，同时核对注册门禁和资源加载后的判定，并用匿名、越权和功能关闭情形验证失败状态。
+邀请和接受不是永久许可豁免：所有改变作品许可的入口使旧同意失效，撤销与写入/构建/读取在同一creation锁边界重新加载权限。一致锁序creation→draft→build避免互锁。集合接口还需自己的account/read scope，公开父作品不能授予私有提案或协作列表；先过滤后LIMIT/cursor。
 
-仓库公开，攻击者可阅读源码并直接调用全部接口，不能依赖隐藏路由或前端难以发现。即使 Web 与 API 位于同 site 的不同子域，会话仍应使用 host-only cookie，凭据请求按精确允许 Origin 校验，不能把 SameSite 当完整 CSRF 防护。日志和 Problem 不应记录 cookie、Token、完整 OIDC 声明、签名 URL、邮件或私有正文；审计存必要的主体与变更证据，不复制受限材料。
+OAuth principal只获明确委托的白名单动作。profile最小身份；creations:read用于获授权私有发布物和已有dbld，不能读取可变稿或发起构建；drafts:write仅本人用户namespace新建完整私有稿/派生；contributions:write只投稿。offline_access是refresh授权，非额外业务权限。OAuth不允许后续PUT已有稿、发布或账号管理；客户端声明agent也不等于OAuth身份本身。
+
+明确标为agent的PAT也不能直接creation.publish，即使属于owner并持有releases:publish scope；拒绝不得预留Release或label。普通未标agent的CLI/CI Token与受绑定OIDC仍按原授权规则处理，不能把该限制泛化成禁止全部自动化发布。最终发布由有权作者另行执行；平台不会据此推断或认证全部模型使用。
+
+Cookie会话继续使用host-only与精确可信Origin；Bearer跨源接口和指定标准OAuth协议端点按独立规则处理，不能全局关闭Origin保护。每次访问、后台任务和缓存命中重验封禁/Token撤销；PAT发起的长任务绑定实际凭据，不能持有旧principal无限执行。
+
+日志/Problem不记录cookie、Token、OAuth code、完整签名query、私有正文或签名URL。前端缓存与异步guard保持呈现一致，最终安全边界始终在服务端。新增路由必须验证匿名、越权、scope、撤权竞争与功能关闭路径。

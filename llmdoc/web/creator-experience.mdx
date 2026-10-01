@@ -1,8 +1,27 @@
 ---
-description: "Web九类资产创作、Preset模块、Scenario逐槽预览与评级确认；私有组件状态、作者测试、版本Diff、品牌与界面反馈"
+description: "发布审阅与版本变化后的恢复：正文/说明/结构差异、引用影响和固定Revision；作者Story/资料/角色、真实dbld、候选辅助与Runtime交接"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/lib/author-assistance.ts"
+    - "apps/web/src/components/editor/author-assistance.tsx"
+    - "apps/web/src/components/creation-facts.tsx"
+    - "apps/web/src/components/preview-catalog.tsx"
+    - "apps/web/src/components/editor/fragment-content-editor.tsx"
+    - "apps/web/src/lib/preview-fixture.ts"
+    - "apps/web/src/components/runtime-preview-import.tsx"
+    - "apps/web/src/components/runtime-launch.tsx"
+    - "apps/web/src/components/quick-character.tsx"
+    - "apps/web/src/components/author-visibility-checks.tsx"
+    - "apps/web/src/components/editor/reference-impact.tsx"
+    - "apps/web/src/lib/publish-diff.ts"
+    - "apps/web/src/components/editor/publish-panel.tsx"
+    - "apps/web/src/lib/draft-reapply.ts"
+    - "apps/web/src/lib/draft-build.ts"
+    - "apps/web/src/components/editor/sources-editor.tsx"
+    - "apps/web/src/lib/content-references.ts"
+    - "apps/web/src/lib/story-editor.ts"
+    - "apps/web/src/components/editor/story-workspace.tsx"
     - "apps/web/src/components/mature-gate.tsx"
     - "apps/web/src/components/artifact-picker.tsx"
     - "apps/web/src/components/creation-context.tsx"
@@ -14,7 +33,6 @@ code:
     - "apps/web/src/components/configuration-diff.tsx"
     - "apps/web/src/components/downloads.tsx"
     - "apps/web/src/components/session-controls.tsx"
-    - "apps/web/src/lib/assembly-input.ts"
     - "apps/web/src/styles.css"
     - "apps/web/src/components/editor/avatar-field.tsx"
     - "apps/web/src/main.tsx"
@@ -35,36 +53,63 @@ relations:
     - "content/card-import.mdx"
 ---
 
-# Web 创作端的责任
+# Web 作者工作区
 
-Web SPA 负责内容浏览、草稿编辑、导入审阅和本地预览，通过共享 HTTP 契约与 Registry 交互。查询缓存和局部编辑状态可以减少等待，但服务端的 Revision、权限、分级与发布状态仍是权威。写入成功后应使相关查询失效；切换主体或作品时，隔离必须同时覆盖查询缓存、已复制到组件的选择/编辑状态和未完成异步结果；只给 queryKey 加主体不充分。状态边界应重建或清空，旧请求不得回填到新主体会话。
+Web提供静态创作、协作与发布环境，Registry仍持有Revision、授权与状态权威。账号key必须覆盖查询缓存、已复制组件状态和在途请求；副作用派发前同步读取当前QueryClient主体/工作稿/请求代次/到期时间，不能仅信上一次render的ready。迟到响应不回填，不为新账号认领旧文件；无数据身份查询失败显示显式重试，不能以反复挂载制造自动重试循环。
 
-草稿自动保存带 `If-Match`，并发修改返回冲突时停止继续覆盖，保留本地编辑供作者比较与恢复。网络超时与冲突不同，不能通过盲目重试制造新 Revision。导入向导对权利与遗漏项收集明确确认，发布状态须区分请求已接收、worker 构建中和 active。
+## 保存、冲突与恢复
 
-刷新或换设备后的预览与未完成导入应从授权 API 的持久状态恢复，不能只依赖浏览器内存。删除请求界面须明确呈现提交回执与审阅状态，不能把请求已提交表现成账号或内容已删除。
+自动保存、显式保存、预览和发布共用串行drain，返回实际保存的内容/版本成对快照。409停止自动覆盖并保留本地稿；对象差异比较base/mine/latest，双边同对象修改必须明确选择，按新版本重应用。再次409重新审阅，不丢本地改动；Discard明确放弃本地后重载。未知网络结果不同于版本冲突。
 
-预览经统一 buildCreation 与参考 Assembler，但浏览器的 tokenizer、尚未持久化的草稿以及会话输入可能与最终 Runtime 不同；预览只用于作者判断，不能作为发布完整性证明。前端路由、角色和分级过滤只是呈现层，真正可见性由 API 决定。
+Undo是基于当前工作稿的新操作，不是直接写回旧快照。恢复前比较原baseline与新增结构错误；未填完无关正文不能让结构引用检查失效，也不能阻止合法局部Undo。仍可整体canonical时再做权威checkCreation；外部闭包不能由UI猜测，依赖变化需重新选择/构建。替换资源保留明确的许可、评级、alt和其它variant，旧payload locator不沿用。
 
-## 旅程与界面反馈
+## 组合、资料与Story
 
-普通作者以 Web 为默认入口：注册 namespace 后新建或导入、编辑、发布；访客先理解评级、依赖与许可，再预览和下载；技术用户可锁定和比较版本。作品的 Overview、Context preview、Versions、Contributions 共用头部与外框，编辑器是独立工作区；Diff 归入 Versions。作品设置、创作操作与账号设置各有职责，举报和本人删除请求不能混为一条渠道。
+角色从Search/My creations/Favorites明确选择精确发布版；收藏不固定版本也不授予私有读取权。现场新建Character先保存真私有稿，经原发布审阅明确发布，再单独Use version；不把draft插入cast pin。Story提供场次/开局、并列plotline/timeline、可选规则、变量/items/knowing的结构化渐进界面；稳定ID、引用删除保护与局部Undo保持结构。排序重用对象引用，不复制同一场次。
 
-依赖选择必须明确版本与 Core/Recommended 语义。Contribution 接受仅进入草稿，仍要另外发布；敏感字段逐项确认、不提供全选，冲突不能接受。邀请通过 namespace 表达，不要求手写 UUID。导入的权利、评级与许可不可预选替作者确认；Token 明文仅展示一次；mature 临时遮挡解除与长期账号偏好分开。
+资料分组、Source章节/出处、fragment元数据与about导航属于作者定义。主动本地文件的原bytes先验digest与锚点；生成章节先预览后确认，替换正文不静默删旧章节。作者about双向导航可以定位真实对象；消费预览的related links只展示当前可见Catalog的两端，不读取正文、不改选择。
 
-每个数据页面明确区分加载骨架、空态与下一步、错误与重试、需登录、功能关闭、mature 遮挡、统一私有/不存在 404、已移除 410 与公开原因、成功回执。API 尚无数据时使用诚实的 fallback，不能伪造头像、统计、加入时间、来源或依赖标签，也不能提供没有功能的按钮。
+高级JSON是补充编辑方式：未应用输入必须可恢复，不能在结构化动作时悄悄丢弃。image/audio/video/data等非文本内容保留真实字段，预览不为展示metadata主动请求媒体URL。诊断以稳定subject找到当前对象及嵌套字段，问题与修改建议可回到真实编辑控件，不能跳到猜测目标。
+
+## 本地候选辅助
+
+作者选择一个对象、任务与要分享的上下文，再审阅并下载请求，交给自己选择的服务；平台不调用模型、不保存模型凭据。支持说明补写、Source分节说明、句子转条件、公开外观/内在设定拆分及合成剧情对象，不提供任意JSON patch执行。请求绑定作品与完整working摘要，只导出所选对象/明确上下文；Source必须主动提供原文件、校验bytes且不截断，不从私有CAS暗中补全文。
+
+导入候选后先按任务专属schema、request/working摘要及真实本地结构引用校验，展示逐字段Before/After和仍未完成的检查；候选自称approved无效。半成品正文不免除可独立验证的引用/模板检查，也不靠伪正文骗过整稿schema。Review不写稿，只有Apply经当前actor/快照与普通update/If-Match保存；新输入或工作稿变化使旧候选失效，失败保留稿和可修正内容。
+
+应用保留未编辑语言与高级字段，并新增不可逆的agent辅助历史；Undo局部恢复内容但不把已使用辅助的作品伪称纯人工。公开外观默认保留原audience/scene限制，扩大shared须显式选择；不能因拆分文本意图推断披露权限。协作者只可单向增加该历史标记，不能由此获得一般provenance/许可修改权。
+
+## 真实预览与合成作者测试
+
+DraftPreview先saveSnapshot，再从服务器真实dbld取得校验过的Artifact/digest/origin；不再伪造LOCAL_RELEASE。轮询、Source加载、展示、保存测试与定位都绑定同一actor和job快照，过期/改稿/新job使旧结果失效。Source只按actual requests加载获权bytes，optional选择与required/direct只读项分开。
+
+按锁定profile/preset/tokenizer和实际locale调用统一prepare/startSession；完整Turn不重复初始化。第一条面向玩家的问候与scene context分别显示并定位其真实来源，stale不允许定位旧稿。用户rehearsal明确输入typed变量与判定，stop/invalid不提交；它不是模型自动推动剧情。
+
+作者目录sidecar便于检查资料定义，不成为consumer Selector/View/Plan/Trace或fixture输入，也不能越depth/budget下载正文。per-agent作者检查提示公开outward/私有描述和知情边界；一键shared只改本作品Source，依赖资料回所属作品。共享和Undo都会使旧review失效，前端检查不替代服务端授权。
+
+Save author test是独立动作：来自当前有效预览的完整合成session、实际选择和需要的Source原bytes，说明整篇资料含未选章节会随测试发布；保存前按实际请求字节限额检查，失败不改稿。保存后服务端worker重新运行，旧Passed不代表新工作稿。观察结果不自动更新expected。
+
+## 发布审阅
+
+打开Publish自动准备真实保存构建，展示能力；仅实验项要求未预选的明确确认。正文/description/结构分类diff比较同reviewed Revision与用户明确选定的旧Release完整定义，双方身份/Revision可查看。旧地址合法改名通过Creation ID与历史Artifact验证，不能要求旧ref等于当前地址。发布列表变动使review stale，不自动换比较基线。
+
+对象引用影响由服务器对同一dbld/旧Release计算，客户端核双端身份；只承诺可读已发布下游的静态included/explicit使用，不暗示模型必选或全Runtime影响。旧精确pin不随本次发布自动变化。分页/失败可恢复，不显示隐藏数量。
+
+最终POST只用reviewed Revision；同步检查账号/expiry/working/请求代次，改稿先重审。结果未知可同请求幂等重试，不说Nothing was published；重新prepare不自动POST。active才显示完成。普通角色/权限显示不替代服务器owner发布边界。
+
+## 协作、派生与外部Runtime
+
+邀请绑定作品与当前许可，用户明确确认后才获得编辑权；撤销/许可变更保持稿不丢并提示失权，不承诺抹去已加载字节。Contribution审阅的current/merged来自同一次服务器结果，敏感字段单独确认；接受只更新draft，另行发布。Remix/Sequel显示精确来源及真实许可范围，创建本人新稿；静态结局/from_play不是恢复玩家存档或自动改写背景。
+
+Runtime启动选择外部目标URL、精确作品/构建、开局、locale与视角；只交接无凭据intent，外部Runtime另行OAuth并明确新建Session。导入RuntimePreviewInput从本地文件开始，核精确root/lock/artifact/Profile/tokenizer并先审阅再载入；不自动保存、不重绑旧Release到新dbld。载入预览与Save author test是两个独立确认。token或原聊天不得混入作者分享数据。
+
+作品页聚合评级/警告/许可/署名/能力来自当前精确Artifact，旧IR不冒充完整结果；评级门禁按内容与策略最高值并隔离主体与对象。加载、空、错误/重试、未登录、关闭、404、410和回执各有真实状态，不伪造数据或无功能按钮。
 
 ## 品牌与视觉约定
+
 
 产品 UI 使用英文，为中文和日文长度、断行留余量。logo/wordmark/lockup 直接复用 `vendor/brand-assets` 及 dark 变体，不手绘改色。Plus Jakarta Sans 用于正文和标题，JetBrains Mono 用于作品引用、digest、fragment ID，经 @fontsource 自托管以符合 CSP。
 
 面板使用底色与 1px 边框，阴影限于菜单、dialog、toast；每区一个橙底深色文字主按钮。Character 橙、World 紫、Lorebook 蓝，链接蓝；危险红独立于强调色。General 绿、Teen 琥珀、Mature 浅红、Explicit 实红。主题支持 light/dark/system；Sand #F8F7F4、Night #171B22、Ink #0F172A 为基底，品牌 #FF6B3D/#8B5CF6/#2563EB 用作文字时加深以满足对比。
 
 原设计尺度保留为维护约束，实际 token 由样式源码持有：圆角 6/8/12/16 对应 chip/input-button/card/panel-dialog，另有 pill；间距 4/8/12/16/24/32/48/64；内容最大宽度 1200，桌面 gutter 32、移动端 16。字体规格为 Display 56/1.05/800、H1 36/1.15/700、H2 24/1.25/700、H3 18/1.35/600、正文 15/1.6/400、小字 13/1.45/500、标签 12/700/tracking 0.8、mono 13/500（字号/行高/字重）。原画板示例数据与占位插画不构成协议或当前实现事实。
-
-## 策略与组合创作
-
-九类作品使用对应的结构化编辑入口：Preset/Module 的稳定块、顺序和精确导入版本，Scenario 的 cast、slots、依赖绑定与锁定搭配。高级 JSON 只补充复杂合成 Session，不替代主要创作交互；应用前必须过权威 schema。推荐 Preset 是建议，实际预览或发布搭配必须显式选择精确版本；Module 升级应保留导入身份与顺序并更新 pin。
-
-产物按 kind 阅读与下载：所有类型提供完整 CreationArtifact，内容仍提供旧 IR，策略不伪造内容 IR。作者锁定配置默认用于 Scenario 预览，界面显示实际 tokenizer/Profile，显式覆盖与默认配置分开。每个 late slot 独立输入，参与者显示可读名称；最终有序 messages 与 Trace 同时展示，不能把 Trace 行顺序当作消息顺序。按策略版本比较时同时呈现锁与来源变化；作者配置和测试另从精确发布源比较。
-
-预览遮挡使用内容与所选策略的最高有效评级，同主体嵌套视图可继承已确认的评级上限，避免同一内容重复遮挡；更高评级或主体切换不可继承该确认，临时记忆同时隔离主体、作品与评级。作者测试只接受主动填写的合成数据，运行结果不自动修改期望；工作稿改变时已完成或在途结果都失效，避免旧 Passed 误代表新输入。CCv3 界面要求明确策略选择，展示服务端实际 Loss Report，并分别下载卡片和报告，不把包装 JSON 当作可导入卡片。

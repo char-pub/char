@@ -1,5 +1,5 @@
 ---
-description: "CCv3独立Preset显式导入与导出、有损策略映射、字面宏边界、来源署名和实际Loss Report"
+description: "完整Artifact与locale的CCv3有损导出；Story/Source/策略损失、显式独立Preset转换和分发授权"
 kind: architecture
 code:
   paths:
@@ -25,6 +25,8 @@ relations:
 
 PNG 和 CHARX 是不可信容器。解析须限制大小、校验格式和 CRC，防止路径穿越及资源耗尽；抽取的资产仍需走上传净化与状态流程。单个容器通过解析不意味着其中图片或权利字段已获准公开。
 
-导出面向有损的外部消费者，必须生成 Loss Report，说明无法表示的 IR 内容。IR 的 `meta.import_omissions` 从 Creation provenance 中的 omitted policy fields 推导，两个字段位于不同层级，不能互相复制成同一路径。
+导出面向有损的外部消费者，必须生成 Loss Report，说明完整 Artifact 中外部格式无法表示的内容、状态和策略。导出消费完整产物与实际 locale，不能只把 IR 子树当作所有可分发语义。IR 的 `meta.import_omissions` 从 Creation provenance 中的 omitted policy fields 推导，两个字段位于不同层级，不能互相复制成同一路径。
 
-显式策略导入保留原卡作者署名，生成独立身份、已确认权利元数据的 Preset；文本仍按字面处理。导出必须显式提供完整性已验证的 ResolvedPreset，启用的 main/after-history 块分别进入对应卡字段，禁用块不导出。布局、能力、区域预算、模块来源及宏语义差异进入实际 Loss Report，不能宣称无损；完整署名、许可和最高评级需随聚合策略元数据传入，缺失时必须报告未验证部分。Registry 的 card/loss 分发与授权由读取层持有。
+显式策略导入保留原卡作者署名，生成独立身份、已确认权利元数据的 Preset；文本仍按字面处理。导出使用完整性已验证的产物及实际精确策略，启用的 main/after-history 块分别进入对应卡字段，禁用块不导出。布局、能力、区域预算、模块来源及宏语义差异进入实际 Loss Report，不能宣称无损；完整署名、许可和最高评级需随聚合策略元数据传入，缺失时必须报告未验证部分。Registry 的 card/loss 分发与授权由读取层持有。
+
+Story的可选分支、三值条件、knowing、cast独立实例、资料分组/Source/章节、selectable、about与高级语义并不能全部落入CCv3；实际损失必须逐项报告，不因保留了部分文本就称无损。原素材/策略宏仍是字面数据，不执行外部代码。

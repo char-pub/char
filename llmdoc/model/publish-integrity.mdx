@@ -1,8 +1,12 @@
 ---
-description: "公开作品为什么不能依赖私有作品；资源没有 ready 能否发布；精确 pin、public 依赖闭包、asset 状态、许可、黑名单和 label 的纯计算发布检查"
+description: "发布与草稿纯检查的共同内容门禁；完整分发闭包、能力、策略、资产许可与历史来源分域"
 kind: architecture
 code:
   paths:
+    - "packages/core/src/derive.ts"
+    - "packages/core/src/capabilities.ts"
+    - "packages/core/src/content-check.ts"
+    - "packages/core/src/story/check.ts"
     - "packages/core/src/check.ts"
     - "packages/core/src/publish.ts"
     - "packages/core/src/license.ts"
@@ -13,12 +17,16 @@ relations:
     - "runtime/resolution.mdx"
 ---
 
-# 发布完整性判定
+# 内容与发布完整性
 
-`checkCreation` 检查单件内容的静态结构。`checkPublish` 接收调用者提供的 Registry 状态快照，纯计算 Revision 是否可成为 Release；它本身不查询数据库，也不授予发布权限。真实发布必须由 Registry 在事务及 worker 流程中重新构造这些输入并再次检查。
+checkCreation 检查单件定义，checkDraftBuild 与 checkPublish 复用完整内容构建与纯检查。前者严格要求 draft-build origin，不伪造 Release/label；后者要求发布身份并检查 Registry 提供的状态快照。Core 不查数据库或授予权限，真实 worker 必须重新构造可信快照，不能用预览成功代替发布判定。
 
-发布判定经统一 buildCreation 支持内容、Preset 和 Prompt Module，检查聚合依赖锁、meta 与 assets，不能只审阅内容 IR。Creative references、模块导入、Scenario 搭配和作者测试外部引用均进入闭包。独立策略解析与本地测试不替代 Registry 的发布授权；纯 Core 不执行异步作者测试，由发布 worker 在 active 前运行并拒绝失败。
+检查完整 CreationArtifact 的聚合 lock/meta/assets/capabilities，包含当前内容、模块、锁定 assembly、固定 default_policy、作者测试外部依赖与历史派生来源。执行时未选中的策略或来源仍会随产物分发，不能只检查 IR 或当前 preset。所有嵌套发布来源必须是真实 Release 身份。
 
-发布要求每条依赖精确 pin、闭包没有 tombstone、单图同一 Creation 只有一个 Release、override 指向稳定 fragment，且所需 slot 已绑定或明确 late。public Release 的依赖闭包必须都是 public。所引用的 asset 必须 ready，Creation、依赖和 asset 的许可必须相容且可再分发。manifest、fragment 和资产 digest 命中下架黑名单时拒绝重新发布。yanked 依赖提供警告；tombstoned 依赖是错误。
+每条依赖必须精确 pin，实际内容图及各历史来源图分别维持单版本，跨域允许同 ref 不同发布版共存。public 分发的完整闭包都必须可公开，不能从授权读取私有依赖推出公开再分发权。tombstone 和命中黑名单拒绝；yanked 按读取/依赖规则保留警告，但新派生入口另要求 active source。
 
-同一 Creation 的 label 已对应相同 semantic digest 时是幂等结果；指向不同内容则冲突。报告区分错误与警告，并保留问题代码，客户端不应凭无错误之外的显示文案推断成功。
+许可按具体操作判断：修改根定义需允许改编，原样复制资产需可再分发，未改的 ND 依赖不能被统一标为 modified。资产 ready 只证明处理状态；平台字节的 ownership/grant 由 Registry 另验，linked 声明不能授予 mirrored CAS 读取权。
+
+作者测试由 worker 在 active 前按完整精确输入执行，失败不得发布、不得自动接受新期望。能力要求要明确分发；实验能力的作者确认是创作 UI 行为，不扩大服务端授权或豁免内容门禁。
+
+同一作品/label 对相同内容可幂等返回，冲突内容失败。诊断保留稳定 code/subject，并提供问题与修复方向；自然语言建议不构成更改校验规则或自动修改作者内容的授权。

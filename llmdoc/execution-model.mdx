@@ -1,8 +1,12 @@
 ---
-description: "产品范围与权威边界：九类一等资产、Scenario组合、CreationArtifact、Creative Truth与Policy；纯计算包和Registry职责"
+description: "静态可组合创作定义与独立Runtime：Story、严格1-draft产物、真实草稿构建、OAuth委托和精确交接的权威边界"
 kind: architecture
 code:
   paths:
+    - "packages/core/src/schema/capabilities.ts"
+    - "scripts/pack-runtime-sdk.mjs"
+    - "packages/contracts/src/runtime-launch.ts"
+    - "spec/story-v1.md"
     - "packages/core/src/schema/creation.ts"
     - "package.json"
     - ".dependency-cruiser.cjs"
@@ -20,16 +24,16 @@ relations:
 
 # 执行模型与权威边界
 
-char.pub 是面向 AI 创作的开放 Registry、协作网络与互操作层，优先服务不懂 Git 的创作者，同时支持技术作者/Agent、Runtime 消费者和运营审核。Native Web、CCv3/PNG 导入、GitHub/CLI/Action 收敛到同一个 Canonical Creation；Reference Edge、early binding 与稳定 fragment identity 支持组合并锁定不可变 Release；Context IR、CCv3 Loss Report、参考 Assembler、Preview 和 Diff 支持开放消费。公开 IR 与资产可匿名下载，聊天运行流量不经 Registry。
+char.pub 发布静态、可组合的创作定义，并提供创作、协作、发布和开放消费环境。Character、World、Lorebook、Relationship、Scenario、Persona、Style、Preset、Prompt Module 共用 Creation/Revision/Release 生命周期。Scenario 可声明多角色、可选分支、条件、选项和结局；Story 是作品内部定义，不另建一个 Experience 平台对象。静态内容不仅是提示词，还包含可寻址资料、角色实例、状态规则与能力声明。
 
-创作与发布开放 Character、World、Lorebook、Relationship、Scenario、Persona、Style、Preset 和 Prompt Module。Scenario 是创作组合入口，并可锁定精确 Preset 与组装配置；Preset 管运行策略和布局，Prompt Module 复用字面策略块。三者共享 Creation/Release 生命周期，不把内容组合另建为 Experience。Web、CLI、SDK、Action 与 Registry 使用统一 CreationArtifact；内容分支保留 Context IR，策略分支不伪造内容 IR。确定性作者测试验证消息组装，不调用模型或托管真实会话。v0 包含 Native→Native Contribution，GitHub PR 展示与 Native→GitHub patch 延后。
+Core 持有规范化、精确身份、组合解析、Story 纯求值和发布纯检查；不做网络、数据库、文件 IO。Assembler 消费完整 CreationArtifact、Profile 和 Turn，负责安全视角、目录、选择计划、资料正文与最终消息。Runtime 持有真实 Session、模型、判定服务和执行时机。自由聊天本身不自动确认剧情；平台不代理聊天流量，也不承担通用 Agent/Workflow Engine。
 
-v0 不承担聊天平台、好感度/RPG/战斗、Workflow Engine、完整自主 Agent Framework、自建 Git、OAuth/OIDC Provider、Runtime Registry/Open in/Launch Intent、可执行插件、语义搜索或独立搜索引擎、Redis、付费镜像。可执行代码扩展与声明式 Creation 有不同信任域。真实第三方 Runtime 消费者是未来冻结 IR 的条件，不阻塞当前 v0-draft。
+Preset 管策略、选择约束和消息布局，Module 复用字面策略块，Style 属于创作内容。完整产物严格按 content/preset/prompt-module 分型；内容构建必须有锁定 assembly 或精确 default_policy，不再保留无策略的旧组装回退。能力声明与真实语义一起分发，消费者必须明确支持、降级或拒绝，不能靠忽略未知字段冒充兼容。
 
-仓库把可重现的内容语义放在 `packages/core`，把真实用户、存储、状态和外部服务放在 Registry。Core 不进行网络、数据库或文件 IO，能在 Node、浏览器和 Workers 中对同一输入给出相同结果。`packages/assembler` 消费解析好的 Context IR；浏览器预览可调用参考实现，但不能代替 Registry 的发布授权。
+Registry 持有真实身份、授权、资源状态和持久生命周期。发布 worker 只从不可变 Revision、固定依赖与默认策略重建，并在 active 前重新检查授权、许可、资产、黑名单及作者测试。Web 的真实 dbld 构建是有时限、私有、可撤销的检查与预览对象，不是 Release；离线 local-build 也不能冒充 Registry 草稿或依赖 pin。
 
-服务端使用同一构建镜像，按进程类型启动公开 API、管理 API 或 worker。公开 API 只挂创作者、读取、身份及 GitHub 路由；管理 API 只挂管理路由并验证 Cloudflare Access；worker 消费任务，HTTP 仅在 loopback 提供健康检查。每种进程在启动时校验自身必需的环境变量，不应靠前端隐藏路由形成隔离。
+平台提供受限 OAuth 委托：独立消费者读获授权内容、创建本人新稿及提交投稿，不能由此编辑既有稿或发布。RuntimeLaunch 只交接精确来源、锁、开局、locale 与视角，不携带凭据或真实聊天，不代替 Runtime 自己的 OAuth 和用户启动确认。合成预览文件、Ending 投稿与 from_play 续作是各自独立、明确确认的回流，不能把运行态自动写入作者内容。
 
-Registry 是权限与持久状态的权威：发布前重新读取依赖、资产、标签和黑名单；异步任务执行后更新持久状态。浏览器、CLI 和 GitHub Action 都是输入端，无法通过本地校验替代服务端判定。数据库迁移由独立部署步骤以 owner 权限运行，应用进程使用受限角色；迁移失败应阻止新版本放流。
+跨仓 SDK 通过不可变打包物验证真实公共入口和实际字节，不能用主仓 source alias 代替外部消费。独立 Harness 的模型、Session、持久日志和应用配置由其仓库持有；此仓只拥有公开契约与消费者验收边界。历史恢复证据不等于承诺所有历史兼容。
 
-改动跨越纯包、HTTP 契约和 Registry 时，先确认语义定义由谁持有，再分别验证纯计算、请求边界与实际持久状态。依赖方向由仓库依赖规则约束，构建与门禁的当前命令以根 `package.json` 为准。
+公开 API、管理 API 与 worker 采用独立进程与授权边界。迁移以 owner 权限单独执行，应用使用受限角色；迁移失败禁止放流。客户端 schema、隐藏按钮和本地测试均不能替代服务端授权。规范与决定是语义依据，具体命令和依赖方向由仓库脚本及规则约束。
