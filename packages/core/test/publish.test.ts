@@ -3,6 +3,7 @@ import { canonicalizeCreation } from "../src/canonical.js";
 import { checkPublish, type PublishInput } from "../src/publish.js";
 import type { ReleaseInput } from "../src/resolve/index.js";
 import type { CreationInput } from "../src/schema/creation.js";
+import { withTestDefault } from "./build.js";
 import { D, level0Character, tid } from "./fixtures.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: 反例输入不需要满足类型
@@ -37,7 +38,7 @@ const world: CreationInput = {
 const READY = { [D("a")]: "ready" } as const;
 
 function input(over: Partial<PublishInput> & { creation?: unknown } = {}): PublishInput {
-  return {
+  return withTestDefault({
     release: tid("rel", 1),
     label: "1.0.0",
     visibility: "public",
@@ -50,7 +51,7 @@ function input(over: Partial<PublishInput> & { creation?: unknown } = {}): Publi
       ownerNamespaces: new Set(["djj"]),
     },
     ...over,
-  };
+  });
 }
 
 function withRegistry(over: Partial<PublishInput["registry"]>): Partial<PublishInput> {

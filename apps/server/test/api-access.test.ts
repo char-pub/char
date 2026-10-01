@@ -340,6 +340,33 @@ describe("personal access tokens", () => {
     expect((await h.as(null).get("/v1/me/tokens")).status).toBe(401);
   });
 
+  it("refuses an agent PAT's publication before reserving a release, even with publish scope", async () => {
+    const me = h.as(owner);
+    const tokenResponse = await me.post("/v1/me/tokens", {
+      name: "drafting agent",
+      agent: true,
+      scopes: ["creations:read", "creations:write", "releases:publish"],
+      expires_in_days: 7,
+    });
+    expect(tokenResponse.status).toBe(201);
+    const token = await json(tokenResponse);
+    const agent = h.withToken(String(token.token));
+    const path = "/v1/creations/@author/hero";
+    expect((await agent.get(`${path}/draft`)).status).toBe(200);
+    const revision = await json(await me.post(`${path}/revisions`, {}));
+    const input = { revision: revision.id, label: "2.0.0", visibility: "private" };
+    const denied = await agent.post(`${path}/releases`, input, {
+      "idempotency-key": "agent-publish-denied",
+    });
+    expect(denied.status).toBe(403);
+    expect(await json(denied)).toMatchObject({ code: "agent.action_not_allowed" });
+    // The denial leaves the label available for the owner's explicit publication.
+    const published = await me.post(`${path}/releases`, input, {
+      "idempotency-key": "owner-publish-after-agent",
+    });
+    expect(published.status).toBe(202);
+  });
+
   it("rejects unknown revisions and reused idempotency keys", async () => {
     const me = h.as(owner);
     const bogus = await me.post(

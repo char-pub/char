@@ -7,15 +7,16 @@
  */
 import {
   canonicalizeCreation,
+  checkCreation,
   type Fragment,
   type FragmentKind,
   RATINGS,
   type Rating,
 } from "@char-pub/core";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { GitBranch, Plus, Send, ShieldAlert, Trash2, X } from "lucide-react";
-import { type ComponentProps, useEffect, useId, useMemo, useState } from "react";
+import { type ComponentProps, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ListSkeleton } from "@/components/skeletons";
 import { ErrorState } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +25,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
+import type { Me } from "@/lib/api";
 import { isApiError } from "@/lib/api";
+import { contentReferences } from "@/lib/content-references";
 import {
   buildChanges,
-  CONFIGURATION_FIELDS,
   type ContributionEdit,
   contributionBase,
+  contributionEditFromWorking,
+  contributionWorking,
   needsExplicitGrant,
 } from "@/lib/contribution";
 import type { Working } from "@/lib/draft";
@@ -37,7 +41,12 @@ import { newFragment, nextId } from "@/lib/draft";
 import { keys, useMe, useRegistry } from "@/lib/registry";
 import { cn } from "@/lib/utils";
 import { AssemblyEditor, AuthorTestsEditor } from "./editor/assembly-editor";
+import { CompositionEditor } from "./editor/composition-editor";
+import { ContentGroups } from "./editor/content-groups";
 import { PolicyEditor } from "./editor/policy-editor";
+import { SourcesEditor } from "./editor/sources-editor";
+import { StoryWorkspace } from "./editor/story-workspace";
+import { ProposalPreview } from "./proposal-preview";
 import { RATING_LABEL } from "./rating";
 
 const DEFAULT_KIND: Record<string, FragmentKind> = {
@@ -196,6 +205,17 @@ function ContributionSession({
   const client = useRegistry();
   const me = useMe();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const actor = me.data?.id ?? null;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const current = () =>
+    mounted.current && (qc.getQueryData<Me | null>(keys.me)?.id ?? null) === actor;
   const ids = {
     title: useId(),
     description: useId(),
@@ -218,7 +238,12 @@ function ContributionSession({
     }
   }, [source.data]);
 
-  const [edit, setEdit] = useState<ContributionEdit | null>(null);
+  const [edit, storeEdit] = useState<ContributionEdit | null>(null);
+  const editRef = useRef<ContributionEdit | null>(null);
+  const setEdit = (next: ContributionEdit | null) => {
+    editRef.current = next;
+    storeEdit(next);
+  };
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [rightsOk, setRightsOk] = useState(false);
@@ -242,46 +267,64 @@ function ContributionSession({
     );
   }
 
-  const configurationWorking = { ...base.canonical.creation, ...edit.configuration } as Working;
-  for (const field of CONFIGURATION_FIELDS)
-    if (edit.configuration && edit.configuration[field] === undefined)
-      delete configurationWorking[field];
+  const configurationWorking = contributionWorking(base.canonical, edit);
   const updateConfiguration = (fn: (w: Working) => Working) => {
-    const next = fn(configurationWorking);
-    setEdit({
-      ...edit,
-      configuration: Object.fromEntries(
-        CONFIGURATION_FIELDS.filter((field) => next[field] !== undefined).map((field) => [
-          field,
-          next[field],
-        ]),
-      ),
-    });
+    if (!current()) return;
+    try {
+      const next = fn(contributionWorking(base.canonical, editRef.current ?? edit));
+      setEdit(contributionEditFromWorking(base.canonical, next));
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "This edit cannot be proposed.");
+    }
   };
-  const changes = buildChanges(base.canonical, edit);
+  let changes: unknown[] = [];
+  let changeError = "";
+  try {
+    changes = buildChanges(base.canonical, edit);
+  } catch (cause) {
+    changeError =
+      cause instanceof Error
+        ? cause.message
+        : "Complete the highlighted story fields before submitting.";
+  }
   const license = base.canonical.creation.meta.license;
   const explicit = needsExplicitGrant(license);
   const ratingChanged = edit.rating !== base.edit.rating;
   const originals = new Map(base.edit.fragments.map((f) => [f.id, f]));
 
   const submit = async () => {
-    if (!source.data) return;
+    if (
+      !source.data ||
+      !current() ||
+      busy ||
+      !rightsOk ||
+      !title.trim() ||
+      changeError ||
+      changes.length === 0
+    )
+      return;
     setBusy(true);
     setError(null);
     try {
-      canonicalizeCreation({
-        ...configurationWorking,
-        fragments: edit.fragments,
-        meta: { ...base.canonical.creation.meta, rating: edit.rating, tags: edit.tags },
-      });
+      const checked = checkCreation(canonicalizeCreation(configurationWorking).creation);
+      if (!checked.ok)
+        throw new Error(
+          checked.diagnostics
+            .filter((d) => d.severity === "error")
+            .map((d) => `${d.subject}: ${d.detail ?? d.code}`)
+            .join("; "),
+        );
       const res = await client.submitContribution(ns, name, {
         title: title.trim(),
         ...(description.trim() ? { description: description.trim() } : {}),
         base_revision: source.data.revision,
+        changes_version: 1,
         changes,
         rights_ack: explicit ? { explicit_grant: true } : { inbound_equals_outbound: true },
         ...(agent ? { agent: true } : {}),
       });
+      if (!current()) return;
       if (onSubmitted) onSubmitted(res.number);
       else {
         await navigate({
@@ -290,14 +333,17 @@ function ContributionSession({
         });
       }
     } catch (e) {
+      if (!current()) return;
       setError(
         (isApiError(e) && SUBMIT_ERRORS[e.code]) ||
           (isApiError(e) && e.code.startsWith("contribution.")
             ? `The changes were not accepted by the registry (${e.code}).`
-            : "The contribution could not be submitted. Try again."),
+            : e instanceof Error
+              ? e.message
+              : "The contribution could not be submitted. Try again."),
       );
     } finally {
-      setBusy(false);
+      if (current()) setBusy(false);
     }
   };
 
@@ -305,13 +351,7 @@ function ContributionSession({
     setEdit({ ...edit, fragments: edit.fragments.map((x, j) => (j === i ? f : x)) });
 
   return (
-    <form
-      className="space-y-6"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submit();
-      }}
-    >
+    <div className="space-y-6">
       <p className="flex items-start gap-2 rounded-lg bg-blue-soft px-4 py-3 text-sm text-blue-text">
         <GitBranch aria-hidden className="mt-0.5 size-4 shrink-0" />
         <span>
@@ -332,9 +372,14 @@ function ContributionSession({
                 fragment={f}
                 original={originals.get(f.id)}
                 onChange={(next) => setFragment(i, next)}
-                onRemove={() =>
-                  setEdit({ ...edit, fragments: edit.fragments.filter((_, j) => j !== i) })
-                }
+                onRemove={() => {
+                  const refs = contentReferences(configurationWorking, "fragment", f.id);
+                  if (refs.length) {
+                    setError(`Remove references first: ${refs.join(", ")}`);
+                    return;
+                  }
+                  setEdit({ ...edit, fragments: edit.fragments.filter((_, j) => j !== i) });
+                }}
               />
             ))}
           </ul>
@@ -371,123 +416,152 @@ function ContributionSession({
         />
       ) : null}
       {type === "scenario" ? (
+        <>
+          <StoryWorkspace working={configurationWorking} update={updateConfiguration} />
+          <CompositionEditor
+            castOnly
+            type="scenario"
+            working={configurationWorking}
+            update={updateConfiguration}
+          />
+        </>
+      ) : null}
+      {!["preset", "prompt-module"].includes(type) ? (
+        <>
+          <ContentGroups working={configurationWorking} update={updateConfiguration} />
+          <SourcesEditor working={configurationWorking} update={updateConfiguration} />
+        </>
+      ) : null}
+      {type === "scenario" ? (
         <AssemblyEditor working={configurationWorking} update={updateConfiguration} />
       ) : null}
       {type === "scenario" || type === "preset" ? (
         <AuthorTestsEditor working={configurationWorking} update={updateConfiguration} />
       ) : null}
-      <section
-        aria-labelledby="cf-meta"
-        className="grid gap-4 rounded-lg border bg-surface p-5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]"
+      <ProposalPreview working={configurationWorking} />
+      <form
+        className="space-y-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
       >
-        <h3 id="cf-meta" className="sr-only">
-          Rating and tags
-        </h3>
-        <div className="space-y-1.5">
-          <label htmlFor={ids.rating} className="block text-sm font-semibold">
-            Rating
-          </label>
-          <NativeSelect
-            id={ids.rating}
-            value={edit.rating}
-            onChange={(e) => setEdit({ ...edit, rating: e.target.value as Rating })}
+        <section
+          aria-labelledby="cf-meta"
+          className="grid gap-4 rounded-lg border bg-surface p-5 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]"
+        >
+          <h3 id="cf-meta" className="sr-only">
+            Rating and tags
+          </h3>
+          <div className="space-y-1.5">
+            <label htmlFor={ids.rating} className="block text-sm font-semibold">
+              Rating
+            </label>
+            <NativeSelect
+              id={ids.rating}
+              value={edit.rating}
+              onChange={(e) => setEdit({ ...edit, rating: e.target.value as Rating })}
+            >
+              {RATINGS.map((r) => (
+                <option key={r} value={r}>
+                  {RATING_LABEL[r]}
+                  {r === base.edit.rating ? " (unchanged)" : ""}
+                </option>
+              ))}
+            </NativeSelect>
+            {ratingChanged ? (
+              <p className="flex items-start gap-1 text-xs text-warning">
+                <ShieldAlert aria-hidden className="mt-0.5 size-3 shrink-0" />A rating change is
+                sensitive: the author has to confirm it separately.
+              </p>
+            ) : null}
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor={ids.tags} className="block text-sm font-semibold">
+              Tags
+            </label>
+            <TagInput
+              id={ids.tags}
+              tags={edit.tags}
+              onChange={(tags) => setEdit({ ...edit, tags })}
+            />
+          </div>
+        </section>
+
+        <section aria-labelledby="cf-about" className="space-y-4 rounded-lg border bg-surface p-5">
+          <h3 id="cf-about" className="text-base font-semibold">
+            About this change
+          </h3>
+          <div className="space-y-1.5">
+            <label htmlFor={ids.title} className="block text-sm font-semibold">
+              Title
+            </label>
+            <Input
+              id={ids.title}
+              value={title}
+              maxLength={200}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor={ids.description} className="block text-sm font-semibold">
+              Description <span className="font-normal text-text-3">(optional)</span>
+            </label>
+            <Textarea
+              id={ids.description}
+              value={description}
+              maxLength={20000}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="flex items-start gap-2.5">
+            <Checkbox
+              id={ids.rights}
+              className="mt-0.5"
+              checked={rightsOk}
+              onCheckedChange={(v) => setRightsOk(v === true)}
+            />
+            <label htmlFor={ids.rights} className="text-sm">
+              {explicit
+                ? `This creation uses a custom license (${license}). I grant the author the right to use, change and publish my contribution as part of it.`
+                : `I license my contribution under ${license}, the same license as this creation.`}
+            </label>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <Checkbox
+              id={ids.agent}
+              className="mt-0.5"
+              checked={agent}
+              onCheckedChange={(v) => setAgent(v === true)}
+            />
+            <label htmlFor={ids.agent} className="text-sm">
+              An AI agent wrote this change
+            </label>
+          </div>
+        </section>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Button
+            type="submit"
+            disabled={busy || changes.length === 0 || !title.trim() || !rightsOk}
           >
-            {RATINGS.map((r) => (
-              <option key={r} value={r}>
-                {RATING_LABEL[r]}
-                {r === base.edit.rating ? " (unchanged)" : ""}
-              </option>
-            ))}
-          </NativeSelect>
-          {ratingChanged ? (
-            <p className="flex items-start gap-1 text-xs text-warning">
-              <ShieldAlert aria-hidden className="mt-0.5 size-3 shrink-0" />A rating change is
-              sensitive: the author has to confirm it separately.
-            </p>
-          ) : null}
+            <Send aria-hidden />
+            {changes.length === 0
+              ? "Submit"
+              : `Submit ${changes.length === 1 ? "1 change" : `${changes.length} changes`}`}
+          </Button>
+          <span className="text-sm text-text-3" aria-live="polite">
+            {changes.length === 0
+              ? "No changes yet."
+              : "You can withdraw it until the author decides."}
+          </span>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor={ids.tags} className="block text-sm font-semibold">
-            Tags
-          </label>
-          <TagInput
-            id={ids.tags}
-            tags={edit.tags}
-            onChange={(tags) => setEdit({ ...edit, tags })}
-          />
-        </div>
-      </section>
-
-      <section aria-labelledby="cf-about" className="space-y-4 rounded-lg border bg-surface p-5">
-        <h3 id="cf-about" className="text-base font-semibold">
-          About this change
-        </h3>
-        <div className="space-y-1.5">
-          <label htmlFor={ids.title} className="block text-sm font-semibold">
-            Title
-          </label>
-          <Input
-            id={ids.title}
-            value={title}
-            maxLength={200}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor={ids.description} className="block text-sm font-semibold">
-            Description <span className="font-normal text-text-3">(optional)</span>
-          </label>
-          <Textarea
-            id={ids.description}
-            value={description}
-            maxLength={20000}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <div className="flex items-start gap-2.5">
-          <Checkbox
-            id={ids.rights}
-            className="mt-0.5"
-            checked={rightsOk}
-            onCheckedChange={(v) => setRightsOk(v === true)}
-          />
-          <label htmlFor={ids.rights} className="text-sm">
-            {explicit
-              ? `This creation uses a custom license (${license}). I grant the author the right to use, change and publish my contribution as part of it.`
-              : `I license my contribution under ${license}, the same license as this creation.`}
-          </label>
-        </div>
-        <div className="flex items-start gap-2.5">
-          <Checkbox
-            id={ids.agent}
-            className="mt-0.5"
-            checked={agent}
-            onCheckedChange={(v) => setAgent(v === true)}
-          />
-          <label htmlFor={ids.agent} className="text-sm">
-            An AI agent wrote this change
-          </label>
-        </div>
-      </section>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Button type="submit" disabled={busy || changes.length === 0 || !title.trim() || !rightsOk}>
-          <Send aria-hidden />
-          {changes.length === 0
-            ? "Submit"
-            : `Submit ${changes.length === 1 ? "1 change" : `${changes.length} changes`}`}
-        </Button>
-        <span className="text-sm text-text-3" aria-live="polite">
-          {changes.length === 0
-            ? "No changes yet."
-            : "You can withdraw it until the author decides."}
-        </span>
-      </div>
-      {error ? (
-        <p role="alert" className="text-sm text-danger">
-          {error}
-        </p>
-      ) : null}
-    </form>
+        {error || changeError ? (
+          <p role="alert" className="text-sm text-danger">
+            {error || changeError}
+          </p>
+        ) : null}
+      </form>
+    </div>
   );
 }

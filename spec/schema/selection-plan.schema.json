@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v1-draft/selection-plan.schema.json",
+  "title": "char.pub Selection Plan",
+  "type": "object",
+  "properties": {
+    "discovery": {
+      "type": "boolean"
+    },
+    "input": {
+      "type": "object",
+      "properties": {
+        "artifact_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "lock_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "turn_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "catalog_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "artifact_digest",
+        "lock_digest",
+        "turn_digest",
+        "catalog_digest",
+        "policy_digest"
+      ],
+      "additionalProperties": false
+    },
+    "selector": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "config_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "selected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "#/$defs/CatalogRef"
+          },
+          "form": {
+            "type": "string",
+            "enum": [
+              "body",
+              "section"
+            ]
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "ref",
+          "form",
+          "rank"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "$ref": "#/$defs/CatalogRef"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "expand",
+              "select",
+              "reject"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref",
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "fallback": {
+      "type": "string",
+      "const": "skip"
+    }
+  },
+  "required": [
+    "discovery",
+    "input",
+    "selector",
+    "selected",
+    "decisions"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "CatalogRef": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "work": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "work"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "fragment": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "fragment"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "group": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "group"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "section": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "source"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "story": {
+              "type": "string",
+              "enum": [
+                "scene",
+                "part",
+                "goal",
+                "beat",
+                "ending"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "story",
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

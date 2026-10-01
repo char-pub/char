@@ -7,7 +7,7 @@
  * - public 内容通过 CDN 直出：IR 等对象 302 到内容寻址的公共 URL，可以永久缓存；
  *   private 内容 302 到短期签名 URL，响应本身不缓存。
  */
-import { CharError, isCharError } from "@char-pub/core";
+import { CharError, isCharError, LocaleSchema } from "@char-pub/core";
 import { and, desc, eq, lt, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { Resource } from "../../authz/authorize.js";
@@ -31,12 +31,15 @@ import {
   findCreation,
   findRelease,
   fromPublicId,
+  namespaceContext,
   publicObjectUrl,
   type ReleaseRow,
   refOf,
   releaseSummary,
   toPublicId,
+  withReleaseContributors,
 } from "../../registry/read.js";
+import { readSourceText } from "../../registry/source-text.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
 
 /** 公开读接口在 CDN 上的缓存时间。内容变化（例如下架）时由下架任务主动清除。 */
@@ -45,7 +48,7 @@ export const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
 export const PRIVATE_CACHE = "private, no-store";
 
 /** CCv3 导出的编译器版本；导出实现变化时递增，旧缓存自然失效。 */
-export const CCV3_EXPORT_VERSION = "ccv3-export@0";
+export const CCV3_EXPORT_VERSION = "ccv3-export@1-draft";
 /** lazy build 尚未完成时建议客户端等待的秒数。 */
 export const EXPORT_RETRY_AFTER_SECONDS = 5;
 
@@ -62,6 +65,7 @@ function creationResource(f: FoundCreation): Resource {
     type: "creation",
     id: f.creation.id,
     ns: f.ns,
+    collaborator: f.collaborator === true,
     has_public_release: f.hasPublicRelease,
     status: f.creation.status,
     contribution_policy: f.creation.contributionPolicy,
@@ -74,6 +78,7 @@ function releaseResource(f: FoundCreation, r: ReleaseRow): Resource {
     id: r.id,
     creation_id: f.creation.id,
     ns: f.ns,
+    collaborator: f.collaborator === true,
     visibility: r.visibility,
     status: r.status,
     creation_status: f.creation.status,
@@ -124,6 +129,40 @@ function yankWarning(r: ReleaseRow): string | undefined {
   return `release ${r.label} was yanked${r.statusReason ? `: ${r.statusReason}` : ""}`;
 }
 
+function releaseBody(
+  creation: { id: string; name: string },
+  namespace: { slug: string },
+  row: ReleaseRow,
+) {
+  const warning = yankWarning(row);
+  return {
+    ...releaseSummary(row),
+    ref: refOf(namespace.slug, creation.name),
+    creation: toPublicId("creation", creation.id),
+    lock_digest: row.lockDigest,
+    context_ir_digest: row.contextIrDigest,
+    artifact_digest: row.artifactDigest,
+    license_check: row.licenseCheck,
+    availability: row.availability,
+    ...(warning ? { warning } : {}),
+  };
+}
+
+/** Labels and exact IDs share the same current authorization and artifact bytes. */
+async function artifactResponse(c: AppContext, row: ReleaseRow) {
+  if (!row.artifactDigest) {
+    c.header("cache-control", isPublicRelease(row) ? PUBLIC_READ_CACHE : PRIVATE_CACHE);
+    return c.json(await readArtifact(c.var.services.cas, row, c.var.services.publicAssetBaseUrl));
+  }
+  c.header("cache-control", isPublicRelease(row) ? IMMUTABLE_CACHE : PRIVATE_CACHE);
+  return c.redirect(
+    isPublicRelease(row)
+      ? publicObjectUrl(c.var.services.publicAssetBaseUrl, row.artifactDigest)
+      : await c.var.services.cas.signedGet(row.artifactDigest),
+    302,
+  );
+}
+
 /** Release 对应的 Revision：发布时记录在 Release 上；没有记录时按内容 digest 查找。 */
 async function revisionOf(c: AppContext, f: FoundCreation, r: ReleaseRow): Promise<string | null> {
   if (r.revisionId) return r.revisionId;
@@ -138,6 +177,110 @@ async function revisionOf(c: AppContext, f: FoundCreation, r: ReleaseRow): Promi
 }
 
 export function register(app: Hono<Env>): void {
+  for (const suffix of ["", "/artifact"] as const)
+    route(app, {
+      method: "get",
+      path: `/v1/releases/:release${suffix}`,
+      authorize: async (c) => {
+        const found = await authorizedRelease(
+          c.var.services.db,
+          c.var.principal,
+          c.req.param("release") ?? "",
+        );
+        if (!found) return notFound(c);
+        const ns = await namespaceContext(c.var.services.db, found.namespace, c.var.principal);
+        return {
+          action: "release.read",
+          resource: {
+            type: "release",
+            id: found.row.id,
+            creation_id: found.creation.id,
+            ns,
+            collaborator: found.collaborator,
+            visibility: found.row.visibility,
+            status: found.row.status,
+            creation_status: found.creation.status,
+          },
+          loaded: found,
+        };
+      },
+      handler: async (c, { loaded: found }) => {
+        const { row, creation, namespace } = found;
+        if (row.status === "tombstoned")
+          return problem(c, 410, "release.tombstoned", "this release was removed", {
+            reason: row.statusReason ?? "unspecified",
+          });
+        if (suffix === "/artifact") return artifactResponse(c, row);
+        c.header("cache-control", row.visibility === "public" ? PUBLIC_READ_CACHE : PRIVATE_CACHE);
+        const [credited] = await withReleaseContributors(c.var.services.db, [row]);
+        return c.json(releaseBody(creation, namespace, credited ?? row));
+      },
+    });
+  route(app, {
+    method: "get",
+    path: "/v1/releases/:release/source-text",
+    authorize: async (c) => {
+      const found = await authorizedRelease(
+        c.var.services.db,
+        c.var.principal,
+        c.req.param("release") ?? "",
+      );
+      if (!found) return notFound(c);
+      const ns = await namespaceContext(c.var.services.db, found.namespace, c.var.principal);
+      return {
+        action: "release.read",
+        resource: {
+          type: "release",
+          id: found.row.id,
+          creation_id: found.creation.id,
+          ns,
+          collaborator: found.collaborator,
+          visibility: found.row.visibility,
+          status: found.row.status,
+          creation_status: found.creation.status,
+        },
+        loaded: found.row,
+      };
+    },
+    handler: async (c, { loaded: row }) => {
+      c.header("cache-control", PRIVATE_CACHE);
+      if (row.status === "tombstoned") return problem(c, 410, "release.tombstoned");
+      const source = c.req.query("source");
+      if (!source) return problem(c, 400, "source.id_required");
+      const { db, cas, publicAssetBaseUrl } = c.var.services;
+      const artifact = await readArtifact(cas, row, publicAssetBaseUrl);
+      try {
+        return c.json(await readSourceText(db, cas, artifact, source));
+      } catch (error) {
+        if (
+          isCharError(error) &&
+          ["source.not_found", "source.body_unavailable"].includes(error.code)
+        )
+          return notFound(c);
+        throw error;
+      }
+    },
+  });
+  route(app, {
+    method: "get",
+    path: "/v1/default-policy",
+    authorize: async () => ({ public: true as const, loaded: null }),
+    handler: async (c) => {
+      c.header("Cache-Control", "no-store");
+      const pin = c.var.services.defaultPolicy;
+      if (!pin) return problem(c, 503, "publish.default_policy_unavailable");
+      const found = await authorizedRelease(c.var.services.db, { kind: "anonymous" }, pin.release);
+      if (
+        found?.row.visibility !== "public" ||
+        found.row.status === "tombstoned" ||
+        found.creation.type !== "preset" ||
+        found.row.semanticDigest !== pin.semantic_digest ||
+        refOf(found.namespace.slug, found.creation.name) !== pin.ref
+      )
+        return problem(c, 503, "publish.default_policy_unavailable");
+      return c.json(pin);
+    },
+  });
   route(app, {
     method: "get",
     path: `${CREATION_PATH}/releases/:label/avatar`,
@@ -192,7 +335,9 @@ export function register(app: Hono<Env>): void {
       const detail = await creationDetail(c.var.services.db, loaded, c.var.principal);
       c.header(
         "cache-control",
-        loaded.hasPublicRelease && loaded.ns.role === null ? PUBLIC_READ_CACHE : PRIVATE_CACHE,
+        loaded.hasPublicRelease && c.var.principal.kind === "anonymous"
+          ? PUBLIC_READ_CACHE
+          : PRIVATE_CACHE,
       );
       return c.json(detail);
     },
@@ -204,20 +349,8 @@ export function register(app: Hono<Env>): void {
     authorize: loadRelease,
     handler: async (c, { loaded: { f, r } }) => {
       if (r.status === "tombstoned") return gone(c, f, r);
-      const body: Record<string, unknown> = {
-        ...releaseSummary(r),
-        ref: refOf(f.namespace.slug, f.creation.name),
-        creation: toPublicId("creation", f.creation.id),
-        lock_digest: r.lockDigest,
-        context_ir_digest: r.contextIrDigest,
-        artifact_digest: r.artifactDigest,
-        license_check: r.licenseCheck,
-        availability: r.availability,
-      };
-      const warning = yankWarning(r);
-      if (warning) body.warning = warning;
       c.header("cache-control", isPublicRelease(r) ? PUBLIC_READ_CACHE : PRIVATE_CACHE);
-      return c.json(body);
+      return c.json(releaseBody(f.creation, f.namespace, r));
     },
   });
 
@@ -266,17 +399,7 @@ export function register(app: Hono<Env>): void {
     authorize: loadRelease,
     handler: async (c, { loaded: { f, r } }) => {
       if (r.status === "tombstoned") return gone(c, f, r);
-      if (!r.artifactDigest) {
-        c.header("cache-control", isPublicRelease(r) ? PUBLIC_READ_CACHE : PRIVATE_CACHE);
-        return c.json(await readArtifact(c.var.services.cas, r, c.var.services.publicAssetBaseUrl));
-      }
-      c.header("cache-control", isPublicRelease(r) ? IMMUTABLE_CACHE : PRIVATE_CACHE);
-      return c.redirect(
-        isPublicRelease(r)
-          ? publicObjectUrl(c.var.services.publicAssetBaseUrl, r.artifactDigest)
-          : await c.var.services.cas.signedGet(r.artifactDigest),
-        302,
-      );
+      return artifactResponse(c, r);
     },
   });
 
@@ -316,6 +439,9 @@ export function register(app: Hono<Env>): void {
       const part = c.req.query("part");
       if (part !== undefined && part !== "card" && part !== "loss")
         return problem(c, 400, "export.invalid_part", "part must be card or loss");
+      const locale = c.req.query("locale");
+      if (locale !== undefined && !LocaleSchema.safeParse(locale).success)
+        return problem(c, 400, "export.invalid_locale", "locale must be a language tag");
       const selected = c.req.query("preset");
       const presetRelease = selected
         ? await authorizedRelease(db, c.var.principal, selected)
@@ -327,12 +453,21 @@ export function register(app: Hono<Env>): void {
       const publicExport =
         isPublicRelease(r) && (!presetRelease || isPublicRelease(presetRelease.row));
       const key = exportCacheKey({
+        release_id: r.id,
+        bucket: publicExport ? "public" : "private",
         semantic_digest: r.semanticDigest,
         lock_digest: r.lockDigest ?? "",
         target: "ccv3",
-        compiler_version: presetRelease
-          ? `${CCV3_EXPORT_VERSION}:preset:${presetRelease.row.id}:${presetRelease.row.semanticDigest}:bucket:${publicExport ? "public" : "private"}`
-          : CCV3_EXPORT_VERSION,
+        compiler_version: CCV3_EXPORT_VERSION,
+        ...(locale ? { locale } : {}),
+        ...(presetRelease
+          ? {
+              preset: {
+                release_id: presetRelease.row.id,
+                semantic_digest: presetRelease.row.semanticDigest,
+              },
+            }
+          : {}),
       });
       const [hit] = await db
         .select()
@@ -371,6 +506,7 @@ export function register(app: Hono<Env>): void {
             release_id: r.id,
             target: "ccv3",
             cache_key: key,
+            ...(locale ? { locale } : {}),
             ...(presetRelease ? { preset_release_id: presetRelease.row.id } : {}),
             ...(publicExport ? {} : { private_output: true }),
           },

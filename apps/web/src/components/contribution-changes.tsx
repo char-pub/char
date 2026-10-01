@@ -31,6 +31,8 @@ const STATE_BADGE: Record<Outcome["state"], { label: string; dot: string; text: 
 
 const CONFLICT_REASON: Record<string, string> = {
   diverged: "This was also changed in the draft since the contribution was made.",
+  invalid_result:
+    "These changes leave invalid references or story state. Fix the reported fields before accepting.",
   slot_missing: "The asset slot this change adds to no longer exists.",
 };
 
@@ -39,6 +41,11 @@ const KIND_TEXT: Record<string, string> = {
   metadata: "metadata",
   edge: "dependency",
   asset: "asset",
+  story: "story object",
+  "story-order": "story order",
+  cast: "participant",
+  group: "content group",
+  source: "reference document",
 };
 
 const OP_TEXT: Record<string, string> = {
@@ -152,6 +159,7 @@ export function ChangeCard({
       {outcome.state === "conflict" ? (
         <p className="border-b bg-danger-soft/50 px-4 py-2 text-sm text-danger">
           {CONFLICT_REASON[outcome.reason ?? "diverged"] ?? CONFLICT_REASON.diverged}
+          {outcome.conflict_fields?.length ? ` Fields: ${outcome.conflict_fields.join(", ")}.` : ""}
         </p>
       ) : null}
       <div>

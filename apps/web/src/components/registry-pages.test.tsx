@@ -272,7 +272,7 @@ describe("Editor", () => {
       await screen.findByText("This draft was changed somewhere else", {}, { timeout: 3000 }),
     ).toBeTruthy();
     expect(putDraft).toHaveBeenCalledWith("writer", "hero", 3, expect.anything());
-    await userEvent.click(screen.getByRole("button", { name: "Reload the latest draft" }));
+    await userEvent.click(screen.getByRole("button", { name: "Discard my edits and reload" }));
     await waitFor(() => expect(draft).toHaveBeenCalled());
     await waitFor(() =>
       expect(screen.queryByText("This draft was changed somewhere else")).toBeNull(),

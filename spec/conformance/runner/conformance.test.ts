@@ -39,6 +39,8 @@ describe(`conformance suite on ${runtimeName()}`, () => {
         expect(validateInput(c)).toEqual([]);
         const actual = runCase(c);
         expect(actual.kind).not.toBe("unsupported");
+        if (meta.kind === "assembler") expect(actual.kind, JSON.stringify(actual)).toBe("trace");
+        if (meta.kind === "story") expect(actual.kind, JSON.stringify(actual)).toBe("story");
         const verdict = judge(c, actual);
         expect(verdict.status, verdict.message).toBe("draft");
       });

@@ -1,0 +1,9 @@
+{
+  "id": "206-exact-plan-replay",
+  "title": "An existing Plan binds exact runtime text, independent of JSON key order",
+  "kind": "story",
+  "expect": "story",
+  "spec_refs": ["story-v1 \u00a713.6", "story-v1 \u00a714.2"],
+  "status": "draft",
+  "notes": "Reuses the original successful Plan unchanged; independently authored rejection assertions. No expected accepted."
+}

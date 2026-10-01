@@ -7,9 +7,10 @@
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createDraftReviewReceipt } from "../runner/review.js";
 import { renderDraft, runCase } from "../runner/run.js";
 import { EXPECTED_FILES } from "../runner/types.js";
-import { CASES_DIR, listCaseDirs, loadCase } from "./cases.js";
+import { caseDirectory, listCaseDirs, loadCase } from "./cases.js";
 
 const args = process.argv.slice(2);
 const dirs = args.length > 0 ? args : listCaseDirs();
@@ -27,28 +28,34 @@ for (const dir of dirs) {
       `${dir}: case expects ${c.meta.expect} but the implementation produced ${draft.file}`,
     );
   }
-  const out = join(CASES_DIR, dir, "draft");
+  const out = join(caseDirectory(dir), "draft");
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, EXPECTED_FILES[draft.file]), draft.text);
+  writeFileSync(
+    join(out, "review.json"),
+    `${JSON.stringify(createDraftReviewReceipt(c, draft), null, 2)}\n`,
+  );
   const summary =
-    actual.kind === "context-ir"
-      ? actual.digest
-      : actual.kind === "error"
-        ? `${actual.error.code} (${actual.error.subject ?? ""})${actual.detail ? `: ${actual.detail}` : ""}`
-        : actual.kind === "publish"
-          ? JSON.stringify(actual.summary)
-          : actual.kind === "trace"
-            ? actual.trace.scenarios
-                .map((sc) =>
-                  "error" in sc
-                    ? `${sc.name}: ${sc.error.code}`
-                    : `${sc.name}: ${sc.entries.length} entries`,
-                )
-                .join("; ") +
-              (actual.violations.length ? `  VIOLATIONS: ${actual.violations.join("; ")}` : "")
-            : actual.kind === "loss-report"
-              ? `policy fields ${actual.summary.import.omitted_policy_fields.join(", ")}; unstable ${actual.summary.import.unstable_fragments.join(", ")}`
-              : "";
+    actual.kind === "story"
+      ? `${actual.story.kind}; ${actual.violations.length} violations`
+      : actual.kind === "context-ir"
+        ? actual.digest
+        : actual.kind === "error"
+          ? `${actual.error.code} (${actual.error.subject ?? ""})${actual.detail ? `: ${actual.detail}` : ""}`
+          : actual.kind === "publish"
+            ? JSON.stringify(actual.summary)
+            : actual.kind === "trace"
+              ? actual.trace.scenarios
+                  .map((sc) =>
+                    "error" in sc
+                      ? `${sc.name}: ${sc.error.code}`
+                      : `${sc.name}: ${sc.entries.length} entries`,
+                  )
+                  .join("; ") +
+                (actual.violations.length ? `  VIOLATIONS: ${actual.violations.join("; ")}` : "")
+              : actual.kind === "loss-report"
+                ? `policy fields ${actual.summary.import.omitted_policy_fields.join(", ")}; unstable ${actual.summary.import.unstable_fragments.join(", ")}`
+                : "";
   console.log(`${dir}: draft/${EXPECTED_FILES[draft.file]}  ${summary}`);
 }

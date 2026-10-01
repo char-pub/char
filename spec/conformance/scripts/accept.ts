@@ -15,9 +15,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { validateDraftForAcceptance } from "../runner/review.js";
 import { normalizeExpectedText, textDigest } from "../runner/run.js";
 import { type CaseMeta, EXPECTED_FILES } from "../runner/types.js";
-import { BUNDLE_PATH, buildBundle, CASES_DIR, serializeBundle } from "./cases.js";
+import { BUNDLE_PATH, buildBundle, caseDirectory, loadCase, serializeBundle } from "./cases.js";
 
 function usage(msg: string): never {
   console.error(
@@ -38,11 +39,12 @@ if (!reviewer) usage("missing --reviewer");
 const date = flag("--date") ?? new Date().toISOString().slice(0, 10);
 if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) usage("--date must be YYYY-MM-DD");
 
-const base = join(CASES_DIR, dir);
+const base = caseDirectory(dir);
 const metaPath = join(base, "case.json");
 if (!existsSync(metaPath)) usage(`no such case: ${dir}`);
 const meta = JSON.parse(readFileSync(metaPath, "utf8")) as CaseMeta;
-if (!meta.expect) usage(`${dir}: case.json has no "expect" kind; this case cannot be accepted yet`);
+if (!meta.expect || !Object.hasOwn(EXPECTED_FILES, meta.expect))
+  usage(`${dir}: case.json has no "expect" kind; this case cannot be accepted yet`);
 
 const draftDir = join(base, "draft");
 const file = EXPECTED_FILES[meta.expect];
@@ -51,6 +53,17 @@ if (!existsSync(draftFile)) {
   const found = existsSync(draftDir) ? readdirSync(draftDir).join(", ") : "nothing";
   usage(`${dir}: expected draft/${file}, found ${found}. Run conformance:draft first.`);
 }
+
+const receiptPath = join(draftDir, "review.json");
+const receipt: unknown = existsSync(receiptPath)
+  ? JSON.parse(readFileSync(receiptPath, "utf8"))
+  : undefined;
+const problems = validateDraftForAcceptance(
+  loadCase(dir),
+  readFileSync(draftFile, "utf8"),
+  receipt,
+);
+if (problems.length) usage(`${dir}: cannot accept stale or invalid draft: ${problems.join("; ")}`);
 
 const expDir = join(base, "expected");
 rmSync(expDir, { recursive: true, force: true });

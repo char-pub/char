@@ -4,8 +4,10 @@
  * 所有 ID 都是合法的 TypeID，内容纯属虚构。
  */
 import {
+  buildCreation,
   type CreationInput,
   canonicalizeCreation,
+  PRESET_REGIONS,
   type ReleaseInput,
   type ResolveOutput,
   resolve,
@@ -319,6 +321,35 @@ export function resolveSample(s: Pick<Sample, "root" | "dependencies">): Resolve
     dependencies: s.dependencies,
     publicAssetBaseUrl: "https://assets.char.pub/cas/sha256",
   });
+}
+
+/** Explicit synthetic policy for the offline playground, not a published Registry default. */
+export const sampleDefaultPolicy = release(30, "1.0.0", {
+  id: sampleId("cr", 30),
+  ref: "@examples/preview-policy",
+  type: "preset",
+  display_name: "Playground policy",
+  meta: { default_locale: "en", rating: "general", rights: "original", license: "CC0-1.0" },
+  policy: {
+    version: "1-draft",
+    blocks: [],
+    layout: [...PRESET_REGIONS],
+    requires: { system_role: true },
+  },
+});
+export function buildSample(s: Pick<Sample, "root" | "dependencies">) {
+  const { artifact } = buildCreation({
+    root: s.root,
+    dependencies: [...s.dependencies, sampleDefaultPolicy],
+    default_policy: {
+      ref: "@examples/preview-policy",
+      release: sampleDefaultPolicy.release,
+      semantic_digest: sampleDefaultPolicy.semantic_digest,
+    },
+    publicAssetBaseUrl: "https://assets.char.pub/cas/sha256",
+  });
+  if (artifact.kind !== "content") throw new Error("Content sample required");
+  return artifact;
 }
 
 /** 依赖闭包里每个 Release 的 label，供 Diff 展示。 */

@@ -1,0 +1,617 @@
+{
+  "kind": "context",
+  "scenarios": [
+    {
+      "name": "original",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\r\nthe letter Cafe\u0301  "
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\r\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\r\nnorth",
+            "name": "Cafe\u0301",
+            "memo": "Keep  "
+          }
+        }
+      },
+      "discovery": true,
+      "selection": []
+    },
+    {
+      "name": "history-newline",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\nthe letter Cafe\u0301  "
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\r\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\r\nnorth",
+            "name": "Cafe\u0301",
+            "memo": "Keep  "
+          }
+        }
+      },
+      "discovery": true,
+      "plan_from": "original"
+    },
+    {
+      "name": "history-unicode",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\r\nthe letter Caf\u00e9  "
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\r\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\r\nnorth",
+            "name": "Cafe\u0301",
+            "memo": "Keep  "
+          }
+        }
+      },
+      "discovery": true,
+      "plan_from": "original"
+    },
+    {
+      "name": "history-trailing-space",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\r\nthe letter Cafe\u0301"
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\r\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\r\nnorth",
+            "name": "Cafe\u0301",
+            "memo": "Keep  "
+          }
+        }
+      },
+      "discovery": true,
+      "plan_from": "original"
+    },
+    {
+      "name": "focus-newline",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\r\nthe letter Cafe\u0301  "
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\r\nnorth",
+            "name": "Cafe\u0301",
+            "memo": "Keep  "
+          }
+        }
+      },
+      "discovery": true,
+      "plan_from": "original"
+    },
+    {
+      "name": "overlay-newline",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\r\nthe letter Cafe\u0301  "
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\r\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\nnorth",
+            "name": "Cafe\u0301",
+            "memo": "Keep  "
+          }
+        }
+      },
+      "discovery": true,
+      "plan_from": "original"
+    },
+    {
+      "name": "overlay-unicode",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\r\nthe letter Cafe\u0301  "
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\r\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\r\nnorth",
+            "name": "Caf\u00e9",
+            "memo": "Keep  "
+          }
+        }
+      },
+      "discovery": true,
+      "plan_from": "original"
+    },
+    {
+      "name": "overlay-trailing-space",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "I copy\r\nthe letter Cafe\u0301  "
+          }
+        ],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        },
+        "focus": "Door\r\nnow  ",
+        "overlay": {
+          "state": {
+            "place": "vault\r\nnorth",
+            "name": "Cafe\u0301",
+            "memo": "Keep"
+          }
+        }
+      },
+      "discovery": true,
+      "plan_from": "original"
+    },
+    {
+      "discovery": true,
+      "turn": {
+        "overlay": {
+          "state": {
+            "memo": "Keep  ",
+            "name": "Cafe\u0301",
+            "place": "vault\r\nnorth"
+          }
+        },
+        "focus": "Door\r\nnow  ",
+        "story": {
+          "stopped": false,
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "vars": {},
+          "happened": [],
+          "ended": [],
+          "reached": [],
+          "visited": ["lobby"],
+          "start": "default"
+        },
+        "for_participant": "bob",
+        "present": ["alice", "bob"],
+        "scene": "lobby",
+        "history": [
+          {
+            "text": "I copy\r\nthe letter Cafe\u0301  ",
+            "role": "user"
+          }
+        ],
+        "bindings": {
+          "user": {
+            "display_name": "Reader",
+            "kind": "persona"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "outward_description": "BOB_OUTWARD",
+            "description": "BOB_PRIVATE_BINDING",
+            "display_name": "Bob",
+            "kind": "character"
+          },
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "outward_description": "ALICE_OUTWARD",
+            "description": "ALICE_PRIVATE_BINDING",
+            "display_name": "Alice",
+            "kind": "character"
+          }
+        }
+      },
+      "profile": {
+        "capabilities": {
+          "multiple_system_messages": true,
+          "system_role": true
+        },
+        "mode": "per-agent",
+        "reserve_for_output": 256,
+        "context_window": 8192,
+        "tokenizer": "estimate",
+        "runtime": {
+          "version": "1",
+          "name": "portable-story-fixture"
+        }
+      },
+      "name": "same-values-reordered-keys",
+      "plan_from": "original"
+    }
+  ]
+}

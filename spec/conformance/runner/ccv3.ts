@@ -13,8 +13,14 @@
  * 不比较 token 估算、说明文字（detail）和卡片正文：前者依赖估算算法，后两者是展示用的文本。
  */
 import { type ExportResult, exportCCv3, type ImportResult, importCard } from "@char-pub/ccv3";
-import { canonicalizeCreation, compareStrings, type JSONValue, jcs, resolve } from "@char-pub/core";
-import type { LossSummary } from "./types.js";
+import {
+  buildCreation,
+  canonicalizeCreation,
+  compareStrings,
+  type JSONValue,
+  jcs,
+} from "@char-pub/core";
+import type { CaseInput, LossSummary } from "./types.js";
 
 /** 往返时使用的固定 ID，保证输出与运行环境无关。 */
 export const ROUNDTRIP_IDS = {
@@ -74,17 +80,22 @@ export function summarizeLoss(
   };
 }
 
-export function runRoundTrip(card: unknown): LossSummary {
+export function runRoundTrip(
+  card: unknown,
+  input: Pick<CaseInput, "deps" | "options">,
+): LossSummary {
   const imported = importCard(card as object, {
     ids: { creation: ROUNDTRIP_IDS.creation },
     ref: ROUNDTRIP_IDS.ref,
   });
   const { creation } = canonicalizeCreation(imported.creation);
   const unstable = creation.fragments.filter((f) => !f.stable).map((f) => f.id);
-  const ir = resolve({
+  const { artifact } = buildCreation({
     root: { release: ROUNDTRIP_IDS.release, visibility: "public", creation },
-  }).ir;
-  return summarizeLoss(imported, unstable, exportCCv3(ir));
+    dependencies: input.deps,
+    ...input.options,
+  });
+  return summarizeLoss(imported, unstable, exportCCv3(artifact));
 }
 
 /** 两份摘要按 JCS 比较；不同时返回 null 以外的说明。 */

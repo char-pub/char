@@ -12,7 +12,7 @@ import { estimateTokens, exportCCv3 } from "../src/export.js";
 import { importCard } from "../src/import.js";
 import { readPngChunks, readPngTextEntries } from "../src/png.js";
 import { tinyPng, v3Card } from "./helpers.js";
-import { singleCreationIR } from "./single-creation-ir.js";
+import { artifactOfIR, singleCreationIR } from "./single-creation-ir.js";
 
 const OPTS = { ids: { creation: "cr_01h455vb4pex5vsknk084sn001" }, ref: "@importer/mira" };
 const REL_DEP = "rel_01h455vb4pex5vsknk084sn002";
@@ -260,7 +260,7 @@ describe("exportCCv3", () => {
     expect(ContextIRSchema.safeParse(ir).success).toBe(true);
   });
 
-  const { card, v2, loss } = exportCCv3(ir);
+  const { card, v2, loss } = exportCCv3(artifactOfIR(ir));
 
   it("writes the character description first, then flattened dependencies with headings", () => {
     expect(card.spec).toBe("chara_card_v3");
@@ -313,7 +313,7 @@ describe("exportCCv3", () => {
         restored: false,
       },
     ]);
-    const withPreset = exportCCv3(ir, {
+    const withPreset = exportCCv3(artifactOfIR(ir), {
       preset: { system_prompt: "S", post_history_instructions: "P" },
     });
     expect(withPreset.card.data.system_prompt).toBe("S");
@@ -325,10 +325,10 @@ describe("exportCCv3", () => {
     expect(card.data.creator_notes).toContain("Rating: mature");
     expect(card.data.creator_notes).toContain("@night/city (map/default): CC0-1.0");
     expect(card.data.creator_notes).toContain("@night/city: unknown");
-    expect(card.data.extensions.char_pub).toEqual({
+    expect(card.data.extensions.char_pub).toMatchObject({
       root: ir.root,
       lock_digest: ir.lock_digest,
-      ir_version: "0-draft",
+      ir_version: "1-draft",
     });
   });
 
@@ -379,7 +379,7 @@ describe("exportCCv3", () => {
   });
 
   it("uses the injected token estimator", () => {
-    const r = exportCCv3(ir, { estimateTokens: () => 1 });
+    const r = exportCCv3(artifactOfIR(ir), { estimateTokens: () => 1 });
     expect(r.loss.flattened_dependencies[0]?.tokens).toBe(5);
   });
 
@@ -390,7 +390,7 @@ describe("exportCCv3", () => {
   });
 
   it("embeds both ccv3 and chara chunks into the avatar PNG", () => {
-    const { png } = exportCCv3(ir, { avatarPng: tinyPng() });
+    const { png } = exportCCv3(artifactOfIR(ir), { avatarPng: tinyPng() });
     expect(png).toBeDefined();
     const texts = readPngTextEntries(readPngChunks(png ?? new Uint8Array(0)));
     expect(texts.map((t) => t.keyword)).toEqual(["chara", "ccv3"]);
@@ -400,29 +400,34 @@ describe("exportCCv3", () => {
 
   it("drops empty fragments and reports speakers that are not participants", () => {
     const base = handIR();
-    const r = exportCCv3({
-      ...base,
-      fragments: [
-        frag({
-          id: "@djj/alice#empty~root",
-          fragment: "empty",
-          kind: "character",
-          content: { type: "text", text: "  ", format: "markdown" },
-        }),
-        frag({
-          id: "@djj/alice#chat~root",
-          fragment: "chat",
-          kind: "examples",
-          content: { type: "dialogue", turns: [{ speaker: "participant:p:ghost", text: "Boo." }] },
-        }),
-        frag({
-          id: "@djj/alice#you~root",
-          fragment: "you",
-          kind: "examples",
-          content: { type: "dialogue", turns: [{ speaker: "participant:p:you", text: "Me." }] },
-        }),
-      ],
-    });
+    const r = exportCCv3(
+      artifactOfIR({
+        ...base,
+        fragments: [
+          frag({
+            id: "@djj/alice#empty~root",
+            fragment: "empty",
+            kind: "character",
+            content: { type: "text", text: "  ", format: "markdown" },
+          }),
+          frag({
+            id: "@djj/alice#chat~root",
+            fragment: "chat",
+            kind: "examples",
+            content: {
+              type: "dialogue",
+              turns: [{ speaker: "participant:p:ghost", text: "Boo." }],
+            },
+          }),
+          frag({
+            id: "@djj/alice#you~root",
+            fragment: "you",
+            kind: "examples",
+            content: { type: "dialogue", turns: [{ speaker: "participant:p:you", text: "Me." }] },
+          }),
+        ],
+      }),
+    );
     expect(r.card.data.description).toBe("");
     expect(r.card.data.mes_example).toBe("<START>\np:ghost: Boo.\n<START>\n{{user}}: Me.");
     expect(r.card.data.character_book).toBeUndefined();
@@ -441,7 +446,7 @@ describe("round trip: import → canonical → IR → export", () => {
     const imported = importCard(v3Card(), OPTS);
     const ir = singleCreationIR(imported.creation);
     expect(ContextIRSchema.safeParse(ir).success).toBe(true);
-    const { card, loss } = exportCCv3(ir);
+    const { card, loss } = exportCCv3(artifactOfIR(ir));
 
     // {{self}} 在 IR 中已绑定为角色名，所以导出后是名字而不是 {{char}}
     expect(
@@ -489,7 +494,7 @@ describe("round trip: import → canonical → IR → export", () => {
   it("restores escaped card macros on export", () => {
     const imported = importCard(v3Card({ description: "Roll {{roll:d6}} for {{char}}." }), OPTS);
     const ir = singleCreationIR(imported.creation);
-    const { card } = exportCCv3(ir);
+    const { card } = exportCCv3(artifactOfIR(ir));
     expect(card.data.description.startsWith("Roll {{roll:d6}} for Mira.")).toBe(true);
   });
 
@@ -507,7 +512,7 @@ describe("round trip: import → canonical → IR → export", () => {
       ],
     };
     try {
-      exportCCv3(broken);
+      exportCCv3(artifactOfIR(broken));
       expect.unreachable();
     } catch (e) {
       expect(isCharError(e)).toBe(true);

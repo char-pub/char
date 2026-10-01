@@ -146,6 +146,200 @@ describe("lazy CCv3 export", () => {
     expect(refs.map((r) => r.role)).toEqual(["export"]);
   });
 
+  it("exports published Story greetings with isolated locale caches and explicit structure loss", async () => {
+    const me = h.as(await h.createUser("story-exporter"));
+    const namespace = await me.post("/v1/namespaces", { slug: "story-exp" });
+    expect(namespace.status, await namespace.clone().text()).toBe(201);
+    const created = await me.post("/v1/namespaces/story-exp/creations", {
+      name: "inn",
+      type: "scenario",
+      display_name: "Inn",
+    });
+    expect(created.status, await created.clone().text()).toBe(201);
+    const draft = (await (await me.get("/v1/creations/@story-exp/inn/draft")).json()) as {
+      version: number;
+    };
+    const working = {
+      display_name: "Inn",
+      cast: [{ key: "guest", who: { late: "persona" } }],
+      meta: LEVEL0.meta,
+      bootstrap: {
+        greetings: [
+          { id: "fallback", text: "DEFAULT_GREETING" },
+          {
+            id: "blackout",
+            text: "Darkness, {{user}}.",
+            locale: { ja: { content: { type: "text", text: "停電、{{user}}。" } } },
+          },
+          { id: "unreferenced", text: "UNREFERENCED_LEGACY" },
+        ],
+      },
+      story: {
+        version: 1,
+        scenes: [
+          {
+            id: "lobby",
+            title: "Lobby",
+            opening: { en: "Rain in the lobby.", ja: "雨のロビー。" },
+          },
+          { id: "attic", title: "Attic", opening: "DISCARDED_SCENE" },
+        ],
+        vars: { trust: { type: "int", init: 0, min: 0, max: 5, description: "Trust" } },
+        starts: [
+          {
+            id: "guest",
+            title: "Guest",
+            description: "Arrive",
+            greeting: { en: "Come in, {{user}}.", ja: "ようこそ、{{user}}。" },
+            set: [{ set: ["var/trust", 2] }],
+          },
+          { id: "storm", title: "Storm", description: "Blackout", greeting: { ref: "blackout" } },
+          { id: "plain", title: "Plain", description: "Fallback" },
+        ],
+      },
+    };
+    const saved = await me.put(
+      "/v1/creations/@story-exp/inn/draft",
+      { working },
+      { "if-match": String(draft.version) },
+    );
+    expect(saved.status).toBe(200);
+    const revision = (await (
+      await me.post("/v1/creations/@story-exp/inn/revisions", {})
+    ).json()) as { id: string };
+    const published = await me.post(
+      "/v1/creations/@story-exp/inn/releases",
+      { revision: revision.id, label: "1.0.0", visibility: "public" },
+      { "idempotency-key": "export-story-0001" },
+    );
+    expect(published.status).toBe(202);
+    expect(await h.runPublishJobs()).toEqual(["published"]);
+    const path = "/v1/creations/@story-exp/inn/releases/1.0.0/export/ccv3";
+    const keys: string[] = [];
+    for (const locale of ["en", "ja"]) {
+      expect((await api.request(`${path}?part=card&locale=${locale}`)).status).toBe(202);
+      const jobs = await h.queue.boss.fetch<ExportJob>(QUEUE_NAMES.exportBuild, { batchSize: 5 });
+      expect(jobs).toHaveLength(1);
+      const job = jobs?.[0];
+      if (!job) throw new Error("missing export job");
+      expect(job.data.locale).toBe(locale);
+      keys.push(job.data.cache_key);
+      expect(await handleExportJob({ db: t.app.db, cas: h.services.cas }, job.data)).toBe("built");
+      await h.queue.boss.complete(QUEUE_NAMES.exportBuild, job.id);
+      const response = await api.request(`${path}?part=card&locale=${locale}`);
+      expect(response.status).toBe(200);
+      const card = (await response.json()) as {
+        data: { first_mes: string; alternate_greetings: string[]; scenario: string };
+      };
+      expect(card.data.first_mes).toBe(
+        locale === "en" ? "Come in, {{user}}." : "ようこそ、{{user}}。",
+      );
+      expect(card.data.alternate_greetings).toEqual([
+        locale === "en" ? "Darkness, {{user}}." : "停電、{{user}}。",
+        "DEFAULT_GREETING",
+      ]);
+      expect(card.data.scenario).toContain(locale === "en" ? "Rain in the lobby." : "雨のロビー。");
+      expect(JSON.stringify(card)).not.toContain("UNREFERENCED_LEGACY");
+      expect(card.data.scenario).not.toContain("DISCARDED_SCENE");
+      const loss = Ccv3LossReportSchema.parse(
+        await (await api.request(`${path}?part=loss&locale=${locale}`)).json(),
+      );
+      expect(loss.other.some((item) => item.subject.includes("story"))).toBe(true);
+      expect(loss.locales.exported).toBe(locale);
+    }
+    expect(new Set(keys).size).toBe(2);
+    expect((await api.request(`${path}?locale=../../invalid`)).status).toBe(400);
+  });
+
+  it("keeps same-content releases and public/private export buckets separate", async () => {
+    const owner = await h.createUser("same-content-exporter");
+    const me = h.as(owner);
+    expect((await me.post("/v1/namespaces", { slug: "export-copies" })).status).toBe(201);
+    expect(
+      (
+        await me.post("/v1/namespaces/export-copies/creations", {
+          name: "mira",
+          type: "character",
+          display_name: "Mira",
+        })
+      ).status,
+    ).toBe(201);
+    const base = "/v1/creations/@export-copies/mira";
+    const draft = (await (await me.get(`${base}/draft`)).json()) as { version: number };
+    expect(
+      (await me.put(`${base}/draft`, { working: LEVEL0 }, { "if-match": String(draft.version) }))
+        .status,
+    ).toBe(200);
+    const revision = (await (await me.post(`${base}/revisions`, {})).json()) as { id: string };
+    const keys: string[] = [];
+    const digests: string[] = [];
+    const locks: string[] = [];
+    for (const [index, visibility] of (["private", "public", "public"] as const).entries()) {
+      const label = `1.0.${index}`;
+      expect(
+        (
+          await me.post(
+            `${base}/releases`,
+            { revision: revision.id, label, visibility },
+            { "idempotency-key": `same-content-export-${index}` },
+          )
+        ).status,
+      ).toBe(202);
+      expect(await h.runPublishJobs()).toEqual(["published"]);
+      const releaseResponse = await api.request(`${base}/releases/${label}`, {
+        headers: { "x-test-user": owner },
+      });
+      expect(releaseResponse.status, await releaseResponse.clone().text()).toBe(200);
+      const release = (await releaseResponse.json()) as {
+        id: string;
+        semantic_digest: string;
+        lock_digest: string;
+      };
+      digests.push(release.semantic_digest);
+      locks.push(release.lock_digest);
+      const path = `${base}/releases/${label}/export/ccv3?part=card`;
+      const headers = visibility === "private" ? { "x-test-user": owner } : {};
+      expect((await api.request(path, { headers })).status).toBe(202);
+      const jobs = await h.queue.boss.fetch<ExportJob>(QUEUE_NAMES.exportBuild, { batchSize: 5 });
+      expect(jobs).toHaveLength(1);
+      const job = jobs?.[0];
+      if (!job) throw new Error("missing export job");
+      keys.push(job.data.cache_key);
+      expect(await handleExportJob({ db: t.app.db, cas: h.services.cas }, job.data)).toBe("built");
+      await h.queue.boss.complete(QUEUE_NAMES.exportBuild, job.id);
+      const response = await api.request(path, { headers });
+      expect(response.status).toBe(200);
+      const output = (await response.json()) as {
+        data: { extensions: { char_pub: { root: { release: string } } } };
+      };
+      expect(output.data.extensions.char_pub.root.release).toBe(release.id);
+      const [cache] = await t.app.db
+        .select()
+        .from(buildArtifacts)
+        .where(eq(buildArtifacts.cacheKey, job.data.cache_key));
+      if (!cache) throw new Error("missing export cache");
+      expect((await h.services.cas.getBlob(visibility, cache.blobDigest)).length).toBeGreaterThan(
+        0,
+      );
+      const refs = await t.app.db
+        .select()
+        .from(blobRefs)
+        .where(eq(blobRefs.digest, cache.blobDigest));
+      expect(refs).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ releaseId: job.data.release_id, role: "export" }),
+        ]),
+      );
+      if (visibility === "private") {
+        expect((await api.request(path)).status).toBe(404);
+        await expect(h.services.cas.getBlob("public", cache.blobDigest)).rejects.toThrow();
+      }
+    }
+    expect(new Set(digests).size).toBe(1);
+    expect(new Set(locks).size).toBe(1);
+    expect(new Set(keys).size).toBe(3);
+  });
+
   it("does not build for unknown or unpublished releases", async () => {
     expect(
       await handleExportJob(

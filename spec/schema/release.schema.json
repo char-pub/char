@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://char.pub/schema/v0-draft/release.schema.json",
+  "$id": "https://char.pub/schema/v1-draft/release.schema.json",
   "title": "char.pub Release",
   "type": "object",
   "properties": {
@@ -70,8 +70,10 @@
       "items": {
         "type": "object",
         "properties": {
-          "ref": {
-            "$ref": "#/$defs/UnversionedRef"
+          "client_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
           },
           "author": {
             "anyOf": [
@@ -87,11 +89,14 @@
           "contribution": {
             "type": "string",
             "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+          },
+          "ref": {
+            "$ref": "#/$defs/UnversionedRef"
           }
         },
         "required": [
-          "ref",
-          "author"
+          "author",
+          "ref"
         ],
         "additionalProperties": false
       }
@@ -419,29 +424,69 @@
     "Provenance": {
       "type": "object",
       "properties": {
+        "client_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
         "derived_from": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "release": {
-                "type": "string",
-                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "release": {
+                    "type": "string",
+                    "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                  },
+                  "relation": {
+                    "type": "string",
+                    "enum": [
+                      "fork",
+                      "remix",
+                      "import"
+                    ]
+                  }
+                },
+                "required": [
+                  "release",
+                  "relation"
+                ],
+                "additionalProperties": false
               },
-              "relation": {
-                "type": "string",
-                "enum": [
-                  "fork",
-                  "remix",
-                  "import"
-                ]
+              {
+                "type": "object",
+                "properties": {
+                  "release": {
+                    "type": "string",
+                    "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                  },
+                  "relation": {
+                    "type": "string",
+                    "enum": [
+                      "fork",
+                      "remix",
+                      "import",
+                      "sequel"
+                    ]
+                  },
+                  "ref": {
+                    "$ref": "#/$defs/UnversionedRef"
+                  },
+                  "semantic_digest": {
+                    "$ref": "#/$defs/Digest"
+                  }
+                },
+                "required": [
+                  "release",
+                  "relation",
+                  "ref",
+                  "semantic_digest"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "release",
-              "relation"
-            ],
-            "additionalProperties": false
+            ]
           }
         },
         "imported_from": {
@@ -476,6 +521,11 @@
           "items": {
             "type": "object",
             "properties": {
+              "client_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
               "author": {
                 "anyOf": [
                   {

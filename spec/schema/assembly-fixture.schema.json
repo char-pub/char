@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://char.pub/schema/v0-draft/assembly-fixture.schema.json",
+  "$id": "https://char.pub/schema/v1-draft/assembly-fixture.schema.json",
   "title": "char.pub Assembly Fixture",
   "type": "object",
   "properties": {
@@ -133,6 +133,10 @@
               "description": {
                 "type": "string",
                 "minLength": 1
+              },
+              "outward_description": {
+                "type": "string",
+                "minLength": 1
               }
             },
             "required": [
@@ -217,6 +221,100 @@
         "scene": {
           "type": "string",
           "minLength": 1
+        },
+        "visible_overlay": {
+          "type": "object",
+          "properties": {
+            "memory": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "state": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "active_variants": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "minLength": 1
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "present": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "story": {
+          "$ref": "#/$defs/TurnStory"
+        },
+        "story_guidance": {
+          "type": "boolean"
+        },
+        "focus": {
+          "type": "string"
+        },
+        "judgments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "result": {
+                "type": "string",
+                "enum": [
+                  "true",
+                  "false",
+                  "undetermined"
+                ]
+              },
+              "provider": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "target",
+              "path",
+              "result",
+              "provider"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [
@@ -224,6 +322,21 @@
         "history"
       ],
       "additionalProperties": false
+    },
+    "selection": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CatalogRef"
+      }
+    },
+    "source_texts": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
     },
     "assembler": {
       "type": "object",
@@ -370,6 +483,175 @@
         "semantic_digest"
       ],
       "additionalProperties": false
+    },
+    "TurnStory": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string"
+        },
+        "visited": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reached": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ended": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "happened": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vars": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        },
+        "knowing": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "stopped": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "start",
+        "visited",
+        "reached",
+        "ended",
+        "happened",
+        "vars",
+        "knowing",
+        "stopped"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogRef": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "work": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "work"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "fragment": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "fragment"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "group": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "group"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "section": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "source"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "story": {
+              "type": "string",
+              "enum": [
+                "scene",
+                "part",
+                "goal",
+                "beat",
+                "ending"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "story",
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

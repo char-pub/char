@@ -2,7 +2,7 @@
  * 组装公开 API（`api` 进程）。admin 路由不在这里挂载：它们只存在于单独的 admin 进程。
  *
  * 中间件顺序：请求 ID → 源站校验 → 安全响应头 → CORS → Origin 校验 → 请求体上限 →
- * principal 解析 → 路由。principal 的来源依次是：个人 Token、创作者的登录会话、访客会话；
+ * principal 解析 → 路由。principal 的来源依次是：PAT/OAuth Bearer、创作者的登录会话、访客会话；
  * 登录用户优先，同时带着访客 cookie 时按登录用户处理。每个路由模块导出一个 `register(app)` 函数，并通过 `route()`
  * 注册路由，保证都经过授权。
  */
@@ -24,6 +24,7 @@ import {
 import type { Env, Services } from "./app.js";
 import { DRAFT_PATH_RE, MAX_DRAFT_BYTES } from "./routes/drafts.js";
 import { MAX_WEBHOOK_REQUEST_BYTES, WEBHOOK_PATH } from "./routes/github-webhook.js";
+import { OIDC_PUBLISH_PATH } from "./routes/oidc-publish.js";
 
 export interface ApiOptions {
   services: Services;
@@ -48,19 +49,36 @@ export function createApi(opts: ApiOptions): Hono<Env> {
   // 前端（www）与 API 在不同的子域名，浏览器的跨域请求需要 CORS：只对白名单中的 Origin
   // 放行，并允许携带 session cookie。
   const allowed = new Set(opts.allowedOrigins);
-  // biome-ignore lint/plugin: CORS 中间件只回答预检请求并设置响应头，不返回任何业务数据。
-  app.use(
-    "/v1/*",
-    cors({
-      origin: (origin) => (allowed.has(origin) ? origin : null),
-      credentials: true,
-      allowMethods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
-      allowHeaders: ["content-type", "if-match", "idempotency-key"],
-      exposeHeaders: ["etag", "retry-after"],
-      maxAge: 600,
-    }),
-  );
-  app.use(originCheck({ allowed: opts.allowedOrigins }));
+  const sessionCors = cors({
+    origin: (origin) => (allowed.has(origin) ? origin : null),
+    credentials: true,
+    allowMethods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
+    allowHeaders: ["content-type", "authorization", "if-match", "idempotency-key"],
+    exposeHeaders: ["etag", "retry-after"],
+    maxAge: 600,
+  });
+  const protocolPaths = ["/v1/auth/oauth2/token", "/v1/auth/oauth2/revoke"];
+  const bearerCors = cors({
+    origin: "*",
+    credentials: false,
+    allowMethods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
+    allowHeaders: ["authorization", "content-type", "if-match", "idempotency-key"],
+    exposeHeaders: ["etag", "retry-after"],
+    maxAge: 600,
+  });
+  // Bearer access and public OAuth exchanges never grant credentialed cookie CORS.
+  // biome-ignore lint/plugin: CORS only answers preflight; bearer identity is checked below.
+  app.use("/v1/*", (c, next) => {
+    const proof =
+      c.req.header("authorization") !== undefined ||
+      (c.req.method === "OPTIONS" &&
+        (c.req.header("access-control-request-headers") ?? "")
+          .toLowerCase()
+          .split(",")
+          .some((h) => h.trim() === "authorization"));
+    return (proof || protocolPaths.includes(c.req.path) ? bearerCors : sessionCors)(c, next);
+  });
+  app.use(originCheck({ allowed: opts.allowedOrigins, allowBearer: true, protocolPaths }));
   // 草稿保存的请求体可以更大（上限 5 MiB），GitHub webhook 的投递最大 25 MiB，其他请求 1 MiB。
   const normalLimit = jsonBodyLimit();
   const draftLimit = jsonBodyLimit(MAX_DRAFT_BYTES);
@@ -76,17 +94,22 @@ export function createApi(opts: ApiOptions): Hono<Env> {
     c.set("services", opts.services);
     const auth = c.req.header("authorization");
     let principal: Principal | null = null;
-    if (auth?.startsWith("Bearer cp_pat_")) {
-      principal = await principalFromToken(
-        opts.services.db,
-        auth.slice("Bearer ".length),
-        opts.services.clock.now(),
-      );
-      // 带了 Token 却无效：明确返回 401，而不是当成匿名访问。
+    if (protocolPaths.includes(c.req.path) || c.req.path === OIDC_PUBLISH_PATH) {
+      // Protocol handlers verify their own proof. Never borrow a browser identity here.
+      principal = { kind: "anonymous" };
+    } else if (auth !== undefined) {
+      if (c.req.path.startsWith("/v1/auth/")) return problem(c, 401, "auth.bearer_not_allowed");
+      const match = /^Bearer\s+(\S+)$/i.exec(auth);
+      const token = match?.[1];
+      if (!token) return problem(c, 401, "auth.invalid_token");
+      if (token.startsWith("cp_pat_"))
+        principal = await principalFromToken(opts.services.db, token, opts.services.clock.now());
+      else if (opts.services.oauth) {
+        const headers = new Headers({ authorization: `Bearer ${token}` });
+        principal = await opts.services.oauth.resolvePrincipal(new Request(c.req.url, { headers }));
+      }
       if (!principal) return problem(c, 401, "auth.invalid_token");
-    } else if (opts.sessionPrincipal) {
-      principal = await opts.sessionPrincipal(c.req.raw);
-    }
+    } else if (opts.sessionPrincipal) principal = await opts.sessionPrincipal(c.req.raw);
     if (!principal) {
       const guestToken = getCookie(c, GUEST_COOKIE);
       if (guestToken) {
@@ -105,8 +128,14 @@ export function createApi(opts: ApiOptions): Hono<Env> {
   app.get("/healthz", (c) => c.json({ ok: true }));
   // 登录接口由 Better Auth 自己处理授权（它们本身就是建立身份的地方），所以不经过 route()。
   const authHandler = opts.authHandler;
-  // biome-ignore lint/plugin: 登录与回调接口由 Better Auth 处理，见上一条注释。
-  if (authHandler) app.on(["GET", "POST"], "/v1/auth/*", (c) => authHandler(c.req.raw));
+  if (authHandler)
+    // biome-ignore lint/plugin: The OAuth wrapper and Better Auth validate their own protocol proofs.
+    app.on(["GET", "POST"], "/v1/auth/*", (c) => {
+      if (!protocolPaths.includes(c.req.path)) return authHandler(c.req.raw);
+      const headers = new Headers(c.req.raw.headers);
+      headers.delete("cookie");
+      return authHandler(new Request(c.req.raw, { headers }));
+    });
   for (const register of opts.modules) register(app);
   app.notFound((c) => problem(c, 404, "not_found"));
   app.onError(errorHandler);

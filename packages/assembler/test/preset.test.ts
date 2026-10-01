@@ -8,7 +8,7 @@ import {
   resolvePreset,
 } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
-import { assemble } from "../src/assemble.js";
+import { assemble } from "./fixtures/assemble.js";
 import { buildIR, charCounter, frag, profile, RELEASE, USER } from "./fixtures/ir.js";
 
 const session = { bindings: { user: USER } };
@@ -23,7 +23,7 @@ function preset(overrides: Partial<PresetPolicy> = {}) {
     display_name: "Narrative",
     meta: { default_locale: "en", rating: "general", rights: "original", license: "CC0-1.0" },
     policy: {
-      version: "0-draft",
+      version: "1-draft",
       blocks: [],
       layout: [...PRESET_REGIONS],
       requires: { system_role: true },
@@ -48,6 +48,37 @@ function codeOf(fn: () => unknown) {
 }
 
 describe("explicit presets", () => {
+  it("keeps explicit repeats in message order and traces each placement to its definition", () => {
+    const chosen = preset({
+      blocks: [
+        { id: "rule", text: "Leave room.", purpose: "Player agency", default_at: "main" },
+        { id: "fallback", text: "Default tail.", default_at: "main" },
+      ],
+      placements: [
+        { block: "rule", at: "main", as: "one" },
+        { block: "rule", at: "main", as: "two" },
+        { block: "rule", at: "after-history" },
+      ],
+    });
+    const output = assemble({
+      ir: buildIR({ fragments: [] }),
+      preset: chosen,
+      profile: runtime(),
+      session: { ...session, history: [{ role: "user", text: "My move" }] },
+      counter: charCounter,
+    });
+    const messages = output.messages.map((m) => m.content);
+    expect(messages.slice(0, 3)).toEqual(["Leave room.", "Leave room.", "Default tail."]);
+    expect(messages.slice(-2)).toEqual(["My move", "Leave room."]);
+    const entries = output.trace.entries.filter((entry) => entry.id.startsWith("preset:rule"));
+    expect(new Set(entries.map((entry) => entry.id)).size).toBe(3);
+    expect(entries[0]).toMatchObject({
+      purpose: "Player agency",
+      policy_origin: { block: "rule" },
+      policy_placement: { as: "one" },
+    });
+    expect(AssemblyTraceSchema.safeParse(output.trace).success).toBe(true);
+  });
   it("places policy and Creative content around unchanged history, with separate identity", () => {
     const ir = buildIR({
       fragments: [
@@ -57,9 +88,9 @@ describe("explicit presets", () => {
     });
     const chosen = preset({
       blocks: [
-        { id: "main", text: "Narrate", position: "main" },
-        { id: "last", text: "Continue", position: "after-history" },
-        { id: "off", text: "Omitted", position: "main", enabled: false },
+        { id: "main", text: "Narrate", default_at: "main" },
+        { id: "last", text: "Continue", default_at: "after-history" },
+        { id: "off", text: "Omitted", default_at: "main", enabled: false },
       ],
       layout: [...PRESET_REGIONS.filter((r) => r !== "system:style"), "system:style"],
     });
@@ -117,8 +148,8 @@ describe("explicit presets", () => {
 
   it("changes policy identity without changing the content IR", () => {
     const ir = buildIR({ fragments: [frag({ fid: "character" })] });
-    const first = preset({ blocks: [{ id: "main", text: "First", position: "main" }] });
-    const second = preset({ blocks: [{ id: "main", text: "Second", position: "main" }] });
+    const first = preset({ blocks: [{ id: "main", text: "First", default_at: "main" }] });
+    const second = preset({ blocks: [{ id: "main", text: "Second", default_at: "main" }] });
     const a = assemble({ ir, preset: first, profile: runtime(), session });
     const b = assemble({ ir, preset: second, profile: runtime(), session });
     expect(a.trace.ir).toEqual(b.trace.ir);
@@ -130,7 +161,7 @@ describe("explicit presets", () => {
 
   it("treats policy text as literal, without using the Creative template evaluator", () => {
     const chosen = preset({
-      blocks: [{ id: "literal", text: "Literal {{user}}", position: "main" }],
+      blocks: [{ id: "literal", text: "Literal {{user}}", default_at: "main" }],
     });
     const r = assemble({
       ir: buildIR({ fragments: [] }),
@@ -160,7 +191,7 @@ describe("explicit presets", () => {
       session,
     });
     expect(r.messages).toEqual([]);
-    expect(r.trace.entries.map((e) => e.reason)).toEqual(["visibility", "visibility", "inactive"]);
+    expect(r.trace.entries.map((e) => e.reason)).toEqual(["withheld", "excluded", "inactive"]);
   });
 
   it("validates a serialized ResolvedPreset at the assembly boundary", () => {
@@ -182,7 +213,7 @@ describe("preset budgeting", () => {
     ],
   });
 
-  it("uses layout order only for explicit presets and preserves legacy IR priority", () => {
+  it("uses the same admission priority for locked default and explicit policies", () => {
     const input = {
       ir,
       profile: { ...runtime(), context_window: 5 },
@@ -191,11 +222,11 @@ describe("preset budgeting", () => {
     };
     expect(assemble(input).messages[0]?.content).toBe("KKKKK");
     const explicit = assemble({ ...input, preset: preset() });
-    expect(explicit.messages[0]?.content).toBe("CCCCC");
-    expect(explicit.trace.entries[0]?.reason).toBe("budget");
-    const legacy = assemble(input);
-    expect(legacy.trace.preset).toBeUndefined();
-    expect(legacy.trace.assembler?.layout).toBe("default-v1");
+    expect(explicit.messages[0]?.content).toBe("KKKKK");
+    expect(explicit.trace.entries[1]?.reason).toBe("budget");
+    const locked = assemble(input);
+    expect(locked.trace.preset?.ref).toBe("@fixtures/default-policy");
+    expect(locked.trace.assembler?.layout).toBe("preset-v1");
   });
 
   it("reserves all pinned before earlier normal fragments", () => {
@@ -229,8 +260,8 @@ describe("preset budgeting", () => {
   it("counts history and policy once, and excludes disabled policy blocks", () => {
     const chosen = preset({
       blocks: [
-        { id: "main", text: "P", position: "main" },
-        { id: "off", text: "long disabled block", position: "main", enabled: false },
+        { id: "main", text: "P", default_at: "main" },
+        { id: "off", text: "long disabled block", default_at: "main", enabled: false },
       ],
     });
     const r = assemble({
@@ -241,7 +272,7 @@ describe("preset budgeting", () => {
       counter: charCounter,
     });
     expect(r.trace.total_tokens).toBe(8);
-    expect(r.messages.map((m) => m.content)).toEqual(["P", "CCCCC", "HH"]);
+    expect(r.messages.map((m) => m.content)).toEqual(["P", "KKKKK", "HH"]);
   });
 
   it("counts Session content once and does not apply Creative region caps to it", () => {
@@ -263,7 +294,7 @@ describe("preset budgeting", () => {
     "fails when fixed %s content alone exceeds the budget",
     (source) => {
       const chosen = preset({
-        blocks: source === "policy" ? [{ id: "big", text: "XXXX", position: "main" }] : [],
+        blocks: source === "policy" ? [{ id: "big", text: "XXXX", default_at: "main" }] : [],
       });
       expect(
         codeOf(() =>
@@ -344,7 +375,7 @@ describe("preset capability requirements", () => {
   it("merges adjacent system messages without moving them across history", () => {
     const r = assemble({
       ir,
-      preset: preset({ blocks: [{ id: "main", text: "P", position: "main" }] }),
+      preset: preset({ blocks: [{ id: "main", text: "P", default_at: "main" }] }),
       profile: profile({ capabilities: { system_role: true, multiple_system_messages: false } }),
       session: { ...session, history: [{ role: "user", text: "H" }] },
     });
@@ -360,7 +391,7 @@ describe("preset capability requirements", () => {
       codeOf(() =>
         assemble({
           ir,
-          preset: preset({ blocks: [{ id: "last", text: "P", position: "after-history" }] }),
+          preset: preset({ blocks: [{ id: "last", text: "P", default_at: "after-history" }] }),
           profile: profile({
             capabilities: { system_role: true, multiple_system_messages: false },
           }),
@@ -374,7 +405,7 @@ describe("preset capability requirements", () => {
     const r = assemble({
       ir,
       preset: preset({
-        blocks: [{ id: "off", text: "P", position: "after-history", enabled: false }],
+        blocks: [{ id: "off", text: "P", default_at: "after-history", enabled: false }],
       }),
       profile: profile({ capabilities: { system_role: true } }),
       session: { ...session, history: [{ role: "user", text: "H" }] },
@@ -383,7 +414,7 @@ describe("preset capability requirements", () => {
   });
 
   it("allows a sole post-history system group and all-empty input", () => {
-    const p = preset({ blocks: [{ id: "last", text: "P", position: "after-history" }] });
+    const p = preset({ blocks: [{ id: "last", text: "P", default_at: "after-history" }] });
     const r = assemble({
       ir: buildIR({ fragments: [] }),
       preset: p,
@@ -408,8 +439,8 @@ describe("preset final message text budget", () => {
   it("counts policy separators as fixed cost after single-system merging", () => {
     const chosen = preset({
       blocks: [
-        { id: "a", text: "A", position: "main" },
-        { id: "b", text: "B", position: "main" },
+        { id: "a", text: "A", default_at: "main" },
+        { id: "b", text: "B", default_at: "main" },
       ],
     });
     const input = { ir: buildIR({ fragments: [] }), preset: chosen, session, counter: charCounter };

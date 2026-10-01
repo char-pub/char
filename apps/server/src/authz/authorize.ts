@@ -12,6 +12,8 @@
  */
 
 export type Scope =
+  | "profile"
+  | "drafts:write"
   | "creations:read"
   | "creations:write"
   | "releases:publish"
@@ -27,6 +29,10 @@ export type Principal =
       scopes?: readonly Scope[];
       /** 通过标记为 Agent 的个人 Token 认证。 */
       agent?: boolean;
+      /** Delegated OAuth credentials never inherit browser session privileges. */
+      oauth?: { client_id: string; token_id: string };
+      /** PAT row identity, never the bearer secret; durable jobs retain this credential. */
+      token_id?: string;
     }
   | { kind: "guest"; guest_id: string; disabled: boolean }
   /** 通过 GitHub OIDC 换来的短期发布凭证，只能发布它所绑定的 Creation。 */
@@ -37,6 +43,8 @@ export type NamespaceRole = "owner" | "maintainer";
 /** 资源所在 namespace 的状态，以及当前用户在其中的角色。 */
 export interface NamespaceContext {
   namespace_id: string;
+  /** Only system namespaces may delegate platform maintenance at namespace scope. */
+  kind?: "user" | "org" | "system";
   status: "active" | "suspended";
   /** 当前 principal 的角色；不是成员时为 null。 */
   role: NamespaceRole | null;
@@ -56,6 +64,8 @@ export type ContributionPolicy = "anyone" | "signed-in" | "invited" | "closed";
 export type Resource =
   | {
       type: "creation";
+      /** Accepted collaboration on this exact creation, never namespace membership. */
+      collaborator?: boolean;
       id: string;
       ns: NamespaceContext;
       /** Creation 是否有任何公开可见的内容（至少一个 active 的 public Release）。 */
@@ -67,6 +77,7 @@ export type Resource =
     }
   | {
       type: "release";
+      collaborator?: boolean;
       id: string;
       creation_id: string;
       ns: NamespaceContext;
@@ -78,6 +89,7 @@ export type Resource =
   | { type: "namespace"; ns: NamespaceContext }
   | {
       type: "contribution";
+      collaborator?: boolean;
       id: string;
       /** 目标 Creation 所在的 namespace。 */
       ns: NamespaceContext;
@@ -100,12 +112,15 @@ export type Resource =
 export type Action =
   | "creation.read"
   | "creation.read_draft"
+  | "creation.read_build"
   | "creation.create"
   | "creation.edit"
   | "creation.publish"
   | "creation.update_settings"
   /** 绑定、解绑 GitHub 仓库，处理冻结的 binding。 */
   | "creation.manage_source"
+  | "creation.manage_collaborators"
+  | "creation.delete_request"
   | "release.read"
   | "release.yank"
   | "contribution.submit"
@@ -121,6 +136,13 @@ export type Action =
   | "namespace.create"
   | "namespace.rename"
   | "account.read"
+  | "account.profile"
+  | "account.read_oauth"
+  | "account.manage_oauth"
+  | "account.read_collaborations"
+  | "account.list_creations"
+  | "account.read_favorites"
+  | "account.manage_favorites"
   | "account.update_settings"
   | "account.manage_tokens"
   /** 申请与确认访客邮箱验证。 */
@@ -145,11 +167,17 @@ function deny(status: 401 | 403 | 404 | 503, code: string): Decision {
 
 /** 动作需要的 Token scope。session 认证不受限制。 */
 const REQUIRED_SCOPE: Partial<Record<Action, Scope>> = {
+  "account.list_creations": "creations:read",
+  "account.read_collaborations": "creations:read",
   "creation.read_draft": "creations:read",
+  "creation.read_build": "creations:read",
+  "account.profile": "profile",
   "creation.create": "creations:write",
   "creation.edit": "creations:write",
   "creation.update_settings": "creations:write",
   "creation.manage_source": "creations:write",
+  "creation.manage_collaborators": "creations:write",
+  "creation.delete_request": "creations:write",
   "creation.publish": "releases:publish",
   "release.yank": "releases:publish",
   "contribution.submit": "contributions:write",
@@ -167,6 +195,8 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "creation.publish",
   "creation.update_settings",
   "creation.manage_source",
+  "creation.manage_collaborators",
+  "creation.delete_request",
   "release.yank",
   "contribution.submit",
   "contribution.decide",
@@ -178,6 +208,8 @@ const WRITE_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   "namespace.rename",
   "account.update_settings",
   "account.manage_tokens",
+  "account.manage_oauth",
+  "account.manage_favorites",
   "guest.verify",
   "report.create",
 ]);
@@ -196,7 +228,11 @@ export interface AuthzContext {
   disabled: ReadonlySet<FeatureFlag>;
 }
 
-const isMember = (ns: NamespaceContext) => ns.role === "owner" || ns.role === "maintainer";
+/** Personal works are owned by their namespace owner, not a namespace-wide maintainer. */
+export const isNamespaceOwner = (ns: Pick<NamespaceContext, "role" | "kind">): boolean =>
+  ns.role === "owner" || (ns.kind === "system" && ns.role === "maintainer");
+const canCollaborate = (r: { ns: NamespaceContext; collaborator?: boolean }) =>
+  isNamespaceOwner(r.ns) || r.collaborator === true;
 
 export function authorize(
   principal: Principal,
@@ -217,7 +253,47 @@ export function authorize(
 
   if (principal.kind === "user") {
     if (principal.banned) return deny(403, "account.banned");
-    const scope = REQUIRED_SCOPE[action];
+    if (principal.oauth) {
+      const delegated: Partial<Record<Action, Scope | null>> = {
+        search: null,
+        "creation.read": null,
+        "release.read": null,
+        "creation.read_build": "creations:read",
+        "account.list_creations": "creations:read",
+        "account.read_collaborations": "creations:read",
+        "account.profile": "profile",
+        "creation.create": "drafts:write",
+        "contribution.submit": "contributions:write",
+      };
+      if (!Object.hasOwn(delegated, action)) return deny(403, "oauth.action_not_allowed");
+      const required = delegated[action];
+      if (required && !principal.scopes?.includes(required))
+        return deny(403, "token.insufficient_scope");
+      if (
+        action === "creation.create" &&
+        (resource.type !== "namespace" ||
+          resource.ns.kind !== "user" ||
+          resource.ns.role !== "owner")
+      )
+        return deny(403, "oauth.own_namespace_required");
+    }
+    const privateRead =
+      (action === "creation.read" &&
+        resource.type === "creation" &&
+        (!resource.has_public_release ||
+          resource.status !== "active" ||
+          resource.ns.status !== "active")) ||
+      (action === "release.read" &&
+        resource.type === "release" &&
+        (resource.visibility !== "public" ||
+          resource.creation_status !== "active" ||
+          resource.ns.status !== "active")) ||
+      action === "contribution.read";
+    const scope = privateRead
+      ? "creations:read"
+      : principal.oauth && action === "creation.create"
+        ? "drafts:write"
+        : REQUIRED_SCOPE[action];
     if (scope && principal.scopes && !principal.scopes.includes(scope)) {
       return deny(403, "token.insufficient_scope");
     }
@@ -234,19 +310,19 @@ export function authorize(
 function canSee(principal: Principal, r: Resource): Decision {
   switch (r.type) {
     case "creation":
-      if (isMember(r.ns) && principal.kind === "user") return ALLOW;
+      if (canCollaborate(r) && principal.kind === "user") return ALLOW;
       // OIDC 发布凭证能看到它绑定的 Creation，即使它还没有任何公开的 Release（首次发布）。
       if (principal.kind === "oidc" && principal.creation_id === r.id) return ALLOW;
       if (r.status !== "active" || r.ns.status !== "active") return deny(404, "not_found");
       return r.has_public_release ? ALLOW : deny(404, "not_found");
     case "release":
-      if (isMember(r.ns) && principal.kind === "user") return ALLOW;
+      if (canCollaborate(r) && principal.kind === "user") return ALLOW;
       if (principal.kind === "oidc" && principal.creation_id === r.creation_id) return ALLOW;
       if (r.visibility !== "public") return deny(404, "not_found");
       if (r.creation_status !== "active" || r.ns.status !== "active") return deny(404, "not_found");
       return ALLOW;
     case "contribution": {
-      if (principal.kind === "user" && isMember(r.ns)) return ALLOW;
+      if (principal.kind === "user" && canCollaborate(r)) return ALLOW;
       if (isAuthor(principal, r.author)) return ALLOW;
       return deny(404, "not_found");
     }
@@ -277,12 +353,23 @@ function requireUser(p: Principal): Decision | null {
   return null;
 }
 
-/** 在资源所在 namespace 中必须是 owner / maintainer，且 namespace 未被冻结。 */
-function requireMember(p: Principal, ns: NamespaceContext): Decision {
+/** Owner-only authority, with an explicit system-namespace maintenance exception. */
+function requireOwner(p: Principal, ns: NamespaceContext): Decision {
   const u = requireUser(p);
   if (u) return u;
-  if (!isMember(ns)) return deny(403, "forbidden");
+  if (!isNamespaceOwner(ns)) return deny(403, "forbidden");
   if (ns.status !== "active") return deny(403, "namespace.suspended");
+  return ALLOW;
+}
+
+function requireEditor(
+  p: Principal,
+  r: { ns: NamespaceContext; collaborator?: boolean },
+): Decision {
+  const user = requireUser(p);
+  if (user) return user;
+  if (!canCollaborate(r)) return deny(403, "forbidden");
+  if (r.ns.status !== "active") return deny(403, "namespace.suspended");
   return ALLOW;
 }
 
@@ -298,9 +385,10 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
       return r.type === "release" ? ALLOW : deny(403, "bad_resource");
 
     case "creation.read_draft":
+    case "creation.read_build":
       if (r.type !== "creation") return deny(403, "bad_resource");
-      // 草稿只有成员能看；对其他人来说草稿“不存在”。
-      if (p.kind !== "user" || !isMember(r.ns)) return deny(404, "not_found");
+      // 草稿只对owner和本作品已确认的协作者开放；其他人看到404。
+      if (p.kind !== "user" || !canCollaborate(r)) return deny(404, "not_found");
       return ALLOW;
 
     case "namespace.create":
@@ -310,12 +398,12 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
 
     case "creation.create":
       if (r.type !== "namespace") return deny(403, "bad_resource");
-      return requireMember(p, r.ns);
+      return requireOwner(p, r.ns);
 
     case "namespace.rename": {
       // 改名影响所有作品的公共标识，只有 owner 可以操作；Token 不能改名。
       if (r.type !== "namespace") return deny(403, "bad_resource");
-      const m = requireMember(p, r.ns);
+      const m = requireOwner(p, r.ns);
       if (!m.allow) return m;
       if (r.ns.role !== "owner") return deny(403, "forbidden");
       if (p.kind === "user" && p.scopes) return deny(403, "token.not_allowed");
@@ -323,24 +411,31 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
     }
 
     case "creation.edit":
-    case "creation.update_settings":
-    case "creation.manage_source":
       if (r.type !== "creation") return deny(403, "bad_resource");
       if (r.status === "suspended") return deny(403, "creation.suspended");
-      return requireMember(p, r.ns);
+      return requireEditor(p, r);
+
+    case "creation.update_settings":
+    case "creation.manage_source":
+    case "creation.manage_collaborators":
+    case "creation.delete_request":
+      if (r.type !== "creation") return deny(403, "bad_resource");
+      if (r.status === "suspended") return deny(403, "creation.suspended");
+      return requireOwner(p, r.ns);
 
     case "creation.publish":
       if (r.type !== "creation") return deny(403, "bad_resource");
       if (r.status === "suspended") return deny(403, "creation.suspended");
+      if (p.kind === "user" && p.agent) return deny(403, "agent.action_not_allowed");
       if (p.kind === "oidc") {
         return p.creation_id === r.id ? ALLOW : deny(403, "binding.mismatch");
       }
-      return requireMember(p, r.ns);
+      return requireOwner(p, r.ns);
 
     case "release.yank":
       if (r.type !== "release") return deny(403, "bad_resource");
       if (r.status === "tombstoned") return deny(403, "release.tombstoned");
-      return requireMember(p, r.ns);
+      return requireOwner(p, r.ns);
 
     case "contribution.submit": {
       if (r.type !== "creation") return deny(403, "bad_resource");
@@ -351,7 +446,7 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
         case "invited":
           if (p.kind !== "user")
             return p.kind === "anonymous" ? deny(401, "auth.required") : deny(403, "forbidden");
-          return r.invited || isMember(r.ns) ? ALLOW : deny(403, "contribution.not_invited");
+          return r.invited || canCollaborate(r) ? ALLOW : deny(403, "contribution.not_invited");
         case "signed-in":
           return requireUser(p) ?? ALLOW;
         case "anyone":
@@ -364,13 +459,13 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
     }
 
     case "contribution.read":
-      // 可见性已经在 canSee 中判断：作者本人与目标 namespace 的成员。
+      // 可见性由canSee判断：投稿本人、作品owner或该作品已确认的协作者。
       return r.type === "contribution" ? ALLOW : deny(403, "bad_resource");
 
     case "contribution.decide":
       if (r.type !== "contribution") return deny(403, "bad_resource");
       if (r.status !== "open") return deny(403, "contribution.not_open");
-      return requireMember(p, r.ns);
+      return requireEditor(p, r);
 
     case "contribution.withdraw":
       if (r.type !== "contribution") return deny(403, "bad_resource");
@@ -383,7 +478,7 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
     case "import.create":
       // 对 namespace 判断能否导入到这里；对 system 只判断能否使用导入功能
       // （请求体不合法、还不知道目标 namespace 时用它，之后必然以 422 结束）。
-      if (r.type === "namespace") return requireMember(p, r.ns);
+      if (r.type === "namespace") return requireOwner(p, r.ns);
       return r.type === "system" ? (requireUser(p) ?? ALLOW) : deny(403, "bad_resource");
 
     case "import.read":
@@ -392,17 +487,31 @@ function decide(p: Principal, action: Action, r: Resource, ctx: AuthzContext): D
     case "import.confirm":
       if (r.type !== "import") return deny(403, "bad_resource");
       if (r.creation_status === "suspended") return deny(403, "creation.suspended");
-      return requireMember(p, r.ns);
+      return requireOwner(p, r.ns);
 
     case "upload.read":
       return r.type === "upload" ? ALLOW : deny(403, "bad_resource");
 
     case "account.read":
+    case "account.profile":
+    case "account.read_oauth":
+    case "account.manage_oauth":
+    case "account.read_collaborations":
+    case "account.list_creations":
+    case "account.read_favorites":
+    case "account.manage_favorites":
     case "account.update_settings":
     case "account.manage_tokens":
       if (r.type !== "account") return deny(403, "bad_resource");
       if (
-        (action === "account.manage_tokens" || action === "account.update_settings") &&
+        [
+          "account.manage_tokens",
+          "account.update_settings",
+          "account.read_oauth",
+          "account.manage_oauth",
+          "account.read_favorites",
+          "account.manage_favorites",
+        ].includes(action) &&
         p.kind === "user" &&
         p.scopes
       ) {

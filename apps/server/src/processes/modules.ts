@@ -4,9 +4,11 @@
  */
 import type { Hono } from "hono";
 import type { Env, Services } from "../api/app.js";
+import { register as collaborators } from "../api/routes/collaborators.js";
 import { register as contributions } from "../api/routes/contributions.js";
 import { bindingsModule } from "../api/routes/github-bindings.js";
 import { webhookModule } from "../api/routes/github-webhook.js";
+import { register as oauth } from "../api/routes/oauth.js";
 import { oidcPublishModule } from "../api/routes/oidc-publish.js";
 import { register as read } from "../api/routes/read.js";
 import { register as reports } from "../api/routes/reports.js";
@@ -21,6 +23,7 @@ import { QUEUE_NAMES } from "../jobs/definitions.js";
 import { CloudflarePurger, LoggingPurger } from "../ops/cdn.js";
 import { noopScanner } from "../upload/csam.js";
 import { cleanupLogLine, runCleanup } from "../worker/cleanup.js";
+import { registerDraftBuildWorkers } from "../worker/draft-build.js";
 import { type ExportJob, handleExportJob } from "../worker/export.js";
 import { runGitHubReconcile, runGitHubSync, type SyncJob } from "../worker/github.js";
 import { registerImportWorker } from "../worker/import.js";
@@ -35,6 +38,8 @@ export const API_MODULES: readonly ((app: Hono<Env>) => void)[] = [
   yank,
   uploads,
   contributions,
+  collaborators,
+  oauth,
   reports,
 ];
 
@@ -69,6 +74,7 @@ export async function startWorkers(services: Services): Promise<void> {
     systemActorId: env.SYSTEM_ACTOR_ID,
   };
   await registerUploadWorkers(services.queue, pipelineDeps);
+  await registerDraftBuildWorkers(services);
   // 角色卡导入：卡片里的图片与普通上传使用同一套处理与扫描。
   await registerImportWorker(services.queue, pipelineDeps);
   await registerPublishWorker(services.queue, {

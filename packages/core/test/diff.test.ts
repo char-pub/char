@@ -57,7 +57,7 @@ function f(init: FragInit): IRFragment {
 
 function ir(fragments: IRFragment[], patch: Partial<ContextIR> = {}): ContextIR {
   const base: ContextIR = {
-    ir_version: "0-draft",
+    ir_version: "1-draft",
     root: { ref: ROOT, release: REL_ALICE, semantic_digest: D("1") },
     lock_digest: D("2"),
     resolver: { name: "@char-pub/core", version: "0.0.0" },
@@ -170,8 +170,8 @@ describe("diffContextIR", () => {
     expect(d.fragments.modified).toEqual([]);
     expect(d.origin_changes.map((c) => c.id)).toEqual([desc.id, world.id].sort());
     const w = d.origin_changes.find((c) => c.id === world.id);
-    expect(w?.from.release).toBe(REL_WORLD_1);
-    expect(w?.to.release).toBe(REL_WORLD_2);
+    expect(w?.from).toMatchObject({ release: REL_WORLD_1 });
+    expect(w?.to).toMatchObject({ release: REL_WORLD_2 });
   });
 
   it("compares effective metadata and marks rating / license for highlighting", () => {

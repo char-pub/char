@@ -1,0 +1,7 @@
+{
+  "default_policy": {
+    "ref": "@conformance/default-policy",
+    "release": "rel_01h455vb4pex5vsknk084sn0df",
+    "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+  }
+}

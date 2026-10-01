@@ -15,12 +15,14 @@ import { createApi } from "../api/server.js";
 import { createAuth, sessionPrincipalResolver } from "../auth/better-auth.js";
 import { SmtpEmailSender } from "../auth/email.js";
 import { GUEST_TURNSTILE_ACTION, GuestHasher, type GuestServices } from "../auth/guest.js";
+import { createOAuthService } from "../auth/oauth.js";
 import { CloudflareTurnstile } from "../auth/turnstile.js";
 import { createDatabase } from "../db/client.js";
 import {
   AdminEnvSchema,
   AuthEnvSchema,
   authProvidersFromEnv,
+  DefaultPolicyEnvSchema,
   DeletionEnvSchema,
   EdgeEnvSchema,
   GitHubEnvSchema,
@@ -40,6 +42,7 @@ import { REPORT_TURNSTILE_ACTION, type ReportServices } from "../moderation/repo
 import { githubJwks } from "../oidc/github.js";
 import { FlagCache } from "../ops/flags.js";
 import { Cas, casConfigFromEnv } from "../storage/cas.js";
+import { DraftPayloadStore } from "../storage/draft-payload.js";
 import { API_MODULES, githubApiModules, startGitHubWorkers, startWorkers } from "./modules.js";
 
 export interface Started {
@@ -51,6 +54,8 @@ export interface Started {
 
 function baseServices(kind: "api" | "admin" | "worker") {
   const env = parseEnv(ServerEnvSchema);
+  const defaultPolicy =
+    kind === "api" ? parseEnv(DefaultPolicyEnvSchema).DEFAULT_PRESET : undefined;
   const database = createDatabase(env.DATABASE_URL, { max: env.DATABASE_POOL_MAX });
   const queue = new JobQueue({
     connectionString: env.DATABASE_URL,
@@ -58,14 +63,21 @@ function baseServices(kind: "api" | "admin" | "worker") {
     schedule: kind === "worker",
   });
   const flags = new FlagCache(database.db);
+  const storage = casConfigFromEnv(env);
   const services: Services = {
     db: database.db,
-    cas: new Cas(casConfigFromEnv(env)),
+    cas: new Cas(storage),
+    draftPayloads: new DraftPayloadStore(storage),
+    draftBuildLimits: {
+      retained: env.DRAFT_BUILD_MAX_RETAINED,
+      perHour: env.DRAFT_BUILD_MAX_PER_HOUR,
+    },
     queue,
     clock: { now: () => new Date() },
     ids: { uuid: () => uuidv7() },
     flags: () => flags.current(),
     publicAssetBaseUrl: `${env.PUBLIC_ASSETS_BASE_URL.replace(/\/+$/, "")}/cas/sha256`,
+    ...(defaultPolicy ? { defaultPolicy } : {}),
   };
   return { env, database, queue, services };
 }
@@ -81,14 +93,24 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
   if (kind === "api") {
     const edge = parseEnv(EdgeEnvSchema);
     const authEnv = parseEnv(AuthEnvSchema);
+    const oauthOrigin = (authEnv.OAUTH_APP_URL ?? authEnv.AUTH_TRUSTED_ORIGINS[0])?.replace(
+      /\/$/,
+      "",
+    );
+    if (!oauthOrigin) throw new Error("OAuth needs a trusted browser origin");
     const auth = createAuth({
       db: database.db,
       secret: authEnv.BETTER_AUTH_SECRET,
       baseURL: authEnv.BETTER_AUTH_URL,
       trustedOrigins: authEnv.AUTH_TRUSTED_ORIGINS,
       providers: authProvidersFromEnv(authEnv),
+      oauth: {
+        loginPage: `${oauthOrigin}/oauth/consent`,
+        consentPage: `${oauthOrigin}/oauth/consent`,
+      },
       ipAddressHeaders: ["cf-connecting-ip"],
     });
+    services.oauth = createOAuthService(auth, database.db);
     const deletion = parseEnv(DeletionEnvSchema);
     if (deletion.LEGAL_ENCRYPTION_KEY)
       services.legalKey = parseLegalKey(deletion.LEGAL_ENCRYPTION_KEY);
@@ -99,7 +121,7 @@ export async function startProcess(kind: "api" | "admin" | "worker"): Promise<St
       originSecrets: originSecretsFromEnv(edge),
       allowedOrigins: authEnv.AUTH_TRUSTED_ORIGINS,
       sessionPrincipal: sessionPrincipalResolver(auth),
-      authHandler: (req) => auth.handler(req),
+      authHandler: (req) => services.oauth?.handler(req) ?? auth.handler(req),
       modules: gh ? [...API_MODULES, ...githubApiModules(gh)] : API_MODULES,
     });
     return { fetch: app.fetch, shutdown };

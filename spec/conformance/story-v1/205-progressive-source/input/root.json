@@ -1,0 +1,174 @@
+{
+  "release": "rel_01j00000000000000000000205",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01j00000000000000000000205",
+    "ref": "@portable/library",
+    "type": "scenario",
+    "display_name": "Progressive reference library",
+    "meta": {
+      "default_locale": "en",
+      "rating": "general",
+      "rights": "original",
+      "license": "CC0-1.0"
+    },
+    "cast": [
+      {
+        "key": "alice",
+        "who": {
+          "late": "character"
+        },
+        "part": "Host",
+        "goal": "ALICE_PRIVATE_GOAL"
+      },
+      {
+        "key": "bob",
+        "who": {
+          "late": "character"
+        },
+        "part": "Visitor",
+        "goal": "BOB_PRIVATE_GOAL"
+      }
+    ],
+    "fragments": [
+      {
+        "id": "required",
+        "kind": "instruction",
+        "stable": true,
+        "importance": "pinned",
+        "content": {
+          "type": "text",
+          "text": "REQUIRED_VISIBLE_BODY"
+        }
+      },
+      {
+        "id": "public",
+        "kind": "knowledge",
+        "stable": true,
+        "activation": {
+          "mode": "manual"
+        },
+        "content": {
+          "type": "text",
+          "text": "DIRECT_VISIBLE_BODY"
+        }
+      },
+      {
+        "id": "doorway",
+        "kind": "knowledge",
+        "stable": true,
+        "activation": {
+          "mode": "semantic"
+        },
+        "description": "THIRD_LEVEL_ENTRY_DESCRIPTION",
+        "content": {
+          "type": "text",
+          "text": "THIRD_LEVEL_SELECTED_BODY"
+        }
+      }
+    ],
+    "story": {
+      "version": 1,
+      "scenes": [
+        {
+          "id": "lobby",
+          "title": "Lobby",
+          "cast": ["alice", "bob"],
+          "lore": ["#public"]
+        },
+        {
+          "id": "back",
+          "title": "Back door",
+          "cast": ["alice"],
+          "lore": ["#public"]
+        }
+      ]
+    },
+    "description": "Library overview, not document contents",
+    "groups": [
+      {
+        "id": "building",
+        "title": "Building",
+        "description": "FIRST_LEVEL_DESCRIPTION",
+        "groups": ["floor"]
+      },
+      {
+        "id": "floor",
+        "title": "Floor",
+        "description": "SECOND_LEVEL_DESCRIPTION",
+        "groups": ["room"]
+      },
+      {
+        "id": "room",
+        "title": "Room",
+        "description": "THIRD_LEVEL_DESCRIPTION",
+        "entries": ["doorway"]
+      }
+    ],
+    "sources": [
+      {
+        "id": "guide",
+        "title": "Guide",
+        "description": "PUBLIC_SOURCE_DESCRIPTION",
+        "asset": "guide",
+        "format": "markdown",
+        "visibility": {
+          "scope": "shared"
+        },
+        "sections": [
+          {
+            "id": "door",
+            "title": "Door",
+            "description": "DOOR_SECTION_DESCRIPTION",
+            "anchor": "#Door"
+          },
+          {
+            "id": "river",
+            "title": "River",
+            "description": "RIVER_SECTION_DESCRIPTION",
+            "anchor": "#River"
+          }
+        ]
+      },
+      {
+        "id": "private-notes",
+        "title": "PRIVATE_SOURCE_TITLE",
+        "description": "PRIVATE_SOURCE_DESCRIPTION",
+        "asset": "private-notes",
+        "format": "text"
+      }
+    ],
+    "assets": [
+      {
+        "slot": "guide",
+        "role": "context",
+        "variants": [
+          {
+            "id": "default",
+            "media_type": "text/markdown",
+            "blob": {
+              "digest": "sha256:09f03333ad08522ab5a663986710a21c1b95b1d08abfe98521a351d5e0b0cffd",
+              "size": 75,
+              "availability": "mirrored"
+            }
+          }
+        ]
+      },
+      {
+        "slot": "private-notes",
+        "role": "context",
+        "variants": [
+          {
+            "id": "default",
+            "media_type": "text/plain",
+            "blob": {
+              "digest": "sha256:72b1cbd171951af11f70574214c3db28aa82b23f74a9b8d202e92173008265a3",
+              "size": 19,
+              "availability": "mirrored"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

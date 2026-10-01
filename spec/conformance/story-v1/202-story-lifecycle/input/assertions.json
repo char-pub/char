@@ -1,0 +1,428 @@
+{
+  "initial": {
+    "state": {
+      "start": "default",
+      "scene": "lobby",
+      "present": ["alice", "bob"],
+      "visited": ["lobby"],
+      "reached": [],
+      "ended": [],
+      "happened": [],
+      "vars": {
+        "trust": 0,
+        "open": false,
+        "mood": "calm",
+        "inventory": ["letter"],
+        "marks": []
+      },
+      "knowing": {
+        "#secret": ["alice"]
+      },
+      "stopped": false
+    }
+  },
+  "steps": [
+    {
+      "index": 0,
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      },
+      "outcome": {
+        "input_ignored": true
+      }
+    },
+    {
+      "index": 1,
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      },
+      "outcome": {
+        "choices": ["hand-over", "keep"]
+      }
+    },
+    {
+      "index": 2,
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      },
+      "error": {
+        "code": "story.condition_unsatisfied",
+        "subject": "scene/back"
+      }
+    },
+    {
+      "index": 3,
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      },
+      "outcome": {
+        "truth": "unknown"
+      }
+    },
+    {
+      "index": 4,
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      },
+      "error": {
+        "code": "story.condition_unsatisfied",
+        "subject": "beat/refuse"
+      }
+    },
+    {
+      "index": 5,
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      },
+      "error": {
+        "code": "story.condition_unsatisfied",
+        "subject": "beat/refuse"
+      }
+    },
+    {
+      "index": 6,
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      },
+      "error": {
+        "code": "story.condition_unsatisfied",
+        "subject": "beat/refuse"
+      }
+    },
+    {
+      "index": 7,
+      "outcome": {
+        "truth": false
+      }
+    },
+    {
+      "index": 8,
+      "outcome": {
+        "truth": true
+      }
+    },
+    {
+      "index": 9,
+      "state": {
+        "reached": ["copy"],
+        "vars": {
+          "marks": ["copied"],
+          "trust": 0
+        }
+      }
+    },
+    {
+      "index": 10,
+      "state": {
+        "reached": ["copy", "trust"],
+        "vars": {
+          "trust": 20
+        }
+      }
+    },
+    {
+      "index": 11,
+      "error": {
+        "code": "story.already_confirmed",
+        "subject": "beat/trust"
+      },
+      "state": {
+        "reached": ["copy", "trust"],
+        "vars": {
+          "trust": 20
+        }
+      }
+    },
+    {
+      "index": 12,
+      "state": {
+        "scene": "back",
+        "visited": ["lobby", "back"],
+        "present": ["alice"],
+        "knowing": {
+          "#secret": ["alice", "bob"]
+        }
+      }
+    },
+    {
+      "index": 13,
+      "state": {
+        "present": ["alice", "bob"],
+        "knowing": {
+          "#secret": ["alice", "bob"]
+        }
+      }
+    },
+    {
+      "index": 14,
+      "outcome": {
+        "truth": true
+      }
+    },
+    {
+      "index": 15,
+      "state": {
+        "vars": {
+          "mood": "tense"
+        }
+      }
+    },
+    {
+      "index": 16,
+      "state": {
+        "vars": {
+          "trust": 100,
+          "inventory": ["letter"]
+        }
+      }
+    },
+    {
+      "index": 17,
+      "state": {
+        "vars": {
+          "trust": 0
+        }
+      }
+    },
+    {
+      "index": 18,
+      "state": {
+        "happened": ["road"],
+        "vars": {
+          "open": true
+        }
+      }
+    },
+    {
+      "index": 19,
+      "state": {
+        "ended": ["stay"],
+        "stopped": false
+      }
+    },
+    {
+      "index": 20,
+      "state": {
+        "scene": "lobby",
+        "stopped": false
+      }
+    },
+    {
+      "index": 21,
+      "state": {
+        "ended": ["stay", "leave"],
+        "stopped": true
+      }
+    },
+    {
+      "index": 22,
+      "error": {
+        "code": "story.stopped",
+        "subject": "lobby"
+      },
+      "state": {
+        "scene": "lobby",
+        "stopped": true
+      }
+    },
+    {
+      "index": 23,
+      "error": {
+        "code": "story.stopped",
+        "subject": "lobby"
+      },
+      "state": {
+        "stopped": true
+      }
+    },
+    {
+      "index": 24,
+      "outcome": {
+        "targets": [],
+        "choices": []
+      },
+      "state": {
+        "stopped": true
+      }
+    },
+    {
+      "index": 25,
+      "error": {
+        "code": "story.invalid_state",
+        "subject": "vars.trust"
+      },
+      "state": {
+        "stopped": true
+      }
+    },
+    {
+      "index": 26,
+      "error": {
+        "code": "story.invalid_state",
+        "subject": "vars.trust"
+      },
+      "state": {
+        "stopped": true
+      }
+    },
+    {
+      "index": 27,
+      "error": {
+        "code": "story.invalid_state",
+        "subject": "vars.open"
+      },
+      "state": {
+        "stopped": true
+      }
+    },
+    {
+      "index": 28,
+      "error": {
+        "code": "story.invalid_state",
+        "subject": "vars.mood"
+      },
+      "state": {
+        "stopped": true
+      }
+    },
+    {
+      "index": 29,
+      "error": {
+        "code": "story.invalid_state",
+        "subject": "vars.inventory"
+      },
+      "state": {
+        "stopped": true
+      }
+    },
+    {
+      "index": 30,
+      "error": {
+        "code": "story.invalid_state",
+        "subject": "vars.marks"
+      },
+      "state": {
+        "stopped": true
+      }
+    }
+  ]
+}

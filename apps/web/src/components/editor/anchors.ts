@@ -4,8 +4,10 @@
  * 检查栏和发布对话框里的问题都能点过去：先展开对应的折叠区，再滚动到字段并把焦点放进去。
  * 页面上只有一个编辑器，所以锚点用固定的 id。
  */
+
 import type { CreationType } from "@char-pub/core";
 import { getFragments, MAIN_FRAGMENT, type Working } from "@/lib/draft";
+import { type EditorLocation, editorLocation } from "@/lib/editor-location";
 
 export type SectionKey = "passages" | "dependencies" | "meta" | "language";
 
@@ -21,10 +23,8 @@ export const ANCHOR = {
   language: "edit-language",
 } as const;
 
-export interface Target {
-  anchor: string;
-  section?: SectionKey;
-}
+export type Target = EditorLocation;
+export type EditorNavigation = EditorLocation & { request: number };
 
 /** 正文 fragment 的 ID：按约定的 ID 找，找不到时取第一个同类 fragment。 */
 export function mainFragmentId(w: Working, type: CreationType): string | undefined {
@@ -34,6 +34,8 @@ export function mainFragmentId(w: Working, type: CreationType): string | undefin
 }
 
 export function targetOf(subject: string, type: CreationType, w: Working): Target | null {
+  const precise = editorLocation(w, subject);
+  if (precise) return precise;
   if (subject.startsWith("policy") || subject.startsWith("prompt_module"))
     return { anchor: "edit-policy" };
   if (subject.startsWith("assembly_tests")) return { anchor: "edit-tests" };
@@ -73,6 +75,11 @@ export function scrollToAnchor(anchor: string): void {
   requestAnimationFrame(() => {
     const el = document.getElementById(anchor);
     if (!el) return;
+    let parent = el.parentElement;
+    while (parent) {
+      if (parent instanceof HTMLDetailsElement) parent.open = true;
+      parent = parent.parentElement;
+    }
     el.scrollIntoView?.({ behavior: "smooth", block: "start" });
     const field = el.matches("input, textarea, select, button")
       ? el
@@ -80,3 +87,7 @@ export function scrollToAnchor(anchor: string): void {
     field?.focus({ preventScroll: true });
   });
 }
+
+/** Stable object anchors use exact IDs, never CSS selector interpolation. */
+export const fragmentAnchor = (id: string): string => `edit-fragment-${encodeURIComponent(id)}`;
+export const castAnchor = (id: string): string => `edit-cast-${encodeURIComponent(id)}`;

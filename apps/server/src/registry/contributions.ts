@@ -16,23 +16,29 @@ import {
 } from "@char-pub/core";
 import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { type AuditActor, appendAudit } from "../audit/audit.js";
-import type { Principal } from "../authz/authorize.js";
+import { authorize, type Principal } from "../authz/authorize.js";
 import type { Db, Executor, Tx } from "../db/client.js";
 import {
   authUser,
   contributionChanges,
   contributionInvites,
   contributions,
+  creationCollaborators,
+  creationContributors,
   creationDrafts,
   creations,
   guests,
   namespaceMembers,
   namespaces,
+  revisionContributors,
   revisionFragments,
   revisions,
 } from "../db/schema/index.js";
 import type { Cas } from "../storage/cas.js";
+import { grantDraftAssets } from "./asset-ownership.js";
+import { assertCollaborationWrite } from "./collaboration-policy.js";
 import { loadRevisionContent, storeRevisionContent } from "./content.js";
+import { buildCreationContext, lockDraftBuildCreation } from "./draft-builds.js";
 import { encodeId } from "./ids.js";
 import type { CreationContext } from "./lookup.js";
 
@@ -96,9 +102,20 @@ export interface MergeAttempt {
 }
 
 /** 与给定内容试合并。形状错误等 CharError 被捕获并返回，不抛出。 */
-export function tryMerge(target: unknown, changes: readonly unknown[]): MergeAttempt {
+export function tryMerge(
+  target: unknown,
+  changes: readonly unknown[],
+  original?: unknown,
+): MergeAttempt {
   try {
-    return { merge: mergeContribution(target as CreationInput, changes), error: null };
+    return {
+      merge: mergeContribution(
+        target as CreationInput,
+        changes,
+        original as CreationInput | undefined,
+      ),
+      error: null,
+    };
   } catch (e) {
     if (!isCharError(e)) throw e;
     return { merge: null, error: e };
@@ -213,6 +230,7 @@ export function summaryJson(row: ContributionRow, names?: AuthorNames) {
     agent: row.agent,
     author: authorDisplay(row, names),
     base_revision: encodeId("revision", row.baseRevisionId),
+    ...(row.clientId ? { client_id: row.clientId } : {}),
     created_at: row.createdAt.toISOString(),
     decided_at: row.decidedAt?.toISOString() ?? null,
   };
@@ -230,7 +248,9 @@ export function previewJson(attempt: MergeAttempt) {
   }
   const m = attempt.merge;
   return {
-    mergeable: m.conflicts.length === 0,
+    mergeable: m.result !== null,
+    ...(m.result ? { merged: m.result.json } : {}),
+    ...(m.diagnostics ? { diagnostics: m.diagnostics } : {}),
     outcomes: m.outcomes.map((o) => ({
       key: o.key,
       on: o.on,
@@ -238,6 +258,7 @@ export function previewJson(attempt: MergeAttempt) {
       state: o.state,
       sensitive: o.sensitive,
       ...(o.reason ? { reason: o.reason } : {}),
+      ...(o.conflict_fields ? { conflict_fields: o.conflict_fields } : {}),
     })),
     conflicts: m.conflicts.map((o) => o.key),
     sensitive_keys: m.outcomes
@@ -297,6 +318,7 @@ export function withContributor(
     author: string | { guest_id: string; display_name: string };
     contribution: string;
   },
+  agent = false,
 ): Record<string, unknown> {
   const provenance = { ...((merged.provenance as Record<string, unknown> | undefined) ?? {}) };
   const list = [...((provenance.contributors as unknown[] | undefined) ?? [])];
@@ -305,6 +327,7 @@ export function withContributor(
     list.push(contributor);
   }
   provenance.contributors = list;
+  if (agent) provenance.authored_by_agent = true;
   return { ...merged, provenance };
 }
 
@@ -317,6 +340,7 @@ export interface AcceptInput {
   /** 合并时读到的草稿版本；写回时必须仍然是这个版本。 */
   draftVersion: number;
   deciderUserId: string;
+  principal?: Principal;
   actor: AuditActor;
   requestId: string | null;
   now: Date;
@@ -333,10 +357,33 @@ export async function acceptContribution(
   input: AcceptInput,
 ): Promise<{ revisionId: string; semanticDigest: string } | null> {
   const canonical = canonicalizeCreation(input.merged);
-  // 内容先写入对象存储（按内容寻址，重复写入无副作用）。
-  const stored = await storeRevisionContent(db, cas, canonical);
   const creationId = input.ctx.creation.id;
   return db.transaction(async (tx) => {
+    await lockDraftBuildCreation(tx, creationId);
+    const { context, principal } = await buildCreationContext(
+      tx,
+      creationId,
+      input.principal ?? { kind: "user", user_id: input.deciderUserId, banned: false },
+      input.now,
+    );
+    const decision = authorize(principal, "creation.edit", context.resource);
+    if (!decision.allow) throw new CharError({ code: decision.code, subject: creationId });
+    const [prior] = await tx
+      .select()
+      .from(creationDrafts)
+      .where(eq(creationDrafts.creationId, creationId))
+      .for("update");
+    if (!prior || prior.version !== input.draftVersion) return null;
+    const before = canonicalizeCreation(prior.working);
+    assertCollaborationWrite(
+      principal,
+      context.resource,
+      before.creation,
+      canonical.creation,
+      true,
+      input.row.agent,
+    );
+    const stored = await storeRevisionContent(tx, cas, canonical);
     const updated = await tx
       .update(creationDrafts)
       .set({
@@ -353,7 +400,22 @@ export async function acceptContribution(
       )
       .returning({ version: creationDrafts.version });
     if (updated.length === 0) return null;
-
+    await grantDraftAssets(tx, creationId, input.deciderUserId, input.merged, input.now);
+    if (input.row.authorUserId)
+      await grantDraftAssets(tx, creationId, input.row.authorUserId, input.merged, input.now);
+    if (
+      context.resource.collaborator &&
+      !authorize(principal, "creation.update_settings", context.resource).allow
+    )
+      await tx
+        .insert(creationContributors)
+        .values({ creationId, userId: input.deciderUserId, createdAt: input.now })
+        .onConflictDoNothing();
+    if (before.creation.meta.license !== canonical.creation.meta.license)
+      await tx
+        .update(creationCollaborators)
+        .set({ license: canonical.creation.meta.license, acceptedAt: null, updatedAt: input.now })
+        .where(eq(creationCollaborators.creationId, creationId));
     const [existing] = await tx
       .select()
       .from(revisions)
@@ -382,6 +444,27 @@ export async function acceptContribution(
         message: `contribution #${input.row.number}: ${input.row.title}`.slice(0, 500),
         createdAt: input.now,
       });
+      const credits = await tx
+        .select({
+          userId: creationContributors.userId,
+          name: sql<
+            string | null
+          >`(select n.slug from app.namespaces n join app.namespace_members m on m.namespace_id=n.id where m.user_id=${creationContributors.userId} and m.role='owner' and n.kind='user' limit 1)`,
+        })
+        .from(creationContributors)
+        .innerJoin(authUser, eq(authUser.id, creationContributors.userId))
+        .where(eq(creationContributors.creationId, creationId));
+      if (credits.length)
+        await tx
+          .insert(revisionContributors)
+          .values(
+            credits.map((credit) => ({
+              revisionId: revisionId as string,
+              userId: credit.userId,
+              name: credit.name ? `@${credit.name}` : encodeId("user", credit.userId),
+            })),
+          )
+          .onConflictDoNothing();
       if (stored.fragments.length > 0) {
         await tx.insert(revisionFragments).values(
           stored.fragments.map((f) => ({

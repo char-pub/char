@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { DIGEST_RE, SEGMENT_RE } from "../ids.js";
+import { CatalogRefSchema } from "./catalog.js";
+import { TurnViewSchema } from "./context.js";
 import { EngineIdentitySchema, ExactRefSchema } from "./identity.js";
 import { RuntimeProfileSchema } from "./runtime.js";
-import { SessionSchema } from "./session.js";
 
 export const AssemblyConfigSchema = z.strictObject({
-  version: z.literal("0-draft"),
+  version: z.literal("1-draft"),
   preset: ExactRefSchema,
   profile: RuntimeProfileSchema,
   assembler: EngineIdentitySchema,
@@ -34,7 +35,10 @@ export const AssemblyFixtureSchema = z.strictObject({
   root: z.union([z.literal("self"), ExactRefSchema]),
   preset: z.union([z.literal("self"), ExactRefSchema]).optional(),
   profile: RuntimeProfileSchema,
-  session: SessionSchema,
+  session: TurnViewSchema,
+  /** Store stable fixed choices, not a Plan containing the enclosing artifact's own digest. */
+  selection: z.array(CatalogRefSchema).optional(),
+  source_texts: z.record(z.string(), z.string()).optional(),
   assembler: EngineIdentitySchema,
   tokenizer: EngineIdentitySchema,
   expected: z.discriminatedUnion("kind", [

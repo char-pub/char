@@ -12,19 +12,24 @@
  * - 同一个 label 已经指向相同内容时返回已有的 Release；指向不同内容则冲突。
  */
 import type { canonicalizeCreation } from "@char-pub/core";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import type { Services } from "../api/app.js";
 import { type AuditActor, appendAudit } from "../audit/audit.js";
 import type { Executor } from "../db/client.js";
 import {
+  authUser,
+  creationContributors,
   creationDrafts,
   creations,
   releases,
+  revisionContributors,
   revisionFragments,
   revisions,
 } from "../db/schema/index.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
-import { storeRevisionContent } from "./content.js";
+import { loadRevisionContent, storeRevisionContent } from "./content.js";
+import { assertDerivationSource } from "./derivations.js";
+import { encodeId } from "./ids.js";
 import { hasUnconfirmedImport } from "./imports.js";
 
 export type ReleaseRow = typeof releases.$inferSelect;
@@ -62,10 +67,11 @@ export async function findRevisionByDigest(
  * 写 revision、fragment 索引与审计。返回的 `created` 为 false 表示同样内容的 Revision 已经存在。
  */
 export async function createRevision(
-  services: Pick<Services, "db" | "cas" | "ids" | "clock">,
+  services: Pick<Services, "cas" | "ids" | "clock"> & { db: Executor },
   input: CreateRevisionInput,
 ): Promise<{ row: RevisionRow; created: boolean }> {
   const { db, cas, ids, clock } = services;
+  await assertDerivationSource(db, input.creationId, input.canonical.creation);
   const semantic = input.canonical.semantic_digest;
   const before = await findRevisionByDigest(db, input.creationId, semantic);
   if (before) return { row: before, created: false };
@@ -91,6 +97,30 @@ export async function createRevision(
       .returning();
     const row = rows[0];
     if (!row) return null;
+    const contributors =
+      input.author.kind === "user"
+        ? await tx
+            .select({
+              userId: creationContributors.userId,
+              name: sql<
+                string | null
+              >`(select n.slug from app.namespaces n join app.namespace_members m on m.namespace_id=n.id where m.user_id=${creationContributors.userId} and m.role='owner' and n.kind='user' limit 1)`,
+            })
+            .from(creationContributors)
+            .innerJoin(authUser, eq(authUser.id, creationContributors.userId))
+            .where(eq(creationContributors.creationId, input.creationId))
+        : [];
+    if (contributors.length)
+      await tx
+        .insert(revisionContributors)
+        .values(
+          contributors.map((contributor) => ({
+            revisionId: id,
+            userId: contributor.userId,
+            name: contributor.name ? `@${contributor.name}` : encodeId("user", contributor.userId),
+          })),
+        )
+        .onConflictDoNothing();
     if (stored.fragments.length > 0) {
       await tx.insert(revisionFragments).values(
         stored.fragments.map((f) => ({
@@ -151,10 +181,11 @@ export type RequestPublishResult =
   | { kind: "key_reused" }
   | { kind: "taken" }
   /** 由导入生成、评级、权利与许可还没有被作者确认。 */
-  | { kind: "import_unconfirmed" };
+  | { kind: "import_unconfirmed" }
+  | { kind: "default_policy_unavailable" };
 
 export async function requestPublish(
-  services: Pick<Services, "db" | "ids" | "clock" | "queue">,
+  services: Pick<Services, "db" | "ids" | "clock" | "queue" | "cas" | "defaultPolicy">,
   input: RequestPublishInput,
 ): Promise<RequestPublishResult> {
   const { db, ids, clock, queue } = services;
@@ -196,6 +227,10 @@ export async function requestPublish(
         ? { kind: "same", row: taken }
         : { kind: "taken" };
     }
+    const { creation } = await loadRevisionContent(services.cas, input.revision.semanticDigest);
+    const needsDefault =
+      creation.type !== "preset" && creation.type !== "prompt-module" && !creation.assembly;
+    if (needsDefault && !services.defaultPolicy) return { kind: "default_policy_unavailable" };
     const [row] = await tx
       .insert(releases)
       .values({
@@ -208,6 +243,7 @@ export async function requestPublish(
         revisionId: input.revision.id,
         source: input.source,
         semanticDigest: input.revision.semanticDigest,
+        defaultPolicy: needsDefault ? services.defaultPolicy : null,
         publishedBy: input.publishedBy,
         idempotencyKey: input.idempotencyKey,
         createdAt: now,

@@ -155,6 +155,11 @@ describe("release detail", () => {
       context_ir_digest: alice.irDigest,
       effective_rating: "mature",
     });
+    const exact = await h.request(`/v1/releases/${alice.publicReleaseId}`);
+    expect(exact.status).toBe(200);
+    expect(await exact.json()).toEqual(
+      await (await h.request("/v1/creations/@djj/alice/releases/1.0.0")).json(),
+    );
   });
 
   it("hides private releases from others with 404, even by exact label", async () => {
@@ -190,6 +195,14 @@ describe("release detail", () => {
         code: "release.tombstoned",
         reason: "legal.dmca",
         ref: "@djj/gone@1.0.0",
+      });
+    }
+    for (const suffix of ["", "/artifact"]) {
+      const exact = await h.request(`/v1/releases/${gone.publicReleaseId}${suffix}`);
+      expect(exact.status).toBe(410);
+      expect(await exact.json()).toMatchObject({
+        code: "release.tombstoned",
+        reason: "legal.dmca",
       });
     }
   });
@@ -261,6 +274,8 @@ describe("CCv3 export (lazy build)", () => {
     expect(jobs.filter((j) => j.state === "created")).toHaveLength(1);
 
     const key = exportCacheKey({
+      release_id: alice.releaseId,
+      bucket: "public",
       semantic_digest: alice.semanticDigest,
       lock_digest: (await (await h.request("/v1/creations/@djj/alice/releases/1.0.0")).json())
         .lock_digest,
@@ -339,11 +354,8 @@ describe("dependents", () => {
   });
 });
 
-it("wraps legacy releases as artifacts without recompiling their stored IR output", async () => {
+it("rejects rebuilding legacy content without a fixed default instead of inventing policy", async () => {
   const result = await h.request("/v1/creations/@djj/alice/releases/1.0.0/artifact");
-  expect(result.status, await result.clone().text()).toBe(200);
-  const artifact = (await result.json()) as { kind: string; ir: unknown };
-  expect(artifact.kind).toBe("content");
-  const bytes = await h.services.cas.getBlob("public", alice.irDigest);
-  expect(artifact.ir).toEqual(JSON.parse(new TextDecoder().decode(bytes)));
+  expect(result.status).toBe(400);
+  expect(await result.json()).toMatchObject({ code: "registry.default_policy_missing" });
 });

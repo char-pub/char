@@ -1,6 +1,8 @@
 # Char Preset v0-draft
 
-Status: **v0-draft**。本文定义 Preset 协议与纯计算参考实现；模块依赖、统一发布产物、锁定搭配与作者测试见 [组装资产契约](assembly-assets-v0.md)。
+Status: **历史草案，已被 Story v1 取代**。当前实现遵循 [Story v1](story-v1.md) 的 `1-draft` 协议与 D-175/D-182/D-184；下文的无 Preset 默认布局、仅传 IR 的组装入口及 `position` 作者字段不再适用。本文保留供历史对照。
+
+原 v0-draft 定义 Preset 协议与纯计算参考实现；模块依赖、统一发布产物、锁定搭配与作者测试见 [组装资产契约](assembly-assets-v0.md)。
 
 ## 1. 身份与边界
 

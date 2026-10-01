@@ -23,6 +23,8 @@ import {
   canonicalizeCreation,
   compareStrings,
   type Digest,
+  type ExactRef,
+  ExactRefSchema,
   type JSONValue,
   jcs,
   normalizeValue,
@@ -120,23 +122,38 @@ export interface SnapshotDependency {
   ref: string;
   semantic_digest: string;
   creation: JSONValue;
+  visibility?: "public" | "private";
 }
 
 export interface Snapshot {
   snapshot_version: typeof SNAPSHOT_VERSION;
   root: JSONValue;
   dependencies: SnapshotDependency[];
+  default_policy?: ExactRef;
 }
 
-export function buildSnapshot(root: JSONValue, dependencies: SnapshotDependency[]): Uint8Array {
-  const deps = [...dependencies].sort((a, b) => compareStrings(a.ref, b.ref));
-  return jsonBytes(
-    normalizeValue({
-      snapshot_version: SNAPSHOT_VERSION,
-      root,
-      dependencies: deps,
-    } satisfies Snapshot),
-  );
+export function buildSnapshot(
+  root: JSONValue,
+  dependencies: SnapshotDependency[],
+  defaultPolicy?: ExactRef,
+): Uint8Array {
+  // Root and dependency Creations are already canonical. Generic prose normalization
+  // would corrupt their digest-verified fixture source bodies during publication.
+  const deps = [...dependencies]
+    .sort((a, b) => compareStrings(a.ref, b.ref) || compareStrings(a.release, b.release))
+    .map((dependency) => ({
+      release: dependency.release,
+      ref: dependency.ref,
+      semantic_digest: dependency.semantic_digest,
+      creation: dependency.creation,
+      ...(dependency.visibility ? { visibility: dependency.visibility } : {}),
+    }));
+  return jsonBytes({
+    snapshot_version: SNAPSHOT_VERSION,
+    root,
+    dependencies: deps,
+    ...(defaultPolicy ? { default_policy: ExactRefSchema.parse(defaultPolicy) } : {}),
+  } satisfies Snapshot);
 }
 
 export async function loadSnapshot(
@@ -148,6 +165,8 @@ export async function loadSnapshot(
   if (v.snapshot_version !== SNAPSHOT_VERSION) {
     throw new CharError({ code: "registry.snapshot_version", subject: digest });
   }
+  if (v.default_policy !== undefined && !ExactRefSchema.safeParse(v.default_policy).success)
+    throw new CharError({ code: "registry.snapshot_invalid", subject: digest });
   return v;
 }
 

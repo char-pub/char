@@ -14,8 +14,10 @@
 import { type CanonicalCreation, type Digest, digestJson, jcs } from "../canonical.js";
 import { CharError, compareStrings, sortDiagnostics } from "../errors.js";
 import { irAssetId, participantRef, SELF_PARTICIPANT } from "../keys.js";
+import type { CompiledTemplate } from "../schema/catalog.js";
 import type { AttributionAuthor, JSONValue, Rating } from "../schema/creation.js";
 import { RATINGS } from "../schema/creation.js";
+import { buildIdentity } from "../schema/identity.js";
 import {
   type ContextIR,
   ContextIRSchema,
@@ -26,6 +28,7 @@ import {
   type LateSlot,
   type Participant,
 } from "../schema/ir.js";
+import type { LocalizedTemplateText } from "../schema/text.js";
 import { RESOLVER } from "../version.js";
 import { buildEnvironment, pickLocalized } from "./env.js";
 import {
@@ -34,13 +37,14 @@ import {
   type GraphWarning,
   loadGraph,
   type ReleaseInput,
+  type RootInput,
 } from "./graph.js";
 import { type LateUsage, type RemovedFragment, renderInstance, renderText } from "./render.js";
 
 export type { ReleaseInput } from "./graph.js";
 
 export interface ResolveInput {
-  root: ReleaseInput;
+  root: RootInput;
   /** 依赖闭包中的所有 Release（多余的会被忽略）。 */
   dependencies?: readonly ReleaseInput[];
   /**
@@ -51,6 +55,7 @@ export interface ResolveInput {
 }
 
 export interface ResolveOutput {
+  story_templates: Record<string, CompiledTemplate>;
   ir: ContextIR;
   /** 按 JCS 序列化的 IR，字节级比较与存储都用它。 */
   json: string;
@@ -96,6 +101,40 @@ export function resolve(input: ResolveInput): ResolveOutput {
     .map(([id, u]) => buildAsset(id, u.inst, u.slot, u.variant, input.publicAssetBaseUrl));
 
   const bootstrap = buildBootstrap(graph.root, env, usage);
+  const story_templates: Record<string, CompiledTemplate> = {};
+  const rootEnv = env.envs.get(graph.root);
+  if (rootCreation.story && rootEnv) {
+    const compile = (id: string, authored: LocalizedTemplateText) => {
+      const locale = rootCreation.meta.default_locale;
+      const text = typeof authored === "string" ? authored : authored[locale];
+      if (text === undefined)
+        throw new CharError({
+          code: "resolve.template_default_locale_missing",
+          subject: id,
+          detail: `expected '${locale}' template`,
+        });
+      const context = { ienv: rootEnv, env, usage, fragmentId: id, assetUsed: () => {} };
+      const compiled: CompiledTemplate = { text: renderText(text, context, locale) };
+      if (typeof authored !== "string") {
+        const locales: Record<string, string> = {};
+        for (const [variant, value] of Object.entries(authored).sort(([a], [b]) =>
+          compareStrings(a, b),
+        )) {
+          if (variant !== locale) locales[variant] = renderText(value, context, variant);
+        }
+        if (Object.keys(locales).length) compiled.locales = locales;
+      }
+      story_templates[id] = compiled;
+    };
+    for (const scene of rootCreation.story.scenes)
+      if (scene.opening !== undefined) compile(`scene/${scene.id}/opening`, scene.opening);
+    for (const start of rootCreation.story.starts ?? [])
+      if (
+        start.greeting !== undefined &&
+        (typeof start.greeting === "string" || !("ref" in start.greeting))
+      )
+        compile(`start/${start.id}/greeting`, start.greeting);
+  }
   const late_slots = buildLateSlots(env, usage);
   const participants = buildParticipants(env, rootCreation, new Set(late_slots.map((s) => s.key)));
   const meta = buildMeta(graph, fragments, assets, env, au);
@@ -113,7 +152,11 @@ export function resolve(input: ResolveInput): ResolveOutput {
 
   const ir: ContextIR = {
     ir_version: IR_VERSION,
-    root: { ref: rootRel.ref, release: rootRel.release, semantic_digest: rootRel.semantic_digest },
+    root: {
+      ref: rootRel.ref,
+      ...buildIdentity(rootRel.identity),
+      semantic_digest: rootRel.semantic_digest,
+    },
     lock_digest: digestJson(lock as unknown as JSONValue),
     resolver: { name: RESOLVER.name, version: RESOLVER.version },
     meta,
@@ -126,7 +169,7 @@ export function resolve(input: ResolveInput): ResolveOutput {
       nodes: [...graph.byRef.values()]
         .map((r) => ({
           ref: r.ref,
-          release: r.release,
+          ...buildIdentity(r.identity),
           type: r.creation.type,
           display_name: pickLocalized(
             r.creation.display_name,
@@ -136,24 +179,64 @@ export function resolve(input: ResolveInput): ResolveOutput {
         }))
         .sort((a, b) => compareStrings(a.ref, b.ref)),
       instances: graph.instances
-        .map((i) => ({ key: i.key, ref: i.release.ref, via: i.via }))
+        .map((i) => ({
+          key: i.key,
+          ref: i.release.ref,
+          via: i.via,
+          ...(i.cast
+            ? {
+                cast: {
+                  key: i.cast.member.key,
+                  scope: i.cast.owner.key,
+                  ...(i.parent
+                    ? { introduced_by: { instance: i.parent.instance.key, edge: i.parent.edge.id } }
+                    : {}),
+                },
+              }
+            : {}),
+        }))
         .sort((a, b) => compareStrings(jcs(a.via), jcs(b.via))),
       edges: graph.instances
-        .filter((i) => i.parent)
-        .map((i) => {
-          const e = i.parent?.edge;
-          const out: ContextIR["graph"]["edges"][number] = {
-            from_instance: i.parent?.instance.key ?? "",
-            to_instance: i.key,
-            id: e?.id ?? "",
-            mode: e?.mode ?? "default",
-          };
-          if (e?.rel !== undefined) out.rel = e.rel;
-          return out;
-        })
+        .flatMap((owner) =>
+          owner.children.map((child) => {
+            const edge = child.parent?.edge;
+            if (!edge) throw new CharError({ code: "resolve.internal", subject: child.key });
+            return {
+              from_instance: owner.key,
+              to_instance: child.key,
+              id: edge.id,
+              mode: edge.mode,
+              ...(edge.rel !== undefined ? { rel: edge.rel } : {}),
+            };
+          }),
+        )
         .sort(
-          (a, b) => compareStrings(a.from_instance, b.from_instance) || compareStrings(a.id, b.id),
+          (a, b) =>
+            compareStrings(a.from_instance, b.from_instance) ||
+            compareStrings(a.id, b.id) ||
+            compareStrings(a.to_instance, b.to_instance),
         ),
+      ...(graph.instances.some((i) => i.cast)
+        ? {
+            cast_edges: graph.instances
+              .flatMap((i) =>
+                i.cast
+                  ? [
+                      {
+                        from_instance: i.cast.owner.key,
+                        to_instance: i.key,
+                        cast: i.cast.member.key,
+                      },
+                    ]
+                  : [],
+              )
+              .sort(
+                (a, b) =>
+                  compareStrings(a.from_instance, b.from_instance) ||
+                  compareStrings(a.cast, b.cast),
+              ),
+          }
+        : {}),
       removed: [...removed].sort((a, b) => compareStrings(a.id, b.id)),
     },
     diagnostics,
@@ -174,6 +257,7 @@ export function resolve(input: ResolveInput): ResolveOutput {
   const json = jcs(ir as unknown as JSONValue);
   return {
     ir,
+    story_templates,
     json,
     digest: digestJson(ir as unknown as JSONValue),
     lock,
@@ -202,7 +286,13 @@ function buildAsset(
     access: rel.visibility,
     rating: v.rating ?? c.meta.rating,
     license: v.license ?? c.meta.license,
-    origin: { creation: c.ref, release: rel.release, slot, variant, instance_key: inst.key },
+    origin: {
+      creation: c.ref,
+      ...buildIdentity(rel.identity),
+      slot,
+      variant,
+      instance_key: inst.key,
+    },
   };
   if (baseUrl && rel.visibility === "public" && v.blob.availability === "mirrored") {
     const hex = v.blob.digest.slice("sha256:".length);
@@ -230,6 +320,10 @@ function buildParticipants(
     if (p.ref !== undefined) item.ref = p.ref;
     if (p.role !== undefined) item.role = p.role;
     if (p.late !== undefined) item.late = p.late;
+    if (p.cast_key !== undefined) item.cast_key = p.cast_key;
+    if (p.cast_scope !== undefined) item.cast_scope = p.cast_scope;
+    if (p.part !== undefined) item.part = p.part;
+    if (p.goal !== undefined) item.goal = p.goal;
     const ai = p.avatarInstance;
     if (ai) {
       const avatar = ai.release.creation.assets.find((a) => a.slot === "avatar");
@@ -258,13 +352,13 @@ function buildBootstrap(
   const c = root.release.creation;
   const ienv = env.envs.get(root);
   if (!ienv || !c.bootstrap) return { greetings: [] };
-  const speaker = participantRef(ienv.participant ?? SELF_PARTICIPANT);
+  const speaker = ienv.participant ? participantRef(ienv.participant) : undefined;
   return {
     greetings: c.bootstrap.greetings.map((g) => {
       const ctx = { ienv, env, usage, fragmentId: `bootstrap:${g.id}`, assetUsed: () => {} };
       const out: ContextIR["bootstrap"]["greetings"][number] = {
         id: g.id,
-        speaker,
+        ...(speaker ? { speaker } : {}),
         text: renderText(g.text, ctx, c.meta.default_locale),
       };
       if (g.locale && Object.keys(g.locale).length > 0) {
@@ -371,6 +465,7 @@ function buildMeta(
     for (const c of n.creation.provenance.contributors ?? []) {
       const item: EffectiveMeta["contributors"][number] = { ref: n.ref, author: c.author };
       if (c.contribution !== undefined) item.contribution = c.contribution;
+      if (c.client_id !== undefined) item.client_id = c.client_id;
       contributors.push(item);
     }
   }

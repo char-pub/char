@@ -5,7 +5,7 @@
  * 色觉障碍用户和读屏用户也能注意到。传入两边的 IR 时，依赖和片段会带上类型、关系和激活方式。
  */
 import type { ContextDiff, ContextIR, IRFragment, JSONValue, Rating } from "@char-pub/core";
-import { displayFragmentId } from "@char-pub/core";
+import { buildIdentityKey, displayFragmentId } from "@char-pub/core";
 import { ChevronRight, Minus, Pencil, Plus, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { dependenciesOf, MODE_LABEL, nodeOf } from "@/lib/creation-graph";
@@ -394,7 +394,7 @@ function OtherChanges({
               <p className="text-xs text-text-2">
                 Now comes from {node ? <UserText text={node.name} /> : o.to.creation}{" "}
                 <span className="font-mono">
-                  ({o.from.release} → {o.to.release})
+                  ({buildIdentityKey(o.from)} → {buildIdentityKey(o.to)})
                 </span>
               </p>
             </li>

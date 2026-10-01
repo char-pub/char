@@ -170,6 +170,94 @@ function PassageCell({
   );
 }
 
+/** The Trace does not carry an effective locale or rendered body; do not pretend this is model output. */
+function CompiledContent({ fragment, ir }: { fragment: IRFragment; ir: ContextIR }) {
+  const content = fragment.content;
+  const assetIds = [
+    ...new Set([
+      ...(content.type === "media" ? [content.asset] : []),
+      ...(fragment.asset_refs ?? []),
+    ]),
+  ];
+  return (
+    <>
+      <p className="text-xs font-semibold">
+        {content.type === "dialogue"
+          ? "Example dialogue"
+          : content.type === "media"
+            ? "Media reference"
+            : content.type === "structured"
+              ? "Structured extension data"
+              : "Text"}
+      </p>
+      {content.type === "text" ? <UserText text={content.text} /> : null}
+      {content.type === "dialogue" ? (
+        <ol aria-label="Compiled dialogue turns" className="space-y-2">
+          {content.turns.map((turn, index) => (
+            <li key={index} className="rounded border p-2">
+              <span className="block font-mono text-xs">
+                {index + 1}. {turn.speaker}
+              </span>
+              <UserText text={turn.text} />
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      {content.type === "structured" ? (
+        <>
+          <p className="text-xs">
+            Schema: <span className="font-mono">{content.schema}</span>
+          </p>
+          <pre className="overflow-auto whitespace-pre-wrap break-words text-xs">
+            {JSON.stringify(content.data, null, 2)}
+          </pre>
+          <p className="text-xs">
+            The reference assembler forwards this JSON without interpreting its schema.
+          </p>
+        </>
+      ) : null}
+      {content.type === "media" && content.caption !== undefined ? (
+        <p>
+          Caption: <UserText text={content.caption} />
+        </p>
+      ) : null}
+      {assetIds.length ? (
+        <ul aria-label="Referenced media assets" className="space-y-2">
+          {assetIds.map((id) => {
+            const asset = ir.assets.find((candidate) => candidate.id === id);
+            return (
+              <li key={id} className="space-y-1 rounded border p-2 text-xs">
+                <p className="font-mono break-all">{id}</p>
+                {asset ? (
+                  <>
+                    <p>
+                      {asset.media_type} · {asset.role} · {asset.access}
+                    </p>
+                    <p className="font-mono break-all">{asset.digest}</p>
+                    {asset.alt !== undefined ? (
+                      <p>
+                        Alternative text: <UserText text={asset.alt} />
+                      </p>
+                    ) : (
+                      <p>No alternative text declared.</p>
+                    )}
+                    <p>
+                      Metadata only. This detail does not fetch the asset; final attachments are
+                      listed with the prepared message.
+                    </p>
+                  </>
+                ) : (
+                  <p>Asset metadata is unavailable in this Context IR.</p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </>
+  );
+}
+
 function Details({
   entry,
   fragment,
@@ -207,11 +295,24 @@ function Details({
           <dd>Its ID isn't stable, so other creations can't override it.</dd>
         </>
       ) : null}
-      {fragment?.content.type === "text" ? (
+      {fragment ? (
         <>
-          <dt className="font-medium text-text-2">Text</dt>
-          <dd className="max-w-prose text-text-2">
-            <UserText text={fragment.content.text} />
+          <dt className="font-medium text-text-2">Compiled source content</dt>
+          <dd className="min-w-0 max-w-prose space-y-2 text-text-2">
+            <p className="text-xs">
+              Default language ({ir.meta.default_locale}). Prepared model messages show the actual
+              selected language, substitutions and output.
+            </p>
+            <CompiledContent fragment={fragment} ir={ir} />
+          </dd>
+        </>
+      ) : entry.content_ref ? (
+        <>
+          <dt className="font-medium text-text-2">Content</dt>
+          <dd className="text-text-2">
+            {"source" in entry.content_ref
+              ? "Reference document excerpt. The loaded excerpt appears in Prepared model messages; this trace row does not contain the document body."
+              : "Generated context from the selected Story or catalog item. Inspect Prepared model messages for its actual text."}
           </dd>
         </>
       ) : null}

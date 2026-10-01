@@ -89,6 +89,8 @@ export const reservedNames = app.table("reserved_names", {
 export const creations = app.table(
   "creations",
   {
+    /** Creation origin survives application deletion. */
+    clientId: text("client_id"),
     id: pk(),
     namespaceId: uuid("namespace_id")
       .notNull()

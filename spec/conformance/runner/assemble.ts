@@ -1,16 +1,26 @@
 /**
  * Assembler 用例的运行与比较。纯函数，可以在 Node、浏览器和 workerd 中运行。
  *
- * 一个用例有若干命名场景（Runtime Profile + Session）。每个场景先用 Resolver 得到 IR，再用
- * 参考 Assembler 组装一次，结果只保留 Trace 中每个 entry 的 `id`、`decision`、`reason`：
- * token 数取决于 tokenizer，region 取决于 layout，都不属于规范要求。组装失败时记录错误码。
+ * 一个用例先构建完整产物，再按 Runtime Profile、TurnView 与固定选择 refs 组装。
+ * 比较最终有序消息摘要及 Trace 的 id、decision、reason；组装失败时记录错误码。
  *
  * 另有一条与 Trace 无关的硬性要求：组装成功时，Creative / Session 消息里不能残留
  * `{{late:*}}` 占位符。Policy 是字面文本，按实际 source 边界排除，不能跳过整条合并消息。
  * 违反时整个用例直接失败，与预期是否审阅无关。
  */
-import { type AssembledMessage, assemble } from "@char-pub/assembler";
-import { type ContextIR, isCharError, type ResolvedPreset, resolvePreset } from "@char-pub/core";
+import {
+  type AssembledMessage,
+  assemble,
+  createPreparationCatalog,
+  digestAssemblyMessages,
+  fixedSelection,
+} from "@char-pub/assembler";
+import {
+  type CreationArtifact,
+  isCharError,
+  type ResolvedPreset,
+  resolvePreset,
+} from "@char-pub/core";
 import type { AssembleInput, ScenarioResult, TraceDecision, TraceExpectation } from "./types.js";
 
 export interface AssembleOutcome {
@@ -58,26 +68,50 @@ function nonPolicyText(message: AssembledMessage, preset: ResolvedPreset | undef
   return text;
 }
 
-export function runAssembleScenarios(ir: ContextIR, input: AssembleInput): AssembleOutcome {
+export function runAssembleScenarios(
+  artifact: CreationArtifact,
+  input: AssembleInput,
+): AssembleOutcome {
   const scenarios: ScenarioResult[] = [];
   const violations: string[] = [];
   for (const s of input.scenarios) {
     try {
       const preset = s.preset ? resolvePreset(s.preset) : undefined;
-      const out = assemble({
-        ir,
+      const preparation = {
+        artifact,
         profile: s.profile as Parameters<typeof assemble>[0]["profile"],
-        session: s.session as Parameters<typeof assemble>[0]["session"],
+        turn: s.turn as Parameters<typeof assemble>[0]["turn"],
         ...(preset ? { preset } : {}),
+      };
+      const plan =
+        s.selection === undefined
+          ? undefined
+          : fixedSelection(createPreparationCatalog(preparation), s.selection);
+      const out = assemble({
+        ...preparation,
+        ...(plan ? { plan } : {}),
+        ...(s.source_texts ? { source_texts: s.source_texts } : {}),
       });
       const entries: TraceDecision[] = out.trace.entries.map((e) => ({
         id: e.id,
         decision: e.decision,
         reason: e.reason,
       }));
-      scenarios.push({ name: s.name, entries });
+      scenarios.push({
+        name: s.name,
+        entries,
+        messages_digest: digestAssemblyMessages(out.messages),
+      });
       for (const m of out.messages) {
-        if (nonPolicyText(m, preset).includes("{{late:")) {
+        if (
+          nonPolicyText(
+            m,
+            preset ??
+              (artifact.kind === "content"
+                ? (artifact.assembly?.preset ?? artifact.default_policy)
+                : undefined),
+          ).includes("{{late:")
+        ) {
           violations.push(`${s.name}: a {{late:*}} placeholder reached the model messages`);
           break;
         }
@@ -106,6 +140,8 @@ export function compareTraces(expected: TraceExpectation, actual: TraceExpectati
       if (w !== g) return `${want.name}: expected ${w}, got ${g}`;
       continue;
     }
+    if (!want.messages_digest || want.messages_digest !== got.messages_digest)
+      return `${want.name}: messages digest differs (expected ${want.messages_digest ?? "missing"}, got ${got.messages_digest})`;
     if (want.entries.length !== got.entries.length) {
       return `${want.name}: expected ${want.entries.length} entries, got ${got.entries.length}`;
     }

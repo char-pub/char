@@ -8,8 +8,11 @@
  * - 发布接口必须带 `Idempotency-Key` 头；草稿编辑用 `If-Match` 乐观锁。
  */
 import {
+  CreationObjectAddressSchema,
   CreationTypeSchema,
   DigestSchema,
+  DraftBuildOriginSchema,
+  ExactRefSchema,
   GitCommitSchema,
   LabelSchema,
   LocalizedTextSchema,
@@ -17,11 +20,13 @@ import {
   NAMESPACE_RE,
   RatingSchema,
   SpdxExpressionSchema,
+  StoryContinuationInputSchema,
   UnversionedRefSchema,
 } from "@char-pub/core";
 import { z } from "zod";
 
 export const API_VERSION = "v1";
+export * from "./runtime-launch.js";
 
 // ---------------------------------------------------------------------------
 // 通用
@@ -61,12 +66,43 @@ export const NamespaceSchema = z.strictObject({
 });
 
 export const CreateCreationRequestSchema = z.strictObject({
+  /** Optional initial content, fixed to the newly allocated work identity by the Registry. */
+  working: z.record(z.string(), z.unknown()).optional(),
   name: CreationNameSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema,
 });
 
+/** Derive only from a fixed published definition; the Registry prepares the new draft. */
+export const DeriveCreationRequestSchema = z
+  .strictObject({
+    source: ExactRefSchema,
+    kind: z.enum(["remix", "sequel"]),
+    name: CreationNameSchema,
+    display_name: LocalizedTextSchema,
+    ending: z.string().min(1).max(64).optional(),
+    from_play: StoryContinuationInputSchema.optional(),
+    /** Explicit caller declaration; OAuth authentication alone never implies agent authorship. */
+    agent: z.boolean().optional(),
+    rights_ack: z.strictObject({ inbound_equals_outbound: z.literal(true) }),
+  })
+  .superRefine((input, ctx) => {
+    if (input.from_play !== undefined && (input.kind !== "sequel" || input.ending !== undefined))
+      ctx.addIssue({
+        code: "custom",
+        path: ["from_play"],
+        message: "A play-state continuation requires sequel and cannot also select an ending.",
+      });
+  });
+export type DeriveCreationRequest = z.infer<typeof DeriveCreationRequestSchema>;
+export const CreateCreationResponseSchema = z.strictObject({
+  id: z.string(),
+  ref: UnversionedRefSchema,
+  type: CreationTypeSchema,
+});
+
 export const ReleaseSummarySchema = z.strictObject({
+  contributors: z.array(z.strictObject({ user: z.string(), name: z.string() })).optional(),
   id: z.string(),
   label: LabelSchema,
   visibility: z.enum(["public", "private"]),
@@ -104,7 +140,19 @@ export const CreationSummarySchema = z.strictObject({
 });
 export type CreationSummary = z.infer<typeof CreationSummarySchema>;
 
+/** Work-scoped collaboration never grants namespace membership. */
+export const CreationPermissionsSchema = z.strictObject({
+  read_draft: z.boolean(),
+  edit: z.boolean(),
+  publish: z.boolean(),
+  update_sensitive: z.boolean(),
+  manage_source: z.boolean(),
+  manage_collaborators: z.boolean(),
+});
+export type CreationPermissions = z.infer<typeof CreationPermissionsSchema>;
+
 export const CreationDetailSchema = CreationSummarySchema.extend({
+  permissions: CreationPermissionsSchema.optional(),
   releases: z.array(ReleaseSummarySchema),
   /** 被多少个其他 Creation 的 Release 依赖。 */
   dependents_count: z.number().int().nonnegative(),
@@ -227,10 +275,18 @@ export const UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 export const MAX_ASSET_BYTES = 8 * 1024 * 1024;
 export const MAX_CARD_JSON_BYTES = 5 * 1024 * 1024;
+/** Maximum UTF-8 JSON request body for a draft write, including its working envelope. */
+export const MAX_DRAFT_BYTES = 5 * 1024 * 1024;
 
 export const CreateUploadRequestSchema = z.strictObject({
   purpose: z.enum(["asset", "import"]),
-  content_type: z.enum([...UPLOAD_TYPES, "application/json", "application/zip"]),
+  content_type: z.enum([
+    ...UPLOAD_TYPES,
+    "text/plain",
+    "text/markdown",
+    "application/json",
+    "application/zip",
+  ]),
   size: z.number().int().positive().max(MAX_UPLOAD_BYTES),
   sha256: DigestSchema,
 });
@@ -338,6 +394,36 @@ export const DependentSchema = z.strictObject({
 });
 export type Dependent = z.infer<typeof DependentSchema>;
 
+/** Author-only static uses of removed IDs; existing exact pins remain unchanged. */
+export const ReferenceImpactResponseSchema = z.strictObject({
+  base: ExactRefSchema,
+  candidate: z.strictObject({ origin: DraftBuildOriginSchema, semantic_digest: DigestSchema }),
+  objects: z.array(CreationObjectAddressSchema),
+  items: z.array(
+    z.strictObject({
+      ref: UnversionedRefSchema,
+      display_name: LocalizedTextSchema,
+      release: z.strictObject({
+        id: z.string(),
+        label: LabelSchema,
+        visibility: z.enum(["public", "private"]),
+      }),
+      pins: z.array(ExactRefSchema),
+      uses: z.array(
+        z.strictObject({
+          object: CreationObjectAddressSchema,
+          kind: z.enum(["included", "explicit"]),
+          path: z.string(),
+          defined_in: ExactRefSchema,
+        }),
+      ),
+    }),
+  ),
+  next_cursor: z.string().nullable(),
+  scope: z.literal("readable-published-releases"),
+});
+export type ReferenceImpactResponse = z.infer<typeof ReferenceImpactResponseSchema>;
+
 /** 草稿保存的响应：新的版本号、内容 digest 与检查规则给出的警告。 */
 export const PutDraftResponseSchema = z.strictObject({
   version: z.number().int(),
@@ -373,6 +459,10 @@ export const MyCreationSchema = z.strictObject({
 export type MyCreation = z.infer<typeof MyCreationSchema>;
 export const MyCreationsResponseSchema = z.strictObject({ items: z.array(MyCreationSchema) });
 
+/** Personal saved creations; items are filtered by current read permission before paging. */
+export const FavoritesResponseSchema = pageOf(CreationSummarySchema);
+export const FavoriteStateSchema = z.strictObject({ favorited: z.boolean() });
+
 /** `GET …/releases/:label`：Release 的详细信息。 */
 export const ReleaseDetailSchema = ReleaseSummarySchema.extend({
   ref: UnversionedRefSchema,
@@ -398,6 +488,7 @@ export const RightsAckSchema = z.union([
  * 变更是否敏感由服务端按字段计算，客户端提交的 `sensitive` 不被采信。
  */
 export const CreateContributionRequestSchema = z.strictObject({
+  changes_version: z.literal(1).optional(),
   title: z.string().trim().min(1).max(200),
   description: z.string().max(20000).optional(),
   base_revision: z.string(),
@@ -414,11 +505,23 @@ export const ContributionQuerySchema = PageQuerySchema.extend({
 
 export const MergePreviewSchema = z.strictObject({
   key: z.string(),
-  on: z.enum(["fragment", "edge", "asset", "metadata", "configuration"]),
+  on: z.enum([
+    "fragment",
+    "edge",
+    "asset",
+    "metadata",
+    "configuration",
+    "story",
+    "story-order",
+    "cast",
+    "group",
+    "source",
+  ]),
   op: z.string(),
   state: z.enum(["applied", "already_applied", "conflict"]),
   sensitive: z.boolean(),
-  reason: z.enum(["diverged", "slot_missing"]).optional(),
+  reason: z.enum(["diverged", "slot_missing", "invalid_result"]).optional(),
+  conflict_fields: z.array(z.string()).optional(),
 });
 
 /** 登录用户附带显示名与个人 namespace（`@slug`，有则给），不包含邮箱。 */
@@ -432,6 +535,7 @@ export const ContributionAuthorSchema = z.union([
 ]);
 
 export const ContributionSummarySchema = z.strictObject({
+  client_id: z.string().optional(),
   change_count: z.number().int().nonnegative().optional(),
   has_conflicts: z.boolean().optional(),
   id: z.string(),
@@ -452,6 +556,19 @@ export const ContributionDetailSchema = ContributionSummarySchema.extend({
   preview: z
     .strictObject({
       mergeable: z.boolean(),
+      merged: z.unknown().optional(),
+      current: z.unknown().optional(),
+      draft_version: z.number().int().nonnegative().optional(),
+      diagnostics: z
+        .array(
+          z.strictObject({
+            code: z.string(),
+            subject: z.string(),
+            severity: z.enum(["error", "warning", "info"]),
+            detail: z.string().optional(),
+          }),
+        )
+        .optional(),
       outcomes: z.array(MergePreviewSchema),
       conflicts: z.array(z.string()),
       /** 接受前必须逐项确认的敏感变更键。 */
@@ -733,3 +850,84 @@ export const Ccv3LossReportSchema = z.strictObject({
   }),
 });
 export type Ccv3LossReport = z.infer<typeof Ccv3LossReportSchema>;
+
+/** A source body is returned only through an authorized owning release. Bytes are not normalized. */
+export const SourceTextResponseSchema = z.strictObject({
+  source: z.string(),
+  asset: z.string(),
+  digest: DigestSchema,
+  text: z.string(),
+});
+export type SourceTextResponse = z.infer<typeof SourceTextResponseSchema>;
+
+export * from "./draft-builds.js";
+
+export const CollaboratorSchema = z.strictObject({
+  user_id: z.string(),
+  name: z.string(),
+  namespace: NamespaceSlugSchema.nullable(),
+  status: z.enum(["pending", "active"]),
+  license: z.string(),
+  invited_at: z.string(),
+  accepted_at: z.string().nullable(),
+});
+export type Collaborator = z.infer<typeof CollaboratorSchema>;
+export const CollaboratorsResponseSchema = z.strictObject({ items: z.array(CollaboratorSchema) });
+export const InviteCollaboratorRequestSchema = z.strictObject({ namespace: NamespaceSlugSchema });
+export const AcceptCollaborationRequestSchema = z.strictObject({
+  license: z.string().min(1),
+  agree: z.literal(true),
+});
+export const CollaborationInvitationSchema = z.strictObject({
+  creation: z.string(),
+  ref: z.string(),
+  display_name: LocalizedTextSchema,
+  license: z.string(),
+  status: z.enum(["pending", "active"]),
+});
+export type CollaborationInvitation = z.infer<typeof CollaborationInvitationSchema>;
+export const CollaborationInvitationsResponseSchema = z.strictObject({
+  items: z.array(CollaborationInvitationSchema),
+});
+
+/** Public-client OAuth management. Secrets and token material never enter the settings API. */
+export const OAUTH_SCOPES = [
+  "profile",
+  "creations:read",
+  "drafts:write",
+  "contributions:write",
+  "offline_access",
+] as const;
+export const OAuthScopeSchema = z.enum(OAUTH_SCOPES);
+export const OAuthClientSchema = z.strictObject({
+  client_id: z.string(),
+  name: z.string(),
+  redirect_uris: z.array(z.string()),
+  created_at: z.string().nullable(),
+});
+export const OAuthClientsSchema = z.strictObject({ items: z.array(OAuthClientSchema) });
+export const RegisterOAuthClientSchema = z.strictObject({
+  name: z.string().trim().min(1).max(120),
+  redirect_uris: z.array(z.url().max(2048)).min(1).max(10),
+});
+export const OAuthGrantSchema = z.strictObject({
+  client_id: z.string(),
+  name: z.string(),
+  scopes: z.array(OAuthScopeSchema),
+  created_at: z.string(),
+});
+export const OAuthGrantsSchema = z.strictObject({ items: z.array(OAuthGrantSchema) });
+export const OAuthConsentRequestSchema = z.strictObject({
+  oauth_query: z.string().min(1).max(16384),
+});
+export const OAuthConsentDetailsSchema = z.strictObject({
+  client_id: z.string(),
+  client_name: z.string(),
+  redirect_uri: z.string(),
+  scopes: z.array(OAuthScopeSchema),
+});
+export const DecideOAuthConsentSchema = OAuthConsentRequestSchema.extend({ accept: z.boolean() });
+export const OAuthConsentResultSchema = z.strictObject({ redirect_uri: z.string() });
+export type OAuthClient = z.infer<typeof OAuthClientSchema>;
+export type OAuthGrant = z.infer<typeof OAuthGrantSchema>;
+export type OAuthConsentDetails = z.infer<typeof OAuthConsentDetailsSchema>;

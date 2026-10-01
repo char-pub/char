@@ -15,13 +15,24 @@ import {
   checkCreation,
   isCharError,
 } from "@char-pub/core";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Hono } from "hono";
 import { appendAudit } from "../../audit/audit.js";
-import { blockedDigests, creationDrafts, imports, uploads } from "../../db/schema/index.js";
+import { authorize } from "../../authz/authorize.js";
+import {
+  blockedDigests,
+  creationCollaborators,
+  creationContributors,
+  creationDrafts,
+  imports,
+} from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
+import { canReadDraftAsset, grantDraftAssets } from "../../registry/asset-ownership.js";
 import { avatarDigest } from "../../registry/avatar.js";
+import { assertCollaborationWrite } from "../../registry/collaboration-policy.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
+import { assertDerivationSource } from "../../registry/derivations.js";
+import { buildCreationContext, lockDraftBuildCreation } from "../../registry/draft-builds.js";
 import { forceIdentity } from "../../registry/drafts.js";
 import { encodeId } from "../../registry/ids.js";
 import { type CreationContext, lookupCreation } from "../../registry/lookup.js";
@@ -33,7 +44,7 @@ export const CREATION_PATH = "/v1/creations/:ns{@[a-z0-9-]+}/:name";
 
 /** 草稿请求体可以比普通 JSON 大（上限 5 MiB），在 API 组装时单独放宽。 */
 export const DRAFT_PATH_RE = /^\/v1\/creations\/@[a-z0-9-]+\/[a-z0-9-]+\/draft$/;
-export const MAX_DRAFT_BYTES = 5 * 1024 * 1024;
+export { MAX_DRAFT_BYTES } from "@char-pub/contracts";
 
 async function loadCreation(c: AppContext): Promise<CreationContext | null> {
   return lookupCreation(
@@ -105,36 +116,36 @@ export function register(app: Hono<Env>): void {
       return { action: "creation.read_draft", resource: ctx.resource, loaded: ctx };
     },
     handler: async (c, { loaded }) => {
-      const { db, cas } = c.var.services;
+      const { db, cas, clock } = c.var.services;
       c.header("cache-control", "private, no-store");
-      const [draft] = await db
-        .select()
-        .from(creationDrafts)
-        .where(eq(creationDrafts.creationId, loaded.creation.id))
-        .limit(1);
-      const digest = avatarDigest(draft?.working);
-      if (!digest) return notFound(c);
-      const [blocked] = await db
-        .select()
-        .from(blockedDigests)
-        .where(eq(blockedDigests.digest, digest))
-        .limit(1);
-      if (blocked) return notFound(c);
-      // A digest pasted into a draft is not proof of ownership of a private blob.
-      const [owned] = await db
-        .select({ id: uploads.id })
-        .from(uploads)
-        .where(
-          and(
-            eq(uploads.ownerUserId, userIdOf(c.var.principal)),
-            eq(uploads.status, "ready"),
-            sql`(${uploads.result}->'blob'->>'digest' = ${digest} OR ${uploads.result}->'derived' @> ${JSON.stringify([digest])}::jsonb)`,
-          ),
-        )
-        .limit(1);
-      if (!owned) return notFound(c);
-      const url = await cas.signedGet(digest);
-      return c.req.query("redirect") === "1" ? c.redirect(url, 302) : c.json({ url, digest });
+      return db.transaction(async (tx) => {
+        await lockDraftBuildCreation(tx, loaded.creation.id);
+        const fresh = await buildCreationContext(
+          tx,
+          loaded.creation.id,
+          c.var.principal,
+          clock.now(),
+        );
+        const allowed = authorize(fresh.principal, "creation.read_draft", fresh.context.resource);
+        if (!allowed.allow) return problem(c, allowed.status, allowed.code);
+        const [draft] = await tx
+          .select()
+          .from(creationDrafts)
+          .where(eq(creationDrafts.creationId, loaded.creation.id))
+          .limit(1);
+        const digest = avatarDigest(draft?.working);
+        if (!digest) return notFound(c);
+        const [blocked] = await tx
+          .select()
+          .from(blockedDigests)
+          .where(eq(blockedDigests.digest, digest))
+          .limit(1);
+        if (blocked) return notFound(c);
+        if (!(await canReadDraftAsset(tx, loaded.creation.id, userIdOf(fresh.principal), digest)))
+          return notFound(c);
+        const url = await cas.signedGet(digest);
+        return c.req.query("redirect") === "1" ? c.redirect(url, 302) : c.json({ url, digest });
+      });
     },
   });
   route(app, {
@@ -198,6 +209,49 @@ export function register(app: Hono<Env>): void {
       const v = validate(c, working);
       if (!v.ok) return v.response;
       const updated = await db.transaction(async (tx) => {
+        await lockDraftBuildCreation(tx, loaded.creation.id);
+        const fresh = await lookupCreation(
+          tx,
+          loaded.ns.slug,
+          loaded.creation.name,
+          c.var.principal,
+        );
+        if (!fresh) return notFound(c);
+        const decision = authorize(c.var.principal, "creation.edit", fresh.resource, {
+          disabled: await c.var.services.flags(),
+        });
+        if (!decision.allow) return problem(c, decision.status, decision.code);
+        const [before] = await tx
+          .select()
+          .from(creationDrafts)
+          .where(eq(creationDrafts.creationId, loaded.creation.id))
+          .for("update");
+        if (!before || before.version !== expected) return null;
+        const previous = canonicalizeCreation(before.working);
+        if (
+          previous.creation.provenance.authored_by_agent === true &&
+          v.canonical.creation.provenance.authored_by_agent !== true
+        )
+          return problem(
+            c,
+            422,
+            "check.agent_history_required",
+            "Keep authored_by_agent: true in this draft's provenance. Editing or reviewing content does not erase its agent-assisted history.",
+          );
+        await assertDerivationSource(tx, loaded.creation.id, v.canonical.creation);
+        try {
+          assertCollaborationWrite(
+            c.var.principal,
+            fresh.resource,
+            previous.creation,
+            v.canonical.creation,
+            false,
+            true,
+          );
+        } catch (e) {
+          if (isCharError(e)) return problem(c, 403, e.code, e.detail);
+          throw e;
+        }
         const rows = await tx
           .update(creationDrafts)
           .set({
@@ -214,6 +268,35 @@ export function register(app: Hono<Env>): void {
           )
           .returning({ version: creationDrafts.version });
         if (rows.length === 0) return null;
+        await grantDraftAssets(
+          tx,
+          loaded.creation.id,
+          userIdOf(c.var.principal),
+          working,
+          clock.now(),
+        );
+        if (
+          fresh.resource.collaborator &&
+          !authorize(c.var.principal, "creation.update_settings", fresh.resource).allow &&
+          previous.semantic_digest !== v.canonical.semantic_digest
+        )
+          await tx
+            .insert(creationContributors)
+            .values({
+              creationId: loaded.creation.id,
+              userId: userIdOf(c.var.principal),
+              createdAt: clock.now(),
+            })
+            .onConflictDoNothing();
+        if (previous.creation.meta.license !== v.canonical.creation.meta.license)
+          await tx
+            .update(creationCollaborators)
+            .set({
+              license: v.canonical.creation.meta.license,
+              acceptedAt: null,
+              updatedAt: clock.now(),
+            })
+            .where(eq(creationCollaborators.creationId, loaded.creation.id));
         await appendAudit(tx, {
           at: clock.now(),
           actor: auditActor(c.var.principal),
@@ -224,6 +307,7 @@ export function register(app: Hono<Env>): void {
         });
         return rows[0];
       });
+      if (updated instanceof Response) return updated;
       if (!updated) {
         return problem(c, 409, "draft.version_conflict", "the draft was changed by someone else");
       }
@@ -248,37 +332,54 @@ export function register(app: Hono<Env>): void {
     handler: async (c, { body, loaded }) => {
       const { db } = c.var.services;
       const creationId = loaded.creation.id;
-      const [draft] = await db
-        .select()
-        .from(creationDrafts)
-        .where(eq(creationDrafts.creationId, creationId))
-        .limit(1);
-      if (!draft) return notFound(c);
-      const v = validate(
-        c,
-        forceIdentity(draft.working as Record<string, unknown>, identityOf(loaded)),
-      );
-      if (!v.ok) return v.response;
+      return db.transaction(async (tx) => {
+        await lockDraftBuildCreation(tx, creationId);
+        const fresh = await lookupCreation(
+          tx,
+          loaded.ns.slug,
+          loaded.creation.name,
+          c.var.principal,
+        );
+        if (!fresh) return notFound(c);
+        const decision = authorize(c.var.principal, "creation.edit", fresh.resource, {
+          disabled: await c.var.services.flags(),
+        });
+        if (!decision.allow) return problem(c, decision.status, decision.code);
+        const [draft] = await tx
+          .select()
+          .from(creationDrafts)
+          .where(eq(creationDrafts.creationId, creationId))
+          .limit(1);
+        if (!draft) return notFound(c);
+        const v = validate(
+          c,
+          forceIdentity(draft.working as Record<string, unknown>, identityOf(loaded)),
+        );
+        if (!v.ok) return v.response;
 
-      const { row, created } = await createRevision(c.var.services, {
-        creationId,
-        canonical: v.canonical,
-        parentId: draft.baseRevisionId,
-        author: { kind: "user", userId: userIdOf(c.var.principal) },
-        message: body.message ?? null,
-        actor: auditActor(c.var.principal),
-        requestId: requestIdOf(c),
-        updateDraftBase: true,
+        const { row, created } = await createRevision(
+          { ...c.var.services, db: tx },
+          {
+            creationId,
+            canonical: v.canonical,
+            parentId: draft.baseRevisionId,
+            author: { kind: "user", userId: userIdOf(c.var.principal) },
+            message: body.message ?? null,
+            actor: auditActor(c.var.principal),
+            requestId: requestIdOf(c),
+            updateDraftBase: true,
+          },
+        );
+        return c.json(
+          {
+            id: encodeId("revision", row.id),
+            semantic_digest: row.semanticDigest,
+            ...(row.message ? { message: row.message } : {}),
+            created_at: row.createdAt.toISOString(),
+          },
+          created ? 201 : 200,
+        );
       });
-      return c.json(
-        {
-          id: encodeId("revision", row.id),
-          semantic_digest: row.semanticDigest,
-          ...(row.message ? { message: row.message } : {}),
-          created_at: row.createdAt.toISOString(),
-        },
-        created ? 201 : 200,
-      );
     },
   });
 }

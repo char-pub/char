@@ -14,15 +14,21 @@
  * - 不启用 Better Auth 的 admin 插件：它会在公开 API 上挂出冒充用户、改角色、删用户等
  *   接口。封禁由 `banUser` 在服务端完成，员工操作只存在于单独的 admin 进程。
  */
-import { betterAuth } from "better-auth";
+import { betterAuth, type InferAPI } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { magicLink } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 import type { Principal } from "../authz/authorize.js";
-import type { Db } from "../db/client.js";
+import type { Executor } from "../db/client.js";
 import * as schema from "../db/schema/index.js";
+import {
+  type OAuthBoundaryEndpoints,
+  type OAuthPages,
+  type OAuthProtocolEndpoints,
+  oauthPlugins,
+} from "./oauth-provider.js";
 
 /** API 的路由前缀，Better Auth 的所有接口都挂在它下面。 */
 export const AUTH_BASE_PATH = "/v1/auth";
@@ -49,7 +55,8 @@ export interface AuthProviders {
 export type MagicLinkSender = (input: { email: string; url: string }) => Promise<void>;
 
 export interface CreateAuthOptions {
-  db: Db;
+  db: Executor;
+  oauth?: OAuthPages | undefined;
   /** 签名 cookie 与加密 OAuth state 的密钥，至少 32 个字符。 */
   secret: string;
   /** API 的外部地址，例如 `https://api.char.pub`。OAuth 回调地址由它推导。 */
@@ -73,7 +80,7 @@ function socialProviders(p: AuthProviders) {
   return out;
 }
 
-export function createAuth(opts: CreateAuthOptions) {
+export function createAuth(opts: CreateAuthOptions): Auth {
   if (opts.secret.length < 32) throw new Error("auth secret must be at least 32 characters");
   const plugins = opts.sendMagicLink
     ? [
@@ -86,7 +93,21 @@ export function createAuth(opts: CreateAuthOptions) {
         }),
       ]
     : [];
-  return betterAuth({
+  const pages = opts.oauth ?? {
+    loginPage: `${opts.trustedOrigins[0] ?? opts.baseURL}/oauth/consent`,
+    consentPage: `${opts.trustedOrigins[0] ?? opts.baseURL}/oauth/consent`,
+  };
+  for (const url of [pages.loginPage, pages.consentPage]) {
+    if (!opts.trustedOrigins.includes(new URL(url).origin))
+      throw new Error("OAuth pages must use a trusted origin");
+  }
+  const providerPlugins = oauthPlugins(pages);
+  const publicProtocol = new Set(["/oauth2/authorize", "/oauth2/token", "/oauth2/revoke"]);
+  const disabledPaths = Object.values(providerPlugins[0].endpoints ?? {})
+    .map((endpoint) => endpoint.path)
+    .filter((path) => !publicProtocol.has(path));
+  const auth = betterAuth({
+    disabledPaths,
     appName: "char.pub",
     baseURL: opts.baseURL,
     basePath: AUTH_BASE_PATH,
@@ -101,6 +122,13 @@ export function createAuth(opts: CreateAuthOptions) {
         account: schema.authAccount,
         verification: schema.authVerification,
         rateLimit: schema.authRateLimit,
+        oauthClient: schema.oauthClient,
+        oauthResource: schema.oauthResource,
+        oauthClientResource: schema.oauthClientResource,
+        oauthRefreshToken: schema.oauthRefreshToken,
+        oauthAccessToken: schema.oauthAccessToken,
+        oauthConsent: schema.oauthConsent,
+        oauthClientAssertion: schema.oauthClientAssertion,
       },
     }),
     user: {
@@ -177,11 +205,28 @@ export function createAuth(opts: CreateAuthOptions) {
       },
     },
     telemetry: { enabled: false },
-    plugins,
+    plugins: [...plugins, ...providerPlugins],
   });
+  authOptions.set(auth, opts);
+  return auth as unknown as Auth;
 }
 
-export type Auth = ReturnType<typeof createAuth>;
+const authOptions = new WeakMap<object, CreateAuthOptions>();
+
+/** Rebind the provider to the transaction owning its client lock. */
+export function transactionalAuth(auth: Auth, db: Executor): Auth {
+  const opts = authOptions.get(auth);
+  if (!opts) throw new Error("Unknown auth instance");
+  return createAuth({ ...opts, db });
+}
+
+type BaseAuth = ReturnType<typeof betterAuth>;
+export interface Auth {
+  handler: BaseAuth["handler"];
+  $context: BaseAuth["$context"];
+  api: Pick<BaseAuth["api"], "getSession"> &
+    InferAPI<OAuthProtocolEndpoints & OAuthBoundaryEndpoints>;
+}
 
 /**
  * 从请求的 session cookie 得到 principal。没有登录、会话过期或用户已被封禁时返回 null。
@@ -191,7 +236,7 @@ export function sessionPrincipalResolver(auth: Auth) {
   return async (req: Request): Promise<Principal | null> => {
     if (!req.headers.get("cookie")?.includes(SESSION_COOKIE)) return null;
     const result = await auth.api.getSession({
-      headers: req.headers,
+      headers: sessionHeaders(req.headers),
       query: { disableCookieCache: true },
     });
     if (!result) return null;
@@ -213,4 +258,11 @@ export function isBanned(
   if (!u.banned) return false;
   if (!u.banExpires) return true;
   return new Date(u.banExpires) > now;
+}
+
+/** Bearer credentials never participate in first-party session operations. */
+export function sessionHeaders(headers: Headers): Headers {
+  const result = new Headers(headers);
+  result.delete("authorization");
+  return result;
 }

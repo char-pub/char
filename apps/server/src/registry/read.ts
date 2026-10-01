@@ -4,14 +4,19 @@
  * 公共标识 `@ns/name` 与内部 ID 解耦。namespace 或 Creation 改名后，旧名写在 redirect
  * 表里，查找时返回“应该重定向到哪个新地址”，由路由返回 301。
  *
- * 这里不做权限判断：它只负责把数据查出来，并附带 `authorize()` 需要的资源描述
- * （namespace 状态、调用者的成员角色、可见性等），授权统一在路由层完成。
+ * 加载 `authorize()` 需要的作品、namespace 和协作者上下文。
+ * 列表中的私有版本与响应能力同样委托集中授权判断，不能仅以公开作品详情的权限推导。
  */
 import type { CreationDetail, ReleaseSummary } from "@char-pub/contracts";
-import { ID_PREFIXES, type IdKind, isId, type Rating } from "@char-pub/core";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { digestOf, ID_PREFIXES, type IdKind, isId, type Rating } from "@char-pub/core";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { TypeID } from "typeid-js";
-import type { NamespaceContext, Principal } from "../authz/authorize.js";
+import {
+  authorize,
+  isNamespaceOwner,
+  type NamespaceContext,
+  type Principal,
+} from "../authz/authorize.js";
 import type { Executor } from "../db/client.js";
 import {
   creationRedirects,
@@ -21,7 +26,10 @@ import {
   namespaces,
   releases,
   reverseEdges,
+  revisionContributors,
 } from "../db/schema/index.js";
+
+import { collaborationAccess } from "./collaboration-access.js";
 
 // ---------------------------------------------------------------------------
 // 对外 ID：数据库列是 uuid（UUIDv7），API 中使用 TypeID `<前缀>_<26 位 base32>`。
@@ -46,10 +54,13 @@ export function fromPublicId(kind: IdKind, id: string): string | null {
 // ---------------------------------------------------------------------------
 
 export type CreationRow = typeof creations.$inferSelect;
-export type ReleaseRow = typeof releases.$inferSelect;
+export type ReleaseRow = typeof releases.$inferSelect & {
+  contributors?: { user: string; name: string }[];
+};
 export type NamespaceRow = typeof namespaces.$inferSelect;
 
 export interface FoundCreation {
+  collaborator?: boolean;
   namespace: NamespaceRow;
   creation: CreationRow;
   ns: NamespaceContext;
@@ -85,6 +96,7 @@ export async function namespaceContext(
 ): Promise<NamespaceContext> {
   return {
     namespace_id: namespace.id,
+    kind: namespace.kind,
     status: namespace.status,
     role: await memberRole(db, namespace.id, principal),
   };
@@ -151,6 +163,7 @@ export async function findCreation(
       creation,
       ns: await namespaceContext(db, namespace, principal),
       hasPublicRelease: pub !== undefined,
+      collaborator: await collaborationAccess(db, creation.id, principal),
     },
   };
 }
@@ -165,7 +178,7 @@ export async function findRelease(
     .from(releases)
     .where(and(eq(releases.creationId, creationId), eq(releases.label, label), published))
     .limit(1);
-  return r ?? null;
+  return r ? ((await withReleaseContributors(db, [r]))[0] ?? null) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,12 +201,17 @@ export function publicObjectUrl(base: string, digest: string): string {
 
 /** 构建产物（例如 CCv3 导出）的缓存 key：内容、依赖、目标格式或编译器版本任一变化都会换 key。 */
 export function exportCacheKey(input: {
+  /** Card provenance and blob retention belong to one exact root Release. */
+  release_id: string;
+  bucket: "public" | "private";
   semantic_digest: string;
   lock_digest: string;
   target: string;
   compiler_version: string;
+  locale?: string;
+  preset?: { release_id: string; semantic_digest: string };
 }): string {
-  return `${input.target}:${input.compiler_version}:${input.semantic_digest}:${input.lock_digest}`;
+  return `${input.target}:${digestOf(input)}`;
 }
 
 const RATING_ORDER: readonly Rating[] = ["general", "teen", "mature", "explicit"];
@@ -207,6 +225,26 @@ export function effectiveRatingOf(published: Rating, forced: Rating | null | und
   return RATING_ORDER.indexOf(forced) > RATING_ORDER.indexOf(published) ? forced : published;
 }
 
+/** Credits belong to the immutable Revision, not the current team or profile names. */
+export async function withReleaseContributors(
+  db: Executor,
+  rows: readonly ReleaseRow[],
+): Promise<ReleaseRow[]> {
+  const ids = [...new Set(rows.flatMap((row) => (row.revisionId ? [row.revisionId] : [])))];
+  if (!ids.length) return [...rows];
+  const credits = await db
+    .select()
+    .from(revisionContributors)
+    .where(inArray(revisionContributors.revisionId, ids))
+    .orderBy(asc(revisionContributors.userId));
+  return rows.map((row) => ({
+    ...row,
+    contributors: credits
+      .filter((credit) => credit.revisionId === row.revisionId)
+      .map((credit) => ({ user: toPublicId("user", credit.userId), name: credit.name })),
+  }));
+}
+
 export function releaseSummary(r: ReleaseRow): ReleaseSummary {
   const out: ReleaseSummary = {
     id: toPublicId("release", r.id),
@@ -216,6 +254,7 @@ export function releaseSummary(r: ReleaseRow): ReleaseSummary {
     semantic_digest: r.semanticDigest,
     effective_rating: r.effectiveRating ?? "general",
     created_at: r.createdAt.toISOString(),
+    ...(r.contributors?.length ? { contributors: r.contributors } : {}),
   };
   const source = r.source as {
     provider?: string;
@@ -242,13 +281,14 @@ export function releaseSummary(r: ReleaseRow): ReleaseSummary {
   return out;
 }
 
-/** 调用方能看到哪些 Release：成员看到全部，其他人只看到 public。 */
+/** 先按作品角色缩小查询，再逐版本交集读取 scope，防止公开详情泄露私有版本。 */
 export async function visibleReleases(
   db: Executor,
   found: FoundCreation,
   principal: Principal,
 ): Promise<ReleaseRow[]> {
-  const isMember = principal.kind === "user" && found.ns.role !== null;
+  const isMember =
+    principal.kind === "user" && (isNamespaceOwner(found.ns) || found.collaborator === true);
   const rows = await db
     .select()
     .from(releases)
@@ -260,7 +300,20 @@ export async function visibleReleases(
       ),
     )
     .orderBy(desc(releases.createdAt), desc(releases.id));
-  return rows;
+  const visible = rows.filter(
+    (row) =>
+      authorize(principal, "release.read", {
+        type: "release",
+        id: row.id,
+        creation_id: found.creation.id,
+        ns: found.ns,
+        collaborator: found.collaborator === true,
+        visibility: row.visibility,
+        status: row.status,
+        creation_status: found.creation.status,
+      }).allow,
+  );
+  return withReleaseContributors(db, visible);
 }
 
 export async function creationDetail(
@@ -282,6 +335,17 @@ export async function creationDetail(
         sql`${releases.status} <> 'tombstoned'`,
       ),
     );
+  const resource = {
+    type: "creation" as const,
+    id: creation.id,
+    ns: found.ns,
+    collaborator: found.collaborator === true,
+    has_public_release: found.hasPublicRelease,
+    status: creation.status,
+    contribution_policy: creation.contributionPolicy,
+  };
+  const permission = (action: Parameters<typeof authorize>[1]) =>
+    authorize(principal, action, resource).allow;
   const detail: CreationDetail = {
     id: toPublicId("creation", creation.id),
     ref: refOf(namespace.slug, creation.name),
@@ -292,6 +356,14 @@ export async function creationDetail(
     releases: rels.map(releaseSummary),
     dependents_count: dep?.n ?? 0,
     contribution_policy: creation.contributionPolicy,
+    permissions: {
+      read_draft: permission("creation.read_draft"),
+      edit: permission("creation.edit"),
+      publish: permission("creation.publish"),
+      update_sensitive: permission("creation.update_settings"),
+      manage_source: permission("creation.manage_source"),
+      manage_collaborators: permission("creation.manage_collaborators"),
+    },
   };
   if (creation.summary !== null)
     detail.summary = creation.summary as CreationDetail["display_name"];

@@ -1,4 +1,4 @@
-import { CREATIVE_REGIONS, PRESET_REGIONS } from "@char-pub/core";
+import { CREATIVE_REGIONS, PRESET_REGIONS, type PresetPolicy } from "@char-pub/core";
 import { useId } from "react";
 import { ArtifactPicker } from "@/components/artifact-picker";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,9 @@ import { nextId, type Working } from "@/lib/draft";
 interface Block {
   id: string;
   text: string;
-  position: "main" | "after-history";
+  default_at: "main" | "after-history";
   enabled?: boolean;
+  purpose?: string | undefined;
 }
 interface PolicyImport {
   id: string;
@@ -20,16 +21,19 @@ interface PolicyImport {
   pin: { release: string; semantic_digest: string };
 }
 export interface EditablePolicy {
-  version: "0-draft";
+  version: "1-draft";
   blocks: Block[];
   imports?: PolicyImport[];
   layout?: string[];
   region_budgets?: Record<string, number>;
   requires?: { system_role: true; multiple_system_messages?: true };
+  placements?: PresetPolicy["placements"];
+  selection?: PresetPolicy["selection"];
+  render?: PresetPolicy["render"];
 }
 export function defaultPolicy(module = false): EditablePolicy {
   return {
-    version: "0-draft",
+    version: "1-draft",
     blocks: [],
     ...(module ? {} : { layout: [...PRESET_REGIONS], requires: { system_role: true as const } }),
   };
@@ -47,19 +51,22 @@ export function reorder<T>(items: readonly T[], index: number, direction: -1 | 1
   return result;
 }
 export function Field({
+  id: fieldId,
   label,
   value,
   onChange,
   multiline = false,
   type = "text",
 }: {
+  id?: string;
   label: string;
   value: string | number;
   onChange: (value: string) => void;
   multiline?: boolean;
   type?: string;
 }) {
-  const id = useId();
+  const generatedId = useId();
+  const id = fieldId ?? generatedId;
   return (
     <div className="space-y-1">
       <Label htmlFor={id} className="text-sm font-medium">
@@ -134,8 +141,8 @@ export function PolicyEditor({
     <section id="edit-policy" className="space-y-5 rounded-xl border bg-surface p-5">
       <h2 className="text-xl font-bold">{module ? "Reusable prompt module" : "Prompt policy"}</h2>
       <p className="text-sm text-text-2">
-        Instructions are literal text. Block IDs stay stable when you edit or reorder them. Imported
-        modules run before local blocks.
+        Instructions are literal text. Block IDs stay stable when you edit or reorder them. Blocks
+        use their default position unless you arrange them below.
       </p>
       <ol className="space-y-4" aria-label="Prompt blocks">
         {blocks.map((b, i) => (
@@ -168,6 +175,11 @@ export function PolicyEditor({
               multiline
               onChange={(text) => change(i, { text })}
             />
+            <Field
+              label={`Purpose of ${b.id}`}
+              value={b.purpose ?? ""}
+              onChange={(purpose) => change(i, { purpose: purpose || undefined })}
+            />
             <div className="flex gap-4">
               <Label className="flex items-center gap-2 text-sm">
                 <input
@@ -178,10 +190,10 @@ export function PolicyEditor({
                 Enabled
               </Label>
               <Label className="flex items-center gap-2 text-sm">
-                Position
+                Default position
                 <NativeSelect
-                  value={b.position}
-                  onChange={(e) => change(i, { position: e.target.value as Block["position"] })}
+                  value={b.default_at}
+                  onChange={(e) => change(i, { default_at: e.target.value as Block["default_at"] })}
                 >
                   <option value="main">Before all regions</option>
                   <option value="after-history">After all regions</option>
@@ -204,7 +216,7 @@ export function PolicyEditor({
                   "instructions",
                 ),
                 text: "Write your instructions here.",
-                position: "main",
+                default_at: "main",
               },
             ],
           })
@@ -217,7 +229,7 @@ export function PolicyEditor({
         {imports.map((item, i) => (
           <div key={item.id} className="flex flex-wrap items-center gap-2 rounded border p-2">
             <span className="flex-1 font-mono text-xs">
-              {item.use} · {item.pin.release}
+              {item.id}: {item.use} · {item.pin.release}
             </span>
             <MoveButtons
               index={i}
@@ -270,6 +282,145 @@ export function PolicyEditor({
       </section>
       {!module ? (
         <>
+          <details>
+            <summary className="cursor-pointer font-semibold">Arrange and repeat blocks</summary>
+            <p className="my-2 text-xs text-text-2">
+              Use a local block ID or import-id/block-id. Arranged blocks appear in the order below;
+              other blocks follow at their default position. Removing every arrangement for a block
+              restores its default.
+            </p>
+            <ol aria-label="Block placements" className="space-y-3">
+              {(policy.placements ?? []).map((placement, i, list) => {
+                const changePlacement = (patch: Partial<typeof placement>) =>
+                  set({
+                    placements: list.map((item, n) => (n === i ? { ...item, ...patch } : item)),
+                  });
+                return (
+                  <li key={i} className="space-y-2 rounded border p-3">
+                    <Field
+                      label={`Placement ${i + 1} block`}
+                      value={placement.block}
+                      onChange={(block) => changePlacement({ block })}
+                    />
+                    <Field
+                      label={`Placement ${i + 1} name`}
+                      value={placement.as ?? placement.at}
+                      onChange={(as) => changePlacement({ as })}
+                    />
+                    <Label>
+                      Position
+                      <NativeSelect
+                        value={placement.at}
+                        onChange={(e) =>
+                          changePlacement({ at: e.target.value as "main" | "after-history" })
+                        }
+                      >
+                        <option value="main">Before all regions</option>
+                        <option value="after-history">After all regions</option>
+                      </NativeSelect>
+                    </Label>
+                    <MoveButtons
+                      index={i}
+                      length={list.length}
+                      label={`placement ${i + 1}`}
+                      onMove={(direction) => set({ placements: reorder(list, i, direction) })}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => set({ placements: list.filter((_, n) => n !== i) })}
+                    >
+                      Remove placement
+                    </Button>
+                  </li>
+                );
+              })}
+            </ol>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!blocks.length && !imports.length}
+              onClick={() =>
+                set({
+                  placements: [
+                    ...(policy.placements ?? []),
+                    {
+                      block: blocks[0]?.id ?? `${imports[0]?.id}/core`,
+                      at: "main",
+                      as: nextId(
+                        (policy.placements ?? []).map((p) => p.as ?? p.at),
+                        "placement",
+                      ),
+                    },
+                  ],
+                })
+              }
+            >
+              Add placement
+            </Button>
+            {!blocks.length && !imports.length ? (
+              <p className="text-xs">Add a prompt block or import a module first.</p>
+            ) : null}
+          </details>
+          <details>
+            <summary className="cursor-pointer font-semibold">
+              Reference selection and labels
+            </summary>
+            <Field
+              label="Directory token limit"
+              type="number"
+              value={policy.selection?.catalog_budget ?? ""}
+              onChange={(value) =>
+                set({
+                  selection: {
+                    ...policy.selection,
+                    catalog_budget: value === "" ? undefined : Number(value),
+                  },
+                })
+              }
+            />
+            <Field
+              label="Maximum directory depth"
+              type="number"
+              value={policy.selection?.max_depth ?? 4}
+              onChange={(value) =>
+                set({
+                  selection: {
+                    ...policy.selection,
+                    max_depth: value === "" ? undefined : Number(value),
+                  },
+                })
+              }
+            />
+            <p className="text-xs">
+              If selection is unavailable, keep required and directly activated content.
+            </p>
+            {(
+              [
+                "perspective.rumor",
+                "perspective.claim",
+                "perspective.belief",
+                "knowing.narrator",
+                "sources.notice",
+              ] as const
+            ).map((key) => (
+              <Field
+                key={key}
+                label={`Label: ${key}`}
+                value={policy.render?.[key] ?? ""}
+                onChange={(value) => {
+                  const render = { ...policy.render };
+                  if (value) render[key] = value;
+                  else delete render[key];
+                  set({ render });
+                }}
+              />
+            ))}
+            <p className="text-xs">
+              Empty labels use the default text. Use {"{{speaker}}"} for claims and beliefs, and{" "}
+              {"{{knows}}"} / {"{{unknown}}"} for narrator knowledge.
+            </p>
+          </details>
           <section className="space-y-2">
             <h3 className="font-semibold">Context layout</h3>
             <p className="text-xs text-text-2">

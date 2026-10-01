@@ -1,5 +1,5 @@
 /**
- * CCv3 导出：Context IR → 角色卡 JSON（可选写入 PNG）+ Loss Report。
+ * CCv3 导出：CreationArtifact → 角色卡 JSON（可选写入 PNG）+ Loss Report。
  *
  * 导出器相当于一个离线的、有损的 Assembler，固定按 narrator 模式工作：
  * - 根角色（participant `self`）的 character fragment 按 IR 顺序拼进 description；
@@ -17,11 +17,17 @@
  * 非默认语言、被省略的策略字段）都写进 Loss Report，调用方必须把它展示给用户。
  */
 import {
+  buildIdentity,
+  CharError,
+  type CompiledTemplate,
   type ContextIR,
+  type CreationArtifact,
+  CreationArtifactSchema,
   type EffectiveMeta,
   finalizeIrText,
   type IRContent,
   type IRFragment,
+  LocaleSchema,
   type Participant,
   RATINGS,
   type ResolvedPreset,
@@ -53,12 +59,14 @@ export function estimateTokens(text: string): number {
 }
 
 export interface ExportOptions {
+  /** Export one requested locale, falling back to the published default with a loss note. */
+  locale?: string;
   /** Explicitly selected, integrity-checked policy release. */
   resolvedPreset?: ResolvedPreset;
   /** Aggregated attribution and licenses from the selected policy artifact. */
   presetMeta?: Pick<EffectiveMeta, "licenses" | "attribution"> &
     Partial<Pick<EffectiveMeta, "rating" | "content_warnings">>;
-  /** 用户选择的 Preset 里的策略文本；不提供时导出结果不含这两个字段的内容。 */
+  /** 显式提供的字面策略覆盖；未指定策略覆盖时使用产物锁定的 assembly 或 default_policy。 */
   preset?: { system_prompt?: string; post_history_instructions?: string };
   /** 头像 PNG；提供时同时返回嵌入了卡片数据的 PNG。 */
   avatarPng?: Uint8Array;
@@ -133,9 +141,22 @@ const KIND_LABEL: Record<string, string> = {
   examples: "Examples",
 };
 
-function displayText(v: Participant["display_name"], locale: string): string {
+function matchingLocale(available: readonly string[], wanted: string): string | undefined {
+  const parts = wanted.split("-");
+  for (let length = parts.length; length > 0; length--) {
+    if (length < parts.length && parts[length - 1]?.length === 1) continue;
+    const candidate = parts.slice(0, length).join("-").toLowerCase();
+    const found = available.find((tag) => tag.toLowerCase() === candidate);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
+function displayText(v: Participant["display_name"], locale: string, defaultLocale = "en"): string {
   if (typeof v === "string") return v;
-  return v[locale] ?? v.en ?? Object.values(v)[0] ?? "";
+  const keys = Object.keys(v).sort();
+  const key = matchingLocale(keys, locale) ?? matchingLocale(keys, defaultLocale) ?? keys[0];
+  return key === undefined ? "" : (v[key] ?? "");
 }
 
 interface Env {
@@ -172,7 +193,7 @@ function speakerText(env: Env, speaker: string): string {
   if (key === "user") return "{{user}}";
   const p = env.participants.get(key);
   if (p?.late === "user") return "{{user}}";
-  const name = p ? displayText(p.display_name, env.locale) : key;
+  const name = p ? displayText(p.display_name, env.locale, env.ir.meta.default_locale) : key;
   noteParticipant(env, key, `speaker ${name} written as a plain name; CCv3 has only one character`);
   return name;
 }
@@ -209,9 +230,161 @@ function isRootSelf(f: IRFragment, rootRef: string): boolean {
   );
 }
 
-export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResult {
+/** Preserve start ordering while making every discarded narrative object visible to the author. */
+function exportStory(
+  artifact: Extract<CreationArtifact, { kind: "content" }>,
+  env: Env,
+  compiled: (key: string) => string,
+  pickTemplate: (value: CompiledTemplate, subject: string) => string,
+  scenarioParts: string[],
+  estimate: TokenEstimator,
+): string[] {
+  const story = artifact.story;
+  if (!story) return [];
+  const starts: NonNullable<typeof story.starts> = story.starts ?? [{ id: "default" }];
+  const firstScene = starts[0]?.scene ?? story.scenes[0]?.id;
+  const scene = story.scenes.find((item) => item.id === firstScene);
+  if (!scene)
+    throw new CharError({
+      code: "ccv3.story_scene_missing",
+      subject: firstScene ?? "story.scenes",
+    });
+  const note = (subject: string, detail: string) => env.loss.other.push({ subject, detail });
+  const scenarioText: string[] = [];
+  if (scene.opening !== undefined) scenarioText.push(compiled(`scene/${scene.id}/opening`));
+  const roles = artifact.story_refs?.participants ?? {};
+  for (const key of scene.cast ?? Object.keys(roles)) {
+    const participant = env.participants.get(roles[key] ?? "");
+    if (!participant) throw new CharError({ code: "ccv3.story_participant_missing", subject: key });
+    const name = displayText(participant.display_name, env.locale, env.ir.meta.default_locale);
+    if (participant.part)
+      scenarioText.push(
+        `${name}: ${displayText(participant.part, env.locale, env.ir.meta.default_locale)}`,
+      );
+    if (participant.goal)
+      scenarioText.push(
+        `${name} — Goal: ${displayText(participant.goal, env.locale, env.ir.meta.default_locale)}`,
+      );
+    const goal = scene.goals?.[key];
+    if (goal)
+      scenarioText.push(
+        `${name} — Scene goal: ${displayText(goal, env.locale, env.ir.meta.default_locale)}`,
+      );
+  }
+  const text = scenarioText.filter((value) => value !== "").join("\n");
+  if (text) {
+    scenarioParts.push(text);
+    env.loss.tokens.scenario += estimate(text);
+  }
+  for (const item of story.scenes) {
+    note(
+      `story.scenes[${item.id}]`,
+      item.id === scene.id
+        ? "opening and present participants' part/goals flattened into scenario; scene identity, presence and transitions cannot execute"
+        : "scene, opening, presence and local goals dropped",
+    );
+    for (const field of [
+      "when",
+      "place",
+      "lore",
+      "items",
+      "events",
+      "beats",
+      "choices",
+      "time",
+      "where",
+    ] as const)
+      if (item[field] !== undefined)
+        note(
+          `story.scenes[${item.id}].${field}`,
+          "scene association or condition is not executable in CCv3",
+        );
+  }
+  for (const field of [
+    "beats",
+    "endings",
+    "plotlines",
+    "choices",
+    "items",
+    "events",
+    "timelines",
+  ] as const)
+    for (const item of story[field] ?? [])
+      note(
+        `story.${field}[${item.id}]`,
+        "narrative object, conditions, effects and reveal rules dropped",
+      );
+  for (const key of Object.keys(story.vars ?? {}))
+    note(`story.vars[${key}]`, "story variable and initial value dropped");
+  for (const key of Object.keys(story.knowing ?? {}))
+    note(
+      `story.knowing[${key}]`,
+      "participant knowledge and enter-scene updates dropped; export is a narrator view",
+    );
+  note("story.version", "story execution and per-agent semantics are not supported by CCv3");
+  const usedBootstrap = new Set<string>();
+  const greetings = starts.map((start) => {
+    if (story.starts)
+      note(
+        `story.starts[${start.id}]`,
+        "start identity, scene selection and metadata flattened into an ordered greeting",
+      );
+    for (const field of ["set", "reached"] as const)
+      if (start[field] !== undefined)
+        note(`story.starts[${start.id}].${field}`, "start state changes dropped");
+    const greeting = start.greeting;
+    if (greeting !== undefined && (typeof greeting === "string" || !("ref" in greeting)))
+      return compiled(`start/${start.id}/greeting`);
+    const bootstrap =
+      greeting && typeof greeting === "object" && "ref" in greeting
+        ? env.ir.bootstrap.greetings.find((item) => item.id === greeting.ref)
+        : env.ir.bootstrap.greetings[0];
+    if (!bootstrap) {
+      if (greeting !== undefined)
+        throw new CharError({
+          code: "ccv3.greeting_missing",
+          subject: `story.starts[${start.id}].greeting`,
+        });
+      note(
+        `story.starts[${start.id}].greeting`,
+        "start has no opening message; empty greeting retained without promoting another start",
+      );
+      return "";
+    }
+    usedBootstrap.add(bootstrap.id);
+    return pickTemplate(bootstrap, `bootstrap.${bootstrap.id}`);
+  });
+  for (const greeting of env.ir.bootstrap.greetings)
+    if (!usedBootstrap.has(greeting.id))
+      note(
+        `bootstrap.greetings[${greeting.id}]`,
+        "unreferenced bootstrap greeting omitted from story start choices",
+      );
+  return greetings;
+}
+
+export function exportCCv3(input: CreationArtifact, options: ExportOptions = {}): ExportResult {
+  const parsed = CreationArtifactSchema.safeParse(input);
+  if (!parsed.success)
+    throw new CharError({
+      code: "ccv3.invalid_artifact",
+      subject: "artifact",
+      detail: parsed.error.issues[0]?.message ?? "invalid creation artifact",
+    });
+  const artifact = parsed.data;
+  if (artifact.kind !== "content")
+    throw new CharError({ code: "ccv3.content_required", subject: artifact.root.ref });
+  const ir = artifact.ir;
+  const locked = artifact.assembly?.preset ?? artifact.default_policy;
+  const explicit = options.resolvedPreset !== undefined || options.preset !== undefined;
+  const opts: ExportOptions =
+    !explicit && locked
+      ? { ...options, resolvedPreset: locked, presetMeta: artifact.meta }
+      : options;
   const est = opts.estimateTokens ?? estimateTokens;
-  const locale = ir.meta.default_locale;
+  const locale = opts.locale ?? ir.meta.default_locale;
+  if (!LocaleSchema.safeParse(locale).success)
+    throw new CharError({ code: "ccv3.invalid_locale", subject: locale });
   const rootRef = ir.root.ref;
   const loss: LossReport = {
     target: "ccv3",
@@ -258,13 +431,18 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
   };
 
   for (const f of ir.fragments) {
-    for (const l of Object.keys(f.locales ?? {})) if (l !== locale) droppedLocales.add(l);
+    const hit = matchingLocale(
+      [ir.meta.default_locale, ...Object.keys(f.locales ?? {}).sort()],
+      locale,
+    );
+    for (const l of [ir.meta.default_locale, ...Object.keys(f.locales ?? {})])
+      if (l !== (hit ?? ir.meta.default_locale)) droppedLocales.add(l);
     if (f.visibility.scope === "private") {
       loss.visibility.push({
         subject: f.id,
         detail: `private to ${f.visibility.to.join(", ")}; exported with a narrator note, not as a boundary`,
       });
-    } else if (f.visibility.scope === "scene") {
+    } else if (f.visibility.scope === "scene" || f.visibility.scope === "story-scene") {
       loss.visibility.push({
         subject: f.id,
         detail: `scene-only visibility (${f.visibility.scene}) dropped`,
@@ -281,7 +459,7 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
     }
     if (f.subject !== undefined && f.subject !== "self" && f.kind === "character") {
       const p = env.participants.get(f.subject);
-      const name = p ? displayText(p.display_name, locale) : f.subject;
+      const name = p ? displayText(p.display_name, locale, ir.meta.default_locale) : f.subject;
       noteParticipant(
         env,
         f.subject,
@@ -289,11 +467,62 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
       );
     }
 
-    let body = contentText(env, f.content, f.id);
+    const translated =
+      hit === undefined || hit === ir.meta.default_locale ? undefined : f.locales?.[hit];
+    if (hit === undefined)
+      loss.other.push({
+        subject: `locales.${f.id}`,
+        detail: `requested ${locale} unavailable; used published default text`,
+      });
+    if (f.description !== undefined)
+      loss.other.push({ subject: `${f.id}.description`, detail: "selection description dropped" });
+    if (f.selectable !== undefined)
+      loss.other.push({
+        subject: `${f.id}.selectable`,
+        detail:
+          f.selectable && f.activation.mode === "keyword"
+            ? "AI selection without a keyword hit is lost; only keyword activation is exported"
+            : "context selector eligibility declaration cannot be represented in CCv3",
+      });
+    if (f.about !== undefined)
+      loss.other.push({
+        subject: `${f.id}.about`,
+        detail:
+          "structured subject associations dropped; CCv3 keyword keys do not preserve these links",
+      });
+    if (f.source !== undefined)
+      loss.other.push({
+        subject: `${f.id}.source`,
+        detail: `reference-source relationship (${f.source.use}) dropped; it is not reconstructed from keyword keys`,
+      });
+    if (f.outward !== undefined)
+      loss.other.push({
+        subject: `${f.id}.outward`,
+        detail: "per-agent outward visibility rules dropped",
+      });
+    if (f.style_scope || f.style_use)
+      loss.other.push({
+        subject: `${f.id}.style_scope`,
+        detail: "style scope and combination rules lost; style text is flattened",
+      });
+    let body = contentText(env, translated ?? f.content, f.id);
     if (body === null || body.trim() === "") continue;
     if (f.visibility.scope === "private") {
       const who = f.visibility.to.map((k) => speakerText(env, k)).join(", ");
       body = `(Only ${who} know${f.visibility.to.length === 1 ? "s" : ""} this.)\n${body}`;
+    }
+    if (f.perspective && f.perspective !== "canon") {
+      const prefix =
+        f.perspective === "rumor"
+          ? "Rumor:"
+          : "claim" in f.perspective
+            ? `${speakerText(env, f.perspective.claim)} claims:`
+            : `${speakerText(env, f.perspective.belief)} believes:`;
+      body = `${prefix}\n${body}`;
+      loss.other.push({
+        subject: `${f.id}.perspective`,
+        detail: "information perspective converted to a textual label",
+      });
     }
     const tokens = est(body);
     const mode = f.activation.mode;
@@ -388,7 +617,7 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
     noteParticipant(
       env,
       p.key,
-      `${displayText(p.display_name, locale)} cannot be a separate character in CCv3`,
+      `${displayText(p.display_name, locale, ir.meta.default_locale)} cannot be a separate character in CCv3`,
     );
   }
   for (const s of ir.late_slots) {
@@ -406,10 +635,46 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
         detail: `${a.media_type} context asset not exported`,
       });
   }
-  const greetings = ir.bootstrap.greetings.map((g) => {
-    for (const l of Object.keys(g.locales ?? {})) if (l !== locale) droppedLocales.add(l);
-    return cardText(env, g.text);
-  });
+  const pickTemplate = (template: CompiledTemplate, subject: string): string => {
+    const hit = matchingLocale(
+      [ir.meta.default_locale, ...Object.keys(template.locales ?? {}).sort()],
+      locale,
+    );
+    for (const l of [ir.meta.default_locale, ...Object.keys(template.locales ?? {})])
+      if (l !== (hit ?? ir.meta.default_locale)) droppedLocales.add(l);
+    const translated =
+      hit === undefined || hit === ir.meta.default_locale ? undefined : template.locales?.[hit];
+    if (hit === undefined)
+      loss.other.push({
+        subject,
+        detail: `requested ${locale} unavailable; used published default template`,
+      });
+    return cardText(env, translated ?? template.text);
+  };
+  const compiled = (key: string): string => {
+    const template = artifact.story_refs?.templates[key];
+    if (!template) throw new CharError({ code: "ccv3.story_template_missing", subject: key });
+    return pickTemplate(template, key);
+  };
+  const greetings = artifact.story
+    ? exportStory(artifact, env, compiled, pickTemplate, scenarioParts, est)
+    : ir.bootstrap.greetings.map((g) => pickTemplate(g, `bootstrap.${g.id}`));
+  for (const group of artifact.catalog_index.groups)
+    loss.other.push({
+      subject: group.id,
+      detail: "lore group hierarchy and description dropped; entries exported independently",
+    });
+  for (const source of artifact.catalog_index.sources)
+    loss.other.push({
+      subject: source.id,
+      detail: "reference source body, sections and retrieval rules not exported",
+    });
+  for (const work of artifact.catalog_index.works)
+    if (work.description !== undefined)
+      loss.other.push({
+        subject: `${work.id}.description`,
+        detail: "work selection description dropped",
+      });
   loss.locales.dropped = [...droppedLocales].sort();
 
   const selectedPolicy = opts.resolvedPreset ? exportPolicyFields(opts.resolvedPreset) : undefined;
@@ -438,19 +703,21 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
 
   const rootNode = ir.graph.nodes.find((n) => n.ref === rootRef);
   const self = env.participants.get("self");
-  const name = self ? displayText(self.display_name, locale) : (rootNode?.display_name ?? rootRef);
-  const attribution = [
-    ...ir.meta.attribution,
-    ...(opts.resolvedPreset ? (opts.presetMeta?.attribution ?? []) : []),
-  ]
-    .map((a) => `${a.ref}: ${a.authors.map((x) => x.name).join(", ") || "unknown"}`)
-    .join("\n");
-  const licenses = [
-    ...ir.meta.licenses,
-    ...(opts.resolvedPreset ? (opts.presetMeta?.licenses ?? []) : []),
-  ]
-    .map((l) => `${l.ref}${l.asset ? ` (${l.asset})` : ""}: ${l.license}`)
-    .join("\n");
+  const name = self
+    ? displayText(self.display_name, locale, ir.meta.default_locale)
+    : (rootNode?.display_name ?? rootRef);
+  const unique = (lines: string[]) => [...new Set(lines)].join("\n");
+  const attribution = unique(
+    [
+      ...ir.meta.attribution,
+      ...(opts.resolvedPreset ? (opts.presetMeta?.attribution ?? []) : []),
+    ].map((a) => `${a.ref}: ${a.authors.map((x) => x.name).join(", ") || "unknown"}`),
+  );
+  const licenses = unique(
+    [...ir.meta.licenses, ...(opts.resolvedPreset ? (opts.presetMeta?.licenses ?? []) : [])].map(
+      (l) => `${l.ref}${l.asset ? ` (${l.asset})` : ""}: ${l.license}`,
+    ),
+  );
   const policyRating = opts.resolvedPreset ? opts.presetMeta?.rating : undefined;
   const effectiveRating =
     policyRating && RATINGS.indexOf(policyRating) > RATINGS.indexOf(ir.meta.rating)
@@ -502,13 +769,13 @@ export function exportCCv3(ir: ContextIR, opts: ExportOptions = {}): ExportResul
     extensions: {
       char_pub: {
         root: ir.root,
-        lock_digest: ir.lock_digest,
+        lock_digest: artifact.lock_digest,
         ir_version: ir.ir_version,
         ...(opts.resolvedPreset
           ? {
               preset: {
                 ref: opts.resolvedPreset.ref,
-                release: opts.resolvedPreset.release,
+                ...buildIdentity(opts.resolvedPreset),
                 semantic_digest: opts.resolvedPreset.semantic_digest,
                 ...(opts.resolvedPreset.lock_digest
                   ? { lock_digest: opts.resolvedPreset.lock_digest }

@@ -13,7 +13,11 @@ const sourceConditions = ["@char-pub/source", "module", "browser", "import", "de
  * `API_PROXY` 修改），页面与 API 同源，session cookie 的行为与线上一致。
  * `vite preview` 沿用同一份代理配置。
  */
-const apiProxy = { "/v1": { target: process.env.API_PROXY ?? "http://127.0.0.1:3000" } };
+const apiTarget = process.env.API_PROXY ?? "http://127.0.0.1:3000";
+const apiProxy = {
+  "/v1": { target: apiTarget },
+  "/.well-known/oauth-authorization-server": { target: apiTarget },
+};
 
 /**
  * sonner（toast）在模块加载时向 <head> 插入一个 <style>，生产 CSP（style-src 'self'）会拦下

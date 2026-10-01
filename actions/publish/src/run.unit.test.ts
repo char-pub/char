@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { buildLocal, cmdInit } from "@char-pub/cli";
+import { cmdInit, loadLocalCreation } from "@char-pub/cli";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type ActionDeps, type ActionEnv, defaultLabel, run } from "./run.js";
 
@@ -94,17 +94,15 @@ describe("publish action", () => {
         { log: () => {}, error: () => {} },
       );
       const projectFile = path.join(projectDir, "char.yaml");
-      const built = await buildLocal(projectFile);
+      const built = await loadLocalCreation(projectFile);
       const { d, calls, outputs } = deps({
         status: 202,
         body: { release: "rel_01h455vb4pex5vsknk084sn0r1", state: "pending", idempotent: false },
       });
       await run(inputs({ path: projectFile }), ENV, d);
-      expect(JSON.parse(String(calls[0]?.init.body)).semantic_digest).toBe(
-        built.artifact.root.semantic_digest,
-      );
-      expect(outputs["semantic-digest"]).toBe(built.artifact.root.semantic_digest);
-      expect(built.artifact.kind).toBe(type);
+      expect(JSON.parse(String(calls[0]?.init.body)).semantic_digest).toBe(built.semantic_digest);
+      expect(outputs["semantic-digest"]).toBe(built.semantic_digest);
+      expect(built.creation.type).toBe(type);
     },
   );
 

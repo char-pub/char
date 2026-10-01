@@ -6,11 +6,23 @@ import type { Working } from "@/lib/draft";
 import { fakeClient, ME, renderWithApp } from "@/test/render";
 import { AuthorTestsEditor } from "./assembly-editor";
 
-const { run } = vi.hoisted(() => ({ run: vi.fn() }));
-vi.mock("@char-pub/assembler", async (original) => ({
-  ...(await original<typeof import("@char-pub/assembler")>()),
-  runAssemblyTests: run,
-}));
+const run = vi.fn();
+const client = () =>
+  fakeClient({
+    me: async () => ME,
+    createDraftBuild: async () => ({
+      origin: {
+        kind: "draft-build",
+        build_id: "dbld_01j00000000000000000000000",
+        revision: "rev_01j00000000000000000000000",
+        expires_at: "2026-10-08T00:00:00.000Z",
+      },
+      state: "ready",
+      draft_version: 1,
+      semantic_digest: `sha256:${"a".repeat(64)}`,
+      report: { assembly_tests: (await run()).results },
+    }),
+  });
 
 function Harness() {
   const [working, setWorking] = useState<Working>({
@@ -29,14 +41,20 @@ function Harness() {
       >
         Edit creation
       </button>
-      <AuthorTestsEditor working={working} update={setWorking} />
+      <AuthorTestsEditor
+        ns="writer"
+        name="scene"
+        working={working}
+        update={setWorking}
+        save={async () => ({ working, version: 1 })}
+      />
     </>
   );
 }
 
 describe("author test editor", () => {
   it("rejects malformed synthetic sessions without replacing the working session", async () => {
-    renderWithApp(<Harness />, fakeClient({ me: async () => ME }));
+    renderWithApp(<Harness />, client());
     await userEvent.click(await screen.findByRole("button", { name: "Add author test" }));
     await userEvent.click(screen.getByText("Advanced synthetic Session JSON"));
     const json = screen.getByLabelText("Synthetic session JSON");
@@ -56,7 +74,7 @@ describe("author test editor", () => {
           finish = resolve;
         }),
     );
-    renderWithApp(<Harness />, fakeClient({ me: async () => ME }));
+    renderWithApp(<Harness />, client());
     await userEvent.click(await screen.findByRole("button", { name: "Add author test" }));
     await userEvent.click(screen.getByRole("button", { name: "Run author tests" }));
     await waitFor(() => expect(finish).toBeDefined());

@@ -9,7 +9,7 @@ import { level0Character, tid } from "./fixtures.js";
 const creation = {
   ...level0Character({ type: "preset", fragments: [], bootstrap: undefined, assets: [] }),
   policy: {
-    version: "0-draft" as const,
+    version: "1-draft" as const,
     blocks: [],
     layout: [...PRESET_REGIONS],
     requires: { system_role: true as const },

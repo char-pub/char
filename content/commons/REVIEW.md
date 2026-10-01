@@ -391,3 +391,18 @@ A cheerful message runner and self-appointed guide to Saltmere harbor, who knows
 - [ ] 适龄已确认
 - [ ] 措辞已确认
 - 审阅人 / 日期：
+
+
+### `@commons/default-preset`（preset）
+
+Story v1 默认角色扮演策略候选：保留玩家行动空间，区分角色知情、说法与参考资料。
+
+- 文件：`content/commons/default-preset/char.yaml`
+- 条目：2 个 Prompt 块；完整区域布局；目录预算 2048、默认深度 4
+- semantic digest：`sha256:a165ce7beb62f27c939c0df5b871c46382038bdf9cb07dedbbc1683993ecf571`
+- 重点：是否充分保留玩家决策、是否清楚表达逐角色知情和资料地位；此候选尚无在线模型效果验证。
+
+- [ ] 原创性已确认
+- [ ] 适龄已确认
+- [ ] 措辞已确认
+- 审阅人 / 日期：

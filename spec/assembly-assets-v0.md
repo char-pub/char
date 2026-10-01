@@ -56,7 +56,7 @@ assembly: {
 
 ## 作者测试
 
-Preset 与 Scenario 可附带 `assembly_tests`。这些是作者主动编写、随作品公开的合成测试数据，编辑器不得自动捕获真实 Session。
+所有 Creative 类型与 Preset 可附带 `assembly_tests`，Prompt Module 不直接持有测试。这些是作者主动编写或从合成预览显式保存、随作品公开的测试数据，编辑器不得自动捕获真实 Session。Story v1 的完整 TurnView、固定选材和精确资料正文契约见 [Story v1 §14.2](story-v1.md)。
 
 ```ts
 interface AssemblyFixture {
@@ -76,7 +76,7 @@ interface AssemblyFixture {
 
 成功预期至少提供消息摘要或非空 Trace 断言。Trace 的 source 对应 entry.id，例如 `preset:main` 或完整 IR fragment ID；未找到 source 是失败。`messages_digest` 使用 `digestAssemblyMessages` 对有序消息数组（含来源、附件内容摘要和描述）计算 canonical 摘要；附件 URL 是部署相关的传输地址，不进入测试摘要，使本地、CDN 和私有签名读取可验证同一内容。
 
-Scenario 测试的 root 可为 self；Preset 测试需要外部精确内容根，preset 可为 self。self 避免把自己的摘要放入自己语义体的循环。所有外部引用进入聚合依赖图。fixture 的 profile 和 preset 是显式测试配置；省略 preset 表示默认策略，不自动继承内容根的 assembly 配置。
+Creative 测试的 root 可为 self；Preset 测试需要外部精确内容根，preset 可为 self。self 避免把自己的摘要放入自己语义体的循环。所有外部引用进入聚合依赖图。fixture 的 profile 和 preset 是显式测试配置；省略 preset 表示默认策略，不自动继承内容根的 assembly 配置。保存预览时显式记录实际策略的ExactRef；fixture的完整session与source_texts保留精确原文，不能套用普通正文的NFC/换行归一。
 
 SDK `runAssemblyFixture({fixture, root, dependencies})` 返回单项结果，`runAssemblyTests({root, dependencies})` 执行根作品附带的全部测试。结果有 id、ok、issues，可包含 messages_digest、trace、error。结果不会修改作者期望；仅记录摘要不等于批准新基线。发布 worker 在写入成功状态前执行，失败阻止发布。
 

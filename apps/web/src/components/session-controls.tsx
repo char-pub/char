@@ -44,6 +44,7 @@ export function SessionControls({
   onTokenizer,
   tokenizerStatus,
   locked = false,
+  templateLocales = [],
 }: {
   ir: ContextIR;
   settings: PreviewSettings;
@@ -52,11 +53,13 @@ export function SessionControls({
   onTokenizer: (t: TokenizerName) => void;
   tokenizerStatus: "ready" | "loading" | "error";
   locked?: boolean;
+  templateLocales?: string[];
 }) {
   const ids = {
     locale: useId(),
     mode: useId(),
     window: useId(),
+    images: useId(),
     tokenizer: useId(),
     tokenizerStatus: useId(),
     persona: useId(),
@@ -66,7 +69,14 @@ export function SessionControls({
   };
   const set = (patch: Partial<PreviewSettings>) => onChange({ ...settings, ...patch });
   const locales = [
-    ...new Set([ir.meta.default_locale, ...ir.meta.available_locales, "ja", "en"]),
+    ...new Set([
+      ir.meta.default_locale,
+      ...ir.meta.available_locales,
+      ...templateLocales,
+      settings.locale,
+      "ja",
+      "en",
+    ]),
   ].sort();
   const windows = [...new Set([...WINDOWS, settings.contextWindow])].sort((a, b) => a - b);
   const manual = ir.fragments.filter(
@@ -76,6 +86,19 @@ export function SessionControls({
   return (
     <form className="space-y-5" onSubmit={(e) => e.preventDefault()} aria-label="Session settings">
       <fieldset disabled={locked} className="space-y-5">
+        <div className="space-y-1.5">
+          <Label htmlFor={ids.images} className="flex items-center gap-2">
+            <Checkbox
+              id={ids.images}
+              checked={settings.images ?? false}
+              onCheckedChange={(checked) => set({ images: checked === true })}
+            />
+            Model accepts image attachments
+          </Label>
+          <p className="text-xs text-text-3">
+            Choose the capabilities of the model you plan to use. This preview does not call it.
+          </p>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor={ids.locale}>Language</Label>
           <NativeSelect
@@ -232,6 +255,15 @@ export function SessionControls({
                   onChange={(e) => change({ description: e.target.value })}
                 />
               </Label>
+              <Label className="block text-xs">
+                Outward description
+                <Textarea
+                  rows={2}
+                  value={binding.outwardDescription ?? ""}
+                  onChange={(e) => change({ outwardDescription: e.target.value })}
+                />
+                <span className="text-text-3">Appearance and traits other characters can see.</span>
+              </Label>
             </fieldset>
           );
         })}
@@ -257,6 +289,19 @@ export function SessionControls({
             onChange={(e) => set({ persona: { ...settings.persona, description: e.target.value } })}
           />
         </div>
+        <Label className="block space-y-1.5">
+          Persona outward description
+          <Textarea
+            rows={2}
+            value={settings.persona.outwardDescription ?? ""}
+            onChange={(e) =>
+              set({ persona: { ...settings.persona, outwardDescription: e.target.value } })
+            }
+          />
+          <span className="text-xs text-text-3">
+            Appearance and traits other characters can see.
+          </span>
+        </Label>
       </fieldset>
 
       <div className="space-y-1.5 border-t pt-4">
@@ -269,6 +314,7 @@ export function SessionControls({
           onChange={(e) => set({ historyText: e.target.value })}
         />
         <p id={ids.historyHint} className="text-xs text-text-3">
+          {settings.turn ? "" : "The selected opening is added before these sample messages. "}
           One message per line, starting with <code className="font-mono">user:</code> or{" "}
           <code className="font-mono">assistant:</code>. Keywords here can switch passages on.
         </p>

@@ -1,0 +1,70 @@
+{
+  "initial": {
+    "state": {
+      "start": "default",
+      "scene": "room",
+      "present": ["alice", "bob"],
+      "visited": ["room"],
+      "reached": [],
+      "ended": [],
+      "happened": [],
+      "vars": {},
+      "knowing": {},
+      "stopped": false
+    }
+  },
+  "steps": [
+    {
+      "index": 0,
+      "state": {
+        "start": "default",
+        "scene": "room",
+        "present": ["alice", "bob"],
+        "visited": ["room"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {},
+        "knowing": {},
+        "stopped": false
+      },
+      "outcome": {
+        "input_ignored": true
+      }
+    },
+    {
+      "index": 1,
+      "state": {
+        "start": "default",
+        "scene": "room",
+        "present": ["alice", "bob"],
+        "visited": ["room"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {},
+        "knowing": {},
+        "stopped": false
+      },
+      "outcome": {
+        "targets": ["scene/room"],
+        "choices": []
+      }
+    },
+    {
+      "index": 2,
+      "state": {
+        "start": "default",
+        "scene": "room",
+        "present": ["bob"],
+        "visited": ["room"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {},
+        "knowing": {},
+        "stopped": false
+      }
+    }
+  ]
+}

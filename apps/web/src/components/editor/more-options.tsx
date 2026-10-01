@@ -8,7 +8,8 @@ import { ChevronDown, FileText, Languages, Network, Shield } from "lucide-react"
 import type { ReactNode } from "react";
 import type { Working } from "@/lib/draft";
 import { cn } from "@/lib/utils";
-import { ANCHOR, type SectionKey } from "./anchors";
+import { ANCHOR, type EditorNavigation, type SectionKey } from "./anchors";
+import { ContentGroups } from "./content-groups";
 import { DependenciesEditor, dependenciesSummary } from "./dependencies-editor";
 import { FragmentsEditor, passagesSummary } from "./fragments-editor";
 import { LanguageEditor, languageSummary, MetaEditor, metaSummary } from "./meta-editor";
@@ -59,25 +60,29 @@ function OptionSection({
           />
         </button>
       </h3>
-      {open ? (
-        <div id={panel} className="px-5 pb-5 sm:px-6">
-          {children}
-        </div>
-      ) : null}
+      <div id={panel} hidden={!open} className="px-5 pb-5 sm:px-6">
+        {children}
+      </div>
     </section>
   );
 }
 
 export function MoreOptions({
   self,
+  canUpdateSensitive = false,
   type,
   working,
   update,
   diagnostics,
   open,
   onToggle,
+  navigation,
+  onPendingChange,
 }: {
+  navigation?: EditorNavigation | undefined;
+  onPendingChange?: ((key: string, pending: boolean) => void) | undefined;
   self: string;
+  canUpdateSensitive?: boolean;
   type: CreationType;
   working: Working;
   update: (fn: (w: Working) => Working) => void;
@@ -96,21 +101,33 @@ export function MoreOptions({
       <div className="divide-y">
         {type !== "preset" && type !== "prompt-module" ? (
           <>
-            <OptionSection
-              id={ANCHOR.passages}
-              title="Passages"
-              summary={passagesSummary(working, type)}
-              icon={FileText}
-              open={open.has("passages")}
-              onToggle={() => onToggle("passages")}
-            >
-              <FragmentsEditor
-                type={type}
-                working={working}
-                update={update}
-                diagnostics={diagnostics}
-              />
-            </OptionSection>
+            {type !== "world" && type !== "lorebook" ? (
+              <OptionSection
+                id={ANCHOR.passages}
+                title="Passages"
+                summary={passagesSummary(working, type)}
+                icon={FileText}
+                open={open.has("passages")}
+                onToggle={() => onToggle("passages")}
+              >
+                <ContentGroups
+                  navigation={navigation}
+                  working={working}
+                  update={update}
+                  renderEntries={(ids, onNavigate) => (
+                    <FragmentsEditor
+                      onPendingChange={onPendingChange}
+                      type={type}
+                      working={working}
+                      update={update}
+                      diagnostics={diagnostics}
+                      visibleIds={ids}
+                      onNavigate={onNavigate}
+                    />
+                  )}
+                />
+              </OptionSection>
+            ) : null}
             <OptionSection
               id={ANCHOR.dependencies}
               title="Dependencies"
@@ -136,7 +153,12 @@ export function MoreOptions({
           open={open.has("meta")}
           onToggle={() => onToggle("meta")}
         >
-          <MetaEditor working={working} update={update} diagnostics={diagnostics} />
+          <MetaEditor
+            canUpdateSensitive={canUpdateSensitive}
+            working={working}
+            update={update}
+            diagnostics={diagnostics}
+          />
         </OptionSection>
         <OptionSection
           id={ANCHOR.language}

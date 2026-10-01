@@ -1,3 +1,4 @@
+import { publishedIdentity, sha256Bytes } from "@char-pub/core";
 /**
  * 已发布作品的 Context Preview 与 Context Diff（mock API）。IR 由 web 自带的示例作品现场
  * 解析：Alice 依赖 intrinsic 的 Night City 与 keyword 触发的 Corps 世界书，并覆盖了其中
@@ -8,13 +9,15 @@
  * 版本，评级与许可的变化放在最上面；旧的 /diff 地址重定向到 Versions。
  */
 import { expect, type Page, test } from "@playwright/test";
-import { diffPair, resolveSample } from "../src/fixtures/samples";
+import { buildSample, diffPair, resolveSample } from "../src/fixtures/samples";
 import { creationDetail, ME, mockApi } from "./mock-api";
 
 const ORIGIN = "http://127.0.0.1:4173";
 const BASE = "/v1/creations/@djj/alice";
 const IR_V1 = resolveSample(diffPair.from).ir;
 const IR_V2 = resolveSample(diffPair.to).ir;
+const ARTIFACT_V1 = buildSample(diffPair.from);
+const ARTIFACT_V2 = buildSample(diffPair.to);
 
 function release(label: string, rating: string, n: number) {
   return {
@@ -27,7 +30,18 @@ function release(label: string, rating: string, n: number) {
     created_at: `2026-09-2${n}T12:00:00.000Z`,
   };
 }
-const RELEASES = [release("1.2.0", "mature", 2), release("1.1.0", "teen", 1)];
+const RELEASES = [
+  {
+    ...release("1.2.0", "mature", 2),
+    id: publishedIdentity(ARTIFACT_V2.root).release,
+    semantic_digest: ARTIFACT_V2.root.semantic_digest,
+  },
+  {
+    ...release("1.1.0", "teen", 1),
+    id: publishedIdentity(ARTIFACT_V1.root).release,
+    semantic_digest: ARTIFACT_V1.root.semantic_digest,
+  },
+];
 
 async function alice(page: Page, showMature: boolean) {
   const api = await mockApi(page, ORIGIN);
@@ -56,6 +70,9 @@ async function alice(page: Page, showMature: boolean) {
     return {
       body: {
         ...r,
+        artifact_digest: sha256Bytes(
+          new TextEncoder().encode(JSON.stringify(label === "1.2.0" ? ARTIFACT_V2 : ARTIFACT_V1)),
+        ),
         ref: "@djj/alice",
         creation: "cr_01j00000000000000000000000",
         lock_digest: null,
@@ -67,6 +84,8 @@ async function alice(page: Page, showMature: boolean) {
   });
   api.on(`GET ${BASE}/releases/1.2.0/ir`, { body: IR_V2 });
   api.on(`GET ${BASE}/releases/1.1.0/ir`, { body: IR_V1 });
+  api.on(`GET ${BASE}/releases/1.2.0/artifact`, { body: ARTIFACT_V2 });
+  api.on(`GET ${BASE}/releases/1.1.0/artifact`, { body: ARTIFACT_V1 });
   api.on(`GET ${BASE}/dependents`, { body: { items: [], next_cursor: null } });
   return api;
 }
@@ -101,7 +120,10 @@ test("the creation page opens a preview that explains why each fragment is in th
     "Always included, because Alice lives in Night City (Core).",
   );
   await expect(row("lore/biotechnica")).toContainText("Off until you enable it by hand.");
-  await expect(row("lore/arasaka")).toContainText("The chat mentions “Arasaka”.");
+  await expect(row("lore/arasaka")).toHaveAttribute("data-decision", "included");
+  await expect(row("lore/arasaka")).toContainText(
+    "Included by the current scene or an activation rule.",
+  );
   // 原始 reason code 不在表格行里。
   await expect(row("lore/arasaka")).not.toContainText("keyword:Arasaka");
 

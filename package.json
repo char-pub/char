@@ -36,7 +36,9 @@
     "prepare": "lefthook install || true",
     "check:action-dist": "pnpm --filter @char-pub/publish-action build --check",
     "smoke": "tsx scripts/smoke.ts",
-    "e2e:fullstack": "pnpm --filter @char-pub/web e2e:fullstack"
+    "e2e:fullstack": "pnpm --filter @char-pub/web e2e:fullstack",
+    "e2e:harness": "pnpm --filter @char-pub/web e2e:harness",
+    "sdk:pack": "node scripts/pack-runtime-sdk.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",

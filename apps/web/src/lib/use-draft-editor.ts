@@ -20,8 +20,21 @@ export type SaveState =
   | { kind: "dirty" }
   | { kind: "saving" }
   | { kind: "conflict" }
+  | { kind: "denied" }
   | { kind: "invalid"; diagnostics: CheckDiagnostic[]; message: string | undefined }
   | { kind: "error"; message: string };
+
+export interface SavedDraftSnapshot {
+  working: Working;
+  version: number;
+}
+
+export interface DraftConflict {
+  base: Working;
+  local: Working;
+  latest: Working;
+  version: number;
+}
 
 export interface DraftEditor {
   working: Working;
@@ -32,8 +45,13 @@ export interface DraftEditor {
   update(fn: (w: Working) => Working): void;
   /** 立即保存尚未保存的修改；返回草稿是否已经与服务端一致。 */
   flush(): Promise<boolean>;
+  flushSnapshot(): Promise<SavedDraftSnapshot | null>;
   /** 丢弃本地修改，重新读取服务端的草稿。 */
   reload(): Promise<void>;
+  /** Read a new comparison without discarding local edits or sending writes. */
+  reviewConflict(): Promise<DraftConflict | null>;
+  /** Apply only a comparison still owned by this editor, with its exact server version. */
+  reapplyConflict(review: DraftConflict, working: Working): Promise<boolean>;
 }
 
 function diagnosticsOf(e: { extra: Record<string, unknown> }): CheckDiagnostic[] {
@@ -46,61 +64,78 @@ export function useDraftEditor(
   ns: string,
   name: string,
   initial: Draft,
-  opts: { debounceMs?: number } = {},
+  opts: { debounceMs?: number; isCurrent?: () => boolean } = {},
 ): DraftEditor {
   const debounceMs = opts.debounceMs ?? 800;
+  const guard = useRef(opts.isCurrent);
+  guard.current = opts.isCurrent;
+  const isCurrent = () => !disposed.current && (guard.current?.() ?? true);
   const [working, setWorking] = useState<Working>(() => initial.working as Working);
   const [version, setVersion] = useState(initial.version);
   const [state, setState] = useState<SaveState>({ kind: "saved", at: null });
   const [warnings, setWarnings] = useState<CheckDiagnostic[]>([]);
   const current = useRef<Working>(initial.working as Working);
   const versionRef = useRef(initial.version);
+  const saved = useRef<Working>(initial.working as Working);
   const pending = useRef<Working | null>(null);
   const inflight = useRef<Promise<boolean> | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const conflict = useRef(false);
   const lastOk = useRef(true);
+  const disposed = useRef(false);
+  const recoveryEpoch = useRef(0);
+  const reviewed = useRef<DraftConflict | null>(null);
 
-  const saveNow = useCallback(async (): Promise<boolean> => {
-    if (inflight.current) await inflight.current;
-    if (conflict.current) return false;
-    const w = pending.current;
-    if (!w) return lastOk.current;
-    pending.current = null;
-    setState({ kind: "saving" });
+  const saveNow = useCallback((): Promise<boolean> => {
+    if (inflight.current) return inflight.current;
     const run = (async () => {
-      try {
-        const r = await client.putDraft(ns, name, versionRef.current, w);
-        versionRef.current = r.version;
-        setVersion(r.version);
-        setWarnings(
-          r.warnings.map(({ detail, ...d }) => (detail === undefined ? d : { ...d, detail })),
-        );
-        lastOk.current = true;
-        noteWriteSucceeded();
-        setState(pending.current ? { kind: "dirty" } : { kind: "saved", at: new Date() });
-        return true;
-      } catch (e) {
-        lastOk.current = false;
-        // 自动保存不经过 React Query：自己把错误交给全站只读提示。
-        noteApiError(e);
-        if (isApiError(e) && e.status === 409) {
-          conflict.current = true;
-          setState({ kind: "conflict" });
-        } else if (isApiError(e) && e.status === 422) {
-          setState({ kind: "invalid", diagnostics: diagnosticsOf(e), message: e.detail });
-        } else {
-          // 网络或服务端错误：保留这份修改，下一次修改或手动重试时再保存。
-          pending.current ??= w;
-          setState({ kind: "error", message: "Could not save. Your changes are kept here." });
+      if (conflict.current || !isCurrent()) return false;
+      while (pending.current && isCurrent()) {
+        const w = pending.current;
+        pending.current = null;
+        setState({ kind: "saving" });
+        try {
+          const result = await client.putDraft(ns, name, versionRef.current, w);
+          if (!isCurrent()) return false;
+          versionRef.current = result.version;
+          saved.current = w;
+          setVersion(result.version);
+          setWarnings(
+            result.warnings.map(({ detail, ...d }) =>
+              detail === undefined ? d : { ...d, detail },
+            ),
+          );
+          lastOk.current = true;
+          noteWriteSucceeded();
+        } catch (error) {
+          if (!isCurrent()) return false;
+          lastOk.current = false;
+          noteApiError(error);
+          if (isApiError(error) && error.status === 409) {
+            conflict.current = true;
+            setState({ kind: "conflict" });
+          } else if (isApiError(error) && [401, 403, 404].includes(error.status)) {
+            conflict.current = true;
+            pending.current ??= w;
+            setState({ kind: "denied" });
+          } else if (isApiError(error) && error.status === 422) {
+            setState({ kind: "invalid", diagnostics: diagnosticsOf(error), message: error.detail });
+          } else {
+            pending.current ??= w;
+            setState({ kind: "error", message: "Could not save. Your changes are kept here." });
+          }
+          return false;
         }
-        return false;
       }
+      if (!isCurrent()) return false;
+      if (lastOk.current) setState({ kind: "saved", at: new Date() });
+      return lastOk.current;
     })();
-    inflight.current = run;
-    const ok = await run;
-    inflight.current = null;
-    return ok && pending.current === null;
+    const tracked = run.finally(() => {
+      if (inflight.current === tracked) inflight.current = null;
+    });
+    inflight.current = tracked;
+    return tracked;
   }, [client, ns, name]);
 
   const schedule = useCallback(() => {
@@ -110,7 +145,7 @@ export function useDraftEditor(
 
   const update = useCallback(
     (fn: (w: Working) => Working) => {
-      if (conflict.current) return;
+      if (conflict.current || !isCurrent()) return;
       // 在事件处理中同步算出新草稿，保证随后的 flush() 一定能看到这次修改。
       const next = fn(current.current);
       current.current = next;
@@ -127,32 +162,113 @@ export function useDraftEditor(
     return saveNow();
   }, [saveNow]);
 
+  const flushSnapshot = useCallback(async (): Promise<SavedDraftSnapshot | null> => {
+    if (!(await flush()) || !isCurrent()) return null;
+    return { working: saved.current, version: versionRef.current };
+  }, [flush]);
+
   const reload = useCallback(async () => {
+    const epoch = ++recoveryEpoch.current;
+    reviewed.current = null;
     clearTimeout(timer.current);
     if (inflight.current) await inflight.current;
+    if (!isCurrent() || epoch !== recoveryEpoch.current) return;
     const d = await client.draft(ns, name);
+    if (!isCurrent() || epoch !== recoveryEpoch.current) return;
     pending.current = null;
     conflict.current = false;
     lastOk.current = true;
     versionRef.current = d.version;
     setVersion(d.version);
     current.current = d.working as Working;
+    saved.current = current.current;
     setWorking(d.working as Working);
     setWarnings([]);
     setState({ kind: "saved", at: null });
   }, [client, ns, name]);
 
+  const reviewConflict = useCallback(async (): Promise<DraftConflict | null> => {
+    if (!conflict.current || !isCurrent()) return null;
+    const epoch = ++recoveryEpoch.current;
+    reviewed.current = null;
+    clearTimeout(timer.current);
+    if (inflight.current) await inflight.current;
+    if (!isCurrent() || epoch !== recoveryEpoch.current) return null;
+    try {
+      const latest = await client.draft(ns, name);
+      if (!isCurrent() || epoch !== recoveryEpoch.current || !conflict.current) return null;
+      const review = {
+        base: saved.current,
+        local: current.current,
+        latest: latest.working as Working,
+        version: latest.version,
+      };
+      reviewed.current = review;
+      return review;
+    } catch (error) {
+      if (!isCurrent() || epoch !== recoveryEpoch.current) return null;
+      noteApiError(error);
+      if (isApiError(error) && [401, 403, 404].includes(error.status)) setState({ kind: "denied" });
+      throw error;
+    }
+  }, [client, ns, name]);
+
+  const reapplyConflict = useCallback(
+    async (review: DraftConflict, next: Working): Promise<boolean> => {
+      if (
+        !isCurrent() ||
+        !conflict.current ||
+        reviewed.current !== review ||
+        current.current !== review.local ||
+        saved.current !== review.base
+      )
+        return false;
+      recoveryEpoch.current++;
+      reviewed.current = null;
+      clearTimeout(timer.current);
+      pending.current = next;
+      current.current = next;
+      saved.current = review.latest;
+      versionRef.current = review.version;
+      conflict.current = false;
+      lastOk.current = false;
+      setWorking(next);
+      setVersion(review.version);
+      setWarnings([]);
+      setState({ kind: "dirty" });
+      return saveNow();
+    },
+    [saveNow],
+  );
+
   // 离开页面时还有没保存的修改：让浏览器提示用户。
   useEffect(() => {
+    disposed.current = false;
     const onUnload = (e: BeforeUnloadEvent) => {
-      if (pending.current || inflight.current) e.preventDefault();
+      if (current.current !== saved.current || pending.current || inflight.current)
+        e.preventDefault();
     };
     window.addEventListener("beforeunload", onUnload);
     return () => {
+      disposed.current = true;
+      recoveryEpoch.current++;
+      reviewed.current = null;
+      pending.current = null;
       window.removeEventListener("beforeunload", onUnload);
       clearTimeout(timer.current);
     };
   }, []);
 
-  return { working, version, state, warnings, update, flush, reload };
+  return {
+    working,
+    version,
+    state,
+    warnings,
+    update,
+    flush,
+    flushSnapshot,
+    reload,
+    reviewConflict,
+    reapplyConflict,
+  };
 }

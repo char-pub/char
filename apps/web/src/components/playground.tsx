@@ -6,7 +6,7 @@ import type { ContextIR } from "@char-pub/core";
 import { useMemo, useState } from "react";
 import { PreviewPanel, PreviewProblem } from "@/components/preview-panel";
 import { RatingBadge } from "@/components/rating";
-import { resolveSample, type Sample } from "@/fixtures/samples";
+import { buildSample, type Sample } from "@/fixtures/samples";
 import { cn } from "@/lib/utils";
 
 export function Playground({ samples }: { samples: Sample[] }) {
@@ -15,7 +15,7 @@ export function Playground({ samples }: { samples: Sample[] }) {
   const resolved = useMemo(() => {
     if (!sample) return null;
     try {
-      return { ok: true as const, ir: resolveSample(sample).ir };
+      return { ok: true as const, artifact: buildSample(sample) };
     } catch (e) {
       return { ok: false as const, message: e instanceof Error ? e.message : String(e) };
     }
@@ -55,7 +55,7 @@ export function Playground({ samples }: { samples: Sample[] }) {
             );
           })}
         </fieldset>
-        {resolved?.ok ? <IrFacts ir={resolved.ir} /> : null}
+        {resolved?.ok ? <IrFacts ir={resolved.artifact.ir} /> : null}
       </section>
 
       <div className="min-w-0">
@@ -63,7 +63,7 @@ export function Playground({ samples }: { samples: Sample[] }) {
           <PreviewProblem title="This creation could not be resolved" detail={resolved.message} />
         ) : null}
         {/* 换示例时重新挂载，Session 设置（例如手动启用的 fragment）回到默认值。 */}
-        {resolved?.ok ? <PreviewPanel key={sample?.id} ir={resolved.ir} /> : null}
+        {resolved?.ok ? <PreviewPanel key={sample?.id} artifact={resolved.artifact} /> : null}
       </div>
     </div>
   );

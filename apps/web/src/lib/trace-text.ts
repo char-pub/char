@@ -36,6 +36,24 @@ export function whyShort(ir: ContextIR, e: TraceEntry, f: IRFragment | undefined
   if (e.id === "history") return "The conversation so far.";
   if (e.id.startsWith("session:")) return "Part of this session.";
   switch (r) {
+    case "required":
+      return f?.importance === "pinned"
+        ? "Pinned — never cut to save space."
+        : "Required for the current scene and roles.";
+    case "direct": {
+      const because = f?.activation.mode === "always" ? becauseOf(ir, f) : null;
+      return because
+        ? `Always included, because ${because}.`
+        : "Included by the current scene or an activation rule.";
+    }
+    case "selected":
+      return "Chosen from the available reference material.";
+    case "withheld":
+      return "Hidden from this participant.";
+    case "excluded":
+      return "Outside this scene or participant's perspective.";
+    case "fallback":
+      return "Selection was skipped; required and directly activated content remain.";
     case "always": {
       const because = becauseOf(ir, f);
       return because ? `Always included, because ${because}.` : "Always included.";
@@ -53,7 +71,9 @@ export function whyShort(ir: ContextIR, e: TraceEntry, f: IRFragment | undefined
     case "locale-fallback":
       return "Included in the default language: it has no text in the session's language.";
     case "unsupported-media":
-      return "Left out: this runtime can't show images.";
+      return e.decision === "included"
+        ? "Media was not sent as an attachment; available text was retained."
+        : "Media was not sent as an attachment, and no usable text remained.";
     case "inactive": {
       const a = f?.activation;
       if (a?.mode === "keyword") {
@@ -78,6 +98,19 @@ export function whyLong(ir: ContextIR, e: TraceEntry, f: IRFragment | undefined)
       return "It is pinned: it always goes in and is never cut, even when space runs out.";
     case "budget":
       return "It was switched on, but what was left of the context window after the chat and the pinned passages wasn't enough for it. Passages are never cut in half.";
+    case "unsupported-media": {
+      const assets = [
+        ...(f?.content.type === "media" ? [f.content.asset] : []),
+        ...(f?.asset_refs ?? []),
+      ];
+      const presentationOnly =
+        assets.length > 0 &&
+        assets.every((id) => ir.assets.find((asset) => asset.id === id)?.role === "presentation");
+      const cause = presentationOnly
+        ? "Presentation-only assets are not sent to the model as attachments."
+        : "The selected model profile does not support these media attachments.";
+      return `${cause} ${e.decision === "included" ? "Available caption, alt or other text was retained; inspect Prepared model messages for the actual output." : "There was no usable caption, alt or other text, so this passage was left out."}`;
+    }
     case "visibility":
       return "It is private to another character, and in per-agent mode each character only sees its own private passages.";
     default:
@@ -91,6 +124,9 @@ const SECTION: Record<string, string> = {
   persona: "personas",
   world: "the world",
   scenario: "the scenario",
+  scene: "the current scene",
+  story: "the story and roles",
+  sources: "reference documents",
   relationship: "relationships",
   knowledge: "background knowledge",
   style: "style",
@@ -130,7 +166,8 @@ export function fromText(ir: ContextIR, e: TraceEntry, f: IRFragment | undefined
     if (e.id === "assembly:formatting")
       return "Additional text created when the selected layout renders messages.";
     if (e.id.startsWith("preset:")) return "The selected preset or its locked prompt modules.";
-    if (e.id === "history") return "The chat history you typed in the session panel.";
+    if (e.id === "history")
+      return "The exact preview history, including an initialized opening when present and the supplied sample messages.";
     if (e.id.startsWith("session:")) return "The persona you set in the session panel.";
     return "The session.";
   }

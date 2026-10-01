@@ -5,7 +5,7 @@
  * 提交的完整流程。开放度和邀请名单在作品设置页，不在这里。
  */
 import { expect, type Page, test } from "@playwright/test";
-import { creationDetail, ME, mockApi, OTHER, problem } from "./mock-api";
+import { creationDetail, ME, mockApi, OTHER, OWNER_PERMISSIONS, problem } from "./mock-api";
 
 const ORIGIN = "http://127.0.0.1:4173";
 const BASE = "/v1/creations/@writer/mira";
@@ -62,7 +62,7 @@ function outcome(key: string, on: string, op: string, state: string, sensitive =
 async function asAuthor(page: Page) {
   const api = await mockApi(page, ORIGIN);
   api.on("GET /v1/me", { body: ME });
-  api.on(`GET ${BASE}`, { body: creationDetail() });
+  api.on(`GET ${BASE}`, { body: creationDetail({ permissions: OWNER_PERMISSIONS }) });
   return api;
 }
 
@@ -254,7 +254,7 @@ test("the list marks agent contributions and filters them", async ({ page }) => 
   expect(api.calls.some((c) => c.path.endsWith("/contributions") && c.method === "GET")).toBe(true);
   // 开放度在作品设置页里调整：这里只有说明和入口，接受的修改只进草稿。
   await expect(page.getByText(/Anyone can suggest changes/)).toBeVisible();
-  await expect(page.getByText(/nothing is published until you publish/)).toBeVisible();
+  await expect(page.getByText(/the owner publishes separately/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Who can contribute" })).toHaveAttribute(
     "href",
     "/c/writer/mira/settings",
@@ -479,13 +479,19 @@ test("the propose page explains why a change can't be proposed", async ({ page }
 
 test("the owner is sent to the editor instead of proposing a change", async ({ page }) => {
   const api = await asAuthor(page);
-  api.on(`GET ${BASE}`, { body: creationDetail({ latest_release: undefined, releases: [] }) });
+  api.on(`GET ${BASE}`, {
+    body: creationDetail({
+      permissions: OWNER_PERMISSIONS,
+      latest_release: undefined,
+      releases: [],
+    }),
+  });
   await page.goto("/c/writer/mira/contributions/new");
   // 没有公开 Release 时先说明没有可以修改的基线。
   await expect(page.getByRole("heading", { name: "Nothing to build on yet" })).toBeVisible();
-  api.on(`GET ${BASE}`, { body: creationDetail() });
+  api.on(`GET ${BASE}`, { body: creationDetail({ permissions: OWNER_PERMISSIONS }) });
   await page.reload();
-  await expect(page.getByRole("heading", { name: "This is your creation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "You can edit this creation" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Edit the draft" })).toHaveAttribute(
     "href",
     "/c/writer/mira/edit",

@@ -11,7 +11,11 @@ import {
   AssetVariantSchema,
   AttributionAuthorSchema,
   BlobRefSchema,
+  CastKeySchema,
+  CastMemberSchema,
+  ContentGroupSchema,
   ContributionIdSchema,
+  ContributorSchema,
   CreationIdSchema,
   DecimalIdSchema,
   DigestSchema,
@@ -21,6 +25,7 @@ import {
   GuestAuthorSchema,
   HttpsUrlSchema,
   JSONValueSchema,
+  KnowledgeSourceSchema,
   LabelSchema,
   ProvenanceSchema,
   RatingSchema,
@@ -32,6 +37,7 @@ import {
   UserIdSchema,
 } from "./creation.js";
 import { PresetPolicySchema, PromptModuleSchema } from "./policy.js";
+import { StoryInfoRefSchema, StorySchema } from "./story.js";
 
 export const VisibilityLevelSchema = z.enum(["public", "private"]);
 export const ReleaseStatusSchema = z.enum(["active", "yanked", "tombstoned"]);
@@ -92,10 +98,8 @@ export const GitHubOIDCClaimsSchema = z.strictObject({
 });
 export type GitHubOIDCClaims = z.infer<typeof GitHubOIDCClaimsSchema>;
 
-export const ReleaseContributorSchema = z.strictObject({
+export const ReleaseContributorSchema = ContributorSchema.extend({
   ref: UnversionedRefSchema,
-  author: z.union([UserIdSchema, GuestAuthorSchema]),
-  contribution: ContributionIdSchema.optional(),
 });
 
 export const ReleaseSchema = z.strictObject({
@@ -196,7 +200,141 @@ export const ConfigurationChangeSchema = z.strictObject({
     .optional(),
 });
 
+export const STORY_KINDS = [
+  "scene",
+  "beat",
+  "plotline",
+  "ending",
+  "start",
+  "choice",
+  "item",
+  "event",
+  "timeline",
+  "var",
+  "knowing",
+] as const;
+export const STORY_ORDER_LISTS = [
+  "scenes",
+  "beats",
+  "plotlines",
+  "endings",
+  "starts",
+  "choices",
+  "items",
+  "events",
+  "timelines",
+] as const;
+const safeIdentity = (value: string) => value !== "__proto__";
+export const StoryObjectSchemas = {
+  scene: StorySchema.shape.scenes.element,
+  beat: StorySchema.shape.beats.unwrap().element,
+  plotline: StorySchema.shape.plotlines.unwrap().element,
+  ending: StorySchema.shape.endings.unwrap().element,
+  start: StorySchema.shape.starts.unwrap().element,
+  choice: StorySchema.shape.choices.unwrap().element,
+  item: StorySchema.shape.items.unwrap().element,
+  event: StorySchema.shape.events.unwrap().element,
+  timeline: StorySchema.shape.timelines.unwrap().element,
+  var: StorySchema.shape.vars.unwrap().valueType,
+  knowing: StorySchema.shape.knowing.unwrap().valueType,
+} as const;
+const objectAfter = z.union([
+  StoryObjectSchemas.scene,
+  StoryObjectSchemas.beat,
+  StoryObjectSchemas.plotline,
+  StoryObjectSchemas.ending,
+  StoryObjectSchemas.start,
+  StoryObjectSchemas.choice,
+  StoryObjectSchemas.item,
+  StoryObjectSchemas.event,
+  StoryObjectSchemas.timeline,
+  StoryObjectSchemas.var,
+  StoryObjectSchemas.knowing,
+]);
+export const StoryChangeSchema = z
+  .strictObject({
+    on: z.literal("story"),
+    kind: z.enum(STORY_KINDS),
+    op: changeOp,
+    id: z.string().min(1).refine(safeIdentity, "reserved object identity"),
+    base_digest: DigestSchema.optional(),
+    after: objectAfter.optional(),
+  })
+  .superRefine((change, ctx) => {
+    const identity = change.kind === "knowing" ? StoryInfoRefSchema : SegmentSchema;
+    if (!identity.safeParse(change.id).success)
+      ctx.addIssue({ code: "custom", path: ["id"], message: "invalid object identity" });
+    if (change.after !== undefined) {
+      const parsed = StoryObjectSchemas[change.kind].safeParse(change.after);
+      if (!parsed.success)
+        ctx.addIssue({ code: "custom", path: ["after"], message: parsed.error.message });
+      if ("id" in change.after && change.after.id !== change.id)
+        ctx.addIssue({ code: "custom", path: ["after", "id"], message: "after.id must equal id" });
+    }
+  });
+export const StoryOrderChangeSchema = z
+  .strictObject({
+    on: z.literal("story-order"),
+    op: z.literal("set").default("set"),
+    list: z.enum(STORY_ORDER_LISTS),
+    base_digest: DigestSchema,
+    after: z.array(SegmentSchema.refine(safeIdentity, "reserved object identity")),
+  })
+  .refine(
+    (change) => new Set(change.after).size === change.after.length,
+    "duplicate order identity",
+  );
+export const CastChangeSchema = z
+  .strictObject({
+    on: z.literal("cast"),
+    op: changeOp,
+    key: CastKeySchema.refine(safeIdentity, "reserved object identity"),
+    base_digest: DigestSchema.optional(),
+    after: CastMemberSchema.optional(),
+  })
+  .refine(
+    (change) => change.after === undefined || change.after.key === change.key,
+    "after.key must equal key",
+  );
+export const GroupChangeSchema = z
+  .strictObject({
+    on: z.literal("group"),
+    op: changeOp,
+    id: SegmentSchema.refine(safeIdentity, "reserved object identity"),
+    base_digest: DigestSchema.optional(),
+    after: ContentGroupSchema.optional(),
+  })
+  .refine(
+    (change) => change.after === undefined || change.after.id === change.id,
+    "after.id must equal id",
+  );
+export const SourceChangeSchema = z
+  .strictObject({
+    on: z.literal("source"),
+    op: changeOp,
+    id: SegmentSchema.refine(safeIdentity, "reserved object identity"),
+    base_digest: DigestSchema.optional(),
+    after: KnowledgeSourceSchema.optional(),
+  })
+  .refine(
+    (change) => change.after === undefined || change.after.id === change.id,
+    "after.id must equal id",
+  );
+export const CompositionChangeSchema = z.discriminatedUnion("on", [
+  StoryChangeSchema,
+  StoryOrderChangeSchema,
+  CastChangeSchema,
+  GroupChangeSchema,
+  SourceChangeSchema,
+]);
+export type CompositionChange = z.infer<typeof CompositionChangeSchema>;
+export type StoryKind = (typeof STORY_KINDS)[number];
 export const ChangeSchema = z.discriminatedUnion("on", [
+  StoryChangeSchema,
+  StoryOrderChangeSchema,
+  CastChangeSchema,
+  GroupChangeSchema,
+  SourceChangeSchema,
   ConfigurationChangeSchema,
   z.strictObject({
     on: z.literal("fragment"),

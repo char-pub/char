@@ -84,11 +84,18 @@ export function originAuth(opts: {
  * CLI 等非浏览器客户端不带 cookie，用 Bearer Token 认证，所以没有 Origin 时只允许
  * 带 Authorization 头的请求通过。
  */
-export function originCheck(opts: { allowed: readonly string[] }): MiddlewareHandler {
+export function originCheck(opts: {
+  allowed: readonly string[];
+  allowBearer?: boolean;
+  protocolPaths?: readonly string[];
+}): MiddlewareHandler {
   const allowed = new Set(opts.allowed);
   const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
   return async (c, next) => {
     if (SAFE.has(c.req.method)) return next();
+    if (opts.protocolPaths?.includes(c.req.path)) return next();
+    if (opts.allowBearer && /^Bearer\s+\S+$/i.test(c.req.header("authorization") ?? ""))
+      return next();
     const origin = c.req.header("origin");
     if (origin === undefined) {
       if (c.req.header("authorization")?.startsWith("Bearer ")) return next();

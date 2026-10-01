@@ -1,0 +1,23 @@
+{
+  "scenarios": [
+    {
+      "name": "bob-before-entry",
+      "fragments": {
+        "@portable/door#secret~root": { "status": "withheld", "reason": "view.not_knowing" },
+        "@portable/door#alice-only~root": { "status": "withheld", "reason": "view.private" },
+        "@portable/door#public~root": { "status": "visible" }
+      }
+    },
+    {
+      "name": "bob-follows-alice",
+      "fragments": {
+        "@portable/door#secret~root": { "status": "visible" },
+        "@portable/door#alice-only~root": { "status": "withheld", "reason": "view.private" }
+      }
+    },
+    {
+      "name": "bob-not-present",
+      "fragments": { "@portable/door#secret~root": { "status": "visible" } }
+    }
+  ]
+}

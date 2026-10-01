@@ -22,6 +22,7 @@ import {
   canonicalizeCreation,
   checkPublish,
   digestOf,
+  ExactRefSchema,
   getCreationDependencies,
   isCharError,
   type JSONValue,
@@ -42,10 +43,13 @@ import {
 } from "../db/schema/index.js";
 import { QUEUE_NAMES } from "../jobs/definitions.js";
 import { type JobQueue, runOnce } from "../jobs/queue.js";
+import { assertRootAssetOwnership } from "../registry/asset-ownership.js";
 import { loadClosure, loadRegistryState } from "../registry/closure.js";
 import { buildSnapshot, irBytes, loadRevisionContent } from "../registry/content.js";
+import { assertDerivationSource } from "../registry/derivations.js";
 import { decodeId, encodeId } from "../registry/ids.js";
 import { refreshSearchColumns } from "../registry/search.js";
+import { readSourceText } from "../registry/source-text.js";
 import type { Cas } from "../storage/cas.js";
 
 export interface PublishJobData {
@@ -117,6 +121,7 @@ export async function handlePublish(
   let canonical: Awaited<ReturnType<typeof loadRevisionContent>>;
   try {
     canonical = await loadRevisionContent(cas, row.semanticDigest);
+    await assertDerivationSource(db, row.creationId, canonical.creation);
   } catch (e) {
     if (!isCharError(e)) throw e;
     await markFailed(deps, row, {
@@ -126,6 +131,20 @@ export async function handlePublish(
     return "failed";
   }
   const creation = canonical.creation;
+  const needsDefault =
+    creation.type !== "preset" && creation.type !== "prompt-module" && !creation.assembly;
+  const parsedPolicy = row.defaultPolicy ? ExactRefSchema.safeParse(row.defaultPolicy) : undefined;
+  if ((needsDefault && !parsedPolicy?.success) || (parsedPolicy && !parsedPolicy.success)) {
+    await markFailed(deps, row, {
+      issues: [
+        { code: "publish.default_policy_missing", subject: creation.ref, severity: "error" },
+      ],
+      license_check: "fail",
+    });
+    return "failed";
+  }
+  const defaultPolicy = needsDefault && parsedPolicy?.success ? parsedPolicy.data : undefined;
+  const buildConfig = defaultPolicy ? { default_policy: defaultPolicy } : {};
   const publisher = publisherUserId(row);
   const closure = await loadClosure(
     db,
@@ -134,6 +153,7 @@ export async function handlePublish(
     publisher
       ? { kind: "user", user_id: publisher, banned: false }
       : { kind: "oidc", creation_id: row.creationId, binding_id: "publish-worker" },
+    defaultPolicy ? [defaultPolicy] : [],
   );
   if (closure.denied.length > 0) {
     await markFailed(deps, row, {
@@ -195,12 +215,31 @@ export async function handlePublish(
     visibility: row.visibility,
     creation: canonical.json,
     dependencies,
+    ...buildConfig,
     registry: state,
     publicAssetBaseUrl: deps.publicAssetBaseUrl,
   });
   const reportJson = { issues: report.issues, license_check: report.license_check };
   if (!report.ok || !report.build) {
     await markFailed(deps, row, reportJson);
+    return "failed";
+  }
+
+  try {
+    await assertRootAssetOwnership(db, cas, report.build.artifact, {
+      creationId: owner.creation.id,
+      publisherId: publisher,
+      publicAssetBaseUrl: deps.publicAssetBaseUrl,
+    });
+    if (report.build.artifact.kind === "content")
+      for (const source of report.build.artifact.catalog_index.sources)
+        await readSourceText(db, cas, report.build.artifact, source.id, true);
+  } catch (error) {
+    if (!isCharError(error)) throw error;
+    await markFailed(deps, row, {
+      issues: [{ code: error.code, subject: error.subject, severity: "error" }],
+      license_check: report.license_check,
+    });
     return "failed";
   }
 
@@ -213,6 +252,7 @@ export async function handlePublish(
         semantic_digest: row.semanticDigest,
       },
       dependencies,
+      ...buildConfig,
       publicAssetBaseUrl: deps.publicAssetBaseUrl,
     });
     if (!tests.ok) {
@@ -262,7 +302,9 @@ async function writeArtifacts(
       ref: (r.creation as { ref: string }).ref,
       semantic_digest: r.row.semanticDigest,
       creation: r.creation,
+      visibility: r.row.visibility,
     })),
+    row.defaultPolicy ?? undefined,
   );
   const snapshot = await cas.putBlob(db, {
     bucket,
@@ -273,7 +315,7 @@ async function writeArtifacts(
   const artifactBlob = await cas.putBlob(db, {
     bucket,
     bytes: irBytes(built.json),
-    mediaType: "application/vnd.char.creation-artifact+json; version=0-draft",
+    mediaType: "application/vnd.char.creation-artifact+json; version=1-draft",
     kind: "artifact",
   });
   const ir =
@@ -281,7 +323,7 @@ async function writeArtifacts(
       ? await cas.putBlob(db, {
           bucket,
           bytes: irBytes(jcs(artifact.ir as unknown as JSONValue)),
-          mediaType: "application/vnd.char.context-ir+json; version=0-draft",
+          mediaType: "application/vnd.char.context-ir+json; version=1-draft",
           kind: "ir",
         })
       : null;
@@ -303,7 +345,11 @@ async function writeArtifacts(
   const addFragments = (ref: string, list: { id: string; digest?: string }[] | undefined) => {
     for (const f of list ?? []) {
       if (f.digest)
-        fragments.set(`${ref}#${f.id}`, { ownerRef: ref, fragmentId: f.id, digest: f.digest });
+        fragments.set(`${ref}#${f.id}:${f.digest}`, {
+          ownerRef: ref,
+          fragmentId: f.id,
+          digest: f.digest,
+        });
     }
   };
   addFragments(canonical.creation.ref, canonical.creation.fragments);
@@ -339,6 +385,11 @@ async function writeArtifacts(
         ]
       : [];
   });
+  if (artifact.kind === "content" && artifact.default_policy) {
+    const dep = closure.releases.get(artifact.default_policy.release);
+    if (dep && !directEdges.some((edge) => edge.dep.row.id === dep.row.id))
+      directEdges.push({ dep, mode: "intrinsic", rel: "default_policy" });
+  }
 
   const now = clock.now();
   await db.transaction(async (tx: Tx) => {

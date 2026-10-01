@@ -10,10 +10,10 @@ import { D, level0Character, tid } from "./fixtures.js";
 
 function policy(overrides: Partial<PresetPolicy> = {}): PresetPolicy {
   return {
-    version: "0-draft",
+    version: "1-draft",
     blocks: [
-      { id: "main", text: "Follow the selected narrative perspective.", position: "main" },
-      { id: "reminder", text: "Leave choices to the player.", position: "after-history" },
+      { id: "main", text: "Follow the selected narrative perspective.", default_at: "main" },
+      { id: "reminder", text: "Leave choices to the player.", default_at: "after-history" },
     ],
     layout: [...PRESET_REGIONS],
     requires: { system_role: true, multiple_system_messages: true },
@@ -33,6 +33,31 @@ function preset(overrides: Partial<CreationInput> = {}): CreationInput {
 }
 
 describe("Preset schema boundaries", () => {
+  it("rejects legacy block positions and normalizes explicit placement and selection defaults", () => {
+    expect(PresetPolicySchema.safeParse({ ...policy(), version: "0-draft" }).success).toBe(false);
+    expect(
+      PresetPolicySchema.safeParse({
+        ...policy(),
+        blocks: [{ id: "old", text: "old", position: "main" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      PresetPolicySchema.safeParse({ ...policy(), render: { "sources.notice": "  " } }).success,
+    ).toBe(false);
+    const a = canonicalizeCreation(
+      preset({ policy: policy({ placements: [{ block: "main", at: "main" }] }) }),
+    );
+    const b = canonicalizeCreation(
+      preset({
+        policy: policy({
+          placements: [{ block: "main", at: "main", as: "main" }],
+          selection: { max_depth: 4, on_unavailable: "skip" },
+          render: {},
+        }),
+      }),
+    );
+    expect(a.semantic_digest).toBe(b.semantic_digest);
+  });
   it("requires a policy only for preset creations", () => {
     expect(CreationSchema.safeParse(preset()).success).toBe(true);
     expect(CreationSchema.safeParse(preset({ policy: undefined })).success).toBe(false);
@@ -64,7 +89,13 @@ describe("Preset schema boundaries", () => {
         creation: result.json,
         release: tid("rel", 1),
       }).policy,
-    ).toMatchObject(result.creation.policy ?? {});
+    ).toMatchObject({
+      ...policy(),
+      blocks: policy().blocks.map(({ default_at, ...block }) => ({
+        ...block,
+        position: default_at,
+      })),
+    });
   });
 
   it("requires each layout region exactly once, permitting either side of history", () => {
@@ -131,11 +162,11 @@ describe("Preset schema boundaries", () => {
 describe("Preset canonical identity", () => {
   it("normalizes text and strips enabled=true and empty budgets without changing identity", () => {
     const implicit = preset({
-      policy: policy({ blocks: [{ id: "main", text: "Café\n{{self}}", position: "main" }] }),
+      policy: policy({ blocks: [{ id: "main", text: "Café\n{{self}}", default_at: "main" }] }),
     });
     const explicit = preset({
       policy: policy({
-        blocks: [{ id: "main", text: "Café  \r\n{{self}}\t", position: "main", enabled: true }],
+        blocks: [{ id: "main", text: "Café  \r\n{{self}}\t", default_at: "main", enabled: true }],
         region_budgets: {},
       }),
     });
@@ -184,7 +215,13 @@ describe("resolvePreset", () => {
       release: input.release,
       semantic_digest,
       resolver: RESOLVER,
-      policy: policy(),
+      policy: {
+        ...policy(),
+        blocks: policy().blocks.map(({ default_at, ...block }) => ({
+          ...block,
+          position: default_at,
+        })),
+      },
     });
     expect(ResolvedPresetSchema.safeParse(resolved).success).toBe(true);
     expect(resolved).not.toHaveProperty("assets");

@@ -102,6 +102,7 @@ export const ID_PREFIXES = {
   creation: "cr",
   release: "rel",
   revision: "rev",
+  draft_build: "dbld",
   user: "usr",
   contribution: "ctb",
   upload: "upl",

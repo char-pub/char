@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { CollaborationInvitations } from "@/components/collaboration";
 import { DeletionRequests } from "@/components/deletion-request";
 import { MatureSetting } from "@/components/mature-setting";
+import { OAuthClients, OAuthGrants } from "@/components/oauth";
 import { RenameNamespaceDialog } from "@/components/settings/rename-namespace";
 import { SettingsNav, SettingsSection } from "@/components/settings/section";
 import { SignInRequired } from "@/components/sign-in-required";
@@ -68,6 +70,7 @@ function Settings() {
             </p>
           </SettingsSection>
 
+          <CollaborationInvitations />
           <SettingsSection id="content" title="Content">
             <MatureSetting
               enabled={s.show_mature}
@@ -89,6 +92,13 @@ function Settings() {
             }
           >
             <TokenManager />
+          </SettingsSection>
+
+          <SettingsSection id="connected-apps" title="Connected apps">
+            <OAuthGrants />
+          </SettingsSection>
+          <SettingsSection id="developer-clients" title="Developer clients">
+            <OAuthClients />
           </SettingsSection>
 
           {/* 下面两块的接口还没有开放：只说明现状，不放不能用的按钮。 */}

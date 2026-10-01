@@ -1,0 +1,9 @@
+{
+  "id": "201-open-story",
+  "title": "Open scene needs no variables or branching",
+  "kind": "story",
+  "expect": "story",
+  "spec_refs": ["story-v1 \u00a79.2\u20139.5", "story-v1 \u00a714.2"],
+  "status": "draft",
+  "notes": "Input and semantic assertions authored from specification before execution; expected output awaits separate human review."
+}

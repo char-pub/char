@@ -1,0 +1,69 @@
+{
+  "scenarios": [
+    {
+      "name": "original",
+      "messages_include": ["I copy\r\nthe letter Cafe\u0301  "]
+    },
+    {
+      "name": "history-newline",
+      "error": {
+        "code": "selection.input_mismatch",
+        "subject": "input"
+      },
+      "plan_equals": "original"
+    },
+    {
+      "name": "history-unicode",
+      "error": {
+        "code": "selection.input_mismatch",
+        "subject": "input"
+      },
+      "plan_equals": "original"
+    },
+    {
+      "name": "history-trailing-space",
+      "error": {
+        "code": "selection.input_mismatch",
+        "subject": "input"
+      },
+      "plan_equals": "original"
+    },
+    {
+      "name": "focus-newline",
+      "error": {
+        "code": "selection.input_mismatch",
+        "subject": "input"
+      },
+      "plan_equals": "original"
+    },
+    {
+      "name": "overlay-newline",
+      "error": {
+        "code": "selection.input_mismatch",
+        "subject": "input"
+      },
+      "plan_equals": "original"
+    },
+    {
+      "name": "overlay-unicode",
+      "error": {
+        "code": "selection.input_mismatch",
+        "subject": "input"
+      },
+      "plan_equals": "original"
+    },
+    {
+      "name": "overlay-trailing-space",
+      "error": {
+        "code": "selection.input_mismatch",
+        "subject": "input"
+      },
+      "plan_equals": "original"
+    },
+    {
+      "name": "same-values-reordered-keys",
+      "plan_equals": "original",
+      "messages_equal": "original"
+    }
+  ]
+}

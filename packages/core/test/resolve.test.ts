@@ -95,7 +95,7 @@ describe("Level 0 character", () => {
     const root = rel(1, level0Character());
     const out = resolve({ root, publicAssetBaseUrl: "https://assets.char.pub/cas/sha256" });
     const ir = out.ir;
-    expect(ir.ir_version).toBe("0-draft");
+    expect(ir.ir_version).toBe("1-draft");
     expect(ir.root).toEqual({
       ref: "@djj/alice",
       release: root.release,

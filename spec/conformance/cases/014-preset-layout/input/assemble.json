@@ -16,20 +16,6 @@
           "multiple_system_messages": true
         }
       },
-      "session": {
-        "bindings": {
-          "user": {
-            "kind": "persona",
-            "display_name": "Sam"
-          }
-        },
-        "history": [
-          {
-            "role": "user",
-            "text": "Where should we go?"
-          }
-        ]
-      },
       "preset": {
         "creation": {
           "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -37,23 +23,23 @@
           "type": "preset",
           "display_name": "Narrator",
           "policy": {
-            "version": "0-draft",
+            "version": "1-draft",
             "blocks": [
               {
                 "id": "main",
                 "text": "Portray the selected cast.",
-                "position": "main"
+                "default_at": "main"
               },
               {
                 "id": "reminder",
                 "text": "Continue with the next reply.",
-                "position": "after-history"
+                "default_at": "after-history"
               },
               {
                 "id": "disabled",
                 "text": "This block must never be sent.",
-                "position": "main",
-                "enabled": false
+                "enabled": false,
+                "default_at": "main"
               }
             ],
             "layout": [
@@ -63,6 +49,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:instruction",
@@ -85,7 +74,21 @@
           }
         },
         "release": "rel_01h455vb4pex5vsknk084sn002",
-        "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+        "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+      },
+      "turn": {
+        "bindings": {
+          "user": {
+            "kind": "persona",
+            "display_name": "Sam"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "Where should we go?"
+          }
+        ]
       }
     },
     {
@@ -104,7 +107,7 @@
           "multiple_system_messages": true
         }
       },
-      "session": {
+      "turn": {
         "bindings": {
           "user": {
             "kind": "persona",

@@ -1,5 +1,6 @@
-import { canonicalPolicy, jcs, normalizeValue } from "./canonical.js";
+import { jcs, normalizeValue } from "./canonical.js";
 import { CharError, compareStrings } from "./errors.js";
+import { buildIdentity } from "./schema/identity.js";
 import {
   type PresetDiff,
   PresetDiffSchema,
@@ -18,7 +19,17 @@ function parsePreset(input: ResolvedPreset, side: "from" | "to"): ResolvedPreset
         .join("; "),
     });
   }
-  return { ...parsed.data, policy: canonicalPolicy(parsed.data.policy) };
+  const policy = parsed.data.policy;
+  for (const block of policy.blocks) if (block.enabled === true) delete block.enabled;
+  if (policy.region_budgets && Object.keys(policy.region_budgets).length === 0)
+    delete policy.region_budgets;
+  if (policy.render && Object.keys(policy.render).length === 0) delete policy.render;
+  if (policy.selection) {
+    if (policy.selection.max_depth === 4) delete policy.selection.max_depth;
+    if (policy.selection.on_unavailable === "skip") delete policy.selection.on_unavailable;
+    if (Object.keys(policy.selection).length === 0) delete policy.selection;
+  }
+  return { ...parsed.data, policy };
 }
 
 function canonical(value: unknown): string {
@@ -26,7 +37,7 @@ function canonical(value: unknown): string {
 }
 
 function identity(preset: ResolvedPreset): PresetDiff["from"] {
-  return { ref: preset.ref, release: preset.release, semantic_digest: preset.semantic_digest };
+  return { ref: preset.ref, ...buildIdentity(preset), semantic_digest: preset.semantic_digest };
 }
 
 /**
@@ -46,7 +57,7 @@ export function diffPresets(from: ResolvedPreset, to: ResolvedPreset): PresetDif
     order_changed: false,
   };
   const origin_changes: NonNullable<PresetDiff["origin_changes"]> = [];
-  const blockFields = ["text", "position", "enabled"] as const;
+  const blockFields = ["text", "position", "enabled", "purpose"] as const;
   for (const id of ids) {
     const oldBlock = before.get(id);
     const newBlock = after.get(id);
@@ -68,7 +79,14 @@ export function diffPresets(from: ResolvedPreset, to: ResolvedPreset): PresetDif
   blocks.order_changed =
     canonical([...before.keys()].filter((id) => after.has(id))) !==
     canonical([...after.keys()].filter((id) => before.has(id)));
-  const policyFields = ["version", "layout", "region_budgets", "requires"] as const;
+  const policyFields = [
+    "version",
+    "layout",
+    "region_budgets",
+    "requires",
+    "selection",
+    "render",
+  ] as const;
   const policy_changes = policyFields
     .filter((field) => canonical(a.policy[field]) !== canonical(b.policy[field]))
     .sort(compareStrings);

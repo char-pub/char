@@ -517,20 +517,13 @@ describe("applying changes", () => {
     expect(out.fragments.map((f) => f.id)).toEqual(["a", "b", "c"]);
   });
 
-  it("rejects a merge whose result is not a valid creation", () => {
-    expect(
-      codeOf(() =>
-        mergeContribution(baseDraft(), [
-          {
-            on: "asset",
-            op: "remove",
-            slot: "avatar",
-            variant: "default",
-            base_digest: vd(V_DEF0),
-          },
-        ]),
-      ),
-    ).toBe("contribution.invalid_result");
+  it("returns an atomic conflict when the merged creation is invalid", () => {
+    const result = mergeContribution(baseDraft(), [
+      { on: "asset", op: "remove", slot: "avatar", variant: "default", base_digest: vd(V_DEF0) },
+    ]);
+    expect(result.result).toBeNull();
+    expect(result.conflicts[0]?.reason).toBe("invalid_result");
+    expect(result.diagnostics?.length).toBeGreaterThan(0);
   });
 });
 

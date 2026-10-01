@@ -15,6 +15,7 @@ export const LateBindingValueSchema = z.strictObject({
   display_name: z.string().min(1),
   /** 设定描述。存在时作为 Session 内容单独加入上下文。 */
   description: z.string().min(1).optional(),
+  outward_description: z.string().min(1).optional(),
 });
 export type LateBindingValue = z.infer<typeof LateBindingValueSchema>;
 

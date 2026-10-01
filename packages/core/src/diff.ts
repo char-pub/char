@@ -14,6 +14,7 @@
 import { jcs, normalizeValue } from "./canonical.js";
 import { CharError, compareStrings } from "./errors.js";
 import type { JSONValue } from "./schema/creation.js";
+import { publishedIdentity } from "./schema/identity.js";
 import type { ContextDiff, ContextIR, IRContent, IRFragment } from "./schema/ir.js";
 
 export type DiffField = ContextDiff["fragments"]["modified"][number]["fields"][number];
@@ -84,7 +85,7 @@ function changedFields(a: IRFragment, b: IRFragment): DiffField[] {
 function locksFromGraph(ir: ContextIR): LockLabel[] {
   return ir.graph.nodes
     .filter((n) => n.ref !== ir.root.ref)
-    .map((n) => ({ ref: n.ref, release: n.release }));
+    .map((n) => ({ ref: n.ref, ...publishedIdentity(n) }));
 }
 
 /**

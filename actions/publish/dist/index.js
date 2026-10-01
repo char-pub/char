@@ -17,9 +17,9 @@ var __esm = (fn, res) => function __init() {
 var __commonJS = (cb, mod) => function __require2() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
-var __export = (target, all) => {
+var __export = (target2, all) => {
   for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+    __defProp(target2, name, { get: all[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -29,12 +29,12 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+var __toESM = (mod, isNodeMode, target2) => (target2 = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
   // If the importer is in node compatibility mode or this is not an ESM
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target2, "default", { value: mod, enumerable: true }) : target2,
   mod
 ));
 
@@ -218,14 +218,14 @@ var init_BytePairEncodingCore = __esm({
       clearMergeCache() {
         this.mergeCache?.clear();
       }
-      *encodeNativeGenerator(text, allowedSpecial) {
+      *encodeNativeGenerator(text2, allowedSpecial) {
         let startIndex = 0;
         let lastTokenLength = 0;
         while (true) {
-          const nextSpecialMatch = this.findNextSpecialToken(text, allowedSpecial, startIndex);
+          const nextSpecialMatch = this.findNextSpecialToken(text2, allowedSpecial, startIndex);
           const nextSpecialStartIndex = nextSpecialMatch?.[0];
-          const endIndex = nextSpecialStartIndex ?? text.length;
-          const textBeforeSpecial = startIndex === 0 && endIndex === text.length ? text : text.slice(startIndex, endIndex);
+          const endIndex = nextSpecialStartIndex ?? text2.length;
+          const textBeforeSpecial = startIndex === 0 && endIndex === text2.length ? text2 : text2.slice(startIndex, endIndex);
           for (const [match] of textBeforeSpecial.matchAll(this.tokenSplitRegex)) {
             const token = this.getBpeRankFromString(match);
             if (token !== void 0) {
@@ -248,14 +248,14 @@ var init_BytePairEncodingCore = __esm({
         }
         return lastTokenLength;
       }
-      encodeNative(text, allowedSpecial) {
+      encodeNative(text2, allowedSpecial) {
         let startIndex = 0;
         const tokensArray = [];
         while (true) {
-          const nextSpecialMatch = this.findNextSpecialToken(text, allowedSpecial, startIndex);
+          const nextSpecialMatch = this.findNextSpecialToken(text2, allowedSpecial, startIndex);
           const nextSpecialStartIndex = nextSpecialMatch?.[0];
-          const endIndex = nextSpecialStartIndex ?? text.length;
-          const textBeforeSpecial = startIndex === 0 && endIndex === text.length ? text : text.slice(startIndex, endIndex);
+          const endIndex = nextSpecialStartIndex ?? text2.length;
+          const textBeforeSpecial = startIndex === 0 && endIndex === text2.length ? text2 : text2.slice(startIndex, endIndex);
           for (const [match] of textBeforeSpecial.matchAll(this.tokenSplitRegex)) {
             const token = this.getBpeRankFromString(match);
             if (token !== void 0) {
@@ -275,14 +275,14 @@ var init_BytePairEncodingCore = __esm({
         }
         return tokensArray;
       }
-      countNative(text, allowedSpecial) {
+      countNative(text2, allowedSpecial) {
         let startIndex = 0;
         let tokensCount = 0;
         while (true) {
-          const nextSpecialMatch = this.findNextSpecialToken(text, allowedSpecial, startIndex);
+          const nextSpecialMatch = this.findNextSpecialToken(text2, allowedSpecial, startIndex);
           const nextSpecialStartIndex = nextSpecialMatch?.[0];
-          const endIndex = nextSpecialStartIndex ?? text.length;
-          const textBeforeSpecial = startIndex === 0 && endIndex === text.length ? text : text.slice(startIndex, endIndex);
+          const endIndex = nextSpecialStartIndex ?? text2.length;
+          const textBeforeSpecial = startIndex === 0 && endIndex === text2.length ? text2 : text2.slice(startIndex, endIndex);
           for (const [match] of textBeforeSpecial.matchAll(this.tokenSplitRegex)) {
             if (this.getBpeRankFromString(match) !== void 0) {
               tokensCount++;
@@ -372,11 +372,11 @@ var init_BytePairEncodingCore = __esm({
         }
         return -1;
       }
-      findNextSpecialToken(text, allowedSpecial, startIndex) {
+      findNextSpecialToken(text2, allowedSpecial, startIndex) {
         let searchIndex = startIndex;
         while (true) {
           this.specialTokenPatternRegex.lastIndex = searchIndex;
-          const nextSpecialMatch = this.specialTokenPatternRegex.exec(text);
+          const nextSpecialMatch = this.specialTokenPatternRegex.exec(text2);
           if (!nextSpecialMatch) return;
           const specialToken = nextSpecialMatch[0];
           if (allowedSpecial?.has(specialToken)) return [nextSpecialMatch.index + searchIndex, specialToken];
@@ -698,13 +698,13 @@ var init_runtime = __esm({
   "../../node_modules/.pnpm/gpt-tokenizer@4.0.0/node_modules/gpt-tokenizer/esm/_virtual/_rolldown/runtime.js"() {
     __defProp2 = Object.defineProperty;
     __exportAll = (all, no_symbols) => {
-      let target = {};
-      for (var name in all) __defProp2(target, name, {
+      let target2 = {};
+      for (var name in all) __defProp2(target2, name, {
         get: all[name],
         enumerable: true
       });
-      if (!no_symbols) __defProp2(target, Symbol.toStringTag, { value: "Module" });
-      return target;
+      if (!no_symbols) __defProp2(target2, Symbol.toStringTag, { value: "Module" });
+      return target2;
     };
   }
 });
@@ -1073,7 +1073,7 @@ var init_GptEncoding = __esm({
         const harmonyChannel = this.specialTokensEncoder.get(HarmonyChannel);
         const harmonyConstrain = this.specialTokensEncoder.get(HarmonyConstrain);
         if (harmonyStart === void 0 || harmonyMessage === void 0 || harmonyEnd === void 0 || harmonyReturn === void 0 || harmonyCall === void 0 || harmonyChannel === void 0 || harmonyConstrain === void 0) throw new Error("Harmony chat format requires dedicated special tokens.");
-        const encodeHeaderText = (text) => text.length > 0 ? this.encode(text) : [];
+        const encodeHeaderText = (text2) => text2.length > 0 ? this.encode(text2) : [];
         const resolveTerminatorToken = (terminator) => {
           switch (terminator) {
             case "<|return|>":
@@ -1252,12 +1252,12 @@ var init_GptEncoding = __esm({
         for (const tokens of tokenGenerator) count += tokens.length;
         return count;
       }
-      countStringTokens(text) {
-        if (!text) return 0;
-        return this.bytePairEncodingCoreProcessor.countNative(text);
+      countStringTokens(text2) {
+        if (!text2) return 0;
+        return this.bytePairEncodingCoreProcessor.countNative(text2);
       }
       countChatCompletionTokensInternal(request) {
-        return computeChatCompletionTokenCount(request, (text) => this.countStringTokens(text));
+        return computeChatCompletionTokenCount(request, (text2) => this.countStringTokens(text2));
       }
       setMergeCacheSize(size) {
         this.bytePairEncodingCoreProcessor.setMergeCacheSize(size);
@@ -308528,14 +308528,14 @@ var require_foldFlowLines = __commonJS({
     var FOLD_FLOW = "flow";
     var FOLD_BLOCK = "block";
     var FOLD_QUOTED = "quoted";
-    function foldFlowLines(text, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
+    function foldFlowLines(text2, indent, mode = "flow", { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
       if (!lineWidth || lineWidth < 0)
-        return text;
+        return text2;
       if (lineWidth < minContentWidth)
         minContentWidth = 0;
       const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
-      if (text.length <= endStep)
-        return text;
+      if (text2.length <= endStep)
+        return text2;
       const folds = [];
       const escapedFolds = {};
       let end = lineWidth - indent.length;
@@ -308552,14 +308552,14 @@ var require_foldFlowLines = __commonJS({
       let escStart = -1;
       let escEnd = -1;
       if (mode === FOLD_BLOCK) {
-        i = consumeMoreIndentedLines(text, i, indent.length);
+        i = consumeMoreIndentedLines(text2, i, indent.length);
         if (i !== -1)
           end = i + endStep;
       }
-      for (let ch; ch = text[i += 1]; ) {
+      for (let ch; ch = text2[i += 1]; ) {
         if (mode === FOLD_QUOTED && ch === "\\") {
           escStart = i;
-          switch (text[i + 1]) {
+          switch (text2[i + 1]) {
             case "x":
               i += 3;
               break;
@@ -308576,12 +308576,12 @@ var require_foldFlowLines = __commonJS({
         }
         if (ch === "\n") {
           if (mode === FOLD_BLOCK)
-            i = consumeMoreIndentedLines(text, i, indent.length);
+            i = consumeMoreIndentedLines(text2, i, indent.length);
           end = i + indent.length + endStep;
           split = void 0;
         } else {
           if (ch === " " && prev && prev !== " " && prev !== "\n" && prev !== "	") {
-            const next = text[i + 1];
+            const next = text2[i + 1];
             if (next && next !== " " && next !== "\n" && next !== "	")
               split = i;
           }
@@ -308593,12 +308593,12 @@ var require_foldFlowLines = __commonJS({
             } else if (mode === FOLD_QUOTED) {
               while (prev === " " || prev === "	") {
                 prev = ch;
-                ch = text[i += 1];
+                ch = text2[i += 1];
                 overflow = true;
               }
               const j = i > escEnd + 1 ? i - 2 : escStart - 1;
               if (escapedFolds[j])
-                return text;
+                return text2;
               folds.push(j);
               escapedFolds[j] = true;
               end = j + endStep;
@@ -308613,39 +308613,39 @@ var require_foldFlowLines = __commonJS({
       if (overflow && onOverflow)
         onOverflow();
       if (folds.length === 0)
-        return text;
+        return text2;
       if (onFold)
         onFold();
-      let res = text.slice(0, folds[0]);
+      let res = text2.slice(0, folds[0]);
       for (let i2 = 0; i2 < folds.length; ++i2) {
         const fold = folds[i2];
-        const end2 = folds[i2 + 1] || text.length;
+        const end2 = folds[i2 + 1] || text2.length;
         if (fold === 0)
           res = `
-${indent}${text.slice(0, end2)}`;
+${indent}${text2.slice(0, end2)}`;
         else {
           if (mode === FOLD_QUOTED && escapedFolds[fold])
-            res += `${text[fold]}\\`;
+            res += `${text2[fold]}\\`;
           res += `
-${indent}${text.slice(fold + 1, end2)}`;
+${indent}${text2.slice(fold + 1, end2)}`;
         }
       }
       return res;
     }
-    function consumeMoreIndentedLines(text, i, indent) {
+    function consumeMoreIndentedLines(text2, i, indent) {
       let end = i;
       let start = i + 1;
-      let ch = text[start];
+      let ch = text2[start];
       while (ch === " " || ch === "	") {
         if (i < start + indent) {
-          ch = text[++i];
+          ch = text2[++i];
         } else {
           do {
-            ch = text[++i];
+            ch = text2[++i];
           } while (ch && ch !== "\n");
           end = i;
           start = i + 1;
-          ch = text[start];
+          ch = text2[start];
         }
       }
       return end;
@@ -309994,7 +309994,7 @@ var require_int = __commonJS({
       resolve: (str, _onError, opt) => intResolve(str, 2, 8, opt),
       stringify: (node) => intStringify(node, 8, "0o")
     };
-    var int = {
+    var int2 = {
       identify: intIdentify,
       default: true,
       tag: "tag:yaml.org,2002:int",
@@ -310011,7 +310011,7 @@ var require_int = __commonJS({
       resolve: (str, _onError, opt) => intResolve(str, 2, 16, opt),
       stringify: (node) => intStringify(node, 16, "0x")
     };
-    exports.int = int;
+    exports.int = int2;
     exports.intHex = intHex;
     exports.intOct = intOct;
   }
@@ -310027,16 +310027,16 @@ var require_schema = __commonJS({
     var string = require_string();
     var bool = require_bool();
     var float = require_float();
-    var int = require_int();
+    var int2 = require_int();
     var schema = [
       map.map,
       seq.seq,
       string.string,
       _null.nullTag,
       bool.boolTag,
-      int.intOct,
-      int.int,
-      int.intHex,
+      int2.intOct,
+      int2.int,
+      int2.intHex,
       float.floatNaN,
       float.floatExp,
       float.float
@@ -310470,7 +310470,7 @@ var require_int2 = __commonJS({
       resolve: (str, _onError, opt) => intResolve(str, 1, 8, opt),
       stringify: (node) => intStringify(node, 8, "0")
     };
-    var int = {
+    var int2 = {
       identify: intIdentify,
       default: true,
       tag: "tag:yaml.org,2002:int",
@@ -310487,7 +310487,7 @@ var require_int2 = __commonJS({
       resolve: (str, _onError, opt) => intResolve(str, 2, 16, opt),
       stringify: (node) => intStringify(node, 16, "0x")
     };
-    exports.int = int;
+    exports.int = int2;
     exports.intBin = intBin;
     exports.intHex = intHex;
     exports.intOct = intOct;
@@ -310682,7 +310682,7 @@ var require_schema3 = __commonJS({
     var binary = require_binary();
     var bool = require_bool2();
     var float = require_float2();
-    var int = require_int2();
+    var int2 = require_int2();
     var merge = require_merge();
     var omap = require_omap();
     var pairs = require_pairs();
@@ -310695,10 +310695,10 @@ var require_schema3 = __commonJS({
       _null.nullTag,
       bool.trueTag,
       bool.falseTag,
-      int.intBin,
-      int.intOct,
-      int.int,
-      int.intHex,
+      int2.intBin,
+      int2.intOct,
+      int2.int,
+      int2.intHex,
       float.floatNaN,
       float.floatExp,
       float.float,
@@ -310725,7 +310725,7 @@ var require_tags = __commonJS({
     var string = require_string();
     var bool = require_bool();
     var float = require_float();
-    var int = require_int();
+    var int2 = require_int();
     var schema = require_schema();
     var schema$1 = require_schema2();
     var binary = require_binary();
@@ -310749,9 +310749,9 @@ var require_tags = __commonJS({
       floatExp: float.floatExp,
       floatNaN: float.floatNaN,
       floatTime: timestamp.floatTime,
-      int: int.int,
-      intHex: int.intHex,
-      intOct: int.intOct,
+      int: int2.int,
+      intHex: int2.intHex,
+      intOct: int2.intOct,
       intTime: timestamp.intTime,
       map: map.map,
       merge: merge.merge,
@@ -313939,12 +313939,12 @@ var require_parser = __commonJS({
       }
       return prev.splice(i, prev.length);
     }
-    function arrayPushArray(target, source) {
+    function arrayPushArray(target2, source) {
       if (source.length < 1e5)
-        Array.prototype.push.apply(target, source);
+        Array.prototype.push.apply(target2, source);
       else
         for (let i = 0; i < source.length; ++i)
-          target.push(source[i]);
+          target2.push(source[i]);
     }
     function fixFlowSeqItems(fc) {
       if (fc.start.type === "flow-seq-start") {
@@ -314904,9 +314904,9 @@ function scanWindow(history, depth) {
   return history.slice(start).map((m) => m.text.normalize("NFC")).join("\n");
 }
 var WORD_CHAR = /[\p{L}\p{N}_]/u;
-function containsKey(text, key, opts) {
+function containsKey(text2, key, opts) {
   const needle = opts.caseSensitive ? key.normalize("NFC") : key.normalize("NFC").toLowerCase();
-  const hay = opts.caseSensitive ? text : text.toLowerCase();
+  const hay = opts.caseSensitive ? text2 : text2.toLowerCase();
   if (needle.length === 0) return false;
   let from = 0;
   for (; ; ) {
@@ -314920,14 +314920,14 @@ function containsKey(text, key, opts) {
   }
 }
 function matchKeyword(a, history) {
-  const text = scanWindow(history, a.scan_depth ?? DEFAULT_SCAN_DEPTH);
-  if (text.length === 0) return null;
+  const text2 = scanWindow(history, a.scan_depth ?? DEFAULT_SCAN_DEPTH);
+  if (text2.length === 0) return null;
   const opts = { caseSensitive: a.case_sensitive ?? false, wholeWord: a.whole_word ?? false };
-  const hit = a.keys.find((k) => containsKey(text, k, opts));
+  const hit = a.keys.find((k) => containsKey(text2, k, opts));
   if (hit === void 0) return null;
   const secondary = a.secondary ?? [];
   if (secondary.length > 0) {
-    const matches2 = secondary.map((k) => containsKey(text, k, opts));
+    const matches2 = secondary.map((k) => containsKey(text2, k, opts));
     const ok = (a.logic ?? "any") === "all" ? matches2.every(Boolean) : matches2.some(Boolean);
     if (!ok) return null;
   }
@@ -315052,17 +315052,17 @@ function checkOpts(defaults, opts, title = "opts") {
   const merged = Object.assign(/* @__PURE__ */ Object.create(null), defaults, opts);
   return merged;
 }
-function createHasher(hashCons, info2 = {}) {
+function createHasher(hashCons, info3 = {}) {
   if (typeof hashCons !== "function")
     throw new TypeError('"hashCons" expected function, got type=' + typeof hashCons);
-  info2 = checkOpts({}, info2, "info");
+  info3 = checkOpts({}, info3, "info");
   const hashC = (msg, opts) => hashCons(opts).update(msg).digest();
   const tmp = hashCons(void 0);
   hashC.outputLen = tmp.outputLen;
   hashC.blockLen = tmp.blockLen;
   hashC.canXOF = tmp.canXOF;
   hashC.create = (opts) => hashCons(opts);
-  Object.assign(hashC, info2);
+  Object.assign(hashC, info3);
   return Object.freeze(hashC);
 }
 var oidNist = (suffix) => ({
@@ -315531,7 +315531,20 @@ function compareStrings(a, b) {
 }
 
 // ../../packages/core/src/schema/creation.ts
-import { z as z6 } from "./vendor/zod.js";
+import { z as z10 } from "./vendor/zod.js";
+
+// ../../packages/core/src/schema/text.ts
+import { z } from "./vendor/zod.js";
+var LocaleSchema = z.string().regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/);
+var LocalizedTextSchema = z.union([
+  z.string().min(1),
+  z.record(LocaleSchema, z.string().min(1)).refine((r) => Object.keys(r).length > 0)
+]);
+var TemplateTextSchema = z.string();
+var LocalizedTemplateTextSchema = z.union([
+  TemplateTextSchema,
+  z.record(LocaleSchema.regex(/^(?!ref$)/), TemplateTextSchema).refine((value) => Object.keys(value).length > 0, "expected at least one template locale")
+]);
 
 // ../../packages/core/src/ids.ts
 var NAMESPACE_SRC = "[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?";
@@ -315566,6 +315579,7 @@ var ID_PREFIXES = {
   creation: "cr",
   release: "rel",
   revision: "rev",
+  draft_build: "dbld",
   user: "usr",
   contribution: "ctb",
   upload: "upl",
@@ -315583,44 +315597,90 @@ var PARAM_NAME_RE = /^[a-z][a-z0-9_]{0,31}$/;
 var CAST_KEY_RE = /^[a-z][a-z0-9_-]{0,31}$/;
 
 // ../../packages/core/src/schema/assembly.ts
-import { z as z4 } from "./vendor/zod.js";
+import { z as z8 } from "./vendor/zod.js";
 
-// ../../packages/core/src/schema/identity.ts
-import { z } from "./vendor/zod.js";
-var ExactRefSchema = z.strictObject({
-  ref: z.string().regex(new RegExp(`^@${NAMESPACE_RE.source.slice(1, -1)}/${NAME_RE.source.slice(1, -1)}$`)),
-  release: z.string().regex(idPattern("release")),
-  semantic_digest: z.string().regex(DIGEST_RE)
-});
-var PolicyImportSchema = z.strictObject({
-  id: z.string().regex(SEGMENT_RE),
-  use: ExactRefSchema.shape.ref,
-  pin: ExactRefSchema.omit({ ref: true })
-});
-var EngineIdentitySchema = z.strictObject({
-  name: z.string().min(1),
-  version: z.string().min(1)
-});
-
-// ../../packages/core/src/schema/runtime.ts
+// ../../packages/core/src/schema/catalog.ts
 import { z as z2 } from "./vendor/zod.js";
-var LocaleSchema = z2.string().regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/);
-var RuntimeProfileSchema = z2.strictObject({
-  runtime: z2.strictObject({ name: z2.string(), version: z2.string() }),
-  model: z2.string().optional(),
-  /** 具体 tokenizer 名，或 `estimate` 表示只做估算。 */
-  tokenizer: z2.string(),
-  context_window: z2.number().int().positive(),
-  reserve_for_output: z2.number().int().nonnegative(),
-  /** per-agent 模式下 private visibility 是隔离边界；narrator 模式下只是提示。 */
-  mode: z2.enum(["narrator", "per-agent"]),
-  capabilities: z2.strictObject({
-    images: z2.boolean().optional(),
-    system_role: z2.boolean().optional(),
-    multiple_system_messages: z2.boolean().optional()
-  }),
-  locale: LocaleSchema.optional()
+var CatalogRefSchema = z2.union([
+  z2.strictObject({ work: z2.string().min(1) }),
+  z2.strictObject({ fragment: z2.string().min(1) }),
+  z2.strictObject({ group: z2.string().min(1) }),
+  z2.strictObject({ source: z2.string().min(1), section: z2.string().min(1).optional() }),
+  z2.strictObject({
+    story: z2.enum(["scene", "part", "goal", "beat", "ending"]),
+    id: z2.string().min(1)
+  })
+]);
+var AboutTargetSchema = z2.union([
+  z2.strictObject({ work: z2.string().min(1) }),
+  z2.strictObject({ fragment: z2.string().min(1) }),
+  z2.strictObject({ participant: z2.string().min(1) })
+]);
+var identified = {
+  id: z2.string().min(1),
+  owner: z2.string().min(1),
+  local_id: z2.string().min(1),
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema.optional()
+};
+var CatalogIndexSchema = z2.strictObject({
+  about: z2.array(
+    z2.strictObject({
+      from: z2.string().min(1),
+      ref: z2.string().min(1),
+      target: AboutTargetSchema
+    })
+  ).optional(),
+  works: z2.array(
+    z2.strictObject({
+      id: z2.string().min(1),
+      ref: z2.string().min(1),
+      instance: z2.string().min(1),
+      title: LocalizedTextSchema,
+      description: LocalizedTextSchema.optional(),
+      fragments: z2.array(z2.string()),
+      groups: z2.array(z2.string()),
+      sources: z2.array(z2.string())
+    })
+  ),
+  groups: z2.array(
+    z2.strictObject({
+      ...identified,
+      entries: z2.array(z2.string()),
+      groups: z2.array(z2.string())
+    })
+  ),
+  sources: z2.array(
+    z2.strictObject({
+      ...identified,
+      asset: z2.string().min(1),
+      format: z2.enum(["markdown", "text"]),
+      shared: z2.boolean(),
+      sections: z2.array(
+        z2.strictObject({
+          id: z2.string().min(1),
+          title: LocalizedTextSchema,
+          description: LocalizedTextSchema.optional(),
+          anchor: z2.string().min(1)
+        })
+      )
+    })
+  )
 });
+var CompiledTemplateSchema = z2.strictObject({
+  text: z2.string(),
+  locales: z2.record(LocaleSchema, z2.string()).optional()
+});
+var StoryReferencesSchema = z2.strictObject({
+  templates: z2.record(z2.string(), CompiledTemplateSchema),
+  participants: z2.record(z2.string(), z2.string()),
+  information: z2.record(z2.string(), z2.string()),
+  /** Direct associations can point to a group or source section, not only a fragment. */
+  content: z2.record(z2.string(), CatalogRefSchema)
+});
+
+// ../../packages/core/src/schema/context.ts
+import { z as z5 } from "./vendor/zod.js";
 
 // ../../packages/core/src/schema/session.ts
 import { z as z3 } from "./vendor/zod.js";
@@ -315629,7 +315689,8 @@ var LateBindingValueSchema = z3.strictObject({
   kind: z3.enum(["persona", "character"]),
   display_name: z3.string().min(1),
   /** 设定描述。存在时作为 Session 内容单独加入上下文。 */
-  description: z3.string().min(1).optional()
+  description: z3.string().min(1).optional(),
+  outward_description: z3.string().min(1).optional()
 });
 var HistoryMessageSchema = z3.strictObject({
   role: z3.enum(["user", "assistant"]),
@@ -315658,43 +315719,352 @@ var SessionSchema = z3.strictObject({
   scene: z3.string().min(1).optional()
 });
 
+// ../../packages/core/src/schema/story.ts
+import { z as z4 } from "./vendor/zod.js";
+var id = z4.string().regex(SEGMENT_RE);
+var castKey = z4.string().regex(CAST_KEY_RE);
+var fragment = FRAGMENT_ID_RE.source.slice(1, -1);
+var StoryInfoRefSchema = z4.string().regex(
+  new RegExp(
+    `^(?:#${fragment}|@[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*#${fragment}|cast:[a-z0-9][a-z0-9_-]*#${fragment})$`
+  )
+);
+var variable = z4.string().regex(/^var\/[a-z0-9][a-z0-9_-]*$/);
+var int = z4.number().int().min(-2147483648).max(2147483647);
+var info = StoryInfoRefSchema;
+var text = LocalizedTextSchema;
+var strings = z4.array(id);
+var StoryValueSchema = z4.union([z4.boolean(), int, z4.string(), z4.array(z4.string())]);
+var StoryContinuationInputSchema = z4.strictObject({
+  scene: id,
+  present: z4.array(castKey),
+  vars: z4.record(id, StoryValueSchema),
+  knowing: z4.record(StoryInfoRefSchema, z4.array(castKey)),
+  opening: LocalizedTemplateTextSchema
+});
+var target = (kind) => z4.string().regex(new RegExp(`^${kind}/[a-z0-9][a-z0-9_-]*$`));
+var StoryConditionSchema = z4.lazy(
+  () => z4.union([
+    z4.strictObject({ all: z4.array(StoryConditionSchema) }),
+    z4.strictObject({ any: z4.array(StoryConditionSchema) }),
+    z4.strictObject({ not: StoryConditionSchema }),
+    z4.strictObject({ in: target("scene") }),
+    z4.strictObject({ visited: target("scene") }),
+    z4.strictObject({ reached: target("beat") }),
+    z4.strictObject({ ended: target("ending") }),
+    z4.strictObject({ happened: target("event") }),
+    z4.strictObject({ knows: z4.strictObject({ who: castKey, info }) }),
+    z4.strictObject({ is: variable }),
+    z4.strictObject({ cmp: z4.tuple([variable, z4.enum(["=", "!=", "<", "<=", ">", ">="]), int]) }),
+    z4.strictObject({ eq: z4.tuple([variable, id]) }),
+    z4.strictObject({ has: z4.tuple([variable, z4.string().min(1)]) }),
+    z4.strictObject({ judge: text })
+  ])
+);
+var StoryEffectSchema = z4.union([
+  z4.strictObject({ set: z4.tuple([variable, StoryValueSchema]) }),
+  z4.strictObject({ add: z4.tuple([variable, int]) }),
+  z4.strictObject({ put: z4.tuple([variable, z4.string().min(1)]) }),
+  z4.strictObject({ drop: z4.tuple([variable, z4.string().min(1)]) }),
+  z4.strictObject({ learn: z4.strictObject({ who: z4.union([castKey, z4.literal("*")]), info }) })
+]);
+var StoryVariableSchema = z4.discriminatedUnion("type", [
+  z4.strictObject({ type: z4.literal("bool"), init: z4.boolean(), description: text }),
+  z4.strictObject({ type: z4.literal("int"), init: int, min: int, max: int, description: text }),
+  z4.strictObject({ type: z4.literal("enum"), init: id, values: strings.min(1), description: text }),
+  z4.strictObject({
+    type: z4.literal("set"),
+    init: z4.array(z4.string()),
+    of: z4.literal("item").optional(),
+    values: strings.optional(),
+    description: text
+  })
+]);
+var named = { id, title: text, description: text.optional() };
+var strength = z4.enum(["possible", "suggested", "required"]).optional();
+var reveal = z4.enum(["hidden", "on-reach", "listed"]).optional();
+var when = StoryConditionSchema.optional();
+var effects = z4.array(StoryEffectSchema).optional();
+var lore = z4.array(z4.string().min(1)).optional();
+var StorySceneSchema = z4.strictObject({
+  ...named,
+  time: text.optional(),
+  where: text.optional(),
+  place: info.optional(),
+  cast: z4.array(castKey).optional(),
+  opening: LocalizedTemplateTextSchema.optional(),
+  goals: z4.record(castKey, text).optional(),
+  beats: strings.optional(),
+  choices: strings.optional(),
+  lore,
+  items: strings.optional(),
+  events: strings.optional(),
+  when
+});
+var StoryBeatSchema = z4.strictObject({
+  ...named,
+  description: text,
+  strength,
+  reveal,
+  when,
+  effects
+});
+var StoryEndingSchema = z4.strictObject({
+  ...named,
+  description: text,
+  strength,
+  reveal,
+  when,
+  effects,
+  after: z4.enum(["stop", "continue"]).optional(),
+  priority: int.optional()
+});
+var StoryChoiceSchema = z4.strictObject({ id, label: text, intent: text, when });
+var StoryStartSchema = z4.strictObject({
+  id,
+  title: text.optional(),
+  description: text.optional(),
+  scene: id.optional(),
+  greeting: z4.union([LocalizedTemplateTextSchema, z4.strictObject({ ref: id })]).optional(),
+  set: effects,
+  reached: strings.optional()
+});
+var StoryEventSchema = z4.strictObject({
+  ...named,
+  description: text,
+  kind: z4.enum(["background", "planned"]),
+  when_text: text.optional(),
+  cast: z4.array(castKey).optional(),
+  place: info.optional(),
+  truth: info.optional(),
+  lore,
+  when,
+  effects
+});
+var audience = z4.union([z4.array(castKey), z4.literal("*")]);
+var StorySchema = z4.strictObject({
+  version: z4.literal(1),
+  scenes: z4.array(StorySceneSchema).min(1),
+  beats: z4.array(StoryBeatSchema).optional(),
+  endings: z4.array(StoryEndingSchema).optional(),
+  choices: z4.array(StoryChoiceSchema).optional(),
+  plotlines: z4.array(z4.strictObject({ ...named, scenes: strings.optional(), beats: strings.optional() })).optional(),
+  starts: z4.array(StoryStartSchema).min(1).optional(),
+  vars: z4.record(id, StoryVariableSchema).optional(),
+  items: z4.array(
+    z4.strictObject({
+      ...named,
+      description: text,
+      lore,
+      reveal: z4.enum(["hidden", "on-reach"]).optional()
+    })
+  ).optional(),
+  events: z4.array(StoryEventSchema).optional(),
+  timelines: z4.array(
+    z4.strictObject({
+      ...named,
+      order: z4.array(z4.union([z4.string().min(1), z4.array(z4.string().min(1)).min(1)]))
+    })
+  ).optional(),
+  knowing: z4.record(
+    info,
+    z4.strictObject({
+      start: z4.strictObject({ knows: audience.optional(), not: audience.optional() }),
+      enter: z4.record(id, z4.strictObject({ knows: audience })).optional()
+    })
+  ).optional()
+});
+
+// ../../packages/core/src/schema/context.ts
+var DigestSchema = z5.string().regex(DIGEST_RE);
+var TurnStorySchema = z5.strictObject({
+  start: z5.string(),
+  visited: z5.array(z5.string()),
+  reached: z5.array(z5.string()),
+  ended: z5.array(z5.string()),
+  happened: z5.array(z5.string()),
+  vars: z5.record(z5.string(), StoryValueSchema),
+  knowing: z5.record(z5.string(), z5.array(z5.string())),
+  stopped: z5.boolean()
+});
+var TurnViewSchema = SessionSchema.extend({
+  /** Runtime explicitly projects this overlay for the current participant. */
+  visible_overlay: SessionOverlaySchema.optional(),
+  present: z5.array(z5.string()).optional(),
+  story: TurnStorySchema.optional(),
+  story_guidance: z5.boolean().optional(),
+  focus: z5.string().optional(),
+  judgments: z5.array(
+    z5.strictObject({
+      target: z5.string(),
+      path: z5.string(),
+      result: z5.enum(["true", "false", "undetermined"]),
+      provider: z5.strictObject({ name: z5.string(), version: z5.string() })
+    })
+  ).optional()
+});
+var ContextViewSchema = z5.strictObject({
+  mode: z5.enum(["narrator", "per-agent"]),
+  for: z5.string().optional()
+});
+var SelectionPlanSchema = z5.strictObject({
+  /** Whether the selector received a discovery directory. Required for exact replay. */
+  discovery: z5.boolean(),
+  input: z5.strictObject({
+    artifact_digest: DigestSchema,
+    lock_digest: DigestSchema,
+    turn_digest: DigestSchema,
+    catalog_digest: DigestSchema,
+    policy_digest: DigestSchema
+  }),
+  selector: z5.strictObject({
+    name: z5.string().min(1),
+    version: z5.string().min(1),
+    config_digest: DigestSchema.optional()
+  }),
+  selected: z5.array(
+    z5.strictObject({
+      ref: CatalogRefSchema,
+      form: z5.enum(["body", "section"]),
+      rank: z5.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
+    })
+  ),
+  decisions: z5.array(
+    z5.strictObject({
+      ref: CatalogRefSchema,
+      action: z5.enum(["expand", "select", "reject"]),
+      score: z5.number().finite().optional(),
+      confidence: z5.number().min(0).max(1).optional(),
+      note: z5.string().optional()
+    })
+  ),
+  fallback: z5.literal("skip").optional()
+});
+
+// ../../packages/core/src/schema/identity.ts
+import { z as z6 } from "./vendor/zod.js";
+var ExactRefSchema = z6.strictObject({
+  ref: z6.string().regex(new RegExp(`^@${NAMESPACE_RE.source.slice(1, -1)}/${NAME_RE.source.slice(1, -1)}$`)),
+  release: z6.string().regex(idPattern("release")),
+  semantic_digest: z6.string().regex(DIGEST_RE)
+});
+var DraftBuildOriginSchema = z6.strictObject({
+  kind: z6.literal("draft-build"),
+  build_id: z6.string().regex(idPattern("draft_build")),
+  revision: z6.string().regex(idPattern("revision")),
+  expires_at: z6.iso.datetime()
+});
+var LocalBuildOriginSchema = z6.strictObject({
+  kind: z6.literal("local-build"),
+  input_digest: z6.string().regex(DIGEST_RE)
+});
+var UnpublishedBuildOriginSchema = z6.discriminatedUnion("kind", [
+  DraftBuildOriginSchema,
+  LocalBuildOriginSchema
+]);
+function withBuildIdentity(shape) {
+  return z6.union([
+    z6.strictObject({ ...shape, release: ExactRefSchema.shape.release }),
+    z6.strictObject({ ...shape, origin: UnpublishedBuildOriginSchema })
+  ]);
+}
+var BuildIdentitySchema = withBuildIdentity({});
+var BuildRefSchema = withBuildIdentity({
+  ref: ExactRefSchema.shape.ref,
+  semantic_digest: ExactRefSchema.shape.semantic_digest
+});
+function buildIdentity(value) {
+  const result = BuildIdentitySchema.safeParse({
+    ..."release" in value ? { release: value.release } : {},
+    ..."origin" in value ? { origin: value.origin } : {}
+  });
+  if (!result.success)
+    throw new CharError({
+      code: "schema.invalid",
+      subject: "build.identity",
+      detail: result.error.message
+    });
+  return result.data;
+}
+function buildIdentityKey(value) {
+  return "release" in value ? value.release : value.origin.kind === "draft-build" ? value.origin.build_id : `local:${value.origin.input_digest}`;
+}
+function publishedIdentity(value) {
+  const identity = buildIdentity(value);
+  if (!("release" in identity))
+    throw new CharError({ code: "build.release_required", subject: buildIdentityKey(identity) });
+  return identity;
+}
+var PolicyImportSchema = z6.strictObject({
+  id: z6.string().regex(SEGMENT_RE),
+  use: ExactRefSchema.shape.ref,
+  pin: ExactRefSchema.omit({ ref: true })
+});
+var EngineIdentitySchema = z6.strictObject({
+  name: z6.string().min(1),
+  version: z6.string().min(1)
+});
+
+// ../../packages/core/src/schema/runtime.ts
+import { z as z7 } from "./vendor/zod.js";
+var LocaleSchema3 = z7.string().regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/);
+var RuntimeProfileSchema = z7.strictObject({
+  runtime: z7.strictObject({ name: z7.string(), version: z7.string() }),
+  model: z7.string().optional(),
+  /** 具体 tokenizer 名，或 `estimate` 表示只做估算。 */
+  tokenizer: z7.string(),
+  context_window: z7.number().int().positive(),
+  reserve_for_output: z7.number().int().nonnegative(),
+  /** per-agent 模式下 private visibility 是隔离边界；narrator 模式下只是提示。 */
+  mode: z7.enum(["narrator", "per-agent"]),
+  capabilities: z7.strictObject({
+    images: z7.boolean().optional(),
+    system_role: z7.boolean().optional(),
+    multiple_system_messages: z7.boolean().optional()
+  }),
+  locale: LocaleSchema3.optional()
+});
+
 // ../../packages/core/src/schema/assembly.ts
-var AssemblyConfigSchema = z4.strictObject({
-  version: z4.literal("0-draft"),
+var AssemblyConfigSchema = z8.strictObject({
+  version: z8.literal("1-draft"),
   preset: ExactRefSchema,
   profile: RuntimeProfileSchema,
   assembler: EngineIdentitySchema,
   tokenizer: EngineIdentitySchema
 });
-var AssemblyTraceAssertionSchema = z4.strictObject({
-  source: z4.string().min(1),
-  included: z4.boolean().optional(),
-  reason: z4.string().min(1).optional()
+var AssemblyTraceAssertionSchema = z8.strictObject({
+  source: z8.string().min(1),
+  included: z8.boolean().optional(),
+  reason: z8.string().min(1).optional()
 });
-var AssemblySuccessExpectationSchema = z4.strictObject({
-  kind: z4.literal("success"),
-  messages_digest: z4.string().regex(DIGEST_RE).optional(),
-  trace: z4.array(AssemblyTraceAssertionSchema).min(1).optional()
+var AssemblySuccessExpectationSchema = z8.strictObject({
+  kind: z8.literal("success"),
+  messages_digest: z8.string().regex(DIGEST_RE).optional(),
+  trace: z8.array(AssemblyTraceAssertionSchema).min(1).optional()
 }).refine(
   (value) => value.messages_digest !== void 0 || value.trace !== void 0,
   "success needs a message digest or trace assertion"
 );
-var AssemblyFixtureSchema = z4.strictObject({
-  id: z4.string().regex(SEGMENT_RE),
-  root: z4.union([z4.literal("self"), ExactRefSchema]),
-  preset: z4.union([z4.literal("self"), ExactRefSchema]).optional(),
+var AssemblyFixtureSchema = z8.strictObject({
+  id: z8.string().regex(SEGMENT_RE),
+  root: z8.union([z8.literal("self"), ExactRefSchema]),
+  preset: z8.union([z8.literal("self"), ExactRefSchema]).optional(),
   profile: RuntimeProfileSchema,
-  session: SessionSchema,
+  session: TurnViewSchema,
+  /** Store stable fixed choices, not a Plan containing the enclosing artifact's own digest. */
+  selection: z8.array(CatalogRefSchema).optional(),
+  source_texts: z8.record(z8.string(), z8.string()).optional(),
   assembler: EngineIdentitySchema,
   tokenizer: EngineIdentitySchema,
-  expected: z4.discriminatedUnion("kind", [
+  expected: z8.discriminatedUnion("kind", [
     AssemblySuccessExpectationSchema,
-    z4.strictObject({ kind: z4.literal("error"), code: z4.string().min(1) })
+    z8.strictObject({ kind: z8.literal("error"), code: z8.string().min(1) })
   ])
 });
 
 // ../../packages/core/src/schema/policy.ts
-import { z as z5 } from "./vendor/zod.js";
+import { z as z9 } from "./vendor/zod.js";
 var PRESET_REGIONS = [
   "system:character",
   "system:cast",
@@ -315702,6 +316072,9 @@ var PRESET_REGIONS = [
   "system:persona",
   "system:world",
   "system:scenario",
+  "system:scene",
+  "system:story",
+  "system:sources",
   "system:relationship",
   "system:knowledge",
   "system:style",
@@ -315718,31 +316091,66 @@ var CREATIVE_REGIONS = [
   "system:persona",
   "system:world",
   "system:scenario",
+  "system:scene",
+  "system:story",
+  "system:sources",
   "system:relationship",
   "system:knowledge",
   "system:style",
   "system:instruction",
   "system:examples"
 ];
-var PresetBlockSchema = z5.strictObject({
-  id: z5.string().regex(SEGMENT_RE),
+var nonblank = z9.string().min(1).refine((text2) => text2.trim().length > 0, "expected nonblank text");
+var PolicyPositionSchema = z9.enum(["main", "after-history"]);
+var PresetBlockSchema = z9.strictObject({
+  id: z9.string().regex(SEGMENT_RE),
   /** 字面文本：不解释模板、脚本或变量。 */
-  text: z5.string().min(1).refine((text) => text.trim().length > 0, "expected nonblank text"),
-  position: z5.enum(["main", "after-history"]),
+  text: z9.string().min(1).refine((text2) => text2.trim().length > 0, "expected nonblank text"),
+  default_at: PolicyPositionSchema,
+  purpose: nonblank.optional(),
   /** 缺省为 true；canonical 形式省略显式 true。 */
-  enabled: z5.boolean().optional()
+  enabled: z9.boolean().optional()
 });
-var PresetPolicySchema = z5.strictObject({
-  version: z5.literal("0-draft"),
-  blocks: z5.array(PresetBlockSchema),
-  imports: z5.array(PolicyImportSchema).optional(),
-  layout: z5.array(z5.enum(PRESET_REGIONS)).length(PRESET_REGIONS.length),
-  region_budgets: z5.partialRecord(z5.enum(CREATIVE_REGIONS), z5.number().int().nonnegative().safe()).optional(),
-  requires: z5.strictObject({
-    system_role: z5.literal(true),
-    multiple_system_messages: z5.literal(true).optional()
+var PolicyPlacementSchema = z9.strictObject({
+  block: z9.string().regex(
+    new RegExp(`^${SEGMENT_RE.source.slice(1, -1)}(?:/${SEGMENT_RE.source.slice(1, -1)})*$`)
+  ),
+  at: PolicyPositionSchema,
+  as: z9.string().regex(SEGMENT_RE).optional()
+});
+var PolicySelectionSchema = z9.strictObject({
+  catalog_budget: z9.number().int().nonnegative().safe().optional(),
+  max_depth: z9.number().int().min(1).max(32).optional(),
+  on_unavailable: z9.literal("skip").optional()
+});
+var PolicyRenderSchema = z9.strictObject({
+  "perspective.rumor": nonblank.optional(),
+  "perspective.claim": nonblank.optional(),
+  "perspective.belief": nonblank.optional(),
+  "knowing.narrator": nonblank.optional(),
+  "sources.notice": nonblank.optional()
+});
+var PresetPolicySchema = z9.strictObject({
+  version: z9.literal("1-draft"),
+  blocks: z9.array(PresetBlockSchema),
+  imports: z9.array(PolicyImportSchema).optional(),
+  placements: z9.array(PolicyPlacementSchema).optional(),
+  selection: PolicySelectionSchema.optional(),
+  render: PolicyRenderSchema.optional(),
+  layout: z9.array(z9.enum(PRESET_REGIONS)).length(PRESET_REGIONS.length),
+  region_budgets: z9.partialRecord(z9.enum(CREATIVE_REGIONS), z9.number().int().nonnegative().safe()).optional(),
+  requires: z9.strictObject({
+    system_role: z9.literal(true),
+    multiple_system_messages: z9.literal(true).optional()
   })
 }).superRefine((policy, ctx) => {
+  const placements = /* @__PURE__ */ new Set();
+  policy.placements?.forEach((item, i) => {
+    const key = JSON.stringify([item.block, item.at, item.as ?? item.at]);
+    if (placements.has(key))
+      ctx.addIssue({ code: "custom", path: ["placements", i], message: "duplicate placement" });
+    placements.add(key);
+  });
   const imports = /* @__PURE__ */ new Set();
   policy.imports?.forEach((item, i) => {
     if (imports.has(item.id))
@@ -315768,10 +316176,10 @@ var PresetPolicySchema = z5.strictObject({
     });
   }
 });
-var PromptModuleSchema = z5.strictObject({
-  version: z5.literal("0-draft"),
-  blocks: z5.array(PresetBlockSchema),
-  imports: z5.array(PolicyImportSchema).optional()
+var PromptModuleSchema = z9.strictObject({
+  version: z9.literal("1-draft"),
+  blocks: z9.array(PresetBlockSchema),
+  imports: z9.array(PolicyImportSchema).optional()
 }).superRefine((module, ctx) => {
   for (const field of ["blocks", "imports"]) {
     const seen = /* @__PURE__ */ new Set();
@@ -315788,42 +316196,37 @@ var PromptModuleSchema = z5.strictObject({
 });
 
 // ../../packages/core/src/schema/creation.ts
-var DigestSchema = z6.string().regex(DIGEST_RE, "expected sha256:<64 hex>");
+var DigestSchema2 = z10.string().regex(DIGEST_RE, "expected sha256:<64 hex>");
 var REF_BODY = `@${NAMESPACE_RE.source.slice(1, -1)}/${NAME_RE.source.slice(1, -1)}`;
-var UnversionedRefSchema = z6.string().regex(new RegExp(`^${REF_BODY}$`));
-var CreationRefSchema = z6.string().regex(new RegExp(`^${REF_BODY}(?:@${LABEL_RE.source.slice(1, -1)})?$`));
-var LocalRefSchema = z6.string().regex(new RegExp(`^#${FRAGMENT_ID_RE.source.slice(1, -1)}$`));
-var FragmentIdSchema = z6.string().regex(FRAGMENT_ID_RE);
-var SegmentSchema = z6.string().regex(SEGMENT_RE);
-var LabelSchema = z6.string().regex(LABEL_RE);
-var SlotNameSchema = z6.string().regex(SLOT_NAME_RE);
-var ParamNameSchema = z6.string().regex(PARAM_NAME_RE);
-var CastKeySchema = z6.string().regex(CAST_KEY_RE);
-var CreationIdSchema = z6.string().regex(idPattern("creation"));
-var ReleaseIdSchema = z6.string().regex(idPattern("release"));
-var RevisionIdSchema = z6.string().regex(idPattern("revision"));
-var UserIdSchema = z6.string().regex(idPattern("user"));
-var ContributionIdSchema = z6.string().regex(idPattern("contribution"));
-var LocaleSchema3 = z6.string().regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/);
-var SpdxExpressionSchema = z6.string().min(1).max(256).regex(/^[A-Za-z0-9.+\-() :]+$/, "invalid SPDX expression").refine((s) => s.trim() === s, "SPDX expression must not have leading/trailing spaces");
-var safeNumber = z6.number().refine(Number.isFinite, "number must be finite").refine((n) => !Number.isInteger(n) || Number.isSafeInteger(n), "integer out of safe range");
-var ScalarValueSchema = z6.union([z6.string(), safeNumber, z6.boolean()]);
-var JSONValueSchema = z6.lazy(
-  () => z6.union([
-    z6.string(),
+var UnversionedRefSchema = z10.string().regex(new RegExp(`^${REF_BODY}$`));
+var CreationRefSchema = z10.string().regex(new RegExp(`^${REF_BODY}(?:@${LABEL_RE.source.slice(1, -1)})?$`));
+var LocalRefSchema = z10.string().regex(new RegExp(`^#${FRAGMENT_ID_RE.source.slice(1, -1)}$`));
+var FragmentIdSchema = z10.string().regex(FRAGMENT_ID_RE);
+var SegmentSchema = z10.string().regex(SEGMENT_RE);
+var LabelSchema = z10.string().regex(LABEL_RE);
+var SlotNameSchema = z10.string().regex(SLOT_NAME_RE);
+var ParamNameSchema = z10.string().regex(PARAM_NAME_RE);
+var CastKeySchema = z10.string().regex(CAST_KEY_RE);
+var CreationIdSchema = z10.string().regex(idPattern("creation"));
+var ReleaseIdSchema = z10.string().regex(idPattern("release"));
+var RevisionIdSchema = z10.string().regex(idPattern("revision"));
+var UserIdSchema = z10.string().regex(idPattern("user"));
+var ContributionIdSchema = z10.string().regex(idPattern("contribution"));
+var SpdxExpressionSchema = z10.string().min(1).max(256).regex(/^[A-Za-z0-9.+\-() :]+$/, "invalid SPDX expression").refine((s) => s.trim() === s, "SPDX expression must not have leading/trailing spaces");
+var safeNumber = z10.number().refine(Number.isFinite, "number must be finite").refine((n) => !Number.isInteger(n) || Number.isSafeInteger(n), "integer out of safe range");
+var ScalarValueSchema = z10.union([z10.string(), safeNumber, z10.boolean()]);
+var JSONValueSchema = z10.lazy(
+  () => z10.union([
+    z10.string(),
     safeNumber,
-    z6.boolean(),
-    z6.null(),
-    z6.array(JSONValueSchema),
-    z6.record(z6.string(), JSONValueSchema)
+    z10.boolean(),
+    z10.null(),
+    z10.array(JSONValueSchema),
+    z10.record(z10.string(), JSONValueSchema)
   ])
 );
-var LocalizedTextSchema = z6.union([
-  z6.string().min(1),
-  z6.record(LocaleSchema3, z6.string().min(1)).refine((r) => Object.keys(r).length > 0, "localized text must not be empty")
-]);
 var RATINGS = ["general", "teen", "mature", "explicit"];
-var RatingSchema = z6.enum(RATINGS);
+var RatingSchema = z10.enum(RATINGS);
 var CREATION_TYPES = [
   "character",
   "world",
@@ -315835,7 +316238,7 @@ var CREATION_TYPES = [
   "preset",
   "prompt-module"
 ];
-var CreationTypeSchema = z6.enum(CREATION_TYPES);
+var CreationTypeSchema = z10.enum(CREATION_TYPES);
 var FRAGMENT_KINDS = [
   "character",
   "persona",
@@ -315847,112 +316250,122 @@ var FRAGMENT_KINDS = [
   "examples",
   "instruction"
 ];
-var FragmentKindSchema = z6.enum(FRAGMENT_KINDS);
-var TemplateTextSchema = z6.string();
-var SpeakerRefSchema = z6.union([
-  z6.literal("{{self}}"),
-  z6.literal("{{user}}"),
-  z6.string().regex(new RegExp(`^\\{\\{slot:${SLOT_NAME_RE.source.slice(1, -1)}\\}\\}$`)),
-  z6.string().regex(new RegExp(`^\\{\\{cast:${CAST_KEY_RE.source.slice(1, -1)}\\}\\}$`)),
+var FragmentKindSchema = z10.enum(FRAGMENT_KINDS);
+var SpeakerRefSchema = z10.union([
+  z10.literal("{{self}}"),
+  z10.literal("{{user}}"),
+  z10.string().regex(new RegExp(`^\\{\\{slot:${SLOT_NAME_RE.source.slice(1, -1)}\\}\\}$`)),
+  z10.string().regex(new RegExp(`^\\{\\{cast:${CAST_KEY_RE.source.slice(1, -1)}\\}\\}$`)),
   UnversionedRefSchema
 ]);
-var AssetRefSchema = z6.string().regex(
+var AssetRefSchema = z10.string().regex(
   new RegExp(`^#asset/${SEGMENT_RE.source.slice(1, -1)}(?:/${SEGMENT_RE.source.slice(1, -1)})?$`)
 );
-var DecimalIdSchema = z6.string().regex(/^[1-9][0-9]{0,19}$/);
-var GitCommitSchema = z6.string().regex(/^[0-9a-f]{40}$/);
-var HttpsUrlSchema = z6.url({ protocol: /^https$/ }).regex(/^https:\/\//);
-var SourceLocatorSchema = z6.discriminatedUnion("provider", [
-  z6.strictObject({
-    provider: z6.literal("github"),
+var DecimalIdSchema = z10.string().regex(/^[1-9][0-9]{0,19}$/);
+var GitCommitSchema = z10.string().regex(/^[0-9a-f]{40}$/);
+var HttpsUrlSchema = z10.url({ protocol: /^https$/ }).regex(/^https:\/\//);
+var SourceLocatorSchema = z10.discriminatedUnion("provider", [
+  z10.strictObject({
+    provider: z10.literal("github"),
     repository_id: DecimalIdSchema,
     commit: GitCommitSchema,
-    path: z6.string().min(1)
+    path: z10.string().min(1)
   }),
-  z6.strictObject({ provider: z6.literal("http"), url: HttpsUrlSchema })
+  z10.strictObject({ provider: z10.literal("http"), url: HttpsUrlSchema })
 ]);
-var BlobRefSchema = z6.strictObject({
-  digest: DigestSchema,
-  size: z6.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+var BlobRefSchema = z10.strictObject({
+  digest: DigestSchema2,
+  size: z10.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   locator: SourceLocatorSchema.optional(),
-  availability: z6.enum(["mirrored", "linked"])
+  availability: z10.enum(["mirrored", "linked"])
 });
-var AssetVariantSchema = z6.strictObject({
+var AssetVariantSchema = z10.strictObject({
   id: SegmentSchema,
   blob: BlobRefSchema,
-  media_type: z6.string().regex(/^[a-z]+\/[a-z0-9.+-]+$/),
+  media_type: z10.string().regex(/^[a-z]+\/[a-z0-9.+-]+$/),
   alt: LocalizedTextSchema.optional(),
   /** 缺省继承 Creation 的 license。 */
   license: SpdxExpressionSchema.optional(),
   /** 缺省继承 Creation 的 rating；可以更高，不能更低（由 check 规则检查）。 */
   rating: RatingSchema.optional()
 });
-var AssetSlotSchema = z6.strictObject({
+var AssetSlotSchema = z10.strictObject({
   slot: SegmentSchema,
   /** presentation 只用于展示；只有 context 可以被 fragment 引用并进入模型。 */
-  role: z6.enum(["presentation", "context"]),
-  variants: z6.array(AssetVariantSchema).min(1).refine((v) => v.some((x) => x.id === "default"), "asset slot needs a 'default' variant")
+  role: z10.enum(["presentation", "context"]),
+  variants: z10.array(AssetVariantSchema).min(1).refine((v) => v.some((x) => x.id === "default"), "asset slot needs a 'default' variant")
 });
-var DialogueTurnSchema = z6.strictObject({
+var DialogueTurnSchema = z10.strictObject({
   speaker: SpeakerRefSchema,
   text: TemplateTextSchema
 });
-var FragmentContentSchema = z6.discriminatedUnion("type", [
-  z6.strictObject({
-    type: z6.literal("text"),
+var FragmentContentSchema = z10.discriminatedUnion("type", [
+  z10.strictObject({
+    type: z10.literal("text"),
     text: TemplateTextSchema,
     /** 缺省为 markdown。 */
-    format: z6.enum(["markdown", "plain"]).optional()
+    format: z10.enum(["markdown", "plain"]).optional()
   }),
-  z6.strictObject({ type: z6.literal("dialogue"), turns: z6.array(DialogueTurnSchema).min(1) }),
-  z6.strictObject({
-    type: z6.literal("media"),
+  z10.strictObject({ type: z10.literal("dialogue"), turns: z10.array(DialogueTurnSchema).min(1) }),
+  z10.strictObject({
+    type: z10.literal("media"),
     asset: AssetRefSchema,
     caption: TemplateTextSchema.optional()
   }),
   /** 扩展点：Resolver 原样透传。 */
-  z6.strictObject({
-    type: z6.literal("structured"),
-    schema: z6.string().min(1),
+  z10.strictObject({
+    type: z10.literal("structured"),
+    schema: z10.string().min(1),
     data: JSONValueSchema
   })
 ]);
-var ActivationSchema = z6.discriminatedUnion("mode", [
-  z6.strictObject({ mode: z6.literal("always") }),
-  z6.strictObject({
-    mode: z6.literal("keyword"),
-    keys: z6.array(z6.string().min(1)).min(1),
-    secondary: z6.array(z6.string().min(1)).optional(),
-    logic: z6.enum(["any", "all"]).optional(),
-    case_sensitive: z6.boolean().optional(),
-    whole_word: z6.boolean().optional(),
+var ActivationSchema = z10.discriminatedUnion("mode", [
+  z10.strictObject({ mode: z10.literal("always") }),
+  z10.strictObject({
+    mode: z10.literal("keyword"),
+    keys: z10.array(z10.string().min(1)).min(1),
+    secondary: z10.array(z10.string().min(1)).optional(),
+    logic: z10.enum(["any", "all"]).optional(),
+    case_sensitive: z10.boolean().optional(),
+    whole_word: z10.boolean().optional(),
     /** 只扫描最近 N 条消息。 */
-    scan_depth: z6.number().int().min(1).max(1e3).optional()
+    scan_depth: z10.number().int().min(1).max(1e3).optional()
   }),
   /** 由 Assembler 自行实现检索，结果不保证确定性。 */
-  z6.strictObject({ mode: z6.literal("semantic"), hint: z6.string().optional() }),
+  z10.strictObject({ mode: z10.literal("semantic"), hint: z10.string().optional() }),
   /** 只在用户或 Runtime 显式启用时加入。 */
-  z6.strictObject({ mode: z6.literal("manual") })
+  z10.strictObject({ mode: z10.literal("manual") })
 ]);
-var VisibilitySchema = z6.discriminatedUnion("scope", [
-  z6.strictObject({ scope: z6.literal("shared") }),
+var VisibilitySchema = z10.discriminatedUnion("scope", [
+  z10.strictObject({ scope: z10.literal("shared") }),
   /** 只对列出的角色可见。在 narrator 模式下这只是提示，不是安全边界。 */
-  z6.strictObject({ scope: z6.literal("private"), to: z6.array(SpeakerRefSchema).min(1) }),
-  z6.strictObject({ scope: z6.literal("scene"), scene: FragmentIdSchema.optional() })
+  z10.strictObject({ scope: z10.literal("private"), to: z10.array(SpeakerRefSchema).min(1) }),
+  z10.strictObject({ scope: z10.literal("scene"), scene: FragmentIdSchema.optional() }),
+  z10.strictObject({ scope: z10.literal("story-scene"), scene: SegmentSchema })
 ]);
-var ImportanceSchema = z6.enum(["pinned", "normal", "opportunistic"]);
-var LocaleMapSchema = z6.record(
-  LocaleSchema3,
-  z6.strictObject({
+var ImportanceSchema = z10.enum(["pinned", "normal", "opportunistic"]);
+var LocaleMapSchema = z10.record(
+  LocaleSchema,
+  z10.strictObject({
     content: FragmentContentSchema,
-    activation_keys: z6.array(z6.string().min(1)).optional()
+    activation_keys: z10.array(z10.string().min(1)).optional()
   })
 );
-var FragmentSchema = z6.strictObject({
+var FragmentSchema = z10.strictObject({
   id: FragmentIdSchema,
   /** false 时可以运行，但不能被其他 Creation 当作 override 目标。 */
-  stable: z6.boolean(),
+  stable: z10.boolean(),
   kind: FragmentKindSchema,
+  description: LocalizedTextSchema.optional(),
+  selectable: z10.boolean().optional(),
+  outward: z10.boolean().optional(),
+  perspective: z10.union([
+    z10.enum(["canon", "rumor"]),
+    z10.strictObject({ claim: SpeakerRefSchema }),
+    z10.strictObject({ belief: SpeakerRefSchema })
+  ]).optional(),
+  about: z10.array(z10.string().min(1)).optional(),
+  source: z10.strictObject({ use: z10.string().min(1) }).optional(),
   content: FragmentContentSchema,
   locale: LocaleMapSchema.optional(),
   /** 缺省为 always。 */
@@ -315963,171 +316376,223 @@ var FragmentSchema = z6.strictObject({
   importance: ImportanceSchema.optional(),
   /** 只是放置位置的提示，缺省等于 kind。 */
   placement_hint: FragmentKindSchema.optional(),
-  asset_refs: z6.array(AssetRefSchema).optional(),
+  asset_refs: z10.array(AssetRefSchema).optional(),
   /** 去掉 digest 字段后的 canonical 序列化的 sha256；输入时可省略，canonicalize 会计算。 */
-  digest: DigestSchema.optional()
+  digest: DigestSchema2.optional()
 });
-var SlotDeclSchema = z6.strictObject({
-  accepts: z6.union([CreationTypeSchema, z6.array(CreationTypeSchema).min(1)]),
+var SlotDeclSchema = z10.strictObject({
+  accepts: z10.union([CreationTypeSchema, z10.array(CreationTypeSchema).min(1)]),
   /** 缺省为 true。 */
-  required: z6.boolean().optional(),
+  required: z10.boolean().optional(),
   description: LocalizedTextSchema.optional()
 });
-var ParamDeclSchema = z6.strictObject({
-  type: z6.enum(["string", "number", "boolean"]),
+var ParamDeclSchema = z10.strictObject({
+  type: z10.enum(["string", "number", "boolean"]),
   default: ScalarValueSchema.optional(),
   description: LocalizedTextSchema.optional()
 });
-var LateBindingSchema = z6.strictObject({
-  late: z6.enum(["persona", "character"]),
-  hint: z6.string().optional()
+var LateBindingSchema = z10.strictObject({
+  late: z10.enum(["persona", "character"]),
+  hint: z10.string().optional()
 });
-var BindingSchema = z6.union([
-  z6.literal("{{self}}"),
-  z6.string().regex(new RegExp(`^\\{\\{cast:${CAST_KEY_RE.source.slice(1, -1)}\\}\\}$`)),
+var BindingSchema = z10.union([
+  z10.literal("{{self}}"),
+  z10.string().regex(new RegExp(`^\\{\\{cast:${CAST_KEY_RE.source.slice(1, -1)}\\}\\}$`)),
   CreationRefSchema,
   LocalRefSchema,
   LateBindingSchema
 ]);
-var FragmentPatternSchema = z6.string().regex(new RegExp(`^(?:${FRAGMENT_ID_RE.source.slice(1, -1)})(?:/\\*)?$|^\\*$`));
-var SelectorSchema = z6.union([
-  z6.strictObject({ include: z6.array(FragmentPatternSchema).min(1) }),
-  z6.strictObject({ exclude: z6.array(FragmentPatternSchema).min(1) })
+var FragmentPatternSchema = z10.string().regex(new RegExp(`^(?:${FRAGMENT_ID_RE.source.slice(1, -1)})(?:/\\*)?$|^\\*$`));
+var SelectorSchema = z10.union([
+  z10.strictObject({ include: z10.array(FragmentPatternSchema).min(1) }),
+  z10.strictObject({ exclude: z10.array(FragmentPatternSchema).min(1) })
 ]);
-var FragmentPatchSchema = z6.strictObject({
+var FragmentPatchSchema = z10.strictObject({
+  description: LocalizedTextSchema.optional(),
+  selectable: z10.boolean().optional(),
+  outward: z10.boolean().optional(),
   activation: ActivationSchema.optional(),
   visibility: VisibilitySchema.optional(),
   importance: ImportanceSchema.optional(),
   placement_hint: FragmentKindSchema.optional()
 }).refine((p) => Object.keys(p).length > 0, "patch must set at least one field");
-var FragmentOverrideSchema = z6.discriminatedUnion("op", [
-  z6.strictObject({
-    op: z6.literal("replace"),
+var FragmentOverrideSchema = z10.discriminatedUnion("op", [
+  z10.strictObject({
+    op: z10.literal("replace"),
     target: FragmentIdSchema,
     content: FragmentContentSchema,
     /** 缺省为 false。 */
-    force: z6.boolean().optional()
+    force: z10.boolean().optional()
   }),
-  z6.strictObject({
-    op: z6.literal("remove"),
+  z10.strictObject({
+    op: z10.literal("remove"),
     target: FragmentIdSchema,
-    force: z6.boolean().optional()
+    force: z10.boolean().optional()
   }),
-  z6.strictObject({ op: z6.literal("patch"), target: FragmentIdSchema, set: FragmentPatchSchema }),
+  z10.strictObject({ op: z10.literal("patch"), target: FragmentIdSchema, set: FragmentPatchSchema }),
   /** 在被引用 Creation 的语境中追加一个 fragment。 */
-  z6.strictObject({ op: z6.literal("add"), fragment: FragmentSchema })
+  z10.strictObject({ op: z10.literal("add"), fragment: FragmentSchema })
 ]);
-var ReleasePinSchema = z6.union([
+var ReleasePinSchema = z10.union([
   /** 只允许出现在草稿中；发布时必须解析成精确的 Release。 */
-  z6.strictObject({ follow: z6.literal("latest") }),
-  z6.strictObject({ release: ReleaseIdSchema, semantic_digest: DigestSchema })
+  z10.strictObject({ follow: z10.literal("latest") }),
+  z10.strictObject({ release: ReleaseIdSchema, semantic_digest: DigestSchema2 })
 ]);
-var ReferenceEdgeSchema = z6.strictObject({
+var ReferenceEdgeSchema = z10.strictObject({
   /** edge 在本 Creation 内的稳定 ID，参与实例 key 的计算。 */
   id: SegmentSchema,
   /** 只用于展示（lives_in、knows_about……），不改变 resolve 语义。 */
-  rel: z6.string().regex(/^[a-z][a-z0-9_]{0,31}$/).optional(),
-  use: z6.union([CreationRefSchema, LocalRefSchema]),
+  rel: z10.string().regex(/^[a-z][a-z0-9_]{0,31}$/).optional(),
+  use: z10.union([CreationRefSchema, LocalRefSchema]),
   pin: ReleasePinSchema.optional(),
   /** intrinsic：身份的一部分；default：推荐值，Scenario 可以替换。 */
-  mode: z6.enum(["intrinsic", "default"]),
-  bind: z6.record(SlotNameSchema, BindingSchema).optional(),
-  params: z6.record(ParamNameSchema, ScalarValueSchema).optional(),
+  mode: z10.enum(["intrinsic", "default"]),
+  bind: z10.record(SlotNameSchema, BindingSchema).optional(),
+  params: z10.record(ParamNameSchema, ScalarValueSchema).optional(),
   select: SelectorSchema.optional(),
-  override: z6.array(FragmentOverrideSchema).optional()
+  override: z10.array(FragmentOverrideSchema).optional(),
+  scope: z10.union([
+    z10.literal("narration"),
+    z10.strictObject({ scene: SegmentSchema }),
+    z10.strictObject({ cast: CastKeySchema })
+  ]).optional(),
+  combine: z10.enum(["add", "replace"]).optional()
 });
-var GreetingSchema = z6.strictObject({
+var GreetingSchema = z10.strictObject({
   id: SegmentSchema,
   text: TemplateTextSchema,
   /** 其他语言的问候语；内容必须是 text 类型（由 check 规则检查）。 */
   locale: LocaleMapSchema.optional(),
   scenario_hint: LocalizedTextSchema.optional()
 });
-var BootstrapSchema = z6.strictObject({
+var BootstrapSchema = z10.strictObject({
   /** 第一项是默认问候语。 */
-  greetings: z6.array(GreetingSchema).min(1)
+  greetings: z10.array(GreetingSchema).min(1)
 });
-var CreationMetaSchema = z6.strictObject({
-  default_locale: LocaleSchema3,
-  tags: z6.array(z6.string().min(1).max(64)).optional(),
+var CreationMetaSchema = z10.strictObject({
+  default_locale: LocaleSchema,
+  tags: z10.array(z10.string().min(1).max(64)).optional(),
   rating: RatingSchema,
-  content_warnings: z6.array(z6.string().min(1).max(64)).optional(),
-  rights: z6.enum(["original", "fan-work", "licensed"]),
+  content_warnings: z10.array(z10.string().min(1).max(64)).optional(),
+  rights: z10.enum(["original", "fan-work", "licensed"]),
   license: SpdxExpressionSchema,
   /** 只是推荐，不绑定。 */
-  recommended_presets: z6.array(UnversionedRefSchema).optional(),
+  recommended_presets: z10.array(UnversionedRefSchema).optional(),
   /** 缺省为 signed-in。 */
-  contribution_policy: z6.enum(["anyone", "signed-in", "invited", "closed"]).optional()
+  contribution_policy: z10.enum(["anyone", "signed-in", "invited", "closed"]).optional()
 });
-var GuestAuthorSchema = z6.strictObject({
-  guest_id: z6.string().min(1).max(64),
-  display_name: z6.string().min(1).max(128)
+var GuestAuthorSchema = z10.strictObject({
+  guest_id: z10.string().min(1).max(64),
+  display_name: z10.string().min(1).max(128)
 });
-var AttributionAuthorSchema = z6.strictObject({
-  name: z6.string().min(1).max(256),
+var AttributionAuthorSchema = z10.strictObject({
+  name: z10.string().min(1).max(256),
   user: UserIdSchema.optional(),
-  guest_id: z6.string().min(1).max(64).optional(),
+  guest_id: z10.string().min(1).max(64).optional(),
   contribution: ContributionIdSchema.optional()
 });
-var ContributorSchema = z6.strictObject({
-  author: z6.union([UserIdSchema, GuestAuthorSchema]),
+var ContributorSchema = z10.strictObject({
+  client_id: z10.string().min(1).max(256).optional(),
+  author: z10.union([UserIdSchema, GuestAuthorSchema]),
   contribution: ContributionIdSchema.optional()
 });
-var ProvenanceSchema = z6.strictObject({
-  /** 创作来源，只用于展示，不参与 resolve。 */
-  derived_from: z6.array(
-    z6.strictObject({ release: ReleaseIdSchema, relation: z6.enum(["fork", "remix", "import"]) })
-  ).optional(),
-  imported_from: z6.strictObject({
-    format: z6.string().min(1),
-    source_digest: DigestSchema,
+var DerivationSourceSchema = z10.union([
+  z10.strictObject({ release: ReleaseIdSchema, relation: z10.enum(["fork", "remix", "import"]) }),
+  z10.strictObject({
+    release: ReleaseIdSchema,
+    relation: z10.enum(["fork", "remix", "import", "sequel"]),
+    ref: UnversionedRefSchema,
+    semantic_digest: DigestSchema2
+  })
+]);
+var ProvenanceSchema = z10.strictObject({
+  /** OAuth application that created the initial draft; descriptive origin, never authority. */
+  client_id: z10.string().min(1).max(256).optional(),
+  /** Exact sources join the publication closure, without injecting their content graph. */
+  derived_from: z10.array(DerivationSourceSchema).optional(),
+  imported_from: z10.strictObject({
+    format: z10.string().min(1),
+    source_digest: DigestSchema2,
     /** 只记录字段名；原值留在导入原件和 Import Report 中。 */
-    omitted_policy_fields: z6.array(z6.string().min(1)).optional()
+    omitted_policy_fields: z10.array(z10.string().min(1)).optional()
   }).optional(),
   /** 含有对 intrinsic 依赖的强制 override。缺省为 false。 */
-  au: z6.boolean().optional(),
-  contributors: z6.array(ContributorSchema).optional(),
+  au: z10.boolean().optional(),
+  contributors: z10.array(ContributorSchema).optional(),
   /** 缺省为 false。 */
-  authored_by_agent: z6.boolean().optional()
+  authored_by_agent: z10.boolean().optional()
 });
-var CastMemberSchema = z6.strictObject({
+var CastMemberSchema = z10.strictObject({
   key: CastKeySchema,
   who: BindingSchema,
-  role: z6.enum(["lead", "support", "user"]).optional()
+  role: z10.enum(["lead", "support", "user"]).optional(),
+  part: LocalizedTextSchema.optional(),
+  goal: LocalizedTextSchema.optional(),
+  override: z10.array(FragmentOverrideSchema).optional()
 });
-var CreationSchema = z6.strictObject({
+var ContentGroupSchema = z10.strictObject({
+  id: SegmentSchema,
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  entries: z10.array(FragmentIdSchema).optional(),
+  groups: z10.array(SegmentSchema).optional()
+});
+var KnowledgeSourceSchema = z10.strictObject({
+  id: SegmentSchema,
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  asset: SegmentSchema,
+  format: z10.enum(["markdown", "text"]),
+  visibility: z10.strictObject({ scope: z10.literal("shared") }).optional(),
+  sections: z10.array(
+    z10.strictObject({
+      id: SegmentSchema,
+      title: LocalizedTextSchema,
+      anchor: z10.string().min(1),
+      description: LocalizedTextSchema.optional()
+    })
+  ).optional(),
+  origin: z10.strictObject({ title: LocalizedTextSchema.optional(), url: HttpsUrlSchema.optional() }).optional()
+});
+var CreationSchema = z10.strictObject({
   id: CreationIdSchema,
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema,
   summary: LocalizedTextSchema.optional(),
+  description: LocalizedTextSchema.optional(),
+  groups: z10.array(ContentGroupSchema).optional(),
+  sources: z10.array(KnowledgeSourceSchema).optional(),
   /** 可归属的原作者；导入时保留源卡的 creator。 */
-  authors: z6.array(AttributionAuthorSchema).optional(),
-  slots: z6.record(SlotNameSchema, SlotDeclSchema).optional(),
-  params: z6.record(ParamNameSchema, ParamDeclSchema).optional(),
-  fragments: z6.array(FragmentSchema).default([]),
-  references: z6.array(ReferenceEdgeSchema).default([]),
-  assets: z6.array(AssetSlotSchema).default([]),
+  authors: z10.array(AttributionAuthorSchema).optional(),
+  slots: z10.record(SlotNameSchema, SlotDeclSchema).optional(),
+  params: z10.record(ParamNameSchema, ParamDeclSchema).optional(),
+  fragments: z10.array(FragmentSchema).default([]),
+  references: z10.array(ReferenceEdgeSchema).default([]),
+  assets: z10.array(AssetSlotSchema).default([]),
   bootstrap: BootstrapSchema.optional(),
   /** 只在 type 为 scenario 时出现。 */
-  cast: z6.array(CastMemberSchema).optional(),
+  cast: z10.array(CastMemberSchema).optional(),
+  story: StorySchema.optional(),
   /** Preset 的运行策略，与 Creative 内容分开表达。 */
   policy: PresetPolicySchema.optional(),
   prompt_module: PromptModuleSchema.optional(),
   assembly: AssemblyConfigSchema.optional(),
-  assembly_tests: z6.array(AssemblyFixtureSchema).optional(),
+  assembly_tests: z10.array(AssemblyFixtureSchema).optional(),
   meta: CreationMetaSchema,
   provenance: ProvenanceSchema.default({})
 }).superRefine((creation, ctx) => {
   const issue = (path2, message) => ctx.addIssue({ code: "custom", path: path2, message });
+  if (creation.type !== "scenario" && creation.story !== void 0)
+    issue(["story"], "only a scenario may declare story");
   if (creation.type !== "preset" && creation.policy !== void 0)
     issue(["policy"], "only a preset may declare policy");
   if (creation.type !== "prompt-module" && creation.prompt_module !== void 0)
     issue(["prompt_module"], "only a prompt-module may declare prompt_module");
   if (creation.type !== "scenario" && creation.assembly !== void 0)
     issue(["assembly"], "only a scenario may declare assembly");
-  if (creation.assembly_tests?.length && creation.type !== "scenario" && creation.type !== "preset")
-    issue(["assembly_tests"], "assembly tests require a scenario or preset");
+  if (creation.assembly_tests?.length && creation.type === "prompt-module")
+    issue(["assembly_tests"], "assembly tests require Creative content or a preset");
   const testIds = /* @__PURE__ */ new Set();
   creation.assembly_tests?.forEach((test, i) => {
     if (testIds.has(test.id)) issue(["assembly_tests", i, "id"], "duplicate test id");
@@ -316142,7 +316607,15 @@ var CreationSchema = z6.strictObject({
     issue(["policy"], "a preset requires policy");
   if (creation.type === "prompt-module" && creation.prompt_module === void 0)
     issue(["prompt_module"], "a prompt-module requires prompt_module");
-  for (const key of ["fragments", "references", "slots", "params", "cast"]) {
+  for (const key of [
+    "fragments",
+    "references",
+    "slots",
+    "params",
+    "cast",
+    "groups",
+    "sources"
+  ]) {
     const value = creation[key];
     if (value !== void 0 && Object.keys(value).length > 0) {
       issue([key], `a preset cannot declare ${key}`);
@@ -316157,16 +316630,61 @@ var CreationSchema = z6.strictObject({
   });
 });
 
+// ../../packages/core/src/story/limits.ts
+function assertConditionLimits(input, subject = "condition") {
+  const stack = [{ value: input, depth: 1 }];
+  let count = 0;
+  while (stack.length) {
+    const entry = stack.pop();
+    if (!entry) break;
+    if (++count > 512 || entry.depth > 32)
+      throw new CharError({ code: "story.condition_limit", subject });
+    const value = entry.value;
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    if ("not" in value) stack.push({ value: value.not, depth: entry.depth + 1 });
+    const children = "all" in value ? value.all : "any" in value ? value.any : void 0;
+    if (!Array.isArray(children)) continue;
+    if (children.length + count > 512)
+      throw new CharError({ code: "story.condition_limit", subject });
+    for (const child of children) stack.push({ value: child, depth: entry.depth + 1 });
+  }
+}
+function assertStoryLimits(input) {
+  if (!input || typeof input !== "object") return;
+  for (const key of ["scenes", "beats", "endings", "events", "choices"]) {
+    const items = Reflect.get(input, key);
+    if (!Array.isArray(items)) continue;
+    items.forEach((item, index) => {
+      if (item && typeof item === "object" && "when" in item)
+        assertConditionLimits(item.when, `story.${key}[${index}].when`);
+    });
+  }
+}
+
 // ../../packages/core/src/canonical.ts
 var TRAILING_WS = /[ \t]+$/gm;
 function normalizeText(s) {
   return s.normalize("NFC").replace(/\r\n?/g, "\n").replace(TRAILING_WS, "");
 }
 function normalizeValue(value, path2 = "$") {
+  return normalizeValueAt(value, path2, "prose");
+}
+function normalizeCreationValue(value) {
+  return normalizeValueAt(value, "$", "creation");
+}
+function childScope(scope, key) {
+  if (scope === "turn-snapshot") return "turn-snapshot";
+  if (scope === "creation" && key === "assembly_tests") return "assembly-tests";
+  if (scope === "fixture" && key === "source_texts") return "source-texts";
+  if (scope === "fixture" && key === "session") return "turn-snapshot";
+  if (scope === "source-texts") return "source-body";
+  return "prose";
+}
+function normalizeValueAt(value, path2, scope) {
   if (value === null) return null;
   switch (typeof value) {
     case "string":
-      return normalizeText(value);
+      return scope === "source-body" || scope === "turn-snapshot" ? value : normalizeText(value);
     case "boolean":
       return value;
     case "number":
@@ -316180,7 +316698,11 @@ function normalizeValue(value, path2 = "$") {
           if (v === void 0) {
             throw new CharError({ code: "canonical.undefined_in_array", subject: `${path2}[${i}]` });
           }
-          return normalizeValue(v, `${path2}[${i}]`);
+          return normalizeValueAt(
+            v,
+            `${path2}[${i}]`,
+            scope === "assembly-tests" ? "fixture" : scope === "turn-snapshot" ? "turn-snapshot" : "prose"
+          );
         });
       }
       const proto = Object.getPrototypeOf(value);
@@ -316190,7 +316712,7 @@ function normalizeValue(value, path2 = "$") {
       const out = {};
       for (const [k, v] of Object.entries(value)) {
         if (v === void 0) continue;
-        const key = k.normalize("NFC");
+        const key = scope === "turn-snapshot" ? k : k.normalize("NFC");
         if (Object.hasOwn(out, key)) {
           throw new CharError({
             code: "canonical.duplicate_key",
@@ -316198,7 +316720,15 @@ function normalizeValue(value, path2 = "$") {
             detail: "two keys collapse to the same NFC form"
           });
         }
-        out[key] = normalizeValue(v, `${path2}.${key}`);
+        const normalized = normalizeValueAt(v, `${path2}.${key}`, childScope(scope, key));
+        if (scope === "turn-snapshot")
+          Object.defineProperty(out, key, {
+            value: normalized,
+            enumerable: true,
+            configurable: true,
+            writable: true
+          });
+        else out[key] = normalized;
       }
       return out;
     }
@@ -316215,8 +316745,11 @@ function jcs(value) {
   if (out === void 0) throw new CharError({ code: "canonical.unserializable", subject: "$" });
   return out;
 }
-function sha256Hex(text) {
-  return bytesToHex(sha256(utf8ToBytes(text)));
+function sha256Hex(text2) {
+  return bytesToHex(sha256(utf8ToBytes(text2)));
+}
+function sha256Bytes(bytes) {
+  return `sha256:${bytesToHex(sha256(bytes))}`;
 }
 function digestJson(value) {
   return `sha256:${sha256Hex(jcs(value))}`;
@@ -316266,7 +316799,10 @@ function canonicalFragmentBody(f) {
   let out = { ...f, content: canonicalContent(f.content) };
   if (out.locale) out.locale = canonicalLocaleMap(out.locale);
   if (out.activation) out.activation = canonicalActivation(out.activation);
-  out = compact(out, ["locale", "asset_refs"]);
+  out = compact(out, ["locale", "asset_refs", "about"]);
+  out = omitIf(out, "outward", (v) => v === false);
+  out = omitIf(out, "selectable", (v) => v === false);
+  out = omitIf(out, "perspective", (v) => v === "canon");
   out = omitIf(out, "activation", (a) => a.mode === "always");
   out = omitIf(out, "visibility", (v) => v.scope === "shared");
   out = omitIf(out, "importance", (v) => v === "normal");
@@ -316318,12 +316854,21 @@ function canonicalGreeting(g) {
   return compact(out, ["locale"]);
 }
 function canonicalPolicy(policy) {
+  const selection = { ...policy.selection };
+  if (selection.max_depth === 4) delete selection.max_depth;
+  if (selection.on_unavailable === "skip") delete selection.on_unavailable;
   return compact(
     {
       ...policy,
-      blocks: policy.blocks.map((block) => omitIf({ ...block }, "enabled", (value) => value))
+      blocks: policy.blocks.map((block) => omitIf({ ...block }, "enabled", (value) => value)),
+      ...policy.placements ? {
+        placements: policy.placements.map(
+          (placement) => omitIf({ ...placement }, "as", (alias) => alias === placement.at)
+        )
+      } : {},
+      ...policy.selection ? { selection } : {}
     },
-    ["region_budgets", "imports"]
+    ["region_budgets", "imports", "placements", "selection", "render"]
   );
 }
 function canonicalPromptModule(module) {
@@ -316366,15 +316911,18 @@ function stripCreationDefaults(c) {
     "assets",
     "cast",
     "provenance",
-    "assembly_tests"
+    "assembly_tests",
+    "groups",
+    "sources"
   ]);
-  return normalizeValue(out);
+  return normalizeCreationValue(out);
 }
 function formatIssues(err) {
   return err.issues.slice(0, 5).map((i) => `${i.path.join(".") || "$"}: ${i.message}`).join("; ");
 }
 function canonicalizeCreation(input) {
-  const normalized = normalizeValue(input);
+  if (input && typeof input === "object" && "story" in input) assertStoryLimits(input.story);
+  const normalized = normalizeCreationValue(input);
   const parsed = CreationSchema.safeParse(normalized);
   if (!parsed.success) {
     throw new CharError({
@@ -316405,9 +316953,20 @@ function canonicalizeCreation(input) {
   }
   if (c.policy) creation.policy = canonicalPolicy(c.policy);
   if (c.prompt_module) creation.prompt_module = canonicalPromptModule(c.prompt_module);
+  if (c.cast) {
+    creation.cast = c.cast.map(
+      (member) => compact(
+        {
+          ...member,
+          ...member.override ? { override: member.override.map(canonicalOverride) } : {}
+        },
+        ["override"]
+      )
+    );
+  }
   const json = stripCreationDefaults(creation);
   const { fragments: _f, ...rest } = json;
-  const manifest = normalizeValue({
+  const manifest = normalizeCreationValue({
     ...rest,
     fragment_digests: creation.fragments.map((f) => [f.id, f.digest])
   });
@@ -316416,10 +316975,888 @@ function canonicalizeCreation(input) {
 function digestOf(value) {
   return digestJson(normalizeValue(value));
 }
+function digestExactJSON(value) {
+  return digestJson(normalizeValueAt(value, "$", "turn-snapshot"));
+}
+
+// ../../packages/core/src/capabilities.ts
+import { z as z12 } from "./vendor/zod.js";
+
+// ../../packages/core/src/schema/capabilities.ts
+import { z as z11 } from "./vendor/zod.js";
+var CapabilitySchema = z11.strictObject({
+  id: z11.string().min(1),
+  experimental: z11.literal(true).optional()
+});
+var CapabilitiesSchema = z11.array(CapabilitySchema).superRefine((items, ctx) => {
+  for (let i = 1; i < items.length; i++) {
+    const before = items[i - 1];
+    const after = items[i];
+    if (before && after && before.id >= after.id)
+      ctx.addIssue({
+        code: "custom",
+        path: [i, "id"],
+        message: "capability IDs must be unique and sorted"
+      });
+  }
+});
+
+// ../../packages/core/src/capabilities.ts
+function deriveCapabilities(artifact) {
+  const required = /* @__PURE__ */ new Map();
+  const add = (id2, experimental = false) => required.set(id2, { id: id2, ...experimental ? { experimental: true } : {} });
+  if (artifact.kind !== "content") return [{ id: "policy.1-draft" }];
+  if (artifact.assembly || artifact.default_policy) add("policy.1-draft");
+  const { ir, catalog_index: catalog, story } = artifact;
+  if (catalog.groups.length || catalog.about?.length || catalog.works.some((work) => work.description !== void 0) || ir.fragments.some(
+    (fragment2) => fragment2.description !== void 0 || fragment2.selectable !== void 0
+  ))
+    add("catalog.v1");
+  if (catalog.sources.length) add("sources.v1");
+  for (const fragment2 of ir.fragments) {
+    if (fragment2.perspective !== void 0 && fragment2.perspective !== "canon")
+      add("perspective.v1");
+    if (fragment2.outward === true) add("view.outward");
+    if (fragment2.style_scope !== void 0 && fragment2.style_scope !== "narration" || fragment2.style_use?.combine === "replace" || fragment2.style_use?.path?.some((use) => use.combine === "replace"))
+      add("style.scope");
+    if (fragment2.origin.overridden_by?.some((origin) => origin.cast !== void 0))
+      add("cast.override");
+  }
+  if (ir.graph.removed.some(
+    (fragment2) => fragment2.by.reason === "override" && fragment2.by.cast !== void 0
+  ))
+    add("cast.override");
+  if (story) {
+    add("story.v1");
+    if (Object.keys(story.vars ?? {}).length || story.starts?.some((start) => start.reached?.length))
+      add("story.conditions", true);
+    if (Object.keys(story.knowing ?? {}).length) add("story.knowing", true);
+    if (story.items?.length) add("story.items", true);
+    if (story.events?.length || story.timelines?.length) add("story.events", true);
+    const condition = (node) => {
+      const pending = [node];
+      while (pending.length) {
+        const next = pending.pop();
+        if (!next) continue;
+        if ("judge" in next) add("story.judge", true);
+        else {
+          add("story.conditions", true);
+          if ("knows" in next) add("story.knowing", true);
+          if ("all" in next) pending.push(...next.all);
+          else if ("any" in next) pending.push(...next.any);
+          else if ("not" in next) pending.push(next.not);
+        }
+      }
+    };
+    const effect = (nodes) => {
+      if (nodes.length) add("story.conditions", true);
+      if (nodes.some((node) => "learn" in node)) add("story.knowing", true);
+    };
+    for (const node of [
+      ...story.scenes,
+      ...story.beats ?? [],
+      ...story.endings ?? [],
+      ...story.events ?? [],
+      ...story.choices ?? []
+    ]) {
+      if (node.when) condition(node.when);
+      if ("effects" in node && node.effects) effect(node.effects);
+    }
+    for (const start of story.starts ?? []) if (start.set) effect(start.set);
+  }
+  return [...required.values()].sort((a, b) => compareStrings(a.id, b.id));
+}
+var RuntimeCapabilitySupportSchema = z12.strictObject({
+  supported: z12.array(z12.string().min(1)),
+  /** The caller owns these degradation policies; Core only carries their explanations. */
+  degraded: z12.array(z12.strictObject({ id: z12.string().min(1), reason: z12.string().trim().min(1) })).optional()
+}).superRefine((value, ctx) => {
+  const seen = new Set(value.supported);
+  if (seen.size !== value.supported.length)
+    ctx.addIssue({
+      code: "custom",
+      path: ["supported"],
+      message: "duplicate supported capability"
+    });
+  for (const [index, item] of (value.degraded ?? []).entries()) {
+    if (seen.has(item.id))
+      ctx.addIssue({
+        code: "custom",
+        path: ["degraded", index, "id"],
+        message: "capability already classified"
+      });
+    seen.add(item.id);
+  }
+});
+
+// ../../packages/core/src/keys.ts
+var ROOT_INSTANCE = "root";
+var SELF_PARTICIPANT = "self";
+var USER_PARTICIPANT = "user";
+var USER_LATE_SLOT = "user";
+function instanceKey(via) {
+  return via.length === 0 ? ROOT_INSTANCE : sha256Hex(jcs([...via]));
+}
+function participantKey(instance, slotOrCast) {
+  return `p:${sha256Hex(jcs([instance, slotOrCast]))}`;
+}
+function lateSlotKey(instance, slot) {
+  return `l:${sha256Hex(jcs([instance, slot]))}`;
+}
+function participantRef(key) {
+  return `participant:${key}`;
+}
+function irFragmentId(ref, fragmentId, instance) {
+  return `${ref}#${fragmentId}~${instance}`;
+}
+function irAssetId(ref, slot, variant, instance) {
+  return `${ref}#asset/${slot}/${variant}~${instance}`;
+}
+function irFragmentDigest(f) {
+  const body = {
+    kind: f.kind,
+    content: f.content,
+    activation: f.activation,
+    visibility: f.visibility,
+    importance: f.importance,
+    placement_hint: f.placement_hint
+  };
+  if (f.locales !== void 0) body.locales = f.locales;
+  if (f.subject !== void 0) body.subject = f.subject;
+  if (f.asset_refs !== void 0) body.asset_refs = f.asset_refs;
+  for (const key of [
+    "description",
+    "selectable",
+    "outward",
+    "perspective",
+    "about",
+    "source",
+    "instance",
+    "style_scope",
+    "style_use"
+  ]) {
+    const value = f[key];
+    if (value !== void 0) body[key] = value;
+  }
+  return digestJson(body);
+}
+
+// ../../packages/core/src/catalog-index.ts
+function buildCatalogIndex(ir, creations) {
+  const index = { works: [], groups: [], sources: [] };
+  for (const instance of ir.graph.instances) {
+    const creation = creations.get(instance.ref);
+    if (!creation) throw new CharError({ code: "catalog.creation_missing", subject: instance.ref });
+    const owner = `${instance.ref}~${instance.key}`;
+    const groupId = (id2) => `${instance.ref}#group/${id2}~${instance.key}`;
+    const sourceId = (id2) => `${instance.ref}#source/${id2}~${instance.key}`;
+    const fragments = ir.fragments.filter((f) => f.origin.instance_key === instance.key);
+    const grouped = new Set((creation.groups ?? []).flatMap((g) => g.entries ?? []));
+    const nested = new Set((creation.groups ?? []).flatMap((g) => g.groups ?? []));
+    const description = creation.description ?? creation.summary;
+    index.works.push({
+      id: owner,
+      ref: instance.ref,
+      instance: instance.key,
+      title: creation.display_name,
+      ...description ? { description } : {},
+      fragments: fragments.filter((f) => !grouped.has(f.origin.fragment)).map((f) => f.id),
+      groups: (creation.groups ?? []).filter((g) => !nested.has(g.id)).map((g) => groupId(g.id)),
+      sources: (creation.sources ?? []).map((s) => sourceId(s.id))
+    });
+    for (const group of creation.groups ?? [])
+      index.groups.push({
+        id: groupId(group.id),
+        owner,
+        local_id: group.id,
+        title: group.title,
+        description: group.description,
+        // Selection/overrides may remove an authored entry from this instance.
+        entries: (group.entries ?? []).flatMap(
+          (id2) => fragments.filter((f) => f.origin.fragment === id2).map((f) => f.id)
+        ),
+        groups: (group.groups ?? []).map(groupId)
+      });
+    for (const source of creation.sources ?? []) {
+      const asset = irAssetId(instance.ref, source.asset, "default", instance.key);
+      if (!ir.assets.some((a) => a.id === asset && a.role === "context"))
+        throw new CharError({ code: "catalog.source_asset_missing", subject: source.id });
+      index.sources.push({
+        id: sourceId(source.id),
+        owner,
+        local_id: source.id,
+        title: source.title,
+        description: source.description,
+        format: source.format,
+        asset,
+        shared: source.visibility?.scope === "shared",
+        sections: source.sections ?? []
+      });
+    }
+  }
+  const about = [];
+  for (const fragment2 of ir.fragments)
+    for (const ref of fragment2.about ?? [])
+      about.push({
+        from: fragment2.id,
+        ref,
+        target: resolveAboutReference(ref, ir, index, fragment2.origin.instance_key)
+      });
+  if (about.length) index.about = about;
+  return index;
+}
+function catalogScopeInstances(ir, instance) {
+  const children = /* @__PURE__ */ new Map();
+  for (const edge of [...ir.graph.edges, ...ir.graph.cast_edges ?? []]) {
+    const targets = children.get(edge.from_instance) ?? [];
+    targets.push(edge.to_instance);
+    children.set(edge.from_instance, targets);
+  }
+  const reachable = /* @__PURE__ */ new Set();
+  const pending = [instance];
+  while (pending.length) {
+    const key = pending.pop();
+    if (key === void 0 || reachable.has(key)) continue;
+    reachable.add(key);
+    pending.push(...children.get(key) ?? []);
+  }
+  return reachable;
+}
+function resolveAboutReference(ref, ir, index, instance = "root") {
+  if (ref.includes("#")) {
+    const target3 = resolveCatalogReference(ref, ir, index, instance, "fragment");
+    if ("fragment" in target3) return target3;
+  }
+  const candidates = [];
+  if (ref.startsWith("cast:")) {
+    for (const participant of ir.participants)
+      if (participant.cast_scope === instance && participant.cast_key === ref.slice(5))
+        candidates.push({ participant: participant.key });
+  } else {
+    const scope = catalogScopeInstances(ir, instance);
+    for (const work of index.works)
+      if (work.ref === ref && scope.has(work.instance)) candidates.push({ work: work.id });
+  }
+  const target2 = candidates[0];
+  if (candidates.length !== 1 || !target2)
+    throw new CharError({
+      code: candidates.length ? "catalog.ambiguous_about" : "catalog.about_missing",
+      subject: ref,
+      detail: "Association must name one fragment, cast participant, or work in its declaring scope"
+    });
+  return target2;
+}
+function resolveCatalogReference(ref, ir, index, instance = "root", kind = "content") {
+  const scope = catalogScopeInstances(ir, instance);
+  let owners = index.works.filter(
+    (work) => ref.startsWith("#") ? work.instance === instance : scope.has(work.instance) && ref.startsWith(`${work.ref}#`)
+  );
+  const hash = ref.indexOf("#");
+  const local = ref.slice(hash + 1);
+  if (ref.startsWith("cast:")) {
+    const cast = ref.slice(5, hash);
+    const instances = new Set(
+      ir.graph.instances.filter((item) => item.cast?.key === cast && item.cast.scope === instance).map((item) => item.key)
+    );
+    owners = index.works.filter((work) => instances.has(work.instance));
+  }
+  const candidates = [];
+  for (const owner of owners) {
+    if (kind !== "source")
+      for (const fragment2 of ir.fragments) {
+        if (fragment2.origin.instance_key === owner.instance && fragment2.origin.fragment === local)
+          candidates.push({ fragment: fragment2.id });
+      }
+    if (kind === "fragment") continue;
+    if (kind === "content")
+      for (const group of index.groups) {
+        if (group.owner === owner.id && (local === group.local_id || local === `group/${group.local_id}`))
+          candidates.push({ group: group.id });
+      }
+    for (const source of index.sources) {
+      if (source.owner !== owner.id) continue;
+      const alias = local.startsWith("source/") ? local.slice(7) : local;
+      if (alias === source.local_id) candidates.push({ source: source.id });
+      else
+        for (const section of source.sections) {
+          if (alias === `${source.local_id}/${section.id}`)
+            candidates.push({ source: source.id, section: section.id });
+        }
+    }
+  }
+  if (candidates.length !== 1)
+    throw new CharError({
+      code: candidates.length ? "story.ambiguous_information" : "story.information_missing",
+      subject: ref,
+      detail: "Reference must resolve to one published content instance"
+    });
+  const result = candidates[0];
+  if (!result) throw new CharError({ code: "story.information_missing", subject: ref });
+  return result;
+}
+
+// ../../packages/core/src/content-check.ts
+function checkContentCollections(creation) {
+  const diagnostics = [];
+  const error = (code, subject, detail) => {
+    diagnostics.push({ code, subject, severity: "error", detail });
+  };
+  const description = (text2, limit, at) => {
+    if (text2 === void 0) return;
+    for (const value of typeof text2 === "string" ? [text2] : Object.values(text2))
+      if (!value.trim() || Array.from(value).length > limit)
+        error(
+          "check.description_length",
+          at,
+          `Description must contain 1\u2013${limit} Unicode characters`
+        );
+  };
+  description(creation.description, 300, "description");
+  const groups = new Map((creation.groups ?? []).map((group) => [group.id, group]));
+  if (groups.size !== creation.groups?.length && creation.groups)
+    error("check.duplicate_group", "groups", "Group IDs must be unique");
+  const fragments = new Set(creation.fragments.map((f) => f.id));
+  for (const group of groups.values()) {
+    const at = `groups[${group.id}]`;
+    description(group.description, 200, `${at}.description`);
+    for (const id2 of group.entries ?? [])
+      if (!fragments.has(id2)) error("check.group_entry_missing", at, `Unknown fragment '${id2}'`);
+    for (const id2 of group.groups ?? [])
+      if (!groups.has(id2)) error("check.group_missing", at, `Unknown group '${id2}'`);
+    const pending = [{ id: group.id, path: [] }];
+    while (pending.length) {
+      const item = pending.pop();
+      if (!item) break;
+      if (item.path.includes(item.id)) {
+        error("check.group_cycle", at, `Group cycle at '${item.id}'`);
+        break;
+      }
+      if (item.path.length >= 3) {
+        error("check.group_depth", at, "At most three group levels are supported");
+        break;
+      }
+      const child = groups.get(item.id);
+      for (const id2 of child?.groups ?? []) pending.push({ id: id2, path: [...item.path, item.id] });
+    }
+  }
+  if (creation.sources?.length && !["world", "lorebook", "character", "scenario"].includes(creation.type))
+    error(
+      "check.sources_not_allowed",
+      "sources",
+      "This creation type cannot declare knowledge sources"
+    );
+  const sources = /* @__PURE__ */ new Set();
+  for (const source of creation.sources ?? []) {
+    const at = `sources[${source.id}]`;
+    if (sources.has(source.id)) error("check.duplicate_source", at, "Source IDs must be unique");
+    sources.add(source.id);
+    description(source.description, 200, `${at}.description`);
+    const asset = creation.assets.find((a) => a.slot === source.asset);
+    if (asset?.role !== "context")
+      error("check.source_asset", `${at}.asset`, "Source needs a context asset");
+    const defaultVariant = asset?.variants.find((v) => v.id === "default");
+    const expected = source.format === "markdown" ? ["text/markdown", "text/plain"] : ["text/plain"];
+    if (defaultVariant && defaultVariant.blob.availability !== "mirrored")
+      error(
+        "check.source_not_mirrored",
+        at,
+        "Source text must be stored so publication can verify its anchors"
+      );
+    if (defaultVariant && !expected.includes(defaultVariant.media_type))
+      error("check.source_media_type", at, "Source format must match the text asset");
+    const sections = /* @__PURE__ */ new Set();
+    for (const section of source.sections ?? []) {
+      const sat = `${at}.sections[${section.id}]`;
+      if (sections.has(section.id))
+        error("check.duplicate_source_section", sat, "Section IDs must be unique");
+      sections.add(section.id);
+      description(section.description, 200, `${sat}.description`);
+      if (source.format === "text") {
+        const match = /^L([1-9][0-9]*)-L([1-9][0-9]*)$/.exec(section.anchor);
+        if (!match || Number(match[1]) > Number(match[2]) || !Number.isSafeInteger(Number(match[2])))
+          error("check.source_anchor", sat, "Text section needs an inclusive Lstart-Lend range");
+      } else if (!section.anchor.startsWith("#") || section.anchor.length < 2)
+        error("check.source_anchor", sat, "Markdown section needs a heading anchor");
+    }
+  }
+  return diagnostics;
+}
+function checkLocalContentReferences(creation) {
+  const diagnostics = [];
+  const list = (value) => Array.isArray(value) ? value.filter((item) => item != null) : [];
+  const fragments = list(creation.fragments);
+  const groups = list(creation.groups);
+  const sources = list(creation.sources);
+  const cast = list(creation.cast);
+  const problem = (subject, ref) => diagnostics.push({
+    code: "check.local_reference",
+    subject,
+    severity: "error",
+    detail: `Unknown or ambiguous local content reference '${ref}'`
+  });
+  const check = (ref, subject, kind = "content") => {
+    if (typeof ref !== "string") return;
+    if (ref.startsWith("cast:")) {
+      const key = ref.slice(5).split("#")[0];
+      if (!cast.some((member) => member.key === key)) problem(subject, ref);
+      return;
+    }
+    const localRef = creation.ref && ref.startsWith(`${creation.ref}#`) ? ref.slice(creation.ref.length) : ref;
+    if (!localRef.startsWith("#")) return;
+    const local = localRef.slice(1);
+    let matches2 = 0;
+    if (kind !== "source") matches2 += fragments.filter((fragment2) => fragment2.id === local).length;
+    if (kind === "content")
+      matches2 += groups.filter(
+        (group) => group.id !== void 0 && (local === group.id || local === `group/${group.id}`)
+      ).length;
+    if (kind !== "fragment") {
+      const alias = local.startsWith("source/") ? local.slice(7) : local;
+      for (const source of sources) {
+        if (!source.id) continue;
+        if (alias === source.id) matches2++;
+        else
+          matches2 += list(source.sections).filter(
+            (section) => section.id !== void 0 && alias === `${source.id}/${section.id}`
+          ).length;
+      }
+    }
+    if (matches2 !== 1) problem(subject, ref);
+  };
+  for (const [i, fragment2] of fragments.entries()) {
+    const at = `fragments[${fragment2.id ?? i}]`;
+    if (fragment2.source) check(fragment2.source.use, `${at}.source`, "source");
+    for (const ref of list(fragment2.about)) check(ref, `${at}.about`, "fragment");
+  }
+  const story = creation.story;
+  if (!story) return diagnostics;
+  for (const [collection, objects] of [
+    ["scenes", story.scenes],
+    ["items", story.items],
+    ["events", story.events]
+  ])
+    for (const [i, object] of list(objects).entries()) {
+      const at = `story.${collection}[${object.id ?? i}]`;
+      for (const ref of list(object.lore)) check(ref, `${at}.lore`);
+      check(object.place, `${at}.place`, "fragment");
+      check(object.truth, `${at}.truth`, "fragment");
+    }
+  for (const ref of Object.keys(story.knowing ?? {}))
+    check(ref, `story.knowing[${ref}]`, "fragment");
+  const condition = (value, path2) => {
+    const queue = value ? [{ value, path: path2 }] : [];
+    const ancestors = /* @__PURE__ */ new Set();
+    while (queue.length) {
+      const current = queue.pop();
+      if (!current?.value || typeof current.value !== "object") continue;
+      if (current.exit) {
+        ancestors.delete(current.value);
+        continue;
+      }
+      if (ancestors.has(current.value)) continue;
+      ancestors.add(current.value);
+      queue.push({ ...current, exit: true });
+      const node = current.value;
+      if ("knows" in node) check(node.knows?.info, `${current.path}.knows.info`, "fragment");
+      else if ("not" in node) queue.push({ value: node.not, path: `${current.path}.not` });
+      else if ("all" in node || "any" in node) {
+        const op = "all" in node ? "all" : "any";
+        const children = "all" in node ? node.all : node.any;
+        const values = Array.isArray(children) ? children : [];
+        for (let index = values.length - 1; index >= 0; index--) {
+          const child = values[index];
+          if (child) queue.push({ value: child, path: `${current.path}.${op}[${index}]` });
+        }
+      }
+    }
+  };
+  for (const [collection, objects] of [
+    ["scenes", story.scenes],
+    ["beats", story.beats],
+    ["endings", story.endings],
+    ["choices", story.choices],
+    ["events", story.events],
+    ["starts", story.starts]
+  ])
+    for (const [i, object] of list(objects).entries()) {
+      const at = `story.${collection}[${object.id ?? i}]`;
+      condition(object.when, `${at}.when`);
+      const effects2 = object.effects ?? object.set;
+      list(effects2).forEach((effect, index) => {
+        if (typeof effect === "object" && "learn" in effect)
+          check(effect.learn?.info, `${at}.effects[${index}].learn`, "fragment");
+      });
+    }
+  return diagnostics;
+}
+
+// ../../packages/core/src/story/check.ts
+function constantComparison(min, max, op, right) {
+  if (min > max) return void 0;
+  switch (op) {
+    case "=":
+      return right < min || right > max ? false : min === max ? true : void 0;
+    case "!=":
+      return right < min || right > max ? true : min === max ? false : void 0;
+    case "<":
+      return max < right ? true : min >= right ? false : void 0;
+    case "<=":
+      return max <= right ? true : min > right ? false : void 0;
+    case ">":
+      return min > right ? true : max <= right ? false : void 0;
+    case ">=":
+      return min >= right ? true : max < right ? false : void 0;
+  }
+}
+function setElement(variable2, value) {
+  return variable2.type === "set" && variable2.of === "item" && value.startsWith("item/") ? value.slice(5) : value;
+}
+function validStoryValue(story, variable2, value) {
+  switch (variable2.type) {
+    case "bool":
+      return typeof value === "boolean";
+    case "int":
+      return typeof value === "number" && Number.isInteger(value) && value >= variable2.min && value <= variable2.max;
+    case "enum":
+      return typeof value === "string" && variable2.values.includes(value);
+    case "set": {
+      const allowed = variable2.of === "item" ? (story.items ?? []).map((i) => i.id) : variable2.values ?? [];
+      return Array.isArray(value) && new Set(value).size === value.length && value.every((v) => allowed.includes(v));
+    }
+  }
+}
+function controlledInformation(story) {
+  const refs = new Set(Object.keys(story.knowing ?? {}));
+  const effects2 = [
+    ...(story.beats ?? []).flatMap((b) => b.effects ?? []),
+    ...(story.endings ?? []).flatMap((b) => b.effects ?? []),
+    ...(story.events ?? []).flatMap((b) => b.effects ?? []),
+    ...(story.starts ?? []).flatMap((b) => b.set ?? [])
+  ];
+  for (const effect of effects2) if ("learn" in effect) refs.add(effect.learn.info);
+  return refs;
+}
+function alternatives(values) {
+  const sorted = [...new Set(values)].sort();
+  return sorted.slice(0, 5).map((value) => `'${value}'`).join(", ") + (sorted.length > 5 ? ", \u2026" : "");
+}
+function valueSuggestion(story, variable2) {
+  switch (variable2.type) {
+    case "bool":
+      return "Use true or false.";
+    case "int":
+      return variable2.min > variable2.max ? "Set min no greater than max, then choose an initial integer within those bounds." : `Use an integer from ${variable2.min} to ${variable2.max}.`;
+    case "enum":
+      return `Choose one declared value: ${alternatives(variable2.values)}.`;
+    case "set": {
+      const allowed = variable2.of === "item" ? (story.items ?? []).map((item) => item.id) : variable2.values ?? [];
+      return allowed.length ? `Use declared ${variable2.of === "item" ? "item IDs" : "set values"}: ${alternatives(allowed)}; a set must not repeat values.` : `Declare ${variable2.of === "item" ? "an Item" : "allowed set values"} before adding an element, or use an empty set.`;
+    }
+  }
+}
+function checkStory(story, cast, information) {
+  const out = [];
+  const error = (subject, detail, code = "story.invalid_reference") => out.push({
+    code,
+    subject,
+    severity: "error",
+    detail
+  });
+  const sets = {
+    scene: new Set(story.scenes.map((x) => x.id)),
+    beat: new Set((story.beats ?? []).map((x) => x.id)),
+    ending: new Set((story.endings ?? []).map((x) => x.id)),
+    event: new Set((story.events ?? []).map((x) => x.id)),
+    item: new Set((story.items ?? []).map((x) => x.id)),
+    choice: new Set((story.choices ?? []).map((x) => x.id))
+  };
+  const members = new Set(cast);
+  const controlled = controlledInformation(story);
+  const missing = (kind, value, available) => {
+    const options = alternatives(available);
+    return `Unknown ${kind} '${value}'. ${options ? `Choose an existing ${kind}: ${options}; or create the intended ${kind} and update this reference.` : `Create the intended ${kind} first, then update this reference; none are declared yet.`}`;
+  };
+  const variableSuggestion = (type) => {
+    const names = Object.entries(story.vars ?? {}).filter(([, value]) => value.type === type).map(([key]) => `var/${key}`);
+    const options = alternatives(names);
+    return options ? `Choose a declared ${type} variable: ${options}.` : `Declare a ${type} variable with its initial value${type === "int" ? " and min/max bounds" : type === "enum" || type === "set" ? " and allowed values" : ""}, then select it here.`;
+  };
+  const ref = (kind, id2, at) => {
+    if (!sets[kind].has(id2)) error(at, missing(kind, id2, sets[kind]));
+  };
+  const person = (key, at) => {
+    if (!members.has(key)) error(at, missing("participant", key, members));
+  };
+  const info3 = (value, at) => {
+    if (value.startsWith("cast:")) person(value.slice(5).split("#")[0] ?? "", at);
+    if (information && !information.has(value))
+      error(
+        at,
+        `Unknown or ambiguous information '${value}'. Select an existing resolved information reference${information.size ? `: ${alternatives(information)}` : " after adding a fragment"}; use cast:<key>#<fragment> to identify a repeated character instance.`
+      );
+  };
+  for (const key of [
+    "scenes",
+    "beats",
+    "endings",
+    "choices",
+    "plotlines",
+    "starts",
+    "items",
+    "events",
+    "timelines"
+  ]) {
+    const seen = /* @__PURE__ */ new Set();
+    for (const item of story[key] ?? []) {
+      if (seen.has(item.id))
+        error(
+          `story.${key}[${item.id}]`,
+          `Duplicate ${key} ID. Give each object a unique ID and update the references that should point to it.`,
+          "story.duplicate_id"
+        );
+      seen.add(item.id);
+    }
+  }
+  const checkEffect = (effect, at) => {
+    if ("learn" in effect) {
+      if (effect.learn.who !== "*") person(effect.learn.who, at);
+      info3(effect.learn.info, at);
+      return;
+    }
+    const [op, tuple] = Object.entries(effect)[0];
+    const variable2 = story.vars?.[tuple[0].slice(4)];
+    if (!variable2) {
+      error(
+        at,
+        missing(
+          "variable",
+          tuple[0],
+          Object.keys(story.vars ?? {}).map((key) => `var/${key}`)
+        )
+      );
+      return;
+    }
+    if (op === "set" && !validStoryValue(story, variable2, tuple[1]))
+      error(
+        at,
+        `Value does not match variable declaration. ${valueSuggestion(story, variable2)}`,
+        "story.invalid_value"
+      );
+    if (op === "add" && variable2.type !== "int")
+      error(
+        at,
+        `add requires an integer variable; '${tuple[0]}' is ${variable2.type}. ${variableSuggestion("int")}`,
+        "story.type_mismatch"
+      );
+    if (op === "put" || op === "drop") {
+      if (variable2.type !== "set" || typeof tuple[1] !== "string" || !validStoryValue(story, variable2, [setElement(variable2, tuple[1])]))
+        error(
+          at,
+          `${op} requires an allowed set element. ${variable2.type === "set" ? valueSuggestion(story, variable2) : variableSuggestion("set")}`,
+          "story.type_mismatch"
+        );
+    }
+  };
+  const checkCondition = (condition, at) => {
+    const stack = [{ node: condition, path: at, depth: 1 }];
+    let count = 0;
+    let maxDepth = 0;
+    while (stack.length) {
+      const entry = stack.pop();
+      if (!entry) break;
+      const { node, path: path2, depth } = entry;
+      count++;
+      maxDepth = Math.max(maxDepth, depth);
+      if (count > 512 || depth > 32) {
+        error(
+          at,
+          "Condition exceeds 32 levels or 512 nodes. Split it into smaller conditions or express the decision with a declared variable.",
+          "story.condition_limit"
+        );
+        return;
+      }
+      if ("all" in node || "any" in node) {
+        const op = "all" in node ? "all" : "any";
+        const children = "all" in node ? node.all : node.any;
+        children.forEach((child, i) => {
+          stack.push({ node: child, path: `${path2}/${op}/${i}`, depth: depth + 1 });
+        });
+      } else if ("not" in node)
+        stack.push({ node: node.not, path: `${path2}/not`, depth: depth + 1 });
+      else if ("judge" in node) {
+      } else if ("knows" in node) {
+        person(node.knows.who, path2);
+        info3(node.knows.info, path2);
+        if (!controlled.has(node.knows.info))
+          error(
+            path2,
+            `knows requires controlled information. Add '${node.knows.info}' to Story knowing with its initial knowers, or select already controlled information${controlled.size ? `: ${alternatives(controlled)}` : " after declaring it"}.`
+          );
+      } else if ("is" in node || "cmp" in node || "eq" in node || "has" in node) {
+        const key = "is" in node ? node.is : "cmp" in node ? node.cmp[0] : "eq" in node ? node.eq[0] : node.has[0];
+        const variable2 = story.vars?.[key.slice(4)];
+        const type = "is" in node ? "bool" : "cmp" in node ? "int" : "eq" in node ? "enum" : "set";
+        if (!variable2 || variable2.type !== type)
+          error(
+            path2,
+            `${key} must be a declared ${type}${variable2 ? `; it is ${variable2.type}` : "; it is not declared"}. ${variableSuggestion(type)}${variable2 ? ` To test this ${variable2.type} variable instead, use '${{ bool: "is", int: "cmp", enum: "eq", set: "has" }[variable2.type]}'.` : ""}`,
+            "story.type_mismatch"
+          );
+        else if ("cmp" in node && variable2.type === "int") {
+          const [, op, right] = node.cmp;
+          const constant = constantComparison(variable2.min, variable2.max, op, right);
+          if (constant !== void 0)
+            out.push({
+              code: "story.condition_constant",
+              subject: path2,
+              severity: "warning",
+              detail: `${key} ${op} ${right} is always ${constant} within its declared range [${variable2.min}, ${variable2.max}]. If this should gate progress, change the comparison/operator or review the declared bounds; otherwise keep it as an intentional constant.`
+            });
+        } else if ("eq" in node && !validStoryValue(story, variable2, node.eq[1]))
+          error(path2, `Unknown enum value. ${valueSuggestion(story, variable2)}`);
+        else if ("has" in node && !validStoryValue(story, variable2, [setElement(variable2, node.has[1])]))
+          error(path2, `Unknown set element. ${valueSuggestion(story, variable2)}`);
+      } else {
+        const value = Object.values(node)[0];
+        const [kind, id2] = value.split("/");
+        ref(kind, id2, path2);
+      }
+    }
+    if (count > 64 || maxDepth > 8)
+      out.push({
+        code: "story.condition_complex",
+        subject: at,
+        severity: "warning",
+        detail: `Consider splitting this condition into smaller rules or using a declared variable.`
+      });
+  };
+  for (const [key, variable2] of Object.entries(story.vars ?? {})) {
+    const at = `story.vars.${key}`;
+    if (variable2.type === "set" && variable2.of !== void 0 === (variable2.values !== void 0))
+      error(
+        at,
+        "Choose exactly one of of:item and values; keep Item inventory or a custom set, and remove the other declaration.",
+        "story.invalid_variable"
+      );
+    if ("values" in variable2 && variable2.values && new Set(variable2.values).size !== variable2.values.length)
+      error(
+        at,
+        "Duplicate variable values. Remove repeated options; each allowed value must have a unique ID.",
+        "story.invalid_variable"
+      );
+    if (!validStoryValue(story, variable2, variable2.init))
+      error(
+        at,
+        `Initial value outside declared type/range. ${valueSuggestion(story, variable2)}`,
+        "story.invalid_value"
+      );
+  }
+  for (const scene of story.scenes) {
+    const at = `story.scenes[${scene.id}]`;
+    const present = scene.cast ?? cast;
+    for (const key of present) person(key, at);
+    if (new Set(present).size !== present.length)
+      error(at, "Duplicate scene participant. List each participating cast key only once.");
+    for (const key of Object.keys(scene.goals ?? {}))
+      if (!present.includes(key))
+        error(
+          `${at}.goals.${key}`,
+          "Goal belongs to an absent participant. Add that participant to this scene's cast, or move/remove this scene-specific goal."
+        );
+    for (const key of ["beats", "choices", "items", "events"]) {
+      const kind = { beats: "beat", choices: "choice", items: "item", events: "event" };
+      for (const value of scene[key] ?? []) ref(kind[key], value, `${at}.${key}`);
+    }
+    if (scene.place) info3(scene.place, `${at}.place`);
+    if (scene.when) checkCondition(scene.when, `${at}/when`);
+  }
+  for (const key of ["beats", "endings", "events", "choices"]) {
+    for (const item of story[key] ?? []) {
+      const at = `story.${key}[${item.id}]`;
+      if (item.when) checkCondition(item.when, `${at}/when`);
+      if ("effects" in item)
+        item.effects?.forEach((effect, i) => {
+          checkEffect(effect, `${at}/effects/${i}`);
+        });
+      if (key === "beats" && "strength" in item && item.strength === "required" && !story.scenes.some((scene) => scene.beats?.includes(item.id)))
+        error(
+          at,
+          "Required beat must be referenced by a scene. Add it to a scene's beats list, or change its strength if it is optional."
+        );
+      if (key === "choices" && !story.scenes.some((scene) => scene.choices?.includes(item.id)))
+        error(
+          at,
+          "Choice must be referenced by a scene. Add it to a scene's choices list, or remove the unused suggestion."
+        );
+      if ("kind" in item && item.kind === "background" && (item.when || item.effects?.length))
+        error(
+          at,
+          "Background event cannot have conditions/effects. Remove them from a past fact, or change the event to planned if it should happen during play."
+        );
+      if ("cast" in item) for (const key2 of item.cast ?? []) person(key2, at);
+      if ("truth" in item && item.truth) info3(item.truth, at);
+      if ("place" in item && item.place) info3(item.place, at);
+    }
+  }
+  for (const line of story.plotlines ?? []) {
+    if (!line.scenes?.length && !line.beats?.length)
+      error(
+        `story.plotlines[${line.id}]`,
+        "Plotline needs scenes or beats. Link at least one existing scene or beat, or remove the empty plotline."
+      );
+    for (const value of line.scenes ?? []) ref("scene", value, `story.plotlines[${line.id}]`);
+    for (const value of line.beats ?? []) ref("beat", value, `story.plotlines[${line.id}]`);
+  }
+  for (const line of story.timelines ?? []) {
+    const ids = line.order.flat();
+    if (new Set(ids).size !== ids.length)
+      error(
+        `story.timelines[${line.id}]`,
+        "Timeline repeats an object. Keep each scene or event only once in this timeline, including parallel groups."
+      );
+    for (const value of ids)
+      value.startsWith("scene/") ? ref("scene", value.slice(6), `story.timelines[${line.id}]`) : ref("event", value, `story.timelines[${line.id}]`);
+  }
+  for (const start of story.starts ?? []) {
+    const at = `story.starts[${start.id}]`;
+    if ((story.starts?.length ?? 0) > 1 && (!start.title || !start.description))
+      error(
+        at,
+        "Multiple starts need title and description. Describe this opening so players can distinguish it from the alternatives."
+      );
+    if (start.scene) ref("scene", start.scene, at);
+    for (const value of start.reached ?? []) ref("beat", value, at);
+    start.set?.forEach((effect, i) => {
+      checkEffect(effect, `${at}/set/${i}`);
+    });
+  }
+  for (const [key, entry] of Object.entries(story.knowing ?? {})) {
+    const at = `story.knowing[${key}]`;
+    info3(key, at);
+    if (entry.start.knows === void 0 && entry.start.not === void 0)
+      error(
+        at,
+        "Knowledge needs knows or not. Declare initial knowers or non-knowers; an explicit empty knows list means nobody starts knowing."
+      );
+    const knows = entry.start.knows === "*" ? cast : entry.start.knows ?? [];
+    const not = entry.start.not === "*" ? cast : entry.start.not ?? [];
+    for (const key2 of [...knows, ...not]) person(key2, at);
+    if (knows.some((key2) => not.includes(key2)))
+      error(
+        at,
+        "Participant is both knowing and not knowing. Choose one initial state for each participant and remove it from the opposite list; check wildcard lists too."
+      );
+    for (const [scene, value] of Object.entries(entry.enter ?? {})) {
+      ref("scene", scene, at);
+      for (const key2 of value.knows === "*" ? cast : value.knows) person(key2, at);
+    }
+  }
+  return out;
+}
 
 // ../../packages/core/src/template.ts
 var LATE_KEY_RE = /^(?:user|l:[0-9a-f]{64})$/;
-function tokenizeTemplate(text, mode = "creation") {
+function tokenizeTemplate(text2, mode = "creation") {
   const tokens = [];
   const issues = [];
   let buf = "";
@@ -316428,14 +317865,14 @@ function tokenizeTemplate(text, mode = "creation") {
     if (buf) tokens.push({ t: "text", v: buf });
     buf = "";
   };
-  while (i < text.length) {
-    if (text[i] !== "{") {
-      buf += text[i];
+  while (i < text2.length) {
+    if (text2[i] !== "{") {
+      buf += text2[i];
       i += 1;
       continue;
     }
     let run2 = 0;
-    while (text[i + run2] === "{") run2 += 1;
+    while (text2[i + run2] === "{") run2 += 1;
     buf += "{{".repeat(Math.floor(run2 / 4));
     const rest = run2 % 4;
     if (rest === 0 || rest === 1) {
@@ -316445,13 +317882,13 @@ function tokenizeTemplate(text, mode = "creation") {
     }
     if (rest === 3) buf += "{";
     i += run2 - 2;
-    const end = text.indexOf("}}", i + 2);
+    const end = text2.indexOf("}}", i + 2);
     if (end < 0) {
       issues.push({ code: "template.unclosed", offset: i, detail: "missing '}}'" });
-      buf += text.slice(i);
+      buf += text2.slice(i);
       break;
     }
-    const inner = text.slice(i + 2, end);
+    const inner = text2.slice(i + 2, end);
     const tok = parsePlaceholder(inner, mode);
     if (typeof tok === "string") {
       issues.push({
@@ -316459,7 +317896,7 @@ function tokenizeTemplate(text, mode = "creation") {
         offset: i,
         detail: `{{${inner}}}`
       });
-      buf += text.slice(i, end + 2);
+      buf += text2.slice(i, end + 2);
     } else {
       flush();
       tokens.push(tok);
@@ -316477,6 +317914,7 @@ function parsePlaceholder(inner, mode) {
   const kind = inner.slice(0, colon);
   const name = inner.slice(colon + 1);
   if (mode === "creation") {
+    if (kind === "cast") return CAST_KEY_RE.test(name) ? { t: "cast", name } : "name";
     if (kind === "slot") return SLOT_NAME_RE.test(name) ? { t: "slot", name } : "name";
     if (kind === "param") return PARAM_NAME_RE.test(name) ? { t: "param", name } : "name";
     return "unknown";
@@ -316484,8 +317922,8 @@ function parsePlaceholder(inner, mode) {
   if (kind === "late") return LATE_KEY_RE.test(name) ? { t: "late", key: name } : "name";
   return "unknown";
 }
-function parseTemplate(text, mode = "creation") {
-  const { tokens, issues } = tokenizeTemplate(text, mode);
+function parseTemplate(text2, mode = "creation") {
+  const { tokens, issues } = tokenizeTemplate(text2, mode);
   const first = issues[0];
   if (first) {
     throw new CharError({
@@ -316521,14 +317959,16 @@ function placeholderText(tok) {
       return "{{user}}";
     case "slot":
       return `{{slot:${tok.name}}}`;
+    case "cast":
+      return `{{cast:${tok.name}}}`;
     case "param":
       return `{{param:${tok.name}}}`;
     case "late":
       return `{{late:${tok.key}}}`;
   }
 }
-function finalizeIrText(text, bindLate) {
-  const tokens = parseTemplate(text, "ir");
+function finalizeIrText(text2, bindLate) {
+  const tokens = parseTemplate(text2, "ir");
   let out = "";
   for (const tok of tokens) {
     if (tok.t === "text") out += tok.v;
@@ -316579,8 +318019,8 @@ function scopeOf(c) {
     label: c.ref
   };
 }
-function checkTemplateSyntax(text, subject, sink) {
-  for (const issue of tokenizeTemplate(text, "creation").issues) {
+function checkTemplateSyntax(text2, subject, sink) {
+  for (const issue of tokenizeTemplate(text2, "creation").issues) {
     sink.error(
       TEMPLATE_ISSUE_CODES[issue.code],
       subject,
@@ -316588,8 +318028,8 @@ function checkTemplateSyntax(text, subject, sink) {
     );
   }
 }
-function checkTemplate(text, subject, scope, sink) {
-  const { tokens, issues } = tokenizeTemplate(text, "creation");
+function checkTemplate(text2, subject, scope, sink) {
+  const { tokens, issues } = tokenizeTemplate(text2, "creation");
   for (const issue of issues) {
     sink.error(
       TEMPLATE_ISSUE_CODES[issue.code],
@@ -316612,6 +318052,8 @@ function checkTemplate(text, subject, scope, sink) {
         subject,
         `param '${tok.name}' is not declared in ${scope.label}`
       );
+    } else if (tok.t === "cast") {
+      checkCastKey(tok.name, subject, scope, sink);
     }
   }
 }
@@ -316680,7 +318122,7 @@ function checkAssetRef(ref, subject, scope, sink) {
   }
 }
 function checkContent(content, subject, scope, sink) {
-  const template = (text, at) => scope ? checkTemplate(text, at, scope, sink) : checkTemplateSyntax(text, at, sink);
+  const template = (text2, at) => scope ? checkTemplate(text2, at, scope, sink) : checkTemplateSyntax(text2, at, sink);
   switch (content.type) {
     case "text":
       template(content.text, subject);
@@ -316774,22 +318216,32 @@ function overrideTarget(o) {
 }
 function checkEdgeLocal(c, edge, scope, sink) {
   const at = `references[${edge.id}]`;
+  if (edge.scope !== void 0 && c.type !== "scenario")
+    sink.error("check.style_scope_owner", at, "Explicit Style scope belongs to a Scenario");
+  if (edge.scope && typeof edge.scope === "object") {
+    if ("cast" in edge.scope && !scope.cast.has(edge.scope.cast))
+      sink.error("check.style_cast_missing", `${at}.scope`);
+    if ("scene" in edge.scope && !c.story?.scenes.some(
+      (scene) => typeof edge.scope === "object" && "scene" in edge.scope && scene.id === edge.scope.scene
+    ))
+      sink.error("check.style_scene_missing", `${at}.scope`);
+  }
   for (const [slot, binding] of Object.entries(edge.bind ?? {})) {
     checkBinding(binding, `${at}.bind.${slot}`, scope, sink);
   }
   const seen = /* @__PURE__ */ new Map();
   (edge.override ?? []).forEach((o, i) => {
     const oat = `${at}.override[${i}]`;
-    const target = overrideTarget(o);
-    const first = seen.get(target);
+    const target2 = overrideTarget(o);
+    const first = seen.get(target2);
     if (first !== void 0) {
       sink.error(
         "check.duplicate_override",
         oat,
-        `fragment '${target}' is already overridden by override[${first}] on the same reference`
+        `fragment '${target2}' is already overridden by override[${first}] on the same reference`
       );
     } else {
-      seen.set(target, i);
+      seen.set(target2, i);
     }
     if ((o.op === "replace" || o.op === "remove") && o.force === true && c.type !== "scenario") {
       sink.error(
@@ -316812,6 +318264,42 @@ function checkCreation(c, opts = {}) {
   const scope = scopeOf(c);
   const defaultLocale = c.meta.default_locale;
   checkTypeRequirements(c, sink);
+  sink.list.push(...checkContentCollections(c), ...checkLocalContentReferences(c));
+  if (c.story) {
+    const checkStoryTemplate = (text2, subject) => {
+      if (typeof text2 === "string") {
+        checkTemplate(text2, subject, scope, sink);
+        return;
+      }
+      if (!Object.hasOwn(text2, defaultLocale))
+        sink.error(
+          "check.template_default_locale_missing",
+          subject,
+          `expected '${defaultLocale}' template`
+        );
+      for (const [locale, value] of Object.entries(text2))
+        checkTemplate(value, `${subject}[${locale}]`, scope, sink);
+    };
+    sink.list.push(
+      ...checkStory(
+        c.story,
+        (c.cast ?? []).map((m) => m.key)
+      )
+    );
+    for (const scene of c.story.scenes) {
+      if (scene.opening !== void 0)
+        checkStoryTemplate(scene.opening, `story.scenes[${scene.id}].opening`);
+    }
+    for (const start of c.story.starts ?? []) {
+      const greeting = start.greeting;
+      if (greeting !== void 0) {
+        if (typeof greeting === "object" && "ref" in greeting) {
+          if (!c.bootstrap?.greetings.some((g) => g.id === greeting.ref))
+            sink.error("story.unknown_greeting", `story.starts[${start.id}].greeting`);
+        } else checkStoryTemplate(greeting, `story.starts[${start.id}].greeting`);
+      }
+    }
+  }
   const edgeIds = /* @__PURE__ */ new Set();
   for (const e of c.references) {
     if (edgeIds.has(e.id)) sink.error("check.duplicate_edge", `references[${e.id}]`);
@@ -316837,6 +318325,20 @@ function checkCreation(c, opts = {}) {
   }
   for (const f of c.fragments) {
     const at = `fragments[${f.id}]`;
+    if (f.selectable !== void 0 && f.activation?.mode !== "keyword")
+      sink.error("check.selectable_not_keyword", `${at}.selectable`);
+    if (f.selectable && !f.description)
+      sink.error("check.selectable_description", `${at}.description`);
+    if (f.outward !== void 0 && !["character", "persona", "examples"].includes(f.kind))
+      sink.error("check.outward_kind", `${at}.outward`);
+    if (f.description) {
+      const values = typeof f.description === "string" ? [f.description] : Object.values(f.description);
+      if (values.some((value) => Array.from(value).length > 200))
+        sink.error("check.description_length", `${at}.description`);
+    }
+    const storyVisibility = f.visibility;
+    if (storyVisibility?.scope === "story-scene" && !c.story?.scenes.some((s) => s.id === storyVisibility.scene))
+      sink.error("check.unknown_story_scene", `${at}.visibility.scene`);
     if (!f.stable) {
       sink.info(
         "check.unstable_fragment",
@@ -316907,6 +318409,12 @@ function checkCreation(c, opts = {}) {
       if (keys.has(m.key)) sink.error("check.duplicate_cast", at);
       keys.add(m.key);
       checkBinding(m.who, `${at}.who`, scope, sink);
+      if (typeof m.who === "object" && m.override !== void 0)
+        sink.error(
+          "check.late_cast_override",
+          `${at}.override`,
+          "Late-bound participants cannot override unpublished content"
+        );
     }
   }
   if (opts.source === "github" && c.meta.rating === "explicit") {
@@ -316919,48 +318427,17 @@ function checkCreation(c, opts = {}) {
   return toResult(sink.sorted());
 }
 
-// ../../packages/core/src/keys.ts
-var ROOT_INSTANCE = "root";
-var SELF_PARTICIPANT = "self";
-var USER_PARTICIPANT = "user";
-var USER_LATE_SLOT = "user";
-function instanceKey(via) {
-  return via.length === 0 ? ROOT_INSTANCE : sha256Hex(jcs([...via]));
-}
-function participantKey(instance, slotOrCast) {
-  return `p:${sha256Hex(jcs([instance, slotOrCast]))}`;
-}
-function lateSlotKey(instance, slot) {
-  return `l:${sha256Hex(jcs([instance, slot]))}`;
-}
-function participantRef(key) {
-  return `participant:${key}`;
-}
-function irFragmentId(ref, fragmentId, instance) {
-  return `${ref}#${fragmentId}~${instance}`;
-}
-function irAssetId(ref, slot, variant, instance) {
-  return `${ref}#asset/${slot}/${variant}~${instance}`;
-}
-function irFragmentDigest(f) {
-  const body = {
-    kind: f.kind,
-    content: f.content,
-    activation: f.activation,
-    visibility: f.visibility,
-    importance: f.importance,
-    placement_hint: f.placement_hint
-  };
-  if (f.locales !== void 0) body.locales = f.locales;
-  if (f.subject !== void 0) body.subject = f.subject;
-  if (f.asset_refs !== void 0) body.asset_refs = f.asset_refs;
-  return digestJson(body);
-}
-
 // ../../packages/core/src/resolve/graph.ts
 var MAX_GRAPH_DEPTH = 32;
 var MAX_GRAPH_INSTANCES = 5e3;
 function loadRelease(input) {
+  const identity = buildIdentity(input);
+  const key = buildIdentityKey(identity);
+  if ("origin" in identity && (input.visibility !== "private" || input.status && input.status !== "active"))
+    throw new CharError({
+      code: identity.origin.kind === "draft-build" ? "build.invalid_draft_state" : "build.invalid_local_state",
+      subject: key
+    });
   const { creation, semantic_digest } = canonicalizeCreation(input.creation);
   if (creation.type === "preset" || creation.type === "prompt-module") {
     throw new CharError({
@@ -316972,12 +318449,13 @@ function loadRelease(input) {
   if (input.semantic_digest !== void 0 && input.semantic_digest !== semantic_digest) {
     throw new CharError({
       code: "resolve.semantic_digest_mismatch",
-      subject: input.release,
+      subject: key,
       detail: `stored ${input.semantic_digest}, computed ${semantic_digest}`
     });
   }
   return {
-    release: input.release,
+    key,
+    identity,
     ref: creation.ref,
     visibility: input.visibility,
     status: input.status ?? "active",
@@ -317004,19 +318482,22 @@ function resolveUseRef(use, declaringRef) {
 }
 function loadGraph(root, deps) {
   const inputs = /* @__PURE__ */ new Map();
-  for (const d of deps) inputs.set(d.release, d);
+  for (const d of deps) {
+    publishedIdentity(d);
+    inputs.set(d.release, d);
+  }
   const loaded = /* @__PURE__ */ new Map();
-  const load2 = (id) => {
-    const cached = loaded.get(id);
+  const load2 = (id2) => {
+    const cached = loaded.get(id2);
     if (cached) return cached;
-    const input = inputs.get(id);
+    const input = inputs.get(id2);
     if (!input) return void 0;
     const rel = loadRelease(input);
-    loaded.set(id, rel);
+    loaded.set(id2, rel);
     return rel;
   };
   const rootRel = loadRelease(root);
-  loaded.set(rootRel.release, rootRel);
+  loaded.set(rootRel.key, rootRel);
   const byRef = /* @__PURE__ */ new Map([[rootRel.ref, rootRel]]);
   const firstVia = /* @__PURE__ */ new Map([[rootRel.ref, []]]);
   const warnings = [];
@@ -317028,20 +318509,21 @@ function loadGraph(root, deps) {
         code: "resolve.tombstoned",
         subject: rel.ref,
         detail: rel.status_reason ?? "release was removed",
-        data: { release: rel.release, via, reason: rel.status_reason ?? null }
+        data: { release: rel.key, via, reason: rel.status_reason ?? null }
       });
     }
-    if (rel.status === "yanked" && !reported.has(rel.release)) {
-      reported.add(rel.release);
+    if (rel.status === "yanked" && !reported.has(rel.key)) {
+      reported.add(rel.key);
       warnings.push({
         code: "resolve.yanked",
         subject: rel.ref,
-        data: { release: rel.release, via, reason: rel.status_reason ?? null }
+        data: { release: rel.key, via, reason: rel.status_reason ?? null }
       });
     }
   };
   const rootInstance = {
     key: ROOT_INSTANCE,
+    identityPath: [],
     via: [],
     release: rootRel,
     children: []
@@ -317089,11 +318571,11 @@ function loadGraph(root, deps) {
           detail: `pin ${pin.semantic_digest}, release ${rel.semantic_digest}`
         });
       }
-      if (ancestors.includes(rel.release)) {
+      if (ancestors.includes(rel.key)) {
         throw new CharError({ code: "resolve.cycle", subject: ref, data: { via } });
       }
       const existing = byRef.get(ref);
-      if (existing && existing.release !== rel.release) {
+      if (existing && existing.key !== rel.key) {
         throw new CharError({
           code: "resolve.diamond_conflict",
           subject: ref,
@@ -317101,8 +318583,8 @@ function loadGraph(root, deps) {
           data: {
             ref,
             releases: [
-              { release: existing.release, via: firstVia.get(ref) ?? [] },
-              { release: rel.release, via }
+              { ...buildIdentity(existing.identity), via: firstVia.get(ref) ?? [] },
+              { ...buildIdentity(rel.identity), via }
             ]
           }
         });
@@ -317112,19 +318594,153 @@ function loadGraph(root, deps) {
         firstVia.set(ref, via);
       }
       checkStatus(rel, via);
+      const identity = [...inst.identityPath, edge.id];
       const child = {
-        key: instanceKey(via),
+        key: instanceKey(identity),
+        identityPath: identity,
         via,
         release: rel,
         parent: { instance: inst, edge },
         children: []
       };
       inst.children.push(child);
-      visit(child, [...ancestors, rel.release]);
+      visit(child, [...ancestors, rel.key]);
     }
   };
-  visit(rootInstance, [rootRel.release]);
-  return { root: rootInstance, instances, byRef, warnings };
+  visit(rootInstance, [rootRel.key]);
+  const materialized = materializeRoles(rootInstance);
+  return { ...materialized, byRef, warnings };
+}
+function materializeRoles(templateRoot) {
+  const instances = [];
+  const roleInstances = /* @__PURE__ */ new Map();
+  const planRoles = (template) => {
+    const plans = [];
+    for (const member of template.release.creation.cast ?? []) {
+      if (typeof member.who !== "string") continue;
+      const subject = `${template.release.ref}/cast/${member.key}`;
+      if (member.who.startsWith("{{"))
+        throw new CharError({ code: "resolve.invalid_cast_binding", subject });
+      const ref = resolveUseRef(member.who, template.release.ref);
+      const matches2 = [];
+      const scan = (node, crossedScenario) => {
+        if (matches2.length > 1) return;
+        if (node !== template && node.release.ref === ref)
+          matches2.push({ target: node, crossedScenario });
+        for (const child of node.children)
+          scan(
+            child,
+            crossedScenario || node !== template && node.release.creation.type === "scenario"
+          );
+      };
+      scan(template, false);
+      const match = matches2[0];
+      if (!match)
+        throw new CharError({ code: "resolve.binding_not_in_graph", subject, detail: ref });
+      if (matches2.length > 1)
+        throw new CharError({
+          code: "resolve.ambiguous_cast_path",
+          subject,
+          data: { ref, paths: matches2.map((m) => m.target.via.slice(template.via.length)) }
+        });
+      if (!["character", "persona"].includes(match.target.release.creation.type))
+        throw new CharError({ code: "resolve.binding_type_mismatch", subject, detail: ref });
+      plans.push({ ...match, member });
+    }
+    return plans;
+  };
+  const expand = (template, identityPath, parent, inherited, observers, cast) => {
+    const inst = {
+      key: instanceKey(identityPath),
+      identityPath,
+      via: template.via,
+      release: template.release,
+      children: [],
+      ...parent ? { parent } : {},
+      ...cast ? { cast } : {}
+    };
+    if (cast) {
+      const roleId = `${cast.owner.key}/${cast.member.key}`;
+      const prior = roleInstances.get(roleId);
+      if (prior)
+        throw new CharError({
+          code: "resolve.ambiguous_cast_context",
+          subject: roleId,
+          data: { instances: [prior.parent?.instance.key, parent?.instance.key] }
+        });
+      roleInstances.set(roleId, inst);
+    }
+    instances.push(inst);
+    if (instances.length > MAX_GRAPH_INSTANCES)
+      throw new CharError({ code: "resolve.graph_too_large", subject: templateRoot.release.ref });
+    if (inst.via.length > MAX_GRAPH_DEPTH)
+      throw new CharError({ code: "resolve.graph_too_deep", subject: inst.release.ref });
+    for (const scope2 of observers) {
+      const copies = scope2.actuals.get(template) ?? [];
+      copies.push(inst);
+      scope2.actuals.set(template, copies);
+    }
+    const ownScope = template.release.creation.type === "scenario" ? {
+      owner: inst,
+      template,
+      plans: planRoles(template),
+      actuals: /* @__PURE__ */ new Map([[template, [inst]]])
+    } : void 0;
+    const scope = ownScope ?? inherited;
+    const watching = ownScope ? [...observers, ownScope] : observers;
+    for (const child of template.children) {
+      const edge = child.parent?.edge;
+      if (!edge) throw new CharError({ code: "resolve.internal", subject: child.key });
+      const roles = scope?.plans.filter((p) => p.target === child && !p.crossedScenario) ?? [];
+      for (const plan of roles.length ? roles : [void 0]) {
+        const identity = [
+          ...inst.identityPath,
+          edge.id,
+          ...plan ? [`cast:${plan.member.key}`] : []
+        ];
+        inst.children.push(
+          expand(
+            child,
+            identity,
+            { instance: inst, edge },
+            scope,
+            watching,
+            plan && scope ? { owner: scope.owner, member: plan.member } : void 0
+          )
+        );
+      }
+    }
+    if (ownScope) {
+      const deferred = ownScope.plans.filter((p) => p.crossedScenario).map((plan) => {
+        const introduction = plan.target.parent;
+        const parents = introduction ? [...ownScope.actuals.get(introduction.instance) ?? []] : [];
+        return { plan, introduction, parents };
+      });
+      for (const { plan, introduction, parents } of deferred) {
+        const lexicalParent = parents[0];
+        if (!introduction || parents.length !== 1 || !lexicalParent)
+          throw new CharError({
+            code: "resolve.ambiguous_cast_context",
+            subject: `${inst.release.ref}/cast/${plan.member.key}`,
+            data: { instances: parents.map((p) => p.key) }
+          });
+        const route = plan.target.via.slice(template.via.length);
+        expand(
+          plan.target,
+          [...inst.identityPath, ...route, `owner:${inst.key}`, `cast:${plan.member.key}`],
+          { instance: lexicalParent, edge: introduction.edge },
+          ownScope,
+          // A derived ownership copy is not an authored reference occurrence for
+          // this scope or any ancestor. Nested Scenarios create their own observers.
+          [],
+          { owner: inst, member: plan.member }
+        );
+      }
+    }
+    return inst;
+  };
+  const root = expand(templateRoot, [], void 0, void 0, []);
+  return { root, instances };
 }
 function buildLock(graph) {
   const seen = /* @__PURE__ */ new Map();
@@ -317134,7 +318750,7 @@ function buildLock(graph) {
     if (!seen.has(ref)) {
       seen.set(ref, {
         ref,
-        release: inst.release.release,
+        ...publishedIdentity(inst.release.identity),
         semantic_digest: inst.release.semantic_digest,
         via: inst.via
       });
@@ -317161,9 +318777,9 @@ function getCreationDependencies(creation) {
       accepts: "prompt-module"
     });
   }
-  const add = (domain, id, value, accepts) => out.push({
+  const add = (domain, id2, value, accepts) => out.push({
     domain,
-    id,
+    id: id2,
     ref: value.ref,
     pin: { release: value.release, semantic_digest: value.semantic_digest },
     accepts
@@ -317173,97 +318789,170 @@ function getCreationDependencies(creation) {
     if (test.root !== "self") add("test", test.id, test.root, "content");
     if (test.preset && test.preset !== "self") add("test", test.id, test.preset, "preset");
   }
+  for (const [index, source] of (creation.provenance?.derived_from ?? []).entries()) {
+    if (!("ref" in source)) continue;
+    out.push({
+      domain: "derivation",
+      id: String(index),
+      ref: source.ref,
+      pin: { release: source.release, semantic_digest: source.semantic_digest },
+      accepts: "any"
+    });
+  }
   return out;
 }
 
-// ../../packages/core/src/preset.ts
-import { z as z9 } from "./vendor/zod.js";
+// ../../packages/core/src/version.ts
+var CORE_VERSION = "0.0.0";
+var RESOLVER = { name: "@char-pub/core", version: CORE_VERSION };
+
+// ../../packages/core/src/local-build.ts
+function canonicalInput(input) {
+  const canonical = canonicalizeCreation(input.creation);
+  if (input.semantic_digest !== void 0 && input.semantic_digest !== canonical.semantic_digest)
+    throw new CharError({
+      code: "resolve.semantic_digest_mismatch",
+      subject: canonical.creation.ref
+    });
+  return canonical;
+}
+function normalizedInputs(input) {
+  const root = canonicalInput(input.root);
+  const snapshots = /* @__PURE__ */ new Map();
+  for (const dependency of input.dependencies ?? []) {
+    const canonical = canonicalInput(dependency);
+    const snapshot = {
+      ...publishedIdentity(dependency),
+      creation: canonical.json,
+      semantic_digest: canonical.semantic_digest,
+      visibility: dependency.visibility,
+      status: dependency.status ?? "active",
+      status_reason: dependency.status_reason ?? null
+    };
+    const prior = snapshots.get(snapshot.release);
+    if (prior && digestJson(prior) !== digestJson(snapshot))
+      throw new CharError({ code: "resolve.duplicate_release", subject: snapshot.release });
+    snapshots.set(snapshot.release, snapshot);
+  }
+  return {
+    root,
+    dependencies: [...snapshots.values()].sort((a, b) => compareStrings(a.release, b.release))
+  };
+}
+function originFor(input, normalized) {
+  return {
+    kind: "local-build",
+    input_digest: digestJson({
+      domain: "char.pub/local-input/v1",
+      resolver: RESOLVER,
+      root: normalized.root.json,
+      dependencies: normalized.dependencies,
+      default_policy: input.default_policy ?? null,
+      public_asset_base_url: input.publicAssetBaseUrl ?? null
+    })
+  };
+}
+function createLocalBuildInput(input) {
+  const normalized = normalizedInputs(input);
+  return {
+    root: {
+      creation: normalized.root.creation,
+      semantic_digest: normalized.root.semantic_digest,
+      visibility: "private",
+      origin: originFor(input, normalized)
+    },
+    dependencies: normalized.dependencies.map(({ status_reason, ...snapshot }) => ({
+      ...snapshot,
+      ...status_reason !== null ? { status_reason } : {}
+    })),
+    ...input.default_policy ? { default_policy: input.default_policy } : {},
+    ...input.publicAssetBaseUrl !== void 0 ? { publicAssetBaseUrl: input.publicAssetBaseUrl } : {}
+  };
+}
 
 // ../../packages/core/src/schema/preset.ts
-import { z as z8 } from "./vendor/zod.js";
+import { z as z14 } from "./vendor/zod.js";
 
 // ../../packages/core/src/schema/release.ts
-import { z as z7 } from "./vendor/zod.js";
-var VisibilityLevelSchema = z7.enum(["public", "private"]);
-var ReleaseStatusSchema = z7.enum(["active", "yanked", "tombstoned"]);
-var TimestampSchema = z7.iso.datetime({ offset: false });
-var EdgePathSchema = z7.array(SegmentSchema);
-var LockEntrySchema = z7.strictObject({
+import { z as z13 } from "./vendor/zod.js";
+var VisibilityLevelSchema = z13.enum(["public", "private"]);
+var ReleaseStatusSchema = z13.enum(["active", "yanked", "tombstoned"]);
+var TimestampSchema = z13.iso.datetime({ offset: false });
+var EdgePathSchema = z13.array(SegmentSchema);
+var LockEntrySchema = z13.strictObject({
   ref: UnversionedRefSchema,
   release: ReleaseIdSchema,
-  semantic_digest: DigestSchema,
+  semantic_digest: DigestSchema2,
   /** 第一次遇到这个依赖时经过的 edge 路径，用于 Preview 解释。 */
   via: EdgePathSchema
 });
-var SourceRecordSchema = z7.discriminatedUnion("provider", [
-  z7.strictObject({ provider: z7.literal("native"), revision: RevisionIdSchema }),
-  z7.strictObject({
-    provider: z7.literal("github"),
+var SourceRecordSchema = z13.discriminatedUnion("provider", [
+  z13.strictObject({ provider: z13.literal("native"), revision: RevisionIdSchema }),
+  z13.strictObject({
+    provider: z13.literal("github"),
     repository_id: DecimalIdSchema,
     repository_owner_id: DecimalIdSchema,
     commit: GitCommitSchema,
-    path: z7.string().min(1)
+    path: z13.string().min(1)
   }),
-  z7.strictObject({
-    provider: z7.literal("import"),
-    format: z7.string().min(1),
+  z13.strictObject({
+    provider: z13.literal("import"),
+    format: z13.string().min(1),
     upload: BlobRefSchema
   }),
-  z7.strictObject({
-    provider: z7.literal("http"),
+  z13.strictObject({
+    provider: z13.literal("http"),
     url: HttpsUrlSchema,
     fetched_at: TimestampSchema
   })
 ]);
-var GitHubOIDCClaimsSchema = z7.strictObject({
+var GitHubOIDCClaimsSchema = z13.strictObject({
   repository_id: DecimalIdSchema,
   repository_owner_id: DecimalIdSchema,
   sha: GitCommitSchema,
-  ref: z7.string().min(1),
-  workflow_ref: z7.string().min(1),
-  job_workflow_ref: z7.string().min(1),
+  ref: z13.string().min(1),
+  workflow_ref: z13.string().min(1),
+  job_workflow_ref: z13.string().min(1),
   run_id: DecimalIdSchema,
   run_attempt: DecimalIdSchema,
   actor_id: DecimalIdSchema,
-  event_name: z7.enum(["push", "workflow_dispatch", "release"]),
-  jti: z7.string().min(1)
+  event_name: z13.enum(["push", "workflow_dispatch", "release"]),
+  jti: z13.string().min(1)
 });
-var ReleaseContributorSchema = z7.strictObject({
-  ref: UnversionedRefSchema,
-  author: z7.union([UserIdSchema, GuestAuthorSchema]),
-  contribution: ContributionIdSchema.optional()
+var ReleaseContributorSchema = ContributorSchema.extend({
+  ref: UnversionedRefSchema
 });
-var ReleaseSchema = z7.strictObject({
+var ReleaseSchema = z13.strictObject({
   id: ReleaseIdSchema,
   creation: CreationIdSchema,
   label: LabelSchema,
   visibility: VisibilityLevelSchema,
   status: ReleaseStatusSchema,
-  status_reason: z7.string().optional(),
+  status_reason: z13.string().optional(),
   source: SourceRecordSchema,
-  source_digest: DigestSchema,
-  semantic_digest: DigestSchema,
+  source_digest: DigestSchema2,
+  semantic_digest: DigestSchema2,
   /** 自身与所有依赖的原作者署名。 */
-  attribution: z7.array(
-    z7.strictObject({ ref: UnversionedRefSchema, authors: z7.array(AttributionAuthorSchema) })
+  attribution: z13.array(
+    z13.strictObject({ ref: UnversionedRefSchema, authors: z13.array(AttributionAuthorSchema) })
   ),
   /** 贡献者与原作者分开展示。 */
-  contributors: z7.array(ReleaseContributorSchema),
+  contributors: z13.array(ReleaseContributorSchema),
   provenance: ProvenanceSchema,
   /** 完整依赖闭包。 */
-  lock: z7.array(LockEntrySchema),
+  lock: z13.array(LockEntrySchema),
   /** canonical Creation 加闭包文本的快照。 */
   snapshot: BlobRefSchema,
   /** 由快照、lock 和 Resolver 版本确定性生成，可以按需生成后缓存。 */
   context_ir: BlobRefSchema.optional(),
   /** Unified typed artifact; policy releases do not have a Context IR. */
   artifact: BlobRefSchema.optional(),
-  availability: z7.enum(["complete", "linked"]),
+  availability: z13.enum(["complete", "linked"]),
   effective_rating: RatingSchema,
   /** 许可检查失败的内容不能发布，所以这里只有 pass / warn。 */
-  license_check: z7.enum(["pass", "warn"]),
+  license_check: z13.enum(["pass", "warn"]),
   created_at: TimestampSchema,
-  published_by: z7.union([UserIdSchema, z7.strictObject({ oidc: GitHubOIDCClaimsSchema })])
+  published_by: z13.union([UserIdSchema, z13.strictObject({ oidc: GitHubOIDCClaimsSchema })])
 });
 var METADATA_FIELDS = [
   "display_name",
@@ -317277,181 +318966,321 @@ var METADATA_FIELDS = [
   "meta.recommended_presets",
   "meta.contribution_policy"
 ];
-var MetadataFieldSchema = z7.enum(METADATA_FIELDS);
-var changeOp = z7.enum(["add", "modify", "remove"]);
+var MetadataFieldSchema = z13.enum(METADATA_FIELDS);
+var changeOp = z13.enum(["add", "modify", "remove"]);
 var CONFIGURATION_FIELDS = [
   "policy",
   "prompt_module",
   "assembly",
   "assembly_tests"
 ];
-var ConfigurationFieldSchema = z7.enum(CONFIGURATION_FIELDS);
-var ConfigurationChangeSchema = z7.strictObject({
-  on: z7.literal("configuration"),
+var ConfigurationFieldSchema = z13.enum(CONFIGURATION_FIELDS);
+var ConfigurationChangeSchema = z13.strictObject({
+  on: z13.literal("configuration"),
   field: ConfigurationFieldSchema,
-  op: z7.enum(["set", "unset"]),
-  base_digest: DigestSchema.optional(),
-  after: z7.union([
+  op: z13.enum(["set", "unset"]),
+  base_digest: DigestSchema2.optional(),
+  after: z13.union([
     PresetPolicySchema,
     PromptModuleSchema,
     AssemblyConfigSchema,
-    z7.array(AssemblyFixtureSchema)
+    z13.array(AssemblyFixtureSchema)
   ]).optional()
 });
-var ChangeSchema = z7.discriminatedUnion("on", [
+var STORY_KINDS = [
+  "scene",
+  "beat",
+  "plotline",
+  "ending",
+  "start",
+  "choice",
+  "item",
+  "event",
+  "timeline",
+  "var",
+  "knowing"
+];
+var STORY_ORDER_LISTS = [
+  "scenes",
+  "beats",
+  "plotlines",
+  "endings",
+  "starts",
+  "choices",
+  "items",
+  "events",
+  "timelines"
+];
+var safeIdentity = (value) => value !== "__proto__";
+var StoryObjectSchemas = {
+  scene: StorySchema.shape.scenes.element,
+  beat: StorySchema.shape.beats.unwrap().element,
+  plotline: StorySchema.shape.plotlines.unwrap().element,
+  ending: StorySchema.shape.endings.unwrap().element,
+  start: StorySchema.shape.starts.unwrap().element,
+  choice: StorySchema.shape.choices.unwrap().element,
+  item: StorySchema.shape.items.unwrap().element,
+  event: StorySchema.shape.events.unwrap().element,
+  timeline: StorySchema.shape.timelines.unwrap().element,
+  var: StorySchema.shape.vars.unwrap().valueType,
+  knowing: StorySchema.shape.knowing.unwrap().valueType
+};
+var objectAfter = z13.union([
+  StoryObjectSchemas.scene,
+  StoryObjectSchemas.beat,
+  StoryObjectSchemas.plotline,
+  StoryObjectSchemas.ending,
+  StoryObjectSchemas.start,
+  StoryObjectSchemas.choice,
+  StoryObjectSchemas.item,
+  StoryObjectSchemas.event,
+  StoryObjectSchemas.timeline,
+  StoryObjectSchemas.var,
+  StoryObjectSchemas.knowing
+]);
+var StoryChangeSchema = z13.strictObject({
+  on: z13.literal("story"),
+  kind: z13.enum(STORY_KINDS),
+  op: changeOp,
+  id: z13.string().min(1).refine(safeIdentity, "reserved object identity"),
+  base_digest: DigestSchema2.optional(),
+  after: objectAfter.optional()
+}).superRefine((change, ctx) => {
+  const identity = change.kind === "knowing" ? StoryInfoRefSchema : SegmentSchema;
+  if (!identity.safeParse(change.id).success)
+    ctx.addIssue({ code: "custom", path: ["id"], message: "invalid object identity" });
+  if (change.after !== void 0) {
+    const parsed = StoryObjectSchemas[change.kind].safeParse(change.after);
+    if (!parsed.success)
+      ctx.addIssue({ code: "custom", path: ["after"], message: parsed.error.message });
+    if ("id" in change.after && change.after.id !== change.id)
+      ctx.addIssue({ code: "custom", path: ["after", "id"], message: "after.id must equal id" });
+  }
+});
+var StoryOrderChangeSchema = z13.strictObject({
+  on: z13.literal("story-order"),
+  op: z13.literal("set").default("set"),
+  list: z13.enum(STORY_ORDER_LISTS),
+  base_digest: DigestSchema2,
+  after: z13.array(SegmentSchema.refine(safeIdentity, "reserved object identity"))
+}).refine(
+  (change) => new Set(change.after).size === change.after.length,
+  "duplicate order identity"
+);
+var CastChangeSchema = z13.strictObject({
+  on: z13.literal("cast"),
+  op: changeOp,
+  key: CastKeySchema.refine(safeIdentity, "reserved object identity"),
+  base_digest: DigestSchema2.optional(),
+  after: CastMemberSchema.optional()
+}).refine(
+  (change) => change.after === void 0 || change.after.key === change.key,
+  "after.key must equal key"
+);
+var GroupChangeSchema = z13.strictObject({
+  on: z13.literal("group"),
+  op: changeOp,
+  id: SegmentSchema.refine(safeIdentity, "reserved object identity"),
+  base_digest: DigestSchema2.optional(),
+  after: ContentGroupSchema.optional()
+}).refine(
+  (change) => change.after === void 0 || change.after.id === change.id,
+  "after.id must equal id"
+);
+var SourceChangeSchema = z13.strictObject({
+  on: z13.literal("source"),
+  op: changeOp,
+  id: SegmentSchema.refine(safeIdentity, "reserved object identity"),
+  base_digest: DigestSchema2.optional(),
+  after: KnowledgeSourceSchema.optional()
+}).refine(
+  (change) => change.after === void 0 || change.after.id === change.id,
+  "after.id must equal id"
+);
+var CompositionChangeSchema = z13.discriminatedUnion("on", [
+  StoryChangeSchema,
+  StoryOrderChangeSchema,
+  CastChangeSchema,
+  GroupChangeSchema,
+  SourceChangeSchema
+]);
+var ChangeSchema = z13.discriminatedUnion("on", [
+  StoryChangeSchema,
+  StoryOrderChangeSchema,
+  CastChangeSchema,
+  GroupChangeSchema,
+  SourceChangeSchema,
   ConfigurationChangeSchema,
-  z7.strictObject({
-    on: z7.literal("fragment"),
+  z13.strictObject({
+    on: z13.literal("fragment"),
     op: changeOp,
     id: FragmentIdSchema,
-    base_digest: DigestSchema.optional(),
+    base_digest: DigestSchema2.optional(),
     after: FragmentSchema.optional()
   }),
-  z7.strictObject({
-    on: z7.literal("edge"),
+  z13.strictObject({
+    on: z13.literal("edge"),
     op: changeOp,
     id: SegmentSchema,
-    base_digest: DigestSchema.optional(),
+    base_digest: DigestSchema2.optional(),
     after: ReferenceEdgeSchema.optional()
   }),
-  z7.strictObject({
-    on: z7.literal("asset"),
+  z13.strictObject({
+    on: z13.literal("asset"),
     op: changeOp,
     slot: SegmentSchema,
     /** 省略时表示整个 slot。 */
     variant: SegmentSchema.optional(),
-    base_digest: DigestSchema.optional(),
-    after: z7.union([AssetSlotSchema, AssetVariantSchema]).optional()
+    base_digest: DigestSchema2.optional(),
+    after: z13.union([AssetSlotSchema, AssetVariantSchema]).optional()
   }),
-  z7.strictObject({
-    on: z7.literal("metadata"),
+  z13.strictObject({
+    on: z13.literal("metadata"),
     field: MetadataFieldSchema,
-    op: z7.enum(["set", "unset"]),
-    base_digest: DigestSchema.optional(),
+    op: z13.enum(["set", "unset"]),
+    base_digest: DigestSchema2.optional(),
     after: JSONValueSchema.optional(),
     /** 由服务端按字段计算；客户端提交的值不被信任。 */
-    sensitive: z7.boolean()
+    sensitive: z13.boolean()
   })
 ]);
-var ContributionSchema = z7.strictObject({
+var ContributionSchema = z13.strictObject({
   id: ContributionIdSchema,
   target: CreationIdSchema,
-  base: z7.strictObject({ revision: RevisionIdSchema, semantic_digest: DigestSchema }),
-  author: z7.union([UserIdSchema, GuestAuthorSchema]),
+  base: z13.strictObject({ revision: RevisionIdSchema, semantic_digest: DigestSchema2 }),
+  author: z13.union([UserIdSchema, GuestAuthorSchema]),
   /** Agent 提交的 Contribution 必须标记，作者可以单独过滤。 */
-  agent: z7.boolean().optional(),
-  title: z7.string().min(1).max(200),
-  description: z7.string().max(2e4).optional(),
-  status: z7.enum(["open", "accepted", "rejected", "withdrawn"]),
-  transport: z7.discriminatedUnion("type", [
-    z7.strictObject({ type: z7.literal("native") }),
-    z7.strictObject({
-      type: z7.literal("github-pr"),
+  agent: z13.boolean().optional(),
+  title: z13.string().min(1).max(200),
+  description: z13.string().max(2e4).optional(),
+  status: z13.enum(["open", "accepted", "rejected", "withdrawn"]),
+  transport: z13.discriminatedUnion("type", [
+    z13.strictObject({ type: z13.literal("native") }),
+    z13.strictObject({
+      type: z13.literal("github-pr"),
       repository_id: DecimalIdSchema,
-      number: z7.number().int().positive()
+      number: z13.number().int().positive()
     })
   ]),
-  changes: z7.array(ChangeSchema).min(1),
+  changes: z13.array(ChangeSchema).min(1),
   /** 默认按目标 Creation 的 license 授权；目标是保留所有权利时需要显式授权。 */
-  rights_ack: z7.union([
-    z7.strictObject({ inbound_equals_outbound: z7.literal(true) }),
-    z7.strictObject({ explicit_grant: z7.literal(true) })
+  rights_ack: z13.union([
+    z13.strictObject({ inbound_equals_outbound: z13.literal(true) }),
+    z13.strictObject({ explicit_grant: z13.literal(true) })
   ])
 });
 
 // ../../packages/core/src/schema/preset.ts
-var ResolvedBlockIdSchema = z8.union([
+var ResolvedDefinitionIdSchema = z14.union([
   SegmentSchema,
-  z8.string().regex(
+  z14.string().regex(
     new RegExp(
       `^@${NAMESPACE_RE.source.slice(1, -1)}/${NAME_RE.source.slice(1, -1)}#${SEGMENT_RE.source.slice(1, -1)}$`
     )
   )
 ]);
-var PolicyBlockOriginSchema = ExactRefSchema.extend({
+var segment = SEGMENT_RE.source.slice(1, -1);
+var definitionId = `(?:${segment}|@${NAMESPACE_RE.source.slice(1, -1)}/${NAME_RE.source.slice(1, -1)}#${segment})`;
+var ResolvedBlockIdSchema = z14.string().regex(new RegExp(`^${definitionId}(?:~(?:main|after-history)~${segment})?$`));
+var PolicyBlockOriginSchema = withBuildIdentity({
+  ref: UnversionedRefSchema,
+  semantic_digest: DigestSchema2,
   block: SegmentSchema,
-  via: z8.array(SegmentSchema)
+  via: z14.array(SegmentSchema)
 });
-var ResolvedPolicyBlockSchema = PresetBlockSchema.extend({
-  id: ResolvedBlockIdSchema,
+var ResolvedModuleBlockSchema = PresetBlockSchema.extend({
+  id: ResolvedDefinitionIdSchema,
   origin: PolicyBlockOriginSchema.optional()
 });
-var ResolvedPolicySchema = z8.strictObject({ ...PresetPolicySchema.shape, blocks: z8.array(ResolvedPolicyBlockSchema) }).omit({ imports: true }).superRefine((policy, ctx) => {
+var ResolvedPolicyBlockSchema = ResolvedModuleBlockSchema.omit({
+  default_at: true
+}).extend({
+  id: ResolvedBlockIdSchema,
+  position: PolicyPositionSchema,
+  placement: PolicyPlacementSchema.optional()
+});
+var ResolvedPolicySchema = z14.strictObject({ ...PresetPolicySchema.shape, blocks: z14.array(ResolvedPolicyBlockSchema) }).omit({ imports: true, placements: true }).superRefine((policy, ctx) => {
   if (new Set(policy.layout).size !== policy.layout.length)
     ctx.addIssue({ code: "custom", path: ["layout"], message: "duplicate layout region" });
   if (new Set(policy.blocks.map((b) => b.id)).size !== policy.blocks.length)
     ctx.addIssue({ code: "custom", path: ["blocks"], message: "duplicate block id" });
 });
-var ResolvedPresetSchema = z8.strictObject({
+var ResolvedPresetSchema = withBuildIdentity({
   ref: UnversionedRefSchema,
-  release: ReleaseIdSchema,
-  semantic_digest: DigestSchema,
-  resolver: z8.strictObject({ name: z8.string().min(1), version: z8.string().min(1) }),
+  semantic_digest: DigestSchema2,
+  resolver: z14.strictObject({ name: z14.string().min(1), version: z14.string().min(1) }),
   policy: ResolvedPolicySchema,
-  lock: z8.array(LockEntrySchema).optional(),
-  lock_digest: DigestSchema.optional()
+  lock: z14.array(LockEntrySchema).optional(),
+  lock_digest: DigestSchema2.optional()
 });
-var PresetIdentitySchema = z8.strictObject({
-  ref: UnversionedRefSchema,
-  release: ReleaseIdSchema,
-  semantic_digest: DigestSchema
+var PublishedResolvedPresetSchema = ResolvedPresetSchema.options[0].extend({
+  policy: ResolvedPolicySchema.safeExtend({
+    blocks: z14.array(
+      ResolvedPolicyBlockSchema.extend({
+        origin: PolicyBlockOriginSchema.options[0].optional()
+      })
+    )
+  })
 });
-var PresetDiffSchema = z8.strictObject({
+var PresetIdentitySchema = BuildRefSchema;
+var PresetDiffSchema = z14.strictObject({
   from: PresetIdentitySchema,
   to: PresetIdentitySchema,
-  blocks: z8.strictObject({
-    added: z8.array(ResolvedBlockIdSchema),
-    removed: z8.array(ResolvedBlockIdSchema),
-    modified: z8.array(
-      z8.strictObject({
+  blocks: z14.strictObject({
+    added: z14.array(ResolvedBlockIdSchema),
+    removed: z14.array(ResolvedBlockIdSchema),
+    modified: z14.array(
+      z14.strictObject({
         id: ResolvedBlockIdSchema,
-        fields: z8.array(z8.enum(["text", "position", "enabled"])).min(1)
+        fields: z14.array(z14.enum(["text", "position", "enabled", "purpose"])).min(1)
       })
     ),
     /** 两侧共有块的相对顺序发生变化；单纯新增或删除不算重排。 */
-    order_changed: z8.boolean()
+    order_changed: z14.boolean()
   }),
-  policy_changes: z8.array(z8.enum(["version", "layout", "region_budgets", "requires"])),
-  lock_changes: z8.array(
-    z8.strictObject({
+  policy_changes: z14.array(
+    z14.enum(["version", "layout", "region_budgets", "requires", "selection", "render"])
+  ),
+  lock_changes: z14.array(
+    z14.strictObject({
       ref: UnversionedRefSchema,
       from: LockEntrySchema.optional(),
       to: LockEntrySchema.optional()
     })
   ).optional(),
-  origin_changes: z8.array(
-    z8.strictObject({
+  origin_changes: z14.array(
+    z14.strictObject({
       id: ResolvedBlockIdSchema,
       from: PolicyBlockOriginSchema.optional(),
       to: PolicyBlockOriginSchema.optional()
     })
   ).optional()
 });
-var ResolvedPromptModuleSchema = z8.strictObject({
-  ...ExactRefSchema.shape,
-  resolver: z8.strictObject({ name: z8.string().min(1), version: z8.string().min(1) }),
-  version: z8.literal("0-draft"),
-  blocks: z8.array(ResolvedPolicyBlockSchema),
-  lock: z8.array(LockEntrySchema),
-  lock_digest: DigestSchema
+var ResolvedPromptModuleSchema = withBuildIdentity({
+  ref: UnversionedRefSchema,
+  semantic_digest: DigestSchema2,
+  resolver: z14.strictObject({ name: z14.string().min(1), version: z14.string().min(1) }),
+  version: z14.literal("1-draft"),
+  blocks: z14.array(ResolvedModuleBlockSchema),
+  lock: z14.array(LockEntrySchema),
+  lock_digest: DigestSchema2
 });
 
-// ../../packages/core/src/version.ts
-var CORE_VERSION = "0.0.0";
-var RESOLVER = { name: "@char-pub/core", version: CORE_VERSION };
-
 // ../../packages/core/src/preset.ts
-var IdentitySchema = z9.strictObject({ release: ReleaseIdSchema, semantic_digest: DigestSchema });
+var IdentitySchema = withBuildIdentity({ semantic_digest: DigestSchema2 });
 function load(input) {
   const valid = IdentitySchema.safeParse({
-    release: input.release,
+    ...buildIdentity(input),
     semantic_digest: input.semantic_digest
   });
   if (!valid.success)
     throw new CharError({ code: "schema.invalid", subject: "preset", detail: valid.error.message });
   const canonical = canonicalizeCreation(input.creation);
   if (canonical.semantic_digest !== input.semantic_digest)
-    throw new CharError({ code: "resolve.semantic_digest_mismatch", subject: input.release });
+    throw new CharError({
+      code: "resolve.semantic_digest_mismatch",
+      subject: buildIdentityKey(input)
+    });
   const checked = checkCreation(canonical.creation);
   if (!checked.ok)
     throw new CharError({
@@ -317471,36 +319300,51 @@ function policyGraph(input, type) {
   const root = load(input);
   const inputs = /* @__PURE__ */ new Map();
   for (const dep of input.dependencies ?? []) {
+    publishedIdentity(dep);
     const previous = inputs.get(dep.release);
     if (previous && digestOf(previous) !== digestOf(dep))
       throw new CharError({ code: "resolve.duplicate_release", subject: dep.release });
     inputs.set(dep.release, dep);
   }
   const versions = /* @__PURE__ */ new Map([
-    [root.ref, { release: input.release, via: [] }]
+    [root.ref, { key: buildIdentityKey(input), identity: buildIdentity(input), via: [] }]
   ]);
   const visited = /* @__PURE__ */ new Set();
   const heights = /* @__PURE__ */ new Map();
   const lock = [];
   const blocks = [];
+  const definitions = /* @__PURE__ */ new Map();
   let visits = 0;
-  const visit = (creation, release, digest, via, ancestors) => {
+  const visit = (creation, source, digest, via, ancestors) => {
+    const release = buildIdentityKey(source);
     if (ancestors.includes(release))
       throw new CharError({ code: "resolve.cycle", subject: creation.ref, data: { via } });
     const previous = versions.get(creation.ref);
-    if (previous && previous.release !== release)
+    if (previous && previous.key !== release)
       throw new CharError({
         code: "resolve.diamond_conflict",
         subject: creation.ref,
-        data: { ref: creation.ref, releases: [previous, { release, via }] }
+        data: {
+          ref: creation.ref,
+          releases: [
+            { ...buildIdentity(previous.identity), via: previous.via },
+            { ...buildIdentity(source), via }
+          ]
+        }
       });
-    versions.set(creation.ref, { release, via: previous?.via ?? via });
+    versions.set(creation.ref, {
+      key: release,
+      identity: buildIdentity(source),
+      via: previous?.via ?? via
+    });
     if (++visits > MAX_GRAPH_INSTANCES)
       throw new CharError({ code: "resolve.graph_too_large", subject: root.ref });
     if (via.length + (heights.get(release) ?? 0) > MAX_GRAPH_DEPTH)
       throw new CharError({ code: "resolve.graph_too_deep", subject: creation.ref });
     if (visited.has(release)) return;
     visited.add(release);
+    const local = { blocks: /* @__PURE__ */ new Map(), imports: /* @__PURE__ */ new Map() };
+    definitions.set(release, local);
     let height = 0;
     const body = creation.policy ?? creation.prompt_module;
     if (!body) throw new CharError({ code: "resolve.not_prompt_module", subject: creation.ref });
@@ -317535,30 +319379,79 @@ function policyGraph(input, type) {
           semantic_digest: edge.pin.semantic_digest,
           via: childVia
         });
-      visit(child, dep.release, edge.pin.semantic_digest, childVia, [...ancestors, release]);
+      visit(child, { release: dep.release }, edge.pin.semantic_digest, childVia, [
+        ...ancestors,
+        release
+      ]);
+      local.imports.set(edge.id, dep.release);
       height = Math.max(height, 1 + (heights.get(dep.release) ?? 0));
     }
     heights.set(release, height);
-    for (const block of body.blocks)
-      blocks.push({
+    for (const block of body.blocks) {
+      const resolved = {
         ...block,
         id: creation.type === "prompt-module" ? `${creation.ref}#${block.id}` : block.id,
-        origin: { ref: creation.ref, release, semantic_digest: digest, block: block.id, via }
-      });
+        origin: {
+          ref: creation.ref,
+          ...buildIdentity(source),
+          semantic_digest: digest,
+          block: block.id,
+          via
+        }
+      };
+      blocks.push(resolved);
+      local.blocks.set(block.id, resolved);
+    }
   };
-  visit(root, input.release, input.semantic_digest, [], []);
+  visit(root, buildIdentity(input), input.semantic_digest, [], []);
   lock.sort((a, b) => compareStrings(a.ref, b.ref));
-  return { root, blocks, lock, lock_digest: digestOf(lock) };
+  const blockAt = (path2) => {
+    const segments = path2.split("/");
+    const id2 = segments.pop();
+    let definition2 = definitions.get(buildIdentityKey(input));
+    for (const segment2 of segments) {
+      const release = definition2?.imports.get(segment2);
+      definition2 = release ? definitions.get(release) : void 0;
+      if (!definition2) return void 0;
+    }
+    return id2 ? definition2?.blocks.get(id2) : void 0;
+  };
+  return { root, blocks, blockAt, lock, lock_digest: digestOf(lock) };
 }
 function resolvePreset(input) {
   const graph = policyGraph(input, "preset");
-  const { imports: _imports, ...policy } = graph.root.policy;
+  const {
+    imports: _imports,
+    placements,
+    ...policy
+  } = graph.root.policy;
+  const explicit = /* @__PURE__ */ new Set();
+  const identities = /* @__PURE__ */ new Set();
+  const blocks = (placements ?? []).map(
+    (placement) => {
+      const block = graph.blockAt(placement.block);
+      if (!block)
+        throw new CharError({ code: "resolve.placement_missing", subject: placement.block });
+      const id2 = `${block.id}~${placement.at}~${placement.as ?? placement.at}`;
+      if (identities.has(id2))
+        throw new CharError({ code: "resolve.duplicate_placement", subject: id2 });
+      identities.add(id2);
+      explicit.add(block.id);
+      const { default_at: _default, ...definition2 } = block;
+      return { ...definition2, id: id2, position: placement.at, placement };
+    }
+  );
+  for (const block of graph.blocks) {
+    if (explicit.has(block.id)) continue;
+    const { default_at, ...definition2 } = block;
+    blocks.push({ ...definition2, position: default_at });
+  }
   return ResolvedPresetSchema.parse({
     ref: graph.root.ref,
-    release: input.release,
+    ...buildIdentity(input),
     semantic_digest: input.semantic_digest,
     resolver: RESOLVER,
-    policy: { ...policy, blocks: graph.blocks },
+    policy: { ...policy, blocks },
     lock: graph.lock,
     lock_digest: graph.lock_digest
   });
@@ -317567,10 +319460,10 @@ function resolvePromptModule(input) {
   const graph = policyGraph(input, "prompt-module");
   return ResolvedPromptModuleSchema.parse({
     ref: graph.root.ref,
-    release: input.release,
+    ...buildIdentity(input),
     semantic_digest: input.semantic_digest,
     resolver: RESOLVER,
-    version: "0-draft",
+    version: "1-draft",
     blocks: graph.blocks,
     lock: graph.lock,
     lock_digest: graph.lock_digest
@@ -317593,9 +319486,13 @@ function buildEnvironment(graph) {
   const envs = /* @__PURE__ */ new Map();
   const participants = /* @__PURE__ */ new Map();
   const lateSlots = /* @__PURE__ */ new Map();
-  const firstInstanceOf = /* @__PURE__ */ new Map();
+  const castInstances = /* @__PURE__ */ new Map();
   for (const inst of graph.instances) {
-    if (!firstInstanceOf.has(inst.release.ref)) firstInstanceOf.set(inst.release.ref, inst);
+    if (!inst.cast) continue;
+    const key = participantKey(inst.cast.owner.key, inst.cast.member.key);
+    if (castInstances.has(key))
+      throw new CharError({ code: "resolve.ambiguous_cast_context", subject: key });
+    castInstances.set(key, inst);
   }
   lateSlots.set(USER_LATE_SLOT, {
     key: USER_LATE_SLOT,
@@ -317655,9 +319552,21 @@ function buildEnvironment(graph) {
         const key = participantKey(inst.key, member.key);
         const subject = `${c.ref}/cast/${member.key}`;
         const who = member.who;
+        const arrangement = {
+          cast_key: member.key,
+          cast_scope: inst.key,
+          ...member.part !== void 0 ? { part: member.part } : {},
+          ...member.goal !== void 0 ? { goal: member.goal } : {}
+        };
         if (typeof who === "object") {
           const late = addLate(lateSlotKey(inst.key, member.key), [who.late], true, who.hint);
-          const p2 = { key, display_name: member.key, kind: who.late, late };
+          const p2 = {
+            key,
+            display_name: member.key,
+            kind: who.late,
+            late,
+            ...arrangement
+          };
           if (member.role) p2.role = member.role;
           addParticipant(p2);
           cast.set(member.key, { kind: "late", participant: key, late });
@@ -317669,14 +319578,17 @@ function buildEnvironment(graph) {
         const rel = earlyTarget(resolveUseRef(who, c.ref), ["character", "persona"], subject);
         const kind = rel.creation.type === "persona" ? "persona" : "character";
         const p = {
+          ...arrangement,
           key,
           ref: rel.ref,
           display_name: rel.creation.display_name,
           kind
         };
         if (member.role) p.role = member.role;
-        const avatarInstance = firstInstanceOf.get(rel.ref);
-        if (avatarInstance) p.avatarInstance = avatarInstance;
+        const avatarInstance = castInstances.get(key);
+        if (!avatarInstance || avatarInstance.release.ref !== rel.ref)
+          throw new CharError({ code: "resolve.cast_instance_missing", subject });
+        p.avatarInstance = avatarInstance;
         addParticipant(p);
         cast.set(member.key, {
           kind: "early",
@@ -317707,16 +319619,9 @@ function buildEnvironment(graph) {
       );
       continue;
     }
-    const parent = inst.parent?.instance;
-    const parentCast = parent ? castEnvs.get(parent) : void 0;
     let key = null;
-    if (parentCast) {
-      for (const v of parentCast.values()) {
-        if (v.kind === "early" && v.ref === c.ref) {
-          key = v.participant;
-          break;
-        }
-      }
+    if (inst.cast) {
+      key = castEnvs.get(inst.cast.owner)?.get(inst.cast.member.key)?.participant ?? null;
     }
     if (key === null) {
       key = addParticipant({
@@ -317729,6 +319634,36 @@ function buildEnvironment(graph) {
     }
     instanceParticipant.set(inst, key);
   }
+  const owned = /* @__PURE__ */ new Map();
+  for (const inst of castInstances.values()) {
+    if (!inst.cast) continue;
+    const list = owned.get(inst.cast.owner) ?? [];
+    list.push(inst);
+    owned.set(inst.cast.owner, list);
+  }
+  const scopeCache = /* @__PURE__ */ new Map();
+  const scopedInstances = (instance) => {
+    const cached = scopeCache.get(instance);
+    if (cached) return cached;
+    const result = /* @__PURE__ */ new Set();
+    const pending = [instance];
+    while (pending.length) {
+      const next = pending.pop();
+      if (!next || result.has(next)) continue;
+      result.add(next);
+      pending.push(...next.children, ...owned.get(next) ?? []);
+    }
+    scopeCache.set(instance, result);
+    return result;
+  };
+  const participantsFor = (instance, ref) => {
+    const keys = /* @__PURE__ */ new Set();
+    for (const target2 of scopedInstances(instance)) {
+      const key = instanceParticipant.get(target2);
+      if (target2.release.ref === ref && key) keys.add(key);
+    }
+    return [...keys];
+  };
   for (const inst of graph.instances) {
     const c = inst.release.creation;
     const edge = inst.parent?.edge;
@@ -317813,26 +319748,35 @@ function buildEnvironment(graph) {
         const rel2 = earlyTarget(v.ref, accepts, subject);
         return { ...v, display_name: rel2.creation.display_name };
       }
+      const target2 = lateSlots.get(v.late);
+      if (!target2 || target2.accepts.some((kind) => !accepts.includes(kind)))
+        throw new CharError({
+          code: "resolve.binding_type_mismatch",
+          subject,
+          detail: `cast ${key} accepts ${target2?.accepts.join(", ") ?? "unknown"}; slot accepts ${accepts.join(", ")}`
+        });
       return v;
     }
     const declaringRef = parent?.release.ref ?? inst.release.ref;
-    const rel = earlyTarget(resolveUseRef(b, declaringRef), accepts, subject);
+    const targetRef = resolveUseRef(b, declaringRef);
+    if (![...scopedInstances(parent ?? inst)].some((target2) => target2.release.ref === targetRef))
+      throw new CharError({ code: "resolve.binding_not_in_graph", subject, detail: targetRef });
+    const rel = earlyTarget(targetRef, accepts, subject);
     let participant = null;
     if (isParticipantType(rel.creation.type)) {
-      const p = {
-        key: participantKey(inst.key, name),
-        ref: rel.ref,
-        display_name: rel.creation.display_name,
-        kind: rel.creation.type
-      };
-      const avatarInstance = firstInstanceOf.get(rel.ref);
-      if (avatarInstance) p.avatarInstance = avatarInstance;
-      participant = addParticipant(p);
+      const candidates = new Set(participantsFor(parent ?? inst, rel.ref));
+      if (candidates.size !== 1)
+        throw new CharError({
+          code: candidates.size > 1 ? "resolve.ambiguous_participant" : "resolve.binding_not_in_graph",
+          subject,
+          detail: `${rel.ref} must identify one participant; use {{cast:<key>}} to select an instance`
+        });
+      participant = [...candidates][0] ?? null;
     }
     return { kind: "early", participant, display_name: rel.creation.display_name, ref: rel.ref };
   }
   const au = graph.instances.some((i) => i.release.creation.provenance.au === true);
-  return { envs, participants, lateSlots, au };
+  return { envs, participants, participantsFor, lateSlots, au };
 }
 function resolveParams(inst, subjectBase) {
   const decls = inst.release.creation.params ?? {};
@@ -317861,221 +319805,266 @@ function resolveParams(inst, subjectBase) {
   }
   return out;
 }
-function pickLocalized(text, locale, fallback) {
-  if (typeof text === "string") return text;
-  const exact = text[locale] ?? text[fallback];
+function pickLocalized(text2, locale, fallback) {
+  if (typeof text2 === "string") return text2;
+  const exact = text2[locale] ?? text2[fallback];
   if (exact !== void 0) return exact;
-  const keys = Object.keys(text).sort();
-  return keys[0] === void 0 ? "" : text[keys[0]] ?? "";
+  const keys = Object.keys(text2).sort();
+  return keys[0] === void 0 ? "" : text2[keys[0]] ?? "";
 }
 
 // ../../packages/core/src/schema/ir.ts
-import { z as z10 } from "./vendor/zod.js";
-var IR_VERSION = "0-draft";
-var IRFragmentIdSchema = z10.string().min(1);
-var IRContentSchema = z10.discriminatedUnion("type", [
-  z10.strictObject({
-    type: z10.literal("text"),
-    text: z10.string(),
-    format: z10.enum(["markdown", "plain"])
+import { z as z15 } from "./vendor/zod.js";
+var IR_VERSION = "1-draft";
+var IRFragmentIdSchema = z15.string().min(1);
+var IRContentSchema = z15.discriminatedUnion("type", [
+  z15.strictObject({
+    type: z15.literal("text"),
+    text: z15.string(),
+    format: z15.enum(["markdown", "plain"])
   }),
-  z10.strictObject({
-    type: z10.literal("dialogue"),
+  z15.strictObject({
+    type: z15.literal("dialogue"),
     /** speaker 是 `participant:<key>`。 */
-    turns: z10.array(z10.strictObject({ speaker: z10.string(), text: z10.string() }))
+    turns: z15.array(z15.strictObject({ speaker: z15.string(), text: z15.string() }))
   }),
   /** asset 是 IRAsset 的 id。 */
-  z10.strictObject({ type: z10.literal("media"), asset: z10.string(), caption: z10.string().optional() }),
-  z10.strictObject({ type: z10.literal("structured"), schema: z10.string(), data: JSONValueSchema })
+  z15.strictObject({ type: z15.literal("media"), asset: z15.string(), caption: z15.string().optional() }),
+  z15.strictObject({ type: z15.literal("structured"), schema: z15.string(), data: JSONValueSchema })
 ]);
-var IRVisibilitySchema = z10.discriminatedUnion("scope", [
-  z10.strictObject({ scope: z10.literal("shared") }),
+var IRVisibilitySchema = z15.discriminatedUnion("scope", [
+  z15.strictObject({ scope: z15.literal("shared") }),
   /** `to` 是 participant key 列表（已排序）。 */
-  z10.strictObject({ scope: z10.literal("private"), to: z10.array(z10.string()).min(1) }),
-  z10.strictObject({ scope: z10.literal("scene"), scene: z10.string() })
+  z15.strictObject({ scope: z15.literal("private"), to: z15.array(z15.string()).min(1) }),
+  z15.strictObject({ scope: z15.literal("scene"), scene: z15.string() }),
+  z15.strictObject({ scope: z15.literal("story-scene"), scene: z15.string() })
 ]);
-var OverriddenBySchema = z10.strictObject({
+var OverriddenBySchema = z15.strictObject({
   creation: UnversionedRefSchema,
   edge: SegmentSchema.optional(),
-  op: z10.enum(["replace", "patch", "add"])
+  cast: z15.string().optional(),
+  op: z15.enum(["replace", "patch", "add"])
 });
-var OriginSchema = z10.strictObject({
+var OriginSchema = withBuildIdentity({
   creation: UnversionedRefSchema,
-  release: ReleaseIdSchema,
   fragment: FragmentIdSchema,
   /** 从根到这个引用实例的 edge ID 路径。 */
-  via: z10.array(SegmentSchema),
+  via: z15.array(SegmentSchema),
   /** 根实例是 `root`，其余是 `sha256(JCS(via))`。 */
-  instance_key: z10.string(),
+  instance_key: z15.string(),
   /** 按应用顺序列出修改过这个 fragment 的 override。 */
-  overridden_by: z10.array(OverriddenBySchema).optional(),
-  stable: z10.boolean()
+  overridden_by: z15.array(OverriddenBySchema).optional(),
+  stable: z15.boolean()
 });
-var IRFragmentSchema = z10.strictObject({
+var IRFragmentSchema = z15.strictObject({
   id: IRFragmentIdSchema,
   kind: FragmentKindSchema,
+  description: LocalizedTextSchema.optional(),
+  selectable: z15.boolean().optional(),
+  outward: z15.boolean().optional(),
+  perspective: z15.union([
+    z15.enum(["canon", "rumor"]),
+    z15.strictObject({ claim: z15.string().regex(/^participant:.+$/) }),
+    z15.strictObject({ belief: z15.string().regex(/^participant:.+$/) })
+  ]).optional(),
+  about: FragmentSchema.shape.about,
+  source: FragmentSchema.shape.source,
+  instance: z15.string().optional(),
+  style_scope: z15.union([
+    z15.literal("narration"),
+    z15.strictObject({ scene: z15.string(), owner: z15.string() }),
+    z15.strictObject({ participant: z15.string() })
+  ]).optional(),
+  style_use: z15.strictObject({
+    owner: z15.string(),
+    order: z15.number().int().nonnegative(),
+    combine: z15.enum(["add", "replace"]),
+    /** Nested Style uses inherit the outer scope while retaining local composition. */
+    path: z15.array(
+      z15.strictObject({
+        owner: z15.string(),
+        order: z15.number().int().nonnegative(),
+        combine: z15.enum(["add", "replace"])
+      })
+    ).optional()
+  }).optional(),
   /** 已完成 early binding、params 替换和 override。 */
   content: IRContentSchema,
-  locales: z10.record(LocaleSchema3, IRContentSchema).optional(),
+  locales: z15.record(LocaleSchema, IRContentSchema).optional(),
   activation: ActivationSchema,
   visibility: IRVisibilitySchema,
-  importance: z10.enum(["pinned", "normal", "opportunistic"]),
+  importance: z15.enum(["pinned", "normal", "opportunistic"]),
   placement_hint: FragmentKindSchema,
   /** 这个 fragment 描述的 participant key。 */
-  subject: z10.string().optional(),
+  subject: z15.string().optional(),
   /** IRAsset 的 id。 */
-  asset_refs: z10.array(z10.string()).optional(),
+  asset_refs: z15.array(z15.string()).optional(),
   origin: OriginSchema,
   /** 语义字段的 digest（不含 id、origin 和 digest 自身），用于 Context Diff。 */
-  digest: DigestSchema
+  digest: DigestSchema2
 });
-var ParticipantSchema = z10.strictObject({
+var ParticipantSchema = z15.strictObject({
   /** 根角色是 `self`；其他参与者是 `p:<hex>`。 */
-  key: z10.string(),
+  key: z15.string(),
+  cast_key: z15.string().optional(),
+  cast_scope: z15.string().optional(),
+  part: LocalizedTextSchema.optional(),
+  goal: LocalizedTextSchema.optional(),
   ref: UnversionedRefSchema.optional(),
   display_name: LocalizedTextSchema,
-  kind: z10.enum(["character", "persona"]),
-  role: z10.enum(["lead", "support", "user"]).optional(),
+  kind: z15.enum(["character", "persona"]),
+  role: z15.enum(["lead", "support", "user"]).optional(),
   /** 由 Session 决定时，指向 late_slots 的 key。 */
-  late: z10.string().optional(),
+  late: z15.string().optional(),
   /** IRAsset 的 id。 */
-  avatar: z10.string().optional()
+  avatar: z15.string().optional()
 });
-var LateSlotSchema = z10.strictObject({
+var LateSlotSchema = z15.strictObject({
   /** 隐式用户是 `user`；其他是 `l:<hex>`。 */
-  key: z10.string(),
-  accepts: z10.array(z10.enum(["persona", "character"])).min(1),
-  required: z10.boolean(),
-  hint: z10.string().optional(),
+  key: z15.string(),
+  accepts: z15.array(z15.enum(["persona", "character"])).min(1),
+  required: z15.boolean(),
+  hint: z15.string().optional(),
   /** 含有这个占位符的 IR fragment（已排序）。 */
-  used_by: z10.array(IRFragmentIdSchema)
+  used_by: z15.array(IRFragmentIdSchema)
 });
-var IRBootstrapSchema = z10.strictObject({
-  greetings: z10.array(
-    z10.strictObject({
-      id: z10.string(),
-      speaker: z10.string(),
+var IRBootstrapSchema = z15.strictObject({
+  greetings: z15.array(
+    z15.strictObject({
+      id: z15.string(),
+      /** Omitted for a narrated Scenario opening; characters retain their actual participant. */
+      speaker: z15.string().optional(),
       /** 可以含有 `{{late:*}}`。 */
-      text: z10.string(),
-      locales: z10.record(LocaleSchema3, z10.string()).optional(),
-      scenario_hint: z10.string().optional()
+      text: z15.string(),
+      locales: z15.record(LocaleSchema, z15.string()).optional(),
+      scenario_hint: z15.string().optional()
     })
   )
 });
-var IRAssetSchema = z10.strictObject({
+var IRAssetSchema = z15.strictObject({
   /** `<creation-ref>#asset/<slot>/<variant>~<instance-key>`。 */
-  id: z10.string(),
-  role: z10.enum(["presentation", "context"]),
-  media_type: z10.string(),
-  digest: DigestSchema,
-  availability: z10.enum(["mirrored", "linked"]),
-  access: z10.enum(["public", "private"]),
+  id: z15.string(),
+  role: z15.enum(["presentation", "context"]),
+  media_type: z15.string(),
+  digest: DigestSchema2,
+  availability: z15.enum(["mirrored", "linked"]),
+  access: z15.enum(["public", "private"]),
   /** 只有 public + mirrored 才有稳定的公共 URL；IR 里永远不放签名 URL。 */
-  url: z10.string().optional(),
+  url: z15.string().optional(),
   locator: SourceLocatorSchema.optional(),
-  alt: z10.string().optional(),
+  alt: z15.string().optional(),
   rating: RatingSchema,
   license: SpdxExpressionSchema,
-  origin: z10.strictObject({
+  origin: withBuildIdentity({
     creation: UnversionedRefSchema,
-    release: ReleaseIdSchema,
     slot: SegmentSchema,
     variant: SegmentSchema,
-    instance_key: z10.string()
+    instance_key: z15.string()
   })
 });
-var IRContributorSchema = z10.strictObject({
-  ref: UnversionedRefSchema,
-  author: z10.union([UserIdSchema, GuestAuthorSchema]),
-  contribution: ContributionIdSchema.optional()
+var IRContributorSchema = ContributorSchema.extend({
+  ref: UnversionedRefSchema
 });
-var EffectiveMetaSchema = z10.strictObject({
-  default_locale: LocaleSchema3,
+var EffectiveMetaSchema = z15.strictObject({
+  default_locale: LocaleSchema,
   /** 闭包内所有 fragment 都具备的 locale 的交集。 */
-  available_locales: z10.array(LocaleSchema3),
+  available_locales: z15.array(LocaleSchema),
   /** 闭包中 Creation 与所纳入 Asset 的最高 rating。 */
   rating: RatingSchema,
-  rating_sources: z10.array(
-    z10.strictObject({
+  rating_sources: z15.array(
+    z15.strictObject({
       ref: UnversionedRefSchema,
       rating: RatingSchema,
-      asset: z10.string().optional()
+      asset: z15.string().optional()
     })
   ),
-  content_warnings: z10.array(z10.string()),
-  licenses: z10.array(
-    z10.strictObject({
+  content_warnings: z15.array(z15.string()),
+  licenses: z15.array(
+    z15.strictObject({
       ref: UnversionedRefSchema,
       license: SpdxExpressionSchema,
-      asset: z10.string().optional()
+      asset: z15.string().optional()
     })
   ),
-  attribution: z10.array(
-    z10.strictObject({ ref: UnversionedRefSchema, authors: z10.array(AttributionAuthorSchema) })
+  attribution: z15.array(
+    z15.strictObject({ ref: UnversionedRefSchema, authors: z15.array(AttributionAuthorSchema) })
   ),
-  contributors: z10.array(IRContributorSchema),
+  contributors: z15.array(IRContributorSchema),
   /** 导入时省略的源卡 policy 字段，只有字段名。 */
-  import_omissions: z10.array(
-    z10.strictObject({ ref: UnversionedRefSchema, fields: z10.array(z10.string()) })
+  import_omissions: z15.array(
+    z15.strictObject({ ref: UnversionedRefSchema, fields: z15.array(z15.string()) })
   ),
-  au: z10.boolean(),
-  recommended_presets: z10.array(UnversionedRefSchema)
+  au: z15.boolean(),
+  recommended_presets: z15.array(UnversionedRefSchema)
 });
-var IRGraphSchema = z10.strictObject({
-  nodes: z10.array(
-    z10.strictObject({
+var IRGraphSchema = z15.strictObject({
+  nodes: z15.array(
+    withBuildIdentity({
       ref: UnversionedRefSchema,
-      release: ReleaseIdSchema,
       type: CreationTypeSchema,
-      display_name: z10.string()
+      display_name: z15.string()
     })
   ),
-  instances: z10.array(
-    z10.strictObject({ key: z10.string(), ref: UnversionedRefSchema, via: z10.array(SegmentSchema) })
+  instances: z15.array(
+    z15.strictObject({
+      key: z15.string(),
+      ref: UnversionedRefSchema,
+      via: z15.array(SegmentSchema),
+      cast: z15.strictObject({
+        key: z15.string(),
+        scope: z15.string(),
+        introduced_by: z15.strictObject({ instance: z15.string(), edge: SegmentSchema }).optional()
+      }).optional()
+    })
   ),
-  edges: z10.array(
-    z10.strictObject({
-      from_instance: z10.string(),
-      to_instance: z10.string(),
+  edges: z15.array(
+    z15.strictObject({
+      from_instance: z15.string(),
+      to_instance: z15.string(),
       id: SegmentSchema,
-      rel: z10.string().optional(),
-      mode: z10.enum(["intrinsic", "default"])
+      rel: z15.string().optional(),
+      mode: z15.enum(["intrinsic", "default"])
     })
   ),
-  removed: z10.array(
-    z10.strictObject({
+  /** Role ownership, distinct from authored reference edges and lexical introduction. */
+  cast_edges: z15.array(
+    z15.strictObject({
+      from_instance: z15.string(),
+      to_instance: z15.string(),
+      cast: z15.string()
+    })
+  ).optional(),
+  removed: z15.array(
+    z15.strictObject({
       id: IRFragmentIdSchema,
-      by: z10.strictObject({
+      by: z15.strictObject({
         creation: UnversionedRefSchema,
         edge: SegmentSchema.optional(),
-        reason: z10.enum(["select", "override"])
+        cast: z15.string().optional(),
+        reason: z15.enum(["select", "override"])
       })
     })
   )
 });
-var IRDiagnosticSchema = z10.strictObject({
-  code: z10.string(),
-  subject: z10.string(),
-  severity: z10.enum(["info", "warning"]),
-  detail: z10.string().optional()
+var IRDiagnosticSchema = z15.strictObject({
+  code: z15.string(),
+  subject: z15.string(),
+  severity: z15.enum(["info", "warning"]),
+  detail: z15.string().optional()
 });
-var ContextIRSchema = z10.strictObject({
-  ir_version: z10.literal(IR_VERSION),
-  root: z10.strictObject({
-    ref: UnversionedRefSchema,
-    release: ReleaseIdSchema,
-    semantic_digest: DigestSchema
-  }),
-  lock_digest: DigestSchema,
-  resolver: z10.strictObject({ name: z10.string(), version: z10.string() }),
+var ContextIRSchema = z15.strictObject({
+  ir_version: z15.literal(IR_VERSION),
+  root: BuildRefSchema,
+  lock_digest: DigestSchema2,
+  resolver: z15.strictObject({ name: z15.string(), version: z15.string() }),
   meta: EffectiveMetaSchema,
-  participants: z10.array(ParticipantSchema),
-  late_slots: z10.array(LateSlotSchema),
-  fragments: z10.array(IRFragmentSchema),
+  participants: z15.array(ParticipantSchema),
+  late_slots: z15.array(LateSlotSchema),
+  fragments: z15.array(IRFragmentSchema),
   bootstrap: IRBootstrapSchema,
-  assets: z10.array(IRAssetSchema),
+  assets: z15.array(IRAssetSchema),
   graph: IRGraphSchema,
-  diagnostics: z10.array(IRDiagnosticSchema)
+  diagnostics: z15.array(IRDiagnosticSchema)
 });
 var TRACE_REASONS = [
   "always",
@@ -318086,56 +320075,76 @@ var TRACE_REASONS = [
   "visibility",
   "locale-fallback",
   "unsupported-media",
-  "inactive"
+  "inactive",
+  "required",
+  "direct",
+  "selected",
+  "withheld",
+  "excluded",
+  "fallback"
 ];
-var TraceReasonSchema = z10.union([z10.enum(TRACE_REASONS), z10.string().regex(/^keyword:.+$/)]);
-var AssemblyTraceSchema = z10.strictObject({
-  ir: z10.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema }),
+var TraceReasonSchema = z15.union([z15.enum(TRACE_REASONS), z15.string().regex(/^keyword:.+$/)]);
+var AssemblyTraceSchema = z15.strictObject({
+  selection: z15.strictObject({
+    plan_digest: DigestSchema2,
+    selector: z15.strictObject({ name: z15.string(), version: z15.string() })
+  }).optional(),
+  view: z15.strictObject({ mode: z15.enum(["narrator", "per-agent"]), for: z15.string().optional() }).optional(),
+  story: z15.strictObject({ scene: z15.string(), start: z15.string() }).optional(),
+  withheld: z15.number().int().nonnegative().optional(),
+  ir: withBuildIdentity({
+    root: UnversionedRefSchema,
+    semantic_digest: DigestSchema2,
+    lock_digest: DigestSchema2
+  }),
   /** 实际采用的运行策略身份；推荐列表不构成已选用的 Preset。 */
-  preset: z10.strictObject({
+  preset: withBuildIdentity({
     ref: UnversionedRefSchema,
-    release: ReleaseIdSchema,
-    semantic_digest: DigestSchema,
-    resolver: z10.strictObject({ name: z10.string(), version: z10.string() })
+    semantic_digest: DigestSchema2,
+    resolver: z15.strictObject({ name: z15.string(), version: z15.string() })
   }).optional(),
   /** 可选以兼容旧 Trace；参考 Assembler 的新输出始终携带。 */
-  assembler: z10.strictObject({
-    name: z10.string(),
-    version: z10.string(),
-    layout: z10.enum(["default-v1", "preset-v1"])
+  assembler: z15.strictObject({
+    name: z15.string(),
+    version: z15.string(),
+    layout: z15.enum(["default-v1", "preset-v1"])
   }).optional(),
-  profile: z10.strictObject({ tokenizer: z10.string(), context_window: z10.number(), mode: z10.string() }),
-  total_tokens: z10.number(),
-  estimated: z10.boolean(),
-  entries: z10.array(
-    z10.strictObject({
-      id: z10.string(),
-      region: z10.string(),
-      tokens: z10.number(),
-      decision: z10.enum(["included", "skipped"]),
+  profile: z15.strictObject({ tokenizer: z15.string(), context_window: z15.number(), mode: z15.string() }),
+  total_tokens: z15.number(),
+  estimated: z15.boolean(),
+  entries: z15.array(
+    z15.strictObject({
+      content_ref: CatalogRefSchema.optional(),
+      id: z15.string(),
+      region: z15.string(),
+      tokens: z15.number(),
+      decision: z15.enum(["included", "skipped"]),
       reason: TraceReasonSchema,
-      origin: OriginSchema.optional()
+      origin: OriginSchema.optional(),
+      policy_origin: PolicyBlockOriginSchema.optional(),
+      policy_placement: PolicyPlacementSchema.optional(),
+      purpose: z15.string().optional()
     })
   )
 });
-var ContextDiffSchema = z10.strictObject({
-  from: z10.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema }),
-  to: z10.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema }),
-  lock_changes: z10.array(
-    z10.strictObject({
+var ContextDiffSchema = z15.strictObject({
+  from: z15.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema2 }),
+  to: z15.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema2 }),
+  lock_changes: z15.array(
+    z15.strictObject({
       ref: UnversionedRefSchema,
-      from: z10.string().optional(),
-      to: z10.string().optional()
+      from: z15.string().optional(),
+      to: z15.string().optional()
     })
   ),
-  fragments: z10.strictObject({
-    added: z10.array(IRFragmentIdSchema),
-    removed: z10.array(IRFragmentIdSchema),
-    modified: z10.array(
-      z10.strictObject({
+  fragments: z15.strictObject({
+    added: z15.array(IRFragmentIdSchema),
+    removed: z15.array(IRFragmentIdSchema),
+    modified: z15.array(
+      z15.strictObject({
         id: IRFragmentIdSchema,
-        fields: z10.array(
-          z10.enum([
+        fields: z15.array(
+          z15.enum([
             "content",
             "activation",
             "visibility",
@@ -318147,30 +320156,30 @@ var ContextDiffSchema = z10.strictObject({
       })
     )
   }),
-  origin_changes: z10.array(
-    z10.strictObject({ id: IRFragmentIdSchema, from: OriginSchema, to: OriginSchema })
+  origin_changes: z15.array(
+    z15.strictObject({ id: IRFragmentIdSchema, from: OriginSchema, to: OriginSchema })
   ),
   /** rating 与 licenses 的变化在 UI 中必须高亮。 */
-  meta_changes: z10.array(
-    z10.strictObject({
-      field: z10.enum(["rating", "content_warnings", "licenses", "attribution", "contributors"]),
+  meta_changes: z15.array(
+    z15.strictObject({
+      field: z15.enum(["rating", "content_warnings", "licenses", "attribution", "contributors"]),
       from: JSONValueSchema,
       to: JSONValueSchema
     })
   ),
-  token_delta: z10.strictObject({ tokenizer: z10.string(), always: z10.number(), potential: z10.number() }).optional()
+  token_delta: z15.strictObject({ tokenizer: z15.string(), always: z15.number(), potential: z15.number() }).optional()
 });
 
 // ../../packages/core/src/resolve/render.ts
-function matches(pattern, id) {
+function matches(pattern, id2) {
   if (pattern === "*") return true;
-  if (pattern.endsWith("/*")) return id.startsWith(pattern.slice(0, -1));
-  return pattern === id;
+  if (pattern.endsWith("/*")) return id2.startsWith(pattern.slice(0, -1));
+  return pattern === id2;
 }
-function selected(sel, id) {
+function selected(sel, id2) {
   if (!sel) return true;
-  if ("include" in sel) return sel.include.some((p) => matches(p, id));
-  return !sel.exclude.some((p) => matches(p, id));
+  if ("include" in sel) return sel.include.some((p) => matches(p, id2));
+  return !sel.exclude.some((p) => matches(p, id2));
 }
 function overrideTarget2(o) {
   return o.op === "add" ? null : o.target;
@@ -318181,7 +320190,6 @@ function renderInstance(inst, env, usage, assetBaseUrlUsed) {
   const c = inst.release.creation;
   const edge = inst.parent?.edge;
   const parentRef = inst.parent?.instance.release.ref;
-  const parentType = inst.parent?.instance.release.creation.type;
   const removed = [];
   let forcedIntrinsic = false;
   const byId = new Map(c.fragments.map((f) => [f.id, f]));
@@ -318199,77 +320207,98 @@ function renderInstance(inst, env, usage, assetBaseUrlUsed) {
     working.set(f.id, { fragment: body, overridden_by: [] });
     order.push(f.id);
   }
-  const overrides = edge?.override ?? [];
-  const seenTargets = /* @__PURE__ */ new Set();
-  for (const o of overrides) {
-    const target = overrideTarget2(o);
-    const subject = `${parentRef}/${edge?.id}/override/${target ?? (o.op === "add" ? o.fragment.id : "")}`;
-    if (target !== null) {
-      if (seenTargets.has(target)) {
-        throw new CharError({ code: "resolve.override_duplicate_target", subject });
-      }
-      seenTargets.add(target);
-      const orig = byId.get(target);
-      if (!orig) throw new CharError({ code: "resolve.override_target_missing", subject });
-      if (!orig.stable) {
-        throw new CharError({
-          code: "resolve.override_unstable_target",
-          subject,
-          detail: "only fragments with stable: true can be overridden"
-        });
-      }
-      const w = working.get(target);
-      if (!w) throw new CharError({ code: "resolve.override_target_excluded", subject });
-      if ((o.op === "replace" || o.op === "remove") && edge?.mode === "intrinsic" && (orig.kind === "world" || orig.kind === "character")) {
-        if (parentType !== "scenario" || o.force !== true) {
+  const layers = [
+    { overrides: edge?.override ?? [], declaredBy: inst.parent?.instance, edge, cast: void 0 },
+    {
+      overrides: inst.cast?.member.override ?? [],
+      declaredBy: inst.cast?.owner,
+      edge: void 0,
+      cast: inst.cast?.member
+    }
+  ];
+  for (const layer of layers) {
+    const { overrides, declaredBy } = layer;
+    const by = {
+      creation: declaredBy?.release.ref ?? c.ref,
+      ...layer.edge ? { edge: layer.edge.id } : {},
+      ...layer.cast ? { cast: layer.cast.key } : {}
+    };
+    const seenTargets = /* @__PURE__ */ new Set();
+    for (const o of overrides) {
+      const target2 = overrideTarget2(o);
+      const subject = `${by.creation}/${layer.cast ? `cast/${layer.cast.key}` : edge?.id}/override/${target2 ?? (o.op === "add" ? o.fragment.id : "")}`;
+      if (target2 !== null) {
+        if (seenTargets.has(target2)) {
+          throw new CharError({ code: "resolve.override_duplicate_target", subject });
+        }
+        seenTargets.add(target2);
+        const orig = working.get(target2)?.fragment ?? byId.get(target2);
+        if (!orig) throw new CharError({ code: "resolve.override_target_missing", subject });
+        if (!orig.stable) {
           throw new CharError({
-            code: "resolve.intrinsic_override_forbidden",
+            code: "resolve.override_unstable_target",
             subject,
-            detail: "replacing core world/character content needs a scenario and force: true"
+            detail: "only fragments with stable: true can be overridden"
           });
         }
-        forcedIntrinsic = true;
+        const w = working.get(target2);
+        if (!w) throw new CharError({ code: "resolve.override_target_excluded", subject });
+        if ((o.op === "replace" || o.op === "remove") && edge?.mode === "intrinsic" && (orig.kind === "world" || orig.kind === "character")) {
+          if (declaredBy?.release.creation.type !== "scenario" || o.force !== true) {
+            throw new CharError({
+              code: "resolve.intrinsic_override_forbidden",
+              subject,
+              detail: "replacing core world/character content needs a scenario and force: true"
+            });
+          }
+          forcedIntrinsic = true;
+        }
+        if (o.op === "remove") {
+          working.delete(target2);
+          order.splice(order.indexOf(target2), 1);
+          removed.push({
+            id: irFragmentId(c.ref, target2, inst.key),
+            by: { ...by, reason: "override" }
+          });
+        } else if (o.op === "replace") {
+          w.fragment = { ...w.fragment, content: o.content };
+          w.overridden_by.push({ ...by, op: "replace" });
+        } else if (o.op === "patch") {
+          const set = o.set;
+          const next = { ...w.fragment };
+          if (set.description !== void 0) next.description = set.description;
+          if (set.outward !== void 0) next.outward = set.outward;
+          if (set.selectable !== void 0) next.selectable = set.selectable;
+          if (set.activation !== void 0) next.activation = set.activation;
+          if (set.visibility !== void 0) next.visibility = set.visibility;
+          if (set.importance !== void 0) next.importance = set.importance;
+          if (set.placement_hint !== void 0) next.placement_hint = set.placement_hint;
+          w.fragment = next;
+          w.overridden_by.push({ ...by, op: "patch" });
+        }
+        continue;
       }
-      const by = { creation: parentRef ?? c.ref, ...edge ? { edge: edge.id } : {} };
-      if (o.op === "remove") {
-        working.delete(target);
-        order.splice(order.indexOf(target), 1);
-        removed.push({
-          id: irFragmentId(c.ref, target, inst.key),
-          by: { ...by, reason: "override" }
-        });
-      } else if (o.op === "replace") {
-        w.fragment = { ...w.fragment, content: o.content };
-        w.overridden_by.push({ ...by, op: "replace" });
-      } else if (o.op === "patch") {
-        const set = o.set;
-        const next = { ...w.fragment };
-        if (set.activation !== void 0) next.activation = set.activation;
-        if (set.visibility !== void 0) next.visibility = set.visibility;
-        if (set.importance !== void 0) next.importance = set.importance;
-        if (set.placement_hint !== void 0) next.placement_hint = set.placement_hint;
-        w.fragment = next;
-        w.overridden_by.push({ ...by, op: "patch" });
+      if (o.op !== "add") continue;
+      const id2 = o.fragment.id;
+      if (byId.has(id2) || working.has(id2)) {
+        throw new CharError({ code: "resolve.override_add_collision", subject });
       }
-      continue;
+      const { digest: _d, ...body } = o.fragment;
+      working.set(id2, {
+        fragment: body,
+        overridden_by: [
+          {
+            ...by,
+            op: "add"
+          }
+        ]
+      });
+      order.push(id2);
     }
-    if (o.op !== "add") continue;
-    const id = o.fragment.id;
-    if (byId.has(id) || working.has(id)) {
-      throw new CharError({ code: "resolve.override_add_collision", subject });
-    }
-    const { digest: _d, ...body } = o.fragment;
-    working.set(id, {
-      fragment: body,
-      overridden_by: [
-        { creation: parentRef ?? c.ref, ...edge ? { edge: edge.id } : {}, op: "add" }
-      ]
-    });
-    order.push(id);
   }
   const fragments = [];
-  for (const id of order) {
-    const w = working.get(id);
+  for (const id2 of order) {
+    const w = working.get(id2);
     if (!w) continue;
     fragments.push(renderFragment(w, ienv, env, usage, assetBaseUrlUsed));
   }
@@ -318279,8 +320308,8 @@ function renderFragment(w, ienv, env, usage, assetUsed) {
   const inst = ienv.inst;
   const c = inst.release.creation;
   const f = w.fragment;
-  const id = irFragmentId(c.ref, f.id, inst.key);
-  const ctx = { ienv, env, usage, fragmentId: id, assetUsed };
+  const id2 = irFragmentId(c.ref, f.id, inst.key);
+  const ctx = { ienv, env, usage, fragmentId: id2, assetUsed };
   const defaultLocale = c.meta.default_locale;
   const content = renderContent(canonicalContent(f.content), ctx, defaultLocale);
   let locales;
@@ -318298,9 +320327,56 @@ function renderFragment(w, ienv, env, usage, assetUsed) {
   const visibility = renderVisibility(f.visibility ?? { scope: "shared" }, ctx);
   const subject = (f.kind === "character" || f.kind === "persona") && ienv.participant ? ienv.participant : void 0;
   const asset_refs = f.asset_refs?.map((r) => renderAssetRef(r, ctx, true));
+  const perspective = typeof f.perspective === "object" ? "claim" in f.perspective ? { claim: participantRef(speakerKey(f.perspective.claim, ctx)) } : { belief: participantRef(speakerKey(f.perspective.belief, ctx)) } : f.perspective;
+  let style_scope;
+  let style_use;
+  if (c.type === "style") {
+    let outer = inst;
+    const path2 = [];
+    while (outer.parent?.instance.release.creation.type === "style") {
+      const { instance: owner, edge: edge2 } = outer.parent;
+      path2.unshift({
+        owner: owner.key,
+        order: owner.release.creation.references.findIndex((r) => r.id === edge2.id),
+        combine: edge2.combine ?? "add"
+      });
+      outer = owner;
+    }
+    const parent = outer.parent?.instance;
+    const edge = outer.parent?.edge;
+    const scope = edge?.scope;
+    const parentEnv = parent ? env.envs.get(parent) : void 0;
+    style_scope = "narration";
+    if (scope && typeof scope === "object") {
+      if ("scene" in scope) style_scope = { scene: scope.scene, owner: parent?.key ?? "root" };
+      else {
+        const participant = parentEnv?.cast.get(scope.cast)?.participant;
+        if (!participant)
+          throw new CharError({ code: "resolve.style_cast_missing", subject: scope.cast });
+        style_scope = { participant };
+      }
+    } else if (parentEnv?.participant) style_scope = { participant: parentEnv.participant };
+    style_use = {
+      owner: parent?.key ?? "root",
+      order: Math.max(
+        0,
+        parent?.release.creation.references.findIndex((r) => r.id === edge?.id) ?? 0
+      ),
+      combine: edge?.combine ?? "add",
+      ...path2.length ? { path: path2 } : {}
+    };
+  }
   const semantic = {
     kind: f.kind,
     content,
+    ...f.description !== void 0 ? { description: f.description } : {},
+    ...f.selectable !== void 0 ? { selectable: f.selectable } : {},
+    ...f.outward !== void 0 ? { outward: f.outward } : {},
+    ...perspective !== void 0 ? { perspective } : {},
+    ...f.about !== void 0 ? { about: f.about } : {},
+    ...f.source !== void 0 ? { source: f.source } : {},
+    ...inst.cast ? { instance: inst.cast.member.key } : {},
+    ...style_scope ? { style_scope, style_use } : {},
     ...locales ? { locales } : {},
     activation,
     visibility,
@@ -318311,14 +320387,14 @@ function renderFragment(w, ienv, env, usage, assetUsed) {
   };
   const origin = {
     creation: c.ref,
-    release: inst.release.release,
+    ...buildIdentity(inst.release.identity),
     fragment: f.id,
     via: inst.via,
     instance_key: inst.key,
     stable: f.stable
   };
   if (w.overridden_by.length > 0) origin.overridden_by = w.overridden_by;
-  return { id, ...semantic, origin, digest: irFragmentDigest(semantic) };
+  return { id: id2, ...semantic, origin, digest: irFragmentDigest(semantic) };
 }
 function mergeLocaleKeys(a, locale) {
   if (a.mode !== "keyword" || !locale) return a;
@@ -318337,8 +320413,8 @@ function markLate(ctx, key) {
   set.add(ctx.fragmentId);
   return { raw: `{{late:${key}}}` };
 }
-function renderText(text, ctx, locale) {
-  const { tokens, issues } = tokenizeTemplate(text, "creation");
+function renderText(text2, ctx, locale) {
+  const { tokens, issues } = tokenizeTemplate(text2, "creation");
   const first = issues[0];
   if (first) {
     throw new CharError({
@@ -318364,6 +320440,11 @@ function renderText0(tokens, ctx, c, locale) {
         return pickLocalized(c.display_name, locale, c.meta.default_locale);
       case "user":
         return markLate(ctx, USER_LATE_SLOT);
+      case "cast": {
+        const value = ctx.ienv.cast.get(tok.name);
+        if (!value) throw new CharError({ code: "resolve.unknown_cast", subject: tok.name });
+        return value.kind === "late" ? markLate(ctx, value.late) : pickLocalized(value.display_name, locale, c.meta.default_locale);
+      }
       case "slot": {
         const v = ctx.ienv.slots.get(tok.name);
         if (!v) {
@@ -318457,12 +320538,18 @@ function speakerKey(speaker, ctx) {
     return v.participant;
   }
   if (speaker === c.ref && ienv.participant) return ienv.participant;
+  const candidates = /* @__PURE__ */ new Set();
   for (const v of [...ienv.slots.values(), ...ienv.cast.values()]) {
-    if (v.kind === "early" && v.ref === speaker && v.participant) return v.participant;
+    if (v.kind === "early" && v.ref === speaker && v.participant) candidates.add(v.participant);
   }
-  for (const p of env.participants.values()) {
-    if (p.ref === speaker) return p.key;
-  }
+  for (const key of env.participantsFor(ienv.inst, speaker)) candidates.add(key);
+  if (candidates.size > 1)
+    throw new CharError({
+      code: "resolve.ambiguous_participant",
+      subject: ctx.fragmentId,
+      detail: `${speaker} names multiple participants; use an explicit cast or slot reference`
+    });
+  for (const key of candidates) return key;
   throw new CharError({
     code: "resolve.speaker_unknown",
     subject: ctx.fragmentId,
@@ -318471,6 +320558,7 @@ function speakerKey(speaker, ctx) {
 }
 function renderVisibility(v, ctx) {
   if (v.scope === "shared") return { scope: "shared" };
+  if (v.scope === "story-scene") return { scope: "story-scene", scene: v.scene };
   if (v.scope === "private") {
     const keys = [...new Set(v.to.map((s) => participantRef(speakerKey(s, ctx))))].sort(
       compareStrings
@@ -318531,8 +320619,40 @@ function resolve(input) {
       for (const v of s.variants) noteAsset(inst, s.slot, v.id);
     }
   }
-  const assets = [...usedAssets.entries()].sort(([a], [b]) => compareStrings(a, b)).map(([id, u]) => buildAsset(id, u.inst, u.slot, u.variant, input.publicAssetBaseUrl));
+  const assets = [...usedAssets.entries()].sort(([a], [b]) => compareStrings(a, b)).map(([id2, u]) => buildAsset(id2, u.inst, u.slot, u.variant, input.publicAssetBaseUrl));
   const bootstrap = buildBootstrap(graph.root, env, usage);
+  const story_templates = {};
+  const rootEnv = env.envs.get(graph.root);
+  if (rootCreation.story && rootEnv) {
+    const compile = (id2, authored) => {
+      const locale = rootCreation.meta.default_locale;
+      const text2 = typeof authored === "string" ? authored : authored[locale];
+      if (text2 === void 0)
+        throw new CharError({
+          code: "resolve.template_default_locale_missing",
+          subject: id2,
+          detail: `expected '${locale}' template`
+        });
+      const context = { ienv: rootEnv, env, usage, fragmentId: id2, assetUsed: () => {
+      } };
+      const compiled = { text: renderText(text2, context, locale) };
+      if (typeof authored !== "string") {
+        const locales = {};
+        for (const [variant, value] of Object.entries(authored).sort(
+          ([a], [b]) => compareStrings(a, b)
+        )) {
+          if (variant !== locale) locales[variant] = renderText(value, context, variant);
+        }
+        if (Object.keys(locales).length) compiled.locales = locales;
+      }
+      story_templates[id2] = compiled;
+    };
+    for (const scene of rootCreation.story.scenes)
+      if (scene.opening !== void 0) compile(`scene/${scene.id}/opening`, scene.opening);
+    for (const start of rootCreation.story.starts ?? [])
+      if (start.greeting !== void 0 && (typeof start.greeting === "string" || !("ref" in start.greeting)))
+        compile(`start/${start.id}/greeting`, start.greeting);
+  }
   const late_slots = buildLateSlots(env, usage);
   const participants = buildParticipants(env, rootCreation, new Set(late_slots.map((s) => s.key)));
   const meta = buildMeta(graph, fragments, assets, env, au);
@@ -318546,7 +320666,11 @@ function resolve(input) {
   );
   const ir = {
     ir_version: IR_VERSION,
-    root: { ref: rootRel.ref, release: rootRel.release, semantic_digest: rootRel.semantic_digest },
+    root: {
+      ref: rootRel.ref,
+      ...buildIdentity(rootRel.identity),
+      semantic_digest: rootRel.semantic_digest
+    },
     lock_digest: digestJson(lock),
     resolver: { name: RESOLVER.name, version: RESOLVER.version },
     meta,
@@ -318558,7 +320682,7 @@ function resolve(input) {
     graph: {
       nodes: [...graph.byRef.values()].map((r) => ({
         ref: r.ref,
-        release: r.release,
+        ...buildIdentity(r.identity),
         type: r.creation.type,
         display_name: pickLocalized(
           r.creation.display_name,
@@ -318566,20 +320690,46 @@ function resolve(input) {
           r.creation.meta.default_locale
         )
       })).sort((a, b) => compareStrings(a.ref, b.ref)),
-      instances: graph.instances.map((i) => ({ key: i.key, ref: i.release.ref, via: i.via })).sort((a, b) => compareStrings(jcs(a.via), jcs(b.via))),
-      edges: graph.instances.filter((i) => i.parent).map((i) => {
-        const e = i.parent?.edge;
-        const out = {
-          from_instance: i.parent?.instance.key ?? "",
-          to_instance: i.key,
-          id: e?.id ?? "",
-          mode: e?.mode ?? "default"
-        };
-        if (e?.rel !== void 0) out.rel = e.rel;
-        return out;
-      }).sort(
-        (a, b) => compareStrings(a.from_instance, b.from_instance) || compareStrings(a.id, b.id)
+      instances: graph.instances.map((i) => ({
+        key: i.key,
+        ref: i.release.ref,
+        via: i.via,
+        ...i.cast ? {
+          cast: {
+            key: i.cast.member.key,
+            scope: i.cast.owner.key,
+            ...i.parent ? { introduced_by: { instance: i.parent.instance.key, edge: i.parent.edge.id } } : {}
+          }
+        } : {}
+      })).sort((a, b) => compareStrings(jcs(a.via), jcs(b.via))),
+      edges: graph.instances.flatMap(
+        (owner) => owner.children.map((child) => {
+          const edge = child.parent?.edge;
+          if (!edge) throw new CharError({ code: "resolve.internal", subject: child.key });
+          return {
+            from_instance: owner.key,
+            to_instance: child.key,
+            id: edge.id,
+            mode: edge.mode,
+            ...edge.rel !== void 0 ? { rel: edge.rel } : {}
+          };
+        })
+      ).sort(
+        (a, b) => compareStrings(a.from_instance, b.from_instance) || compareStrings(a.id, b.id) || compareStrings(a.to_instance, b.to_instance)
       ),
+      ...graph.instances.some((i) => i.cast) ? {
+        cast_edges: graph.instances.flatMap(
+          (i) => i.cast ? [
+            {
+              from_instance: i.cast.owner.key,
+              to_instance: i.key,
+              cast: i.cast.member.key
+            }
+          ] : []
+        ).sort(
+          (a, b) => compareStrings(a.from_instance, b.from_instance) || compareStrings(a.cast, b.cast)
+        )
+      } : {},
       removed: [...removed].sort((a, b) => compareStrings(a.id, b.id))
     },
     diagnostics
@@ -318595,20 +320745,21 @@ function resolve(input) {
   const json = jcs(ir);
   return {
     ir,
+    story_templates,
     json,
     digest: digestJson(ir),
     lock,
     warnings: graph.warnings
   };
 }
-function buildAsset(id, inst, slot, variant, baseUrl) {
+function buildAsset(id2, inst, slot, variant, baseUrl) {
   const rel = inst.release;
   const c = rel.creation;
   const s = c.assets.find((a) => a.slot === slot);
   const v = s?.variants.find((x) => x.id === variant);
-  if (!s || !v) throw new CharError({ code: "resolve.asset_missing", subject: id });
+  if (!s || !v) throw new CharError({ code: "resolve.asset_missing", subject: id2 });
   const out = {
-    id,
+    id: id2,
     role: s.role,
     media_type: v.media_type,
     digest: v.blob.digest,
@@ -318616,7 +320767,13 @@ function buildAsset(id, inst, slot, variant, baseUrl) {
     access: rel.visibility,
     rating: v.rating ?? c.meta.rating,
     license: v.license ?? c.meta.license,
-    origin: { creation: c.ref, release: rel.release, slot, variant, instance_key: inst.key }
+    origin: {
+      creation: c.ref,
+      ...buildIdentity(rel.identity),
+      slot,
+      variant,
+      instance_key: inst.key
+    }
   };
   if (baseUrl && rel.visibility === "public" && v.blob.availability === "mirrored") {
     const hex = v.blob.digest.slice("sha256:".length);
@@ -318635,6 +320792,10 @@ function buildParticipants(env, root, lateSlotKeys) {
     if (p.ref !== void 0) item.ref = p.ref;
     if (p.role !== void 0) item.role = p.role;
     if (p.late !== void 0) item.late = p.late;
+    if (p.cast_key !== void 0) item.cast_key = p.cast_key;
+    if (p.cast_scope !== void 0) item.cast_scope = p.cast_scope;
+    if (p.part !== void 0) item.part = p.part;
+    if (p.goal !== void 0) item.goal = p.goal;
     const ai = p.avatarInstance;
     if (ai) {
       const avatar = ai.release.creation.assets.find((a) => a.slot === "avatar");
@@ -318655,14 +320816,14 @@ function buildBootstrap(root, env, usage) {
   const c = root.release.creation;
   const ienv = env.envs.get(root);
   if (!ienv || !c.bootstrap) return { greetings: [] };
-  const speaker = participantRef(ienv.participant ?? SELF_PARTICIPANT);
+  const speaker = ienv.participant ? participantRef(ienv.participant) : void 0;
   return {
     greetings: c.bootstrap.greetings.map((g) => {
       const ctx = { ienv, env, usage, fragmentId: `bootstrap:${g.id}`, assetUsed: () => {
       } };
       const out = {
         id: g.id,
-        speaker,
+        ...speaker ? { speaker } : {},
         text: renderText(g.text, ctx, c.meta.default_locale)
       };
       if (g.locale && Object.keys(g.locale).length > 0) {
@@ -318754,6 +320915,7 @@ function buildMeta(graph, fragments, assets, env, au) {
     for (const c of n.creation.provenance.contributors ?? []) {
       const item = { ref: n.ref, author: c.author };
       if (c.contribution !== void 0) item.contribution = c.contribution;
+      if (c.client_id !== void 0) item.client_id = c.client_id;
       contributors.push(item);
     }
   }
@@ -318791,61 +320953,153 @@ function buildMeta(graph, fragments, assets, env, au) {
 }
 
 // ../../packages/core/src/schema/artifact.ts
-import { z as z11 } from "./vendor/zod.js";
+import { z as z16 } from "./vendor/zod.js";
 var ResolvedAssemblySchema = AssemblyConfigSchema.omit({ preset: true }).extend({
-  preset: ResolvedPresetSchema
+  preset: PublishedResolvedPresetSchema
 });
 var common = {
-  version: z11.literal("0-draft"),
-  root: ExactRefSchema,
-  lock: z11.array(LockEntrySchema),
-  lock_digest: DigestSchema,
+  version: z16.literal("1-draft"),
+  capabilities: CapabilitiesSchema,
+  root: BuildRefSchema,
+  lock: z16.array(LockEntrySchema),
+  lock_digest: DigestSchema2,
   meta: EffectiveMetaSchema,
-  assets: z11.array(IRAssetSchema)
+  assets: z16.array(IRAssetSchema)
 };
-var CreationArtifactSchema = z11.discriminatedUnion("kind", [
-  z11.strictObject({
+var CreationArtifactSchema = z16.discriminatedUnion("kind", [
+  z16.strictObject({
     ...common,
-    kind: z11.literal("content"),
+    kind: z16.literal("content"),
     ir: ContextIRSchema,
-    assembly: ResolvedAssemblySchema.optional()
-  }),
-  z11.strictObject({ ...common, kind: z11.literal("preset"), preset: ResolvedPresetSchema }),
-  z11.strictObject({
+    catalog_index: CatalogIndexSchema,
+    story: StorySchema.optional(),
+    story_refs: StoryReferencesSchema.optional(),
+    assembly: ResolvedAssemblySchema.optional(),
+    default_policy: PublishedResolvedPresetSchema.optional()
+  }).refine(
+    (artifact) => !!artifact.assembly || !!artifact.default_policy,
+    "content requires a locked assembly or default policy"
+  ),
+  z16.strictObject({ ...common, kind: z16.literal("preset"), preset: ResolvedPresetSchema }),
+  z16.strictObject({
     ...common,
-    kind: z11.literal("prompt-module"),
+    kind: z16.literal("prompt-module"),
     module: ResolvedPromptModuleSchema
   })
 ]);
 
+// ../../packages/core/src/story/resolve.ts
+function resolveStoryReferences(creation, ir, index, templates = {}) {
+  const participants = {};
+  for (const cast of creation.cast ?? []) {
+    const key = participantKey(ROOT_INSTANCE, cast.key);
+    if (!ir.participants.some((p) => p.key === key))
+      throw new CharError({ code: "story.participant_missing", subject: cast.key });
+    participants[cast.key] = key;
+  }
+  const information = {};
+  const content = {};
+  const resolve2 = (ref, kind) => {
+    const resolved = resolveCatalogReference(ref, ir, index, ROOT_INSTANCE, kind);
+    if ("fragment" in resolved) information[ref] = resolved.fragment;
+    content[ref] = resolved;
+  };
+  if (creation.story) visitStoryInformation(creation.story, resolve2);
+  return { participants, information, content, templates };
+}
+function visitStoryInformation(story, visit) {
+  const condition = (node) => {
+    const pending = [node];
+    while (pending.length) {
+      const item = pending.pop();
+      if (!item) break;
+      if ("knows" in item) visit(item.knows.info, "fragment");
+      else if ("all" in item) pending.push(...item.all);
+      else if ("any" in item) pending.push(...item.any);
+      else if ("not" in item) pending.push(item.not);
+    }
+  };
+  const effect = (node) => {
+    if ("learn" in node) visit(node.learn.info, "fragment");
+  };
+  for (const ref of Object.keys(story.knowing ?? {})) visit(ref, "fragment");
+  for (const scene of story.scenes) {
+    if (scene.place) visit(scene.place, "fragment");
+    for (const ref of scene.lore ?? []) visit(ref, "content");
+    if (scene.when) condition(scene.when);
+  }
+  for (const item of [
+    ...story.beats ?? [],
+    ...story.endings ?? [],
+    ...story.events ?? [],
+    ...story.choices ?? []
+  ]) {
+    if (item.when) condition(item.when);
+    if ("effects" in item) for (const node of item.effects ?? []) effect(node);
+    if ("place" in item && item.place) visit(item.place, "fragment");
+    if ("truth" in item && item.truth) visit(item.truth, "fragment");
+    if ("lore" in item) for (const ref of item.lore ?? []) visit(ref, "content");
+  }
+  for (const item of story.items ?? []) for (const ref of item.lore ?? []) visit(ref, "content");
+  for (const start of story.starts ?? []) for (const node of start.set ?? []) effect(node);
+}
+
 // ../../packages/core/src/build.ts
+function inputComparisonDigest(input) {
+  const { creation, ...envelope } = input;
+  return digestJson({
+    envelope: normalizeValue(envelope),
+    creation: canonicalizeCreation(creation).json
+  });
+}
 function buildCreation(input) {
+  const rootIdentity = buildIdentity(input.root);
+  if ("origin" in rootIdentity && rootIdentity.origin.kind === "local-build") {
+    const local = createLocalBuildInput(input);
+    if (rootIdentity.origin.input_digest !== local.root.origin.input_digest)
+      throw new CharError({
+        code: "build.local_input_mismatch",
+        subject: buildIdentityKey(input.root)
+      });
+    input = {
+      ...input,
+      root: { ...input.root, creation: local.root.creation },
+      dependencies: local.dependencies
+    };
+  }
   const inputs = /* @__PURE__ */ new Map();
+  for (const dependency of input.dependencies ?? []) publishedIdentity(dependency);
   for (const item of [input.root, ...input.dependencies ?? []]) {
-    const prior = inputs.get(item.release);
-    if (prior && digestOf(prior) !== digestOf(item))
-      throw new CharError({ code: "resolve.duplicate_release", subject: item.release });
-    inputs.set(item.release, item);
+    const key = buildIdentityKey(buildIdentity(item));
+    const prior = inputs.get(key);
+    if (prior && inputComparisonDigest(prior) !== inputComparisonDigest(item))
+      throw new CharError({ code: "resolve.duplicate_release", subject: key });
+    inputs.set(key, item);
   }
   const nodes = /* @__PURE__ */ new Map();
-  const byRef = /* @__PURE__ */ new Map();
   const warnings = [];
   const heights = /* @__PURE__ */ new Map();
   let visits = 0;
   const visit = (rel, via, ancestors) => {
-    if (!ReleaseIdSchema.safeParse(rel.release).success)
-      throw new CharError({ code: "schema.invalid", subject: "release" });
-    if (ancestors.includes(rel.release))
-      throw new CharError({ code: "resolve.cycle", subject: rel.release, data: { via } });
+    const identity = buildIdentity(rel);
+    const key = buildIdentityKey(identity);
+    if ("origin" in identity && (rel.visibility !== "private" || rel.status && rel.status !== "active"))
+      throw new CharError({
+        code: identity.origin.kind === "draft-build" ? "build.invalid_draft_state" : "build.invalid_local_state",
+        subject: key
+      });
+    if (ancestors.includes(key))
+      throw new CharError({ code: "resolve.cycle", subject: key, data: { via } });
     if (++visits > MAX_GRAPH_INSTANCES)
-      throw new CharError({ code: "resolve.graph_too_large", subject: rel.release });
-    if (ancestors.length + (heights.get(rel.release) ?? 0) > MAX_GRAPH_DEPTH)
-      throw new CharError({ code: "resolve.graph_too_deep", subject: rel.release });
-    const cached = nodes.get(rel.release);
+      throw new CharError({ code: "resolve.graph_too_large", subject: key });
+    if (ancestors.length + (heights.get(key) ?? 0) > MAX_GRAPH_DEPTH)
+      throw new CharError({ code: "resolve.graph_too_deep", subject: key });
+    const cached = nodes.get(key);
     if (cached) return cached;
     const canonical = canonicalizeCreation(rel.creation);
     const node = {
       input: rel,
+      key,
       creation: canonical.creation,
       semantic_digest: canonical.semantic_digest,
       via
@@ -318860,7 +321114,7 @@ function buildCreation(input) {
       });
     }
     if (rel.semantic_digest !== void 0 && rel.semantic_digest !== node.semantic_digest)
-      throw new CharError({ code: "resolve.semantic_digest_mismatch", subject: rel.release });
+      throw new CharError({ code: "resolve.semantic_digest_mismatch", subject: key });
     if (rel.status === "tombstoned")
       throw new CharError({
         code: "resolve.tombstoned",
@@ -318872,69 +321126,135 @@ function buildCreation(input) {
       warnings.push({
         code: "resolve.yanked",
         subject: node.creation.ref,
-        data: { via, release: rel.release, reason: rel.status_reason ?? null }
+        data: { via, release: key, reason: rel.status_reason ?? null }
       });
-    const prior = byRef.get(node.creation.ref);
-    if (prior && prior.input.release !== rel.release)
-      throw new CharError({
-        code: "resolve.diamond_conflict",
-        subject: node.creation.ref,
-        data: {
-          ref: node.creation.ref,
-          releases: [
-            { release: prior.input.release, via: prior.via },
-            { release: rel.release, via }
-          ]
-        }
-      });
-    byRef.set(node.creation.ref, node);
-    nodes.set(rel.release, node);
+    nodes.set(key, node);
     let height = 0;
     for (const dep of getCreationDependencies(node.creation)) {
-      const path2 = dep.domain === "content" ? [...via, dep.id] : dep.domain === "test" ? [...via, "test", dep.id, dep.accepts === "content" ? "root" : "preset"] : dep.domain === "assembly" ? [...via, "assembly"] : [...via, "policy", dep.id];
+      const path2 = dep.domain === "derivation" ? [...via, "derivation", dep.id] : dep.domain === "content" ? [...via, dep.id] : dep.domain === "test" ? [...via, "test", dep.id, dep.accepts === "content" ? "root" : "preset"] : dep.domain === "assembly" ? [...via, "assembly"] : [...via, "policy", dep.id];
       if (!dep.pin || !("release" in dep.pin))
         throw new CharError({
           code: "resolve.unpinned",
           subject: `${node.creation.ref}/${dep.id}`,
           data: { via: path2 }
         });
-      const target = inputs.get(dep.pin.release);
-      if (!target)
+      const target2 = inputs.get(dep.pin.release);
+      if (!target2)
         throw new CharError({
           code: "resolve.release_missing",
           subject: dep.pin.release,
           data: { via: path2 }
         });
-      const child = visit(target, path2, [...ancestors, rel.release]);
-      height = Math.max(height, 1 + (heights.get(target.release) ?? 0));
+      const child = visit(target2, path2, [...ancestors, key]);
+      height = Math.max(height, 1 + (heights.get(buildIdentityKey(target2)) ?? 0));
       if (child.creation.ref !== dep.ref)
         throw new CharError({ code: "resolve.pin_ref_mismatch", subject: dep.id });
       if (child.semantic_digest !== dep.pin.semantic_digest)
         throw new CharError({ code: "resolve.pin_digest_mismatch", subject: dep.id });
       const actual = child.creation.type === "preset" ? "preset" : child.creation.type === "prompt-module" ? "prompt-module" : "content";
-      if (actual !== dep.accepts)
+      if (dep.accepts !== "any" && actual !== dep.accepts)
         throw new CharError({
           code: "resolve.dependency_type_mismatch",
           subject: dep.id,
           detail: `expected ${dep.accepts}, got ${child.creation.type}`
         });
     }
-    heights.set(rel.release, height);
+    heights.set(key, height);
     return node;
   };
   const root = visit(input.root, [], []);
-  const all = [...nodes.values()].sort((a, b) => compareStrings(a.creation.ref, b.creation.ref));
+  if (root.creation.type !== "preset" && root.creation.type !== "prompt-module" && !root.creation.assembly && !input.default_policy)
+    throw new CharError({
+      code: "resolve.default_policy_required",
+      subject: root.creation.ref,
+      detail: "Provide an exact default policy and its release snapshot to build content."
+    });
+  let defaultPolicy;
+  if (root.creation.type !== "preset" && root.creation.type !== "prompt-module" && !root.creation.assembly && input.default_policy) {
+    const pin = ExactRefSchema.safeParse(input.default_policy);
+    if (!pin.success)
+      throw new CharError({
+        code: "schema.invalid",
+        subject: "default_policy",
+        detail: pin.error.message
+      });
+    const dependency = inputs.get(pin.data.release);
+    if (!dependency)
+      throw new CharError({ code: "resolve.release_missing", subject: pin.data.release });
+    defaultPolicy = visit(dependency, ["default_policy"], [buildIdentityKey(input.root)]);
+    if (defaultPolicy.creation.ref !== pin.data.ref)
+      throw new CharError({ code: "resolve.pin_ref_mismatch", subject: "default_policy" });
+    if (defaultPolicy.semantic_digest !== pin.data.semantic_digest)
+      throw new CharError({ code: "resolve.pin_digest_mismatch", subject: "default_policy" });
+    if (defaultPolicy.creation.type !== "preset")
+      throw new CharError({ code: "resolve.not_preset", subject: "default_policy" });
+    if (defaultPolicy.input.visibility !== "public")
+      throw new CharError({
+        code: "resolve.default_policy_not_public",
+        subject: defaultPolicy.creation.ref
+      });
+  }
+  const scope = (roots) => {
+    const members = /* @__PURE__ */ new Map();
+    const byRef = /* @__PURE__ */ new Map();
+    const walk = (node, via) => {
+      const prior = byRef.get(node.creation.ref);
+      if (prior && prior.node.key !== node.key)
+        throw new CharError({
+          code: "resolve.diamond_conflict",
+          subject: node.creation.ref,
+          data: {
+            ref: node.creation.ref,
+            releases: [
+              { ...buildIdentity(prior.node.input), via: prior.via },
+              { ...buildIdentity(node.input), via }
+            ]
+          }
+        });
+      if (members.has(node)) return;
+      byRef.set(node.creation.ref, { node, via });
+      members.set(node, via);
+      for (const dependency of getCreationDependencies(node.creation)) {
+        if (dependency.domain === "derivation" || !dependency.pin || !("release" in dependency.pin))
+          continue;
+        const child = nodes.get(dependency.pin.release);
+        if (!child)
+          throw new CharError({ code: "resolve.release_missing", subject: dependency.pin.release });
+        const suffix = dependency.domain === "content" ? [dependency.id] : dependency.domain === "assembly" ? ["assembly"] : dependency.domain === "test" ? ["test", dependency.id, dependency.accepts === "content" ? "root" : "preset"] : ["policy", dependency.id];
+        walk(child, [...via, ...suffix]);
+      }
+    };
+    for (const start of roots) walk(start.node, start.via);
+    return members;
+  };
+  const material = scope([
+    { node: root, via: [] },
+    ...defaultPolicy ? [{ node: defaultPolicy, via: ["default_policy"] }] : []
+  ]);
+  const historical = /* @__PURE__ */ new Set();
+  for (const node of nodes.values())
+    for (const dependency of getCreationDependencies(node.creation)) {
+      if (dependency.domain !== "derivation" || !dependency.pin || !("release" in dependency.pin))
+        continue;
+      const source = nodes.get(dependency.pin.release);
+      if (source) historical.add(source);
+    }
+  for (const node of historical) scope([{ node, via: node.via }]);
+  for (const [node, via] of material) node.via = via;
+  const all = [...nodes.values()].sort(
+    (a, b) => compareStrings(a.creation.ref, b.creation.ref) || compareStrings(a.key, b.key)
+  );
   const lock = all.filter((node) => node !== root).map((node) => ({
     ref: node.creation.ref,
-    release: node.input.release,
+    ...publishedIdentity(node.input),
     semantic_digest: node.semantic_digest,
     via: node.via
   }));
   const common2 = {
-    version: "0-draft",
+    version: "1-draft",
     root: {
       ref: root.creation.ref,
-      release: root.input.release,
+      ...buildIdentity(root.input),
       semantic_digest: root.semantic_digest
     },
     lock,
@@ -318944,7 +321264,7 @@ function buildCreation(input) {
   let branch;
   const policyInput = (node) => ({
     creation: node.creation,
-    release: node.input.release,
+    ...buildIdentity(node.input),
     semantic_digest: node.semantic_digest,
     dependencies: input.dependencies ?? []
   });
@@ -318954,18 +321274,61 @@ function buildCreation(input) {
     branch = { kind: "prompt-module", module: resolvePromptModule(policyInput(root)) };
   else {
     resolved = resolve(input);
-    branch = { kind: "content", ir: resolved.ir };
+    const index = buildCatalogIndex(
+      resolved.ir,
+      new Map([...material.keys()].map((node) => [node.creation.ref, node.creation]))
+    );
+    branch = { kind: "content", ir: resolved.ir, catalog_index: index };
+    for (const fragment2 of resolved.ir.fragments) {
+      if (fragment2.source)
+        resolveCatalogReference(
+          fragment2.source.use,
+          resolved.ir,
+          index,
+          fragment2.origin.instance_key,
+          "source"
+        );
+    }
+    if (root.creation.story) {
+      branch.story = root.creation.story;
+      branch.story_refs = resolveStoryReferences(
+        root.creation,
+        resolved.ir,
+        index,
+        resolved.story_templates
+      );
+    }
     if (root.creation.assembly) {
       const config = root.creation.assembly;
       const node = nodes.get(config.preset.release);
       if (!node)
         throw new CharError({ code: "resolve.release_missing", subject: config.preset.release });
       branch.assembly = { ...config, preset: resolvePreset(policyInput(node)) };
+    } else if (defaultPolicy) {
+      const preset = resolvePreset(policyInput(defaultPolicy));
+      for (const dependency of preset.lock ?? [])
+        if (inputs.get(dependency.release)?.visibility !== "public")
+          throw new CharError({
+            code: "resolve.default_policy_not_public",
+            subject: dependency.ref
+          });
+      branch.default_policy = preset;
     }
   }
-  const assets = collectAssets(all, resolved, input.publicAssetBaseUrl);
-  const meta = collectMeta(root, all, assets, resolved);
-  const artifact = CreationArtifactSchema.parse({ ...common2, ...branch, assets, meta });
+  const assets = collectAssets(
+    all.filter((node) => material.has(node)),
+    resolved,
+    input.publicAssetBaseUrl
+  );
+  const meta = collectMeta(root, all, collectAssets(all, resolved, void 0), resolved);
+  const prepared = CreationArtifactSchema.parse({
+    ...common2,
+    ...branch,
+    assets,
+    meta,
+    capabilities: []
+  });
+  const artifact = { ...prepared, capabilities: deriveCapabilities(prepared) };
   return {
     artifact,
     json: jcs(artifact),
@@ -318977,9 +321340,9 @@ function buildCreation(input) {
 }
 function collectAssets(nodes, resolved, baseUrl) {
   const assets = [...resolved?.ir.assets ?? []];
-  const covered = new Set(assets.map((asset) => asset.origin.creation));
+  const covered = new Set(assets.map((asset) => buildIdentityKey(asset.origin)));
   for (const node of nodes) {
-    if (covered.has(node.creation.ref)) continue;
+    if (covered.has(node.key)) continue;
     const c = node.creation;
     const key = instanceKey(node.via);
     for (const slot of c.assets)
@@ -318995,7 +321358,7 @@ function collectAssets(nodes, resolved, baseUrl) {
           license: variant.license ?? c.meta.license,
           origin: {
             creation: c.ref,
-            release: node.input.release,
+            ...buildIdentity(node.input),
             slot: slot.slot,
             variant: variant.id,
             instance_key: key
@@ -319046,22 +321409,184 @@ function collectMeta(root, nodes, assets, resolved) {
   }
   const seen = /* @__PURE__ */ new Set();
   for (const asset of assets) {
-    const key = `${asset.origin.creation}#${asset.origin.slot}/${asset.origin.variant}`;
+    const ownerKey = buildIdentityKey(asset.origin);
+    const key = `${ownerKey}#${asset.origin.slot}/${asset.origin.variant}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const owner = nodes.find((node) => node.creation.ref === asset.origin.creation)?.creation;
+    const owner = nodes.find((node) => node.key === ownerKey)?.creation;
     bump(asset.rating);
-    const id = `${asset.origin.slot}/${asset.origin.variant}`;
+    const id2 = `${asset.origin.slot}/${asset.origin.variant}`;
     if (asset.rating !== owner?.meta.rating)
-      meta.rating_sources.push({ ref: asset.origin.creation, rating: asset.rating, asset: id });
+      meta.rating_sources.push({ ref: asset.origin.creation, rating: asset.rating, asset: id2 });
     if (asset.license !== owner?.meta.license)
-      meta.licenses.push({ ref: asset.origin.creation, license: asset.license, asset: id });
+      meta.licenses.push({ ref: asset.origin.creation, license: asset.license, asset: id2 });
   }
   meta.content_warnings = [...warnings].sort(compareStrings);
   const bySource = (a, b) => compareStrings(a.ref, b.ref) || compareStrings(a.asset ?? "", b.asset ?? "");
   meta.licenses.sort(bySource);
   meta.rating_sources.sort(bySource);
   return meta;
+}
+
+// ../../packages/core/src/story/evaluate.ts
+function fail(code, subject, detail) {
+  throw new CharError({ code: `story.${code}`, subject, ...detail ? { detail } : {} });
+}
+function definition(story, cast) {
+  assertStoryLimits(story);
+  const parsed = StorySchema.safeParse(story);
+  if (!parsed.success) fail("invalid_definition", "story", parsed.error.message);
+  if (new Set(cast).size !== cast.length) fail("invalid_state", "cast", "Duplicate participant");
+  const error = checkStory(story, cast).find((d) => d.severity === "error");
+  if (error) throw new CharError(error);
+}
+function validateStoryState(story, cast, state) {
+  definition(story, cast);
+  const lists = [
+    ["present", state.present, [...cast]],
+    ["visited", state.visited, story.scenes.map((s) => s.id)],
+    ["reached", state.reached, (story.beats ?? []).map((s) => s.id)],
+    ["ended", state.ended, (story.endings ?? []).map((s) => s.id)],
+    [
+      "happened",
+      state.happened,
+      (story.events ?? []).filter((e) => e.kind === "planned").map((s) => s.id)
+    ]
+  ];
+  for (const [at, values, allowed] of lists) {
+    if (!Array.isArray(values) || new Set(values).size !== values.length || values.some((v) => !allowed.includes(v)))
+      fail("invalid_state", at);
+  }
+  if (!state.visited.includes(state.scene))
+    fail("invalid_state", "scene", "Current scene must be visited");
+  const starts = story.starts?.map((s) => s.id) ?? ["default"];
+  if (!starts.includes(state.start)) fail("invalid_state", "start");
+  const variables = story.vars ?? {};
+  if (Object.keys(state.vars).length !== Object.keys(variables).length)
+    fail("invalid_state", "vars");
+  for (const [key, variable2] of Object.entries(variables)) {
+    const value = state.vars[key];
+    if (value === void 0 || !validStoryValue(story, variable2, value))
+      fail("invalid_state", `vars.${key}`);
+  }
+  const controlled = controlledInformation(story);
+  if (Object.keys(state.knowing).length !== controlled.size) fail("invalid_state", "knowing");
+  for (const ref of controlled) {
+    const keys = state.knowing[ref];
+    if (!Array.isArray(keys) || new Set(keys).size !== keys.length || keys.some((key) => !cast.includes(key)))
+      fail("invalid_state", `knowing.${ref}`);
+  }
+  const shouldStop = (story.endings ?? []).some(
+    (e) => state.ended.includes(e.id) && e.after !== "continue"
+  );
+  if (state.stopped !== shouldStop) fail("invalid_state", "stopped");
+}
+
+// ../../packages/core/src/reference-impact.ts
+import { z as z17 } from "./vendor/zod.js";
+var CreationObjectAddressSchema = z17.strictObject({
+  kind: z17.enum([
+    "fragment",
+    "group",
+    "source",
+    "section",
+    "cast",
+    "scene",
+    "beat",
+    "ending",
+    "choice",
+    "event",
+    "item",
+    "plotline",
+    "timeline",
+    "start",
+    "variable",
+    "block",
+    "asset",
+    "slot",
+    "param"
+  ]),
+  id: z17.string().min(1),
+  parent: z17.string().min(1).optional()
+});
+
+// ../../packages/core/src/source-text.ts
+var MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+var normalizedSource = (text2) => text2.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
+function sourceHeadings(lines) {
+  const headings = [];
+  let fence;
+  for (let line = 0; line < lines.length; line++) {
+    const value = lines[line] ?? "";
+    const marker = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(value);
+    if (marker) {
+      const run2 = marker[1] ?? "";
+      if (!fence) fence = { marker: run2[0] ?? "", length: run2.length };
+      else if (run2[0] === fence.marker && run2.length >= fence.length && !marker[2]?.trim())
+        fence = void 0;
+      continue;
+    }
+    if (fence) continue;
+    const atx = /^ {0,3}(#{1,6})(?:[ \t]+(.*)|$)/.exec(value);
+    if (atx)
+      headings.push({
+        text: (atx[2] ?? "").replace(/[ \t]+#+[ \t]*$/, "").trim(),
+        level: atx[1]?.length ?? 1,
+        line
+      });
+    else if (line > 0 && /^ {0,3}(?:=+|-+)[ \t]*$/.test(value)) {
+      const title = lines[line - 1]?.trim();
+      if (title && !/^ {4}/.test(lines[line - 1] ?? ""))
+        headings.push({ text: title, level: value.trim().startsWith("=") ? 1 : 2, line: line - 1 });
+    }
+  }
+  return headings.map((heading) => ({ ...heading, anchor: `#${heading.text}`.normalize("NFC") }));
+}
+function materializeSourceText(source, asset, text2) {
+  const mediaTypes = source.format === "markdown" ? ["text/markdown", "text/plain"] : ["text/plain"];
+  if (!mediaTypes.includes(asset.media_type))
+    throw new CharError({ code: "source.media_type_mismatch", subject: source.id });
+  const bytes = checkedSourceBytes(text2, source.id);
+  if (asset.id !== source.asset || asset.role !== "context" || sha256Bytes(bytes) !== asset.digest)
+    throw new CharError({ code: "source.asset_mismatch", subject: source.id });
+  return sourceSections(source, text2);
+}
+function checkedSourceBytes(text2, subject) {
+  const bytes = utf8ToBytes(text2);
+  if (bytes.byteLength > MAX_SOURCE_BYTES)
+    throw new CharError({ code: "source.too_large", subject });
+  if (text2.includes("\0")) throw new CharError({ code: "source.binary_content", subject });
+  return bytes;
+}
+function sourceSections(source, text2) {
+  const body = normalizedSource(text2);
+  const lines = body.split("\n");
+  const headings = sourceHeadings(lines);
+  const sections = {};
+  for (const section of source.sections) {
+    if (source.format === "text") {
+      const match = /^L([1-9][0-9]*)-L([1-9][0-9]*)$/.exec(section.anchor);
+      const start = Number(match?.[1]);
+      const end = Number(match?.[2]);
+      if (!match || !Number.isSafeInteger(end) || start > end || end > lines.length)
+        throw new CharError({
+          code: "source.anchor_missing",
+          subject: `${source.id}/${section.id}`
+        });
+      sections[section.id] = lines.slice(start - 1, end).join("\n");
+    } else {
+      const matches2 = headings.filter((h) => h.anchor === section.anchor.normalize("NFC"));
+      const heading = matches2[0];
+      if (matches2.length !== 1 || !heading)
+        throw new CharError({
+          code: matches2.length ? "source.anchor_ambiguous" : "source.anchor_missing",
+          subject: `${source.id}/${section.id}`
+        });
+      const end = headings.find((h) => h.line > heading.line && h.level <= heading.level)?.line ?? lines.length;
+      sections[section.id] = lines.slice(heading.line, end).join("\n");
+    }
+  }
+  return { source: source.id, body, sections };
 }
 
 // ../../packages/assembler/src/locale.ts
@@ -319084,11 +321609,19 @@ function matchLocale(available, wanted) {
   }
   return null;
 }
-function localizedString(text, locale, defaultLocale) {
-  if (typeof text === "string") return text;
-  const keys = Object.keys(text).sort(compareStrings);
+function localizedString(text2, locale, defaultLocale) {
+  if (typeof text2 === "string") return text2;
+  const keys = Object.keys(text2).sort(compareStrings);
   const key = matchLocale(keys, locale) ?? matchLocale(keys, defaultLocale) ?? keys[0];
-  return key === void 0 ? "" : text[key] ?? "";
+  return key === void 0 ? "" : text2[key] ?? "";
+}
+function localizedTemplate(template, wanted, defaultLocale) {
+  const variants = template.locales ?? {};
+  const pick = matchLocale([defaultLocale, ...Object.keys(variants).sort(compareStrings)], wanted);
+  return {
+    text: pick === null || pick === defaultLocale ? template.text : variants[pick] ?? template.text,
+    fallback: pick === null
+  };
 }
 
 // ../../packages/assembler/src/render.ts
@@ -319159,9 +321692,9 @@ var RenderContext = class {
     }
     return this.participantName(speaker.slice(prefix.length));
   }
-  asset(id) {
-    const a = this.assets.get(id);
-    if (!a) throw new CharError({ code: "assemble.unknown_asset", subject: id });
+  asset(id2) {
+    const a = this.assets.get(id2);
+    if (!a) throw new CharError({ code: "assemble.unknown_asset", subject: id2 });
     return a;
   }
   /**
@@ -319181,8 +321714,8 @@ var RenderContext = class {
     const attachments = [];
     let mediaDegraded = false;
     const parts = [];
-    const addAsset = (id) => {
-      const a = this.asset(id);
+    const addAsset = (id2) => {
+      const a = this.asset(id2);
       if (this.images && a.role === "context") {
         const att = { asset: a.id, media_type: a.media_type, digest: a.digest };
         if (a.url !== void 0) att.url = a.url;
@@ -319210,14 +321743,14 @@ var RenderContext = class {
         parts.push(JSON.stringify(content.data));
         break;
     }
-    for (const id of f.asset_refs ?? []) addAsset(id);
-    const text = parts.filter((p) => p.length > 0).join("\n");
+    for (const id2 of f.asset_refs ?? []) addAsset(id2);
+    const text2 = parts.filter((p) => p.length > 0).join("\n");
     return {
-      text,
+      text: text2,
       attachments,
       localeFallback: fallback,
       mediaDegraded,
-      empty: text.length === 0 && attachments.length === 0
+      empty: text2.length === 0 && attachments.length === 0
     };
   }
 };
@@ -319266,16 +321799,16 @@ var DEFAULT_LANGUAGE_CONFIGS = [
     averageCharsPerToken: 0.9
   }
 ];
-function* walkSegments(text, options = {}) {
-  if (!text) return;
+function* walkSegments(text2, options = {}) {
+  if (!text2) return;
   const resolvedOptions = resolveOptions(options);
   let previousSegment = "";
-  for (const segment of text.split(TOKEN_SPLIT_PATTERN)) if (segment) {
+  for (const segment2 of text2.split(TOKEN_SPLIT_PATTERN)) if (segment2) {
     yield {
-      segment,
-      tokenCount: estimateSegmentTokens(segment, resolvedOptions, previousSegment)
+      segment: segment2,
+      tokenCount: estimateSegmentTokens(segment2, resolvedOptions, previousSegment)
     };
-    previousSegment = segment;
+    previousSegment = segment2;
   }
 }
 function resolveOptions(options) {
@@ -319284,32 +321817,32 @@ function resolveOptions(options) {
     languageConfigs: options.languageConfigs ?? DEFAULT_LANGUAGE_CONFIGS
   };
 }
-function estimateSegmentTokens(segment, { languageConfigs, defaultCharsPerToken }, previousSegment) {
-  if (PATTERNS.whitespace.test(segment)) {
-    if (PATTERNS.structuredWhitespace.test(segment)) return 1;
-    return segment.includes("\n") && !PATTERNS.punctuation.test(previousSegment.slice(-1)) ? 1 : 0;
+function estimateSegmentTokens(segment2, { languageConfigs, defaultCharsPerToken }, previousSegment) {
+  if (PATTERNS.whitespace.test(segment2)) {
+    if (PATTERNS.structuredWhitespace.test(segment2)) return 1;
+    return segment2.includes("\n") && !PATTERNS.punctuation.test(previousSegment.slice(-1)) ? 1 : 0;
   }
-  const languageCharsPerToken = getLanguageSpecificCharsPerToken(segment, languageConfigs);
-  if (languageCharsPerToken !== void 0) return Math.ceil(getCharacterCount(segment) / languageCharsPerToken);
-  if (PATTERNS.cjk.test(segment)) return estimateCjkTokens(segment);
-  if (PATTERNS.numeric.test(segment)) return Math.ceil(segment.length / 3);
-  if (segment.length <= SHORT_TOKEN_THRESHOLD) return 1;
-  if (segment.length <= LOWERCASE_WORD_SINGLE_TOKEN_LENGTH && PATTERNS.lowercaseWord.test(segment)) return 1;
-  if (PATTERNS.punctuation.test(segment)) return Math.ceil(segment.length / PUNCTUATION_CHARS_PER_TOKEN);
-  return Math.ceil(segment.length / defaultCharsPerToken);
+  const languageCharsPerToken = getLanguageSpecificCharsPerToken(segment2, languageConfigs);
+  if (languageCharsPerToken !== void 0) return Math.ceil(getCharacterCount(segment2) / languageCharsPerToken);
+  if (PATTERNS.cjk.test(segment2)) return estimateCjkTokens(segment2);
+  if (PATTERNS.numeric.test(segment2)) return Math.ceil(segment2.length / 3);
+  if (segment2.length <= SHORT_TOKEN_THRESHOLD) return 1;
+  if (segment2.length <= LOWERCASE_WORD_SINGLE_TOKEN_LENGTH && PATTERNS.lowercaseWord.test(segment2)) return 1;
+  if (PATTERNS.punctuation.test(segment2)) return Math.ceil(segment2.length / PUNCTUATION_CHARS_PER_TOKEN);
+  return Math.ceil(segment2.length / defaultCharsPerToken);
 }
-function getLanguageSpecificCharsPerToken(segment, languageConfigs) {
-  if (languageConfigs === DEFAULT_LANGUAGE_CONFIGS && !PATTERNS.nonAscii.test(segment)) return;
-  for (const config of languageConfigs) if (segment.search(config.pattern) !== -1) return config.averageCharsPerToken;
+function getLanguageSpecificCharsPerToken(segment2, languageConfigs) {
+  if (languageConfigs === DEFAULT_LANGUAGE_CONFIGS && !PATTERNS.nonAscii.test(segment2)) return;
+  for (const config of languageConfigs) if (segment2.search(config.pattern) !== -1) return config.averageCharsPerToken;
 }
-function getCharacterCount(text) {
-  return Array.from(text).length;
+function getCharacterCount(text2) {
+  return Array.from(text2).length;
 }
-function estimateCjkTokens(segment) {
+function estimateCjkTokens(segment2) {
   let kanaCount = 0;
   let hangulCount = 0;
   let hanziCount = 0;
-  for (const character of segment) {
+  for (const character of segment2) {
     const codePoint = character.codePointAt(0);
     if (codePoint >= 12352 && codePoint <= 12543) kanaCount++;
     else if (isHangulCodePoint(codePoint)) hangulCount++;
@@ -319320,10 +321853,10 @@ function estimateCjkTokens(segment) {
 function isHangulCodePoint(codePoint) {
   return codePoint >= 44032 && codePoint <= 55215 || codePoint >= 4352 && codePoint <= 4607 || codePoint >= 12592 && codePoint <= 12687 || codePoint >= 43360 && codePoint <= 43391 || codePoint >= 55216 && codePoint <= 55295;
 }
-function estimateTokenCount(text, options = {}) {
-  if (!text) return 0;
+function estimateTokenCount(text2, options = {}) {
+  if (!text2) return 0;
   let tokenCount = 0;
-  for (const segmentEstimate of walkSegments(text, options)) tokenCount += segmentEstimate.tokenCount;
+  for (const segmentEstimate of walkSegments(text2, options)) tokenCount += segmentEstimate.tokenCount;
   return tokenCount;
 }
 
@@ -319346,7 +321879,7 @@ async function createPinnedTokenCounter(identity) {
 var estimateCounter = {
   tokenizer: "estimate",
   estimated: true,
-  count: (text) => estimateTokenCount(text)
+  count: (text2) => estimateTokenCount(text2)
 };
 function isTokenizerName(s) {
   return TOKENIZER_NAMES.includes(s);
@@ -319356,7 +321889,7 @@ function exactCounter(tokenizer, countTokens3) {
   return {
     tokenizer,
     estimated: false,
-    count: (text) => countTokens3(text, { disallowedSpecial: NO_SPECIAL_TOKENS })
+    count: (text2) => countTokens3(text2, { disallowedSpecial: NO_SPECIAL_TOKENS })
   };
 }
 async function createTokenCounter(name) {
@@ -319380,23 +321913,21 @@ async function createTokenCounter(name) {
   }
 }
 
+// ../../packages/assembler/src/validation.ts
+function parseOrThrow(schema, value, subject, code = "assemble.invalid_input") {
+  const r = schema.safeParse(value);
+  if (!r.success) {
+    const first = r.error.issues[0];
+    throw new CharError({
+      code,
+      subject,
+      detail: first ? `${first.path.join(".") || "$"}: ${first.message}` : "invalid"
+    });
+  }
+  return r.data;
+}
+
 // ../../packages/assembler/src/assemble.ts
-var SYSTEM_REGION_ORDER = [
-  "system:character",
-  "system:cast",
-  "session:bindings",
-  "system:persona",
-  "system:world",
-  "system:scenario",
-  "system:relationship",
-  "system:knowledge",
-  "system:style",
-  "system:instruction",
-  "system:examples",
-  "session:memory",
-  "session:state",
-  "session:variants"
-];
 var ASSEMBLER = { name: "@char-pub/assembler", version: "0.0.0" };
 function regionFor(f) {
   switch (f.placement_hint) {
@@ -319408,23 +321939,8 @@ function regionFor(f) {
       return `system:${f.placement_hint}`;
   }
 }
-function parseOrThrow(schema, value, subject) {
-  const r = schema.safeParse(value);
-  if (!r.success) {
-    const first = r.error.issues[0];
-    throw new CharError({
-      code: "assemble.invalid_input",
-      subject,
-      detail: first ? `${first.path.join(".") || "$"}: ${first.message}` : "invalid"
-    });
-  }
-  return r.data;
-}
 function chooseLocale(ir, profile, session) {
   return session.locale ?? profile.locale ?? ir.meta.default_locale;
-}
-function participantKeyOf(target) {
-  return target.startsWith("participant:") ? target.slice("participant:".length) : target;
 }
 function checkLateBindings(ir, session) {
   for (const slot of ir.late_slots) {
@@ -319450,10 +321966,10 @@ function checkLateBindings(ir, session) {
 }
 function sessionBlocks(ctx, session, labels, counter) {
   const blocks = [];
-  const add = (id, region, lines, header) => {
+  const add = (id2, region, lines, header) => {
     if (lines.length === 0) return;
-    const text = [header, ...lines].join("\n");
-    blocks.push({ id, region, text, tokens: counter.count(text) });
+    const text2 = [header, ...lines].join("\n");
+    blocks.push({ id: id2, region, text: text2, tokens: counter.count(text2) });
   };
   const declared = /* @__PURE__ */ new Set([USER_LATE_SLOT, ...ctx.ir.late_slots.map((s) => s.key)]);
   const bindingKeys = Object.keys(session.bindings).filter((k) => declared.has(k)).sort((a, b) => a === USER_LATE_SLOT ? -1 : b === USER_LATE_SLOT ? 1 : compareStrings(a, b));
@@ -319482,12 +321998,12 @@ function sessionBlocks(ctx, session, labels, counter) {
   );
   return blocks;
 }
-function assemble(input) {
+function renderPrepared(input) {
   const ir = parseOrThrow(ContextIRSchema, input.ir, "ir");
   const profile = parseOrThrow(RuntimeProfileSchema, input.profile, "profile");
   const session = parseOrThrow(SessionSchema, input.session, "session");
-  const preset = input.preset === void 0 ? void 0 : parseOrThrow(ResolvedPresetSchema, input.preset, "preset");
-  if (preset && (profile.capabilities.system_role !== true || preset.policy.requires.multiple_system_messages === true && profile.capabilities.multiple_system_messages !== true)) {
+  const preset = parseOrThrow(ResolvedPresetSchema, input.preset, "preset");
+  if (profile.capabilities.system_role !== true || preset.policy.requires.multiple_system_messages === true && profile.capabilities.multiple_system_messages !== true) {
     throw new CharError({
       code: "assemble.preset_incompatible",
       subject: preset.ref,
@@ -319503,64 +322019,87 @@ function assemble(input) {
   if ((profile.mode === "per-agent" || session.for_participant !== void 0) && !ctx.hasParticipant(forParticipant)) {
     throw new CharError({ code: "assemble.unknown_participant", subject: forParticipant });
   }
-  const manual = new Set(session.manual_enabled ?? []);
   const entries = /* @__PURE__ */ new Map();
   const candidates = [];
   const entry = (f, region, decision, reason, tokens = 0) => {
-    entries.set(f.id, { id: f.id, region, tokens, decision, reason, origin: f.origin });
+    entries.set(f.id, {
+      id: f.id,
+      region,
+      tokens,
+      decision,
+      reason,
+      ...f.origin ? { origin: f.origin } : {}
+    });
   };
   for (const f of ir.fragments) {
-    const region = regionFor(f);
-    const vis = f.visibility;
-    let privateTo = null;
-    if (vis.scope === "private") {
-      const keys = vis.to.map(participantKeyOf);
-      if (profile.mode === "per-agent" && !keys.includes(forParticipant)) {
-        entry(f, region, "skipped", "visibility");
-        continue;
-      }
-      privateTo = keys;
-    } else if (vis.scope === "scene" && vis.scene !== session.scene) {
-      entry(f, region, "skipped", "visibility");
-      continue;
-    }
-    const act = evaluateActivation(
-      f.activation,
-      f.importance === "pinned",
-      manual.has(f.id),
-      session.history
-    );
-    if (!act.active) {
-      entry(f, region, "skipped", act.reason);
+    const admission = input.prepared.fragments.get(f.id);
+    const region = admission?.region ?? regionFor(f);
+    if (!admission) {
+      entry(f, region, "skipped", "inactive");
       continue;
     }
     const rendered = ctx.render(f);
     if (rendered.empty) {
+      if (admission.required)
+        throw new CharError({ code: "assemble.required_unrenderable", subject: f.id });
       entry(f, region, "skipped", "unsupported-media");
       continue;
     }
-    let text = rendered.text;
-    if (privateTo !== null && profile.mode === "narrator") {
-      text = `${labels.privateNote(privateTo.map((k) => ctx.participantName(k)))}
-${text}`;
-    }
-    const reason = rendered.localeFallback ? "locale-fallback" : rendered.mediaDegraded ? "unsupported-media" : act.reason;
+    const text2 = admission.prefix ? `${admission.prefix}
+${rendered.text}` : rendered.text;
+    const reason = rendered.localeFallback ? "locale-fallback" : rendered.mediaDegraded ? "unsupported-media" : admission.reason;
     candidates.push({
-      fragment: f,
+      id: f.id,
+      importance: f.importance,
+      origin: f.origin,
+      required: admission.required,
+      order: admission.order,
       region,
-      text,
+      text: text2,
       attachments: rendered.attachments,
-      tokens: counter.count(text),
+      tokens: counter.count(text2),
       reason
     });
   }
+  for (const extra of input.prepared.extra) {
+    candidates.push({
+      ...extra,
+      importance: "normal",
+      attachments: [],
+      tokens: counter.count(extra.text)
+    });
+  }
+  const styles = new Map(ir.fragments.filter((f) => f.style_scope).map((f) => [f.id, f]));
+  const owners = /* @__PURE__ */ new Map();
+  for (const f of styles.values())
+    if (f.style_use && !owners.has(f.style_use.owner)) owners.set(f.style_use.owner, owners.size);
+  const scopeOrder = (f) => f.style_scope === "narration" ? 0 : f.style_scope && "scene" in f.style_scope ? 1 : 2;
+  const useOrder = (left, right) => {
+    const a = left.style_use ? [left.style_use, ...left.style_use.path ?? []] : [];
+    const b = right.style_use ? [right.style_use, ...right.style_use.path ?? []] : [];
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+      const difference = (a[i]?.order ?? 0) - (b[i]?.order ?? 0);
+      if (difference) return difference;
+    }
+    return a.length - b.length;
+  };
+  const styleCandidates = candidates.flatMap((candidate) => {
+    const fragment2 = styles.get(candidate.id);
+    return fragment2 ? [{ candidate, fragment: fragment2 }] : [];
+  }).sort(({ fragment: left }, { fragment: right }) => {
+    return scopeOrder(left) - scopeOrder(right) || (owners.get(left.style_use?.owner ?? "") ?? 0) - (owners.get(right.style_use?.owner ?? "") ?? 0) || useOrder(left, right);
+  });
+  let styleIndex = 0;
+  const presentation = candidates.map(
+    (c) => styles.has(c.id) ? styleCandidates[styleIndex++]?.candidate ?? c : c
+  );
   const history = session.history.map((m) => {
     const content = m.speaker === void 0 ? m.text : `${ctx.participantName(m.speaker)}: ${m.text}`;
     return { role: m.role, content, tokens: counter.count(content) };
   });
   const historyTokens = history.reduce((n, m) => n + m.tokens, 0);
   const blocks = sessionBlocks(ctx, session, labels, counter);
-  const policyBlocks = (preset?.policy.blocks ?? []).map((b) => ({
+  const policyBlocks = preset.policy.blocks.map((b) => ({
     ...b,
     source: `preset:${b.id}`,
     tokens: b.enabled === false ? 0 : counter.count(b.text)
@@ -319569,7 +322108,7 @@ ${text}`;
   const inputBudget = profile.context_window - profile.reserve_for_output;
   const available = inputBudget - fixed;
   const makeMessages = (chosen) => {
-    const systemRole = profile.capabilities.system_role === false ? "user" : "system";
+    const systemRole = "system";
     const renderRegion = (region) => {
       const parts = [];
       const source = [];
@@ -319579,11 +322118,11 @@ ${text}`;
         parts.push(b.text);
         source.push(b.id);
       }
-      const inRegion = candidates.filter((c) => c.region === region && chosen.has(c));
+      const inRegion = presentation.filter((c) => c.region === region && chosen.has(c));
       if (region === "system:examples" && inRegion.length > 0) parts.push(labels.examplesHeader);
       for (const c of inRegion) {
         if (c.text.length > 0) parts.push(c.text);
-        source.push(c.fragment.id);
+        source.push(c.id);
         attachments.push(...c.attachments);
       }
       if (source.length === 0) return void 0;
@@ -319597,34 +322136,25 @@ ${text}`;
       source: ["history"]
     }));
     let messages2;
-    if (preset) {
-      const policyMessages = (position) => policyBlocks.filter((b) => b.enabled !== false && b.position === position).map((b) => ({ role: "system", content: b.text, source: [b.source] }));
-      messages2 = policyMessages("main");
-      for (const region of preset.policy.layout) {
-        if (region === "history") messages2.push(...historyMessages);
-        else {
-          const msg = renderRegion(region);
-          if (msg) messages2.push(msg);
-        }
-      }
-      messages2.push(...policyMessages("after-history"));
-      if (profile.capabilities.multiple_system_messages !== true) {
-        messages2 = mergeAdjacentSystemMessages(messages2);
-        if (messages2.filter((m) => m.role === "system").length > 1) {
-          throw new CharError({
-            code: "assemble.preset_incompatible",
-            subject: preset.ref,
-            detail: "system messages separated by history require multiple_system_messages"
-          });
-        }
-      }
-    } else {
-      const regionMessages = SYSTEM_REGION_ORDER.flatMap((region) => {
+    const policyMessages = (position) => policyBlocks.filter((b) => b.enabled !== false && b.position === position).map((b) => ({ role: "system", content: b.text, source: [b.source] }));
+    messages2 = policyMessages("main");
+    for (const region of preset.policy.layout) {
+      if (region === "history") messages2.push(...historyMessages);
+      else {
         const msg = renderRegion(region);
-        return msg ? [msg] : [];
-      });
-      messages2 = profile.capabilities.multiple_system_messages === false && regionMessages.length > 1 ? [mergeMessages(regionMessages, systemRole)] : regionMessages;
-      messages2.push(...historyMessages);
+        if (msg) messages2.push(msg);
+      }
+    }
+    messages2.push(...policyMessages("after-history"));
+    if (profile.capabilities.multiple_system_messages !== true) {
+      messages2 = mergeAdjacentSystemMessages(messages2);
+      if (messages2.filter((m) => m.role === "system").length > 1) {
+        throw new CharError({
+          code: "assemble.preset_incompatible",
+          subject: preset.ref,
+          detail: "system messages separated by history require multiple_system_messages"
+        });
+      }
     }
     return messages2;
   };
@@ -319633,8 +322163,8 @@ ${text}`;
     const messageTokens = makeMessages(chosen).reduce((n, m) => n + counter.count(m.content), 0);
     return Math.max(sourceTokens, messageTokens);
   };
-  const fixedInputCost = preset ? presetCost(/* @__PURE__ */ new Set()) : fixed;
-  if (preset && fixedInputCost > inputBudget) {
+  const fixedInputCost = presetCost(/* @__PURE__ */ new Set());
+  if (fixedInputCost > inputBudget) {
     throw new CharError({
       code: "assemble.fixed_over_budget",
       subject: preset.ref,
@@ -319642,25 +322172,26 @@ ${text}`;
       data: { fixed_tokens: fixedInputCost, input_budget: inputBudget }
     });
   }
-  const pinned = candidates.filter((c) => c.fragment.importance === "pinned");
+  const pinned = candidates.filter((c) => c.required || c.importance === "pinned");
   const pinnedTokens = pinned.reduce((n, c) => n + c.tokens, 0);
-  const pinnedInputCost = preset ? presetCost(new Set(pinned)) : fixed + pinnedTokens;
+  const pinnedInputCost = presetCost(new Set(pinned));
   if (pinnedInputCost > inputBudget) {
     throw new CharError({
-      code: "assemble.pinned_over_budget",
+      code: pinned.some((c) => c.importance !== "pinned") && presetCost(new Set(pinned.filter((c) => c.importance === "pinned"))) <= inputBudget ? "assemble.required_over_budget" : "assemble.pinned_over_budget",
       subject: ir.root.ref,
-      detail: preset ? "fixed content, pinned fragments and message formatting exceed the input budget" : `pinned fragments need ${pinnedTokens} tokens, only ${Math.max(0, available)} available`,
+      detail: "fixed content, required fragments and message formatting exceed the input budget",
       data: {
         pinned_tokens: pinnedTokens,
         available,
-        fragments: pinned.map((c) => c.fragment.id),
-        ...preset ? { required_input_tokens: pinnedInputCost, input_budget: inputBudget } : {}
+        fragments: pinned.map((c) => c.id),
+        required_input_tokens: pinnedInputCost,
+        input_budget: inputBudget
       }
     });
   }
   const included = new Set(pinned);
   const regionUsage = /* @__PURE__ */ new Map();
-  const regionLimit = (region) => preset?.policy.region_budgets?.[region];
+  const regionLimit = (region) => preset.policy.region_budgets?.[region];
   for (const c of pinned) {
     const used = (regionUsage.get(c.region) ?? 0) + c.tokens;
     regionUsage.set(c.region, used);
@@ -319674,16 +322205,16 @@ ${text}`;
       });
     }
   }
-  const orderedCandidates = preset ? preset.policy.layout.flatMap((region) => candidates.filter((c) => c.region === region)) : candidates;
+  const orderedCandidates = [...candidates].sort((a, b) => a.order - b.order);
   let remaining = available - pinnedTokens;
   for (const tier of ["normal", "opportunistic"]) {
     for (const c of orderedCandidates) {
-      if (c.fragment.importance !== tier) continue;
+      if (c.importance !== tier || included.has(c)) continue;
       const used = regionUsage.get(c.region) ?? 0;
       const limit = regionLimit(c.region);
       if (c.tokens <= remaining && (limit === void 0 || used + c.tokens <= limit)) {
         included.add(c);
-        if (preset && presetCost(included) > inputBudget) {
+        if (presetCost(included) > inputBudget) {
           included.delete(c);
           continue;
         }
@@ -319693,19 +322224,23 @@ ${text}`;
     }
   }
   for (const c of candidates) {
-    if (included.has(c)) entry(c.fragment, c.region, "included", c.reason, c.tokens);
-    else entry(c.fragment, c.region, "skipped", "budget", c.tokens);
+    if (included.has(c)) entry(c, c.region, "included", c.reason, c.tokens);
+    else entry(c, c.region, "skipped", "budget", c.tokens);
   }
   const messages = makeMessages(included);
-  const formattingTokens = preset ? Math.max(
+  const formattingTokens = Math.max(
     0,
     messages.reduce((n, m) => n + counter.count(m.content), 0) - fixed - [...included].reduce((n, c) => n + c.tokens, 0)
-  ) : 0;
+  );
   const traceEntries = ir.fragments.map((f) => {
     const e = entries.get(f.id);
     if (!e) throw new CharError({ code: "assemble.internal", subject: f.id });
     return e;
   });
+  for (const extra of input.prepared.extra) {
+    const item = entries.get(extra.id);
+    if (item) traceEntries.push(item);
+  }
   for (const b of blocks) {
     traceEntries.push({
       id: b.id,
@@ -319730,7 +322265,10 @@ ${text}`;
       region: `preset:${b.position}`,
       tokens: b.tokens,
       decision: b.enabled === false ? "skipped" : "included",
-      reason: b.enabled === false ? "inactive" : "always"
+      reason: b.enabled === false ? "inactive" : "always",
+      ...b.origin ? { policy_origin: b.origin } : {},
+      ...b.placement ? { policy_placement: b.placement } : {},
+      ...b.purpose ? { purpose: b.purpose } : {}
     });
   }
   if (formattingTokens > 0) {
@@ -319746,16 +322284,19 @@ ${text}`;
   return {
     messages,
     trace: {
-      ir: { root: ir.root.ref, lock_digest: ir.lock_digest },
-      assembler: { ...ASSEMBLER, layout: preset ? "preset-v1" : "default-v1" },
-      ...preset ? {
-        preset: {
-          ref: preset.ref,
-          release: preset.release,
-          semantic_digest: preset.semantic_digest,
-          resolver: preset.resolver
-        }
-      } : {},
+      ir: {
+        root: ir.root.ref,
+        ...buildIdentity(ir.root),
+        semantic_digest: ir.root.semantic_digest,
+        lock_digest: ir.lock_digest
+      },
+      assembler: { ...ASSEMBLER, layout: "preset-v1" },
+      preset: {
+        ref: preset.ref,
+        ...buildIdentity(preset),
+        semantic_digest: preset.semantic_digest,
+        resolver: preset.resolver
+      },
       profile: {
         tokenizer: counter.tokenizer,
         context_window: profile.context_window,
@@ -319796,9 +322337,765 @@ function mergeMessages(list, role) {
   return merged;
 }
 
+// ../../packages/assembler/src/view.ts
+function createViewContext(artifact, input, rawView) {
+  const turn = parseOrThrow(TurnViewSchema, input, "turn", "catalog.invalid_input");
+  const view = parseOrThrow(ContextViewSchema, rawView, "view", "catalog.invalid_input");
+  const participants = artifact.story_refs?.participants ?? Object.fromEntries(artifact.ir.participants.map((p) => [p.key, p.key]));
+  const participant = view.for ? participants[view.for] ?? view.for : void 0;
+  if (view.mode === "per-agent" && (!participant || !artifact.ir.participants.some((p) => p.key === participant)))
+    throw new CharError({ code: "catalog.participant_missing", subject: view.for ?? "view.for" });
+  let present = turn.present ?? Object.keys(participants);
+  const known = /* @__PURE__ */ new Map();
+  if (artifact.story) {
+    if (!turn.story || !turn.scene || !artifact.story_refs)
+      throw new CharError({ code: "catalog.story_state_required", subject: "turn" });
+    const scene = artifact.story.scenes.find((s) => s.id === turn.scene);
+    if (!scene) throw new CharError({ code: "story.unknown_scene", subject: turn.scene });
+    present = turn.present ?? scene.cast ?? Object.keys(participants);
+    validateStoryState(artifact.story, Object.keys(participants), {
+      ...turn.story,
+      scene: turn.scene,
+      present
+    });
+    for (const [ref, keys] of Object.entries(turn.story.knowing)) {
+      const id2 = artifact.story_refs.information[ref];
+      if (!id2) throw new CharError({ code: "catalog.information_missing", subject: ref });
+      const next = keys.map((key) => participants[key]).filter((key) => key !== void 0);
+      const prior = known.get(id2);
+      if (prior && (prior.length !== next.length || prior.some((p) => !next.includes(p))))
+        throw new CharError({ code: "catalog.knowledge_alias_conflict", subject: ref });
+      known.set(id2, next);
+    }
+  } else if (turn.story)
+    throw new CharError({ code: "catalog.unexpected_story_state", subject: "turn.story" });
+  const resolvedPresent = present.map((key) => participants[key] ?? key);
+  if (new Set(resolvedPresent).size !== resolvedPresent.length || resolvedPresent.some((key) => !artifact.ir.participants.some((p) => p.key === key)))
+    throw new CharError({ code: "catalog.invalid_presence", subject: "turn.present" });
+  return {
+    artifact,
+    turn,
+    view,
+    ...participant ? { participant } : {},
+    present: resolvedPresent,
+    known,
+    participants
+  };
+}
+function viewOf(item, context) {
+  const { view, turn, participant, known, artifact, present } = context;
+  const excluded = (reason) => ({ status: "excluded", reason });
+  const withheld = (reason) => ({ status: "withheld", reason });
+  if (item.kind === "story") {
+    if (["beat", "ending", "runtime"].includes(item.role)) {
+      if (!(view.mode === "narrator" && turn.story_guidance && item.role !== "runtime"))
+        return excluded("view.runtime_only");
+    }
+    if (item.role === "goal" && view.mode === "per-agent" && item.participant !== participant)
+      return excluded("view.others_goal");
+    if (item.participant && !present.includes(item.participant)) return excluded("view.absent");
+    return { status: "visible" };
+  }
+  if (item.kind === "source")
+    return view.mode === "per-agent" && !item.value.shared ? withheld("view.source_not_shared") : { status: "visible" };
+  const fragment2 = item.value;
+  const style = fragment2.style_scope;
+  if (fragment2.style_use) {
+    const use = fragment2.style_use;
+    const scopeKey = JSON.stringify(fragment2.style_scope);
+    const layers = [use, ...use.path ?? []];
+    const replaced = artifact.ir.fragments.some((other) => {
+      if (!other.style_use || JSON.stringify(other.style_scope) !== scopeKey) return false;
+      const others = [other.style_use, ...other.style_use.path ?? []];
+      return layers.some((layer, depth) => {
+        const later = others[depth];
+        return later?.owner === layer.owner && later.combine === "replace" && later.order > layer.order;
+      });
+    });
+    if (replaced) return excluded("view.style_replaced");
+  }
+  if (style && typeof style === "object" && "scene" in style && (style.owner !== "root" || style.scene !== turn.scene))
+    return excluded("view.other_scene");
+  const visibility = fragment2.visibility;
+  if ((visibility.scope === "scene" || visibility.scope === "story-scene") && visibility.scene !== turn.scene)
+    return excluded("view.other_scene");
+  if (style && typeof style === "object" && "participant" in style && !present.includes(style.participant))
+    return excluded("view.absent");
+  const role = artifact.ir.graph.instances.find(
+    (instance) => instance.key === fragment2.origin.instance_key
+  )?.cast;
+  const subject = fragment2.subject ?? (role ? participantKey(role.scope, role.key) : void 0);
+  const personContent = ["character", "persona", "examples"].includes(fragment2.kind);
+  if (personContent && subject && !present.includes(subject)) return excluded("view.absent");
+  if (view.mode === "per-agent" && subject && subject !== participant && personContent && !fragment2.outward)
+    return excluded("view.not_outward");
+  const knows = known.get(fragment2.id);
+  if (view.mode === "per-agent") {
+    if (knows && (!participant || !knows.includes(participant)))
+      return withheld("view.not_knowing");
+    if (visibility.scope === "private" && !visibility.to.some((to) => to === participant || to === `participant:${participant}`))
+      return withheld("view.private");
+    if (style && typeof style === "object" && "participant" in style && style.participant !== participant)
+      return excluded("view.style_other_cast");
+  }
+  if (knows) return { status: "visible", knows };
+  if (visibility.scope === "private")
+    return {
+      status: "visible",
+      knows: visibility.to.map((to) => to.replace(/^participant:/, "")).filter((key) => artifact.ir.participants.some((p) => p.key === key))
+    };
+  return { status: "visible" };
+}
+
+// ../../packages/assembler/src/catalog.ts
+function selectorCatalog(catalog) {
+  return { view: { ...catalog.view }, candidates: catalog.candidates };
+}
+var catalogKey = (ref) => {
+  if ("work" in ref) return `work:${ref.work}`;
+  if ("fragment" in ref) return `fragment:${ref.fragment}`;
+  if ("group" in ref) return `group:${ref.group}`;
+  if ("source" in ref) return `source:${ref.source}${ref.section ? `/section:${ref.section}` : ""}`;
+  return `story:${ref.story}:${ref.id}`;
+};
+function buildContextCatalog(input) {
+  const { artifact, counter, selection } = input;
+  const discovery = input.discovery !== false;
+  if (!Number.isSafeInteger(selection.catalog_budget) || selection.catalog_budget < 0 || !Number.isSafeInteger(selection.max_depth) || selection.max_depth < 1 || selection.max_depth > 32)
+    throw new CharError({ code: "catalog.invalid_limits", subject: "selection" });
+  const context = createViewContext(artifact, input.turn, input.view);
+  const { turn, view } = context;
+  const locale = turn.locale ?? artifact.ir.meta.default_locale;
+  const local = (value) => localizedString(value, locale, artifact.ir.meta.default_locale);
+  const required = /* @__PURE__ */ new Map();
+  const direct = /* @__PURE__ */ new Map();
+  const nodes = /* @__PURE__ */ new Map();
+  const visibility = /* @__PURE__ */ new Map();
+  const assoc = /* @__PURE__ */ new Map();
+  const add = (map, ref) => {
+    map.set(catalogKey(ref), ref);
+  };
+  const index = artifact.catalog_index;
+  const association = (ref, path2 = /* @__PURE__ */ new Set()) => {
+    const key = catalogKey(ref);
+    if (path2.has(key)) throw new CharError({ code: "catalog.group_cycle", subject: key });
+    if ("group" in ref) {
+      const group = index.groups.find((g) => g.id === ref.group);
+      if (!group) throw new CharError({ code: "catalog.reference_missing", subject: key });
+      const next = /* @__PURE__ */ new Set([...path2, key]);
+      for (const id2 of group.entries) association({ fragment: id2 }, next);
+      for (const id2 of group.groups) association({ group: id2 }, next);
+    } else add(assoc, ref);
+  };
+  const authored = (ref) => {
+    const resolved = artifact.story_refs?.content[ref];
+    if (!resolved) throw new CharError({ code: "catalog.reference_missing", subject: ref });
+    association(resolved);
+  };
+  const scene = artifact.story?.scenes.find((s) => s.id === turn.scene);
+  if (scene) {
+    if (scene.place) authored(scene.place);
+    for (const ref of scene.lore ?? []) authored(ref);
+    for (const id2 of scene.items ?? [])
+      for (const ref of artifact.story?.items?.find((i) => i.id === id2)?.lore ?? []) authored(ref);
+    for (const id2 of scene.events ?? []) {
+      const event = artifact.story?.events?.find((e) => e.id === id2);
+      if (event?.place) authored(event.place);
+      if (event?.truth) authored(event.truth);
+      for (const ref of event?.lore ?? []) authored(ref);
+    }
+    if (scene.opening !== void 0 || scene.time !== void 0 || scene.where !== void 0)
+      add(required, { story: "scene", id: scene.id });
+    for (const [key, participant] of Object.entries(context.participants)) {
+      const p = artifact.ir.participants.find((p2) => p2.key === participant);
+      if (p?.part && viewOf({ kind: "story", role: "part", participant }, context).status === "visible")
+        add(required, { story: "part", id: key });
+      if ((p?.goal || scene.goals?.[key]) && viewOf({ kind: "story", role: "goal", participant }, context).status === "visible")
+        add(required, { story: "goal", id: key });
+    }
+    if (view.mode === "narrator" && turn.story_guidance) {
+      for (const id2 of scene.beats ?? [])
+        if (!turn.story?.reached.includes(id2)) add(direct, { story: "beat", id: id2 });
+      for (const ending of artifact.story?.endings ?? [])
+        if (!turn.story?.ended.includes(ending.id)) add(direct, { story: "ending", id: ending.id });
+    }
+  }
+  const contentText = (fragment2) => {
+    const value = fragment2.locales?.[locale] ?? fragment2.content;
+    return value.type === "text" ? value.text : value.type === "dialogue" ? value.turns.map((t) => t.text).join("\n") : value.type === "media" ? value.caption ?? "" : JSON.stringify(value.data);
+  };
+  for (const fragment2 of artifact.ir.fragments) {
+    const ref = { fragment: fragment2.id };
+    const key = catalogKey(ref);
+    const result = viewOf({ kind: "fragment", value: fragment2 }, context);
+    visibility.set(key, result);
+    if (result.status !== "visible") continue;
+    if (fragment2.importance === "pinned") {
+      add(required, ref);
+      continue;
+    }
+    const activation = evaluateActivation(
+      fragment2.activation,
+      false,
+      turn.manual_enabled?.includes(fragment2.id) ?? false,
+      turn.history
+    );
+    if (assoc.has(key) || activation.active) {
+      add(direct, ref);
+      continue;
+    }
+    const description = fragment2.description ?? (fragment2.activation.mode === "semantic" ? fragment2.activation.hint : void 0);
+    if (description && (fragment2.activation.mode === "semantic" || fragment2.activation.mode === "keyword" && fragment2.selectable))
+      nodes.set(key, {
+        ref,
+        kind: "fragment",
+        title: fragment2.origin.fragment,
+        description: local(description),
+        est_tokens: counter.count(contentText(fragment2)),
+        importance: fragment2.importance
+      });
+  }
+  for (const source of index.sources) {
+    const ref = { source: source.id };
+    const key = catalogKey(ref);
+    const result = viewOf({ kind: "source", value: source }, context);
+    visibility.set(key, result);
+    if (result.status !== "visible") continue;
+    const sections = [];
+    if (assoc.has(key)) {
+      add(direct, ref);
+      continue;
+    }
+    for (const section of source.sections) {
+      const ref2 = { source: source.id, section: section.id };
+      if (assoc.has(catalogKey(ref2))) {
+        add(direct, ref2);
+        continue;
+      }
+      const node = {
+        ref: ref2,
+        kind: "section",
+        title: local(section.title),
+        ...section.description ? { description: local(section.description) } : {},
+        est_tokens: 0,
+        importance: "normal"
+      };
+      sections.push(node);
+      nodes.set(catalogKey(ref2), node);
+    }
+    const partiallyDirect = source.sections.some(
+      (s) => assoc.has(catalogKey({ source: source.id, section: s.id }))
+    );
+    if (!partiallyDirect || sections.length)
+      nodes.set(key, {
+        ref,
+        kind: "source",
+        title: local(source.title),
+        ...source.description ? { description: local(source.description) } : {},
+        ...source.sections.length ? { children: sections, child_count: sections.length } : {},
+        est_tokens: 0,
+        importance: "normal"
+      });
+  }
+  const visibleParticipants = new Set(
+    artifact.ir.participants.filter(
+      (participant) => viewOf({ kind: "story", role: "part", participant: participant.key }, context).status === "visible"
+    ).map((participant) => participant.key)
+  );
+  const visibleWorks = /* @__PURE__ */ new Set();
+  for (const fragment2 of artifact.ir.fragments)
+    if (visibility.get(catalogKey({ fragment: fragment2.id }))?.status === "visible")
+      visibleWorks.add(`${fragment2.origin.creation}~${fragment2.origin.instance_key}`);
+  for (const source of index.sources)
+    if (visibility.get(catalogKey({ source: source.id }))?.status === "visible")
+      visibleWorks.add(source.owner);
+  for (const instance of artifact.ir.graph.instances) {
+    const participant = instance.cast ? participantKey(instance.cast.scope, instance.cast.key) : instance.key === "root" ? "self" : void 0;
+    if (participant && visibleParticipants.has(participant))
+      visibleWorks.add(`${instance.ref}~${instance.key}`);
+  }
+  const about = /* @__PURE__ */ new Map();
+  for (const link of index.about ?? []) {
+    const target2 = link.target;
+    const value = "fragment" in target2 ? visibility.get(catalogKey(target2))?.status === "visible" ? target2.fragment : void 0 : "participant" in target2 ? visibleParticipants.has(target2.participant) ? `participant:${target2.participant}` : void 0 : visibleWorks.has(target2.work) ? target2.work : void 0;
+    if (value !== void 0) {
+      const prior = about.get(link.from) ?? [];
+      if (!prior.includes(value)) prior.push(value);
+      about.set(link.from, prior);
+    }
+  }
+  for (const fragment2 of artifact.ir.fragments) {
+    const node = nodes.get(catalogKey({ fragment: fragment2.id }));
+    if (!node) continue;
+    const perspective = fragment2.perspective;
+    if (typeof perspective === "string") node.perspective = perspective;
+    else if (perspective) {
+      const speaker = "claim" in perspective ? perspective.claim : perspective.belief;
+      if (visibleParticipants.has(speaker.slice("participant:".length)))
+        node.perspective = { ...perspective };
+    }
+    const links = about.get(fragment2.id);
+    if (links?.length) node.about = links;
+    if (fragment2.activation.mode === "keyword" || fragment2.activation.mode === "semantic")
+      node.activation_hint = fragment2.activation.mode;
+  }
+  const seenGroups = /* @__PURE__ */ new Set();
+  const groupNode = (id2) => {
+    if (seenGroups.has(id2)) return void 0;
+    seenGroups.add(id2);
+    const group = index.groups.find((g) => g.id === id2);
+    if (!group) throw new CharError({ code: "catalog.group_missing", subject: id2 });
+    const children = [
+      ...group.entries.map((id3) => nodes.get(catalogKey({ fragment: id3 }))),
+      ...group.groups.map(groupNode)
+    ].filter((node2) => node2 !== void 0);
+    if (!children.length) return void 0;
+    const node = {
+      ref: { group: id2 },
+      kind: "group",
+      title: local(group.title),
+      ...group.description ? { description: local(group.description) } : {},
+      children,
+      child_count: children.length,
+      est_tokens: 0,
+      importance: "normal"
+    };
+    nodes.set(catalogKey(node.ref), node);
+    return node;
+  };
+  const candidates = [];
+  for (const work of index.works) {
+    const children = [
+      ...work.fragments.map((id2) => nodes.get(catalogKey({ fragment: id2 }))),
+      ...work.groups.map(groupNode),
+      ...work.sources.map((id2) => nodes.get(catalogKey({ source: id2 })))
+    ].filter((node2) => node2 !== void 0);
+    if (!children.length) continue;
+    const node = {
+      ref: { work: work.id },
+      kind: "work",
+      title: local(work.title),
+      ...work.description ? { description: local(work.description) } : {},
+      children,
+      child_count: children.length,
+      est_tokens: 0,
+      importance: "normal"
+    };
+    nodes.set(catalogKey(node.ref), node);
+    candidates.push(node);
+  }
+  const trim = (node, depth) => {
+    const { children, ...rest } = node;
+    return {
+      ...rest,
+      ...children && depth < Math.min(selection.max_depth, 1) ? { children: children.map((child) => trim(child, depth + 1)) } : {}
+    };
+  };
+  const catalog = {
+    view: { ...view, ...turn.scene ? { scene: turn.scene } : {} },
+    required: [...required.values()],
+    direct: [...direct.values()],
+    candidates: discovery ? candidates.map((node) => trim(node, 0)) : [],
+    withheld: [...visibility.values()].filter((result) => result.status === "withheld").length
+  };
+  if (discovery && counter.count(JSON.stringify(selectorCatalog(catalog))) > selection.catalog_budget)
+    throw new CharError({ code: "catalog.directory_over_budget", subject: "candidates" });
+  return {
+    associations: new Set(assoc.keys()),
+    discovery,
+    context,
+    catalog,
+    nodes,
+    visibility,
+    counter,
+    selection: { ...selection },
+    input: {
+      artifact_digest: digestExactJSON(artifact),
+      lock_digest: artifact.lock_digest,
+      turn_digest: digestExactJSON(turn),
+      catalog_digest: digestExactJSON(catalog),
+      policy_digest: digestExactJSON({
+        policy: input.policy ?? null,
+        selection,
+        tokenizer: counter.tokenizer,
+        estimated: counter.estimated
+      })
+    }
+  };
+}
+
+// ../../packages/assembler/src/selection.ts
+function initial(build) {
+  const exposed = /* @__PURE__ */ new Map();
+  const visit = (node, depth) => {
+    exposed.set(catalogKey(node.ref), { node, depth });
+    for (const child of node.children ?? []) visit(child, depth + 1);
+  };
+  for (const node of build.catalog.candidates) visit(node, 0);
+  return exposed;
+}
+function shallow(node) {
+  const { children: _children, ...rest } = node;
+  return rest;
+}
+function expansion(build, exposed, ref) {
+  const key = catalogKey(ref);
+  const current = exposed.get(key);
+  const full = build.nodes.get(key);
+  if (!current || !full?.children || current.depth >= build.selection.max_depth)
+    throw new CharError({ code: "selection.invalid_expand", subject: key });
+  const children = full.children.map(shallow);
+  for (const node of children)
+    exposed.set(catalogKey(node.ref), { node, depth: current.depth + 1 });
+  return children;
+}
+function validateSelectionPlan(build, input) {
+  const plan = parseOrThrow(SelectionPlanSchema, input, "plan", "selection.invalid_input");
+  if (plan.discovery !== build.discovery)
+    throw new CharError({ code: "selection.input_mismatch", subject: "discovery" });
+  if (digestExactJSON(plan.input) !== digestExactJSON(build.input))
+    throw new CharError({ code: "selection.input_mismatch", subject: "input" });
+  const exposed = initial(build);
+  let cost = build.discovery ? build.counter.count(JSON.stringify(selectorCatalog(build.catalog))) : 0;
+  for (const decision of plan.decisions) {
+    if (decision.action === "expand") {
+      const children = expansion(build, exposed, decision.ref);
+      cost += build.counter.count(JSON.stringify({ parent: decision.ref, children }));
+      if (cost > build.selection.catalog_budget)
+        throw new CharError({ code: "selection.directory_over_budget", subject: "decisions" });
+    } else if (!exposed.has(catalogKey(decision.ref)))
+      throw new CharError({
+        code: "selection.unexposed_reference",
+        subject: catalogKey(decision.ref)
+      });
+  }
+  const selected2 = /* @__PURE__ */ new Set();
+  const wholeSources = /* @__PURE__ */ new Set();
+  const sectionSources = /* @__PURE__ */ new Set();
+  for (const ref of build.catalog.direct) {
+    if ("source" in ref) (ref.section ? sectionSources : wholeSources).add(ref.source);
+  }
+  for (const item of plan.selected) {
+    const key = catalogKey(item.ref);
+    const node = exposed.get(key)?.node;
+    if (!node || selected2.has(key))
+      throw new CharError({ code: "selection.invalid_reference", subject: key });
+    selected2.add(key);
+    if ("fragment" in item.ref) {
+      if (item.form !== "body")
+        throw new CharError({ code: "selection.invalid_form", subject: key });
+    } else if ("source" in item.ref) {
+      const ref = item.ref;
+      if (item.form !== (ref.section ? "section" : "body"))
+        throw new CharError({ code: "selection.invalid_form", subject: key });
+      (ref.section ? sectionSources : wholeSources).add(ref.source);
+    } else throw new CharError({ code: "selection.container_body", subject: key });
+  }
+  for (const source of wholeSources)
+    if (sectionSources.has(source))
+      throw new CharError({ code: "selection.overlapping_source", subject: source });
+  if (plan.fallback && plan.selected.length)
+    throw new CharError({ code: "selection.invalid_fallback", subject: "selected" });
+  return plan;
+}
+function fixedSelection(build, refs) {
+  const exposed = initial(build);
+  const decisions = [];
+  const ancestors = /* @__PURE__ */ new Map();
+  const walk = (node, path2) => {
+    ancestors.set(catalogKey(node.ref), path2);
+    for (const child of node.children ?? []) walk(child, [...path2, node.ref]);
+  };
+  for (const root of build.catalog.candidates) {
+    const node = build.nodes.get(catalogKey(root.ref));
+    if (node) walk(node, []);
+  }
+  for (const ref of refs) {
+    const path2 = ancestors.get(catalogKey(ref));
+    if (!path2)
+      throw new CharError({ code: "selection.invalid_reference", subject: catalogKey(ref) });
+    for (const parent of path2) {
+      if (exposed.has(catalogKey(ref))) break;
+      const full = build.nodes.get(catalogKey(parent));
+      const alreadyVisible = full?.children?.every((c) => exposed.has(catalogKey(c.ref)));
+      if (alreadyVisible) continue;
+      expansion(build, exposed, parent);
+      decisions.push({ ref: parent, action: "expand" });
+    }
+    decisions.push({ ref, action: "select" });
+  }
+  return validateSelectionPlan(build, {
+    discovery: build.discovery,
+    input: build.input,
+    selector: { name: "fixed", version: "1" },
+    decisions,
+    selected: refs.map((ref, rank) => ({
+      ref,
+      rank,
+      form: "source" in ref && ref.section ? "section" : "body"
+    }))
+  });
+}
+function noneSelection(build) {
+  return validateSelectionPlan(build, {
+    discovery: build.discovery,
+    input: build.input,
+    selector: { name: "none", version: "1" },
+    selected: [],
+    decisions: []
+  });
+}
+
+// ../../packages/assembler/src/prepare.ts
+var DEFAULT_SELECTION_LIMITS = { catalog_budget: 2048, max_depth: 4 };
+function createPreparationCatalog(input, discovery = true) {
+  const artifact = parseOrThrow(CreationArtifactSchema, input.artifact, "artifact");
+  if (artifact.kind !== "content")
+    throw new CharError({ code: "assembly.content_required", subject: artifact.root.ref });
+  const profile = parseOrThrow(RuntimeProfileSchema, input.profile, "profile");
+  const counter = input.counter ?? estimateCounter;
+  if (profile.tokenizer !== counter.tokenizer)
+    throw new CharError({ code: "assembly.tokenizer_mismatch", subject: profile.tokenizer });
+  const rawPreset = input.preset === void 0 ? artifact.assembly?.preset ?? artifact.default_policy : input.preset ?? artifact.default_policy;
+  if (!rawPreset)
+    throw new CharError({
+      code: "assembly.default_policy_missing",
+      subject: artifact.root.ref,
+      detail: "Choose an exact preset; this artifact has no separate default policy."
+    });
+  const preset = parseOrThrow(ResolvedPresetSchema, rawPreset, "preset");
+  const limits = preset?.policy.selection;
+  const selection = {
+    catalog_budget: Math.min(
+      input.selection?.catalog_budget ?? limits?.catalog_budget ?? DEFAULT_SELECTION_LIMITS.catalog_budget,
+      limits?.catalog_budget ?? Number.MAX_SAFE_INTEGER
+    ),
+    max_depth: Math.min(
+      input.selection?.max_depth ?? limits?.max_depth ?? DEFAULT_SELECTION_LIMITS.max_depth,
+      limits?.max_depth ?? (preset ? DEFAULT_SELECTION_LIMITS.max_depth : 32)
+    )
+  };
+  const locale = input.turn.locale ?? profile.locale;
+  const turn = { ...input.turn, ...locale ? { locale } : {} };
+  const forParticipant = turn.for_participant ?? (profile.mode === "per-agent" && artifact.ir.participants.some((p) => p.key === "self") ? "self" : void 0);
+  return buildContextCatalog({
+    artifact,
+    turn,
+    counter,
+    selection,
+    discovery,
+    view: { mode: profile.mode, ...forParticipant ? { for: forParticipant } : {} },
+    policy: { preset: preset ?? null, profile }
+  });
+}
+function projectedSession(build) {
+  const { artifact, turn, view, participant } = build.context;
+  const bindings = Object.fromEntries(
+    Object.entries(turn.bindings).map(([key, value]) => {
+      const actor = artifact.ir.participants.find((p) => p.late === key);
+      const own = actor?.key === participant;
+      const description = actor && !build.context.present.includes(actor.key) ? void 0 : view.mode === "narrator" || own ? value.description : value.outward_description;
+      return [key, { ...value, description }];
+    })
+  );
+  const overlay = view.mode === "narrator" ? turn.overlay : turn.visible_overlay;
+  return {
+    bindings,
+    history: turn.history,
+    ...turn.locale ? { locale: turn.locale } : {},
+    ...overlay ? { overlay } : {},
+    ...turn.scene ? { scene: turn.scene } : {},
+    ...participant ? { for_participant: participant } : {}
+  };
+}
+function prepareContext(input) {
+  if (input.fallback && input.plan?.selected.length)
+    throw new CharError({ code: "selection.invalid_fallback", subject: "plan" });
+  const build = createPreparationCatalog(input, input.plan?.discovery ?? false);
+  const plan = input.plan ? validateSelectionPlan(build, input.plan) : noneSelection(build);
+  if (input.fallback) plan.fallback = input.fallback;
+  const { artifact, turn, view } = build.context;
+  const preset = input.preset === void 0 ? artifact.assembly?.preset ?? artifact.default_policy : input.preset ?? artifact.default_policy;
+  const label = (key, fallback, values = {}) => (preset?.policy.render?.[key] ?? fallback).replace(
+    /\{\{(speaker|knows|unknown)\}\}/g,
+    (match, key2) => values[key2] ?? match
+  );
+  const session = projectedSession(build);
+  const locale = turn.locale ?? artifact.ir.meta.default_locale;
+  const local = (text2) => localizedString(text2, locale, artifact.ir.meta.default_locale);
+  const ctx = new RenderContext(
+    artifact.ir,
+    session,
+    locale,
+    input.profile.capabilities.images === true,
+    DEFAULT_LABELS
+  );
+  const admissions = /* @__PURE__ */ new Map();
+  const extra = [];
+  const refs = /* @__PURE__ */ new Map();
+  const fragments = new Map(artifact.ir.fragments.map((fragment2) => [fragment2.id, fragment2]));
+  const directOrder = new Map(artifact.ir.fragments.map((fragment2, i) => [fragment2.id, i]));
+  const name = (key) => ctx.participantName(build.context.participants[key] ?? key);
+  const region = (ref) => {
+    if ("source" in ref) return "system:sources";
+    if ("story" in ref) return ref.story === "scene" ? "system:scene" : "system:story";
+    return void 0;
+  };
+  const prefix = (fragment2) => {
+    const notes = [];
+    const perspective = fragment2.perspective;
+    if (perspective === "rumor") notes.push(label("perspective.rumor", "\u4F20\u95FB\uFF1A"));
+    else if (perspective && typeof perspective === "object")
+      notes.push(
+        "claim" in perspective ? label("perspective.claim", "{{speaker}} \u7684\u8BF4\u6CD5\uFF1A", {
+          speaker: ctx.speakerName(perspective.claim)
+        }) : label("perspective.belief", "{{speaker}} \u76F8\u4FE1\uFF1A", {
+          speaker: ctx.speakerName(perspective.belief)
+        })
+      );
+    const result = build.visibility.get(catalogKey({ fragment: fragment2.id }));
+    if (view.mode === "narrator" && result?.knows) {
+      const unknown = Object.values(build.context.participants).filter(
+        (p) => !result.knows?.includes(p)
+      );
+      notes.push(
+        label("knowing.narrator", "\uFF08\u77E5\u9053\u6B64\u4E8B\uFF1A{{knows}}\uFF1B\u4E0D\u77E5\u9053\uFF1A{{unknown}}\uFF09", {
+          knows: result.knows.map((p) => name(p)).join("\u3001") || "\u65E0",
+          unknown: unknown.map((p) => name(p)).join("\u3001") || "\u65E0"
+        })
+      );
+    }
+    if (view.mode === "narrator" && fragment2.style_scope && typeof fragment2.style_scope === "object" && "participant" in fragment2.style_scope)
+      notes.push(`${name(fragment2.style_scope.participant)} \u7684\u8BF4\u8BDD\u65B9\u5F0F\uFF1A`);
+    return notes.join("\n");
+  };
+  const storyText = (ref) => {
+    const story = artifact.story;
+    if (!story) throw new CharError({ code: "assemble.story_missing", subject: ref.id });
+    const scene = story.scenes.find((s) => s.id === turn.scene);
+    if (ref.story === "scene") {
+      if (!scene || scene.id !== ref.id)
+        throw new CharError({ code: "assemble.scene_mismatch", subject: ref.id });
+      const opening = artifact.story_refs?.templates[`scene/${scene.id}/opening`];
+      if (scene.opening !== void 0 && opening === void 0)
+        throw new CharError({ code: "assemble.story_template_missing", subject: ref.id });
+      return [
+        local(scene.title),
+        scene.time ? local(scene.time) : "",
+        scene.where ? local(scene.where) : "",
+        opening === void 0 ? "" : ctx.text(localizedTemplate(opening, locale, artifact.ir.meta.default_locale).text)
+      ].filter(Boolean).join("\n");
+    }
+    if (ref.story === "part" || ref.story === "goal") {
+      const participant = artifact.ir.participants.find(
+        (p) => p.key === build.context.participants[ref.id]
+      );
+      if (!participant)
+        throw new CharError({ code: "assemble.unknown_participant", subject: ref.id });
+      const values = ref.story === "part" ? [participant.part] : [participant.goal, scene?.goals?.[ref.id]];
+      return `${name(ref.id)}: ${values.filter((v) => v !== void 0).map(local).join("\n")}`;
+    }
+    const item = ref.story === "beat" ? story.beats?.find((b) => b.id === ref.id) : story.endings?.find((e) => e.id === ref.id);
+    if (!item) throw new CharError({ code: "assemble.story_target_missing", subject: ref.id });
+    return `\u4F5C\u8005\u7684\u65B9\u5411\u63D0\u793A\uFF1A${local(item.description)}`;
+  };
+  const loadedSources = /* @__PURE__ */ new Map();
+  const admit = (ref, reason, order) => {
+    const id2 = "fragment" in ref ? ref.fragment : catalogKey(ref);
+    refs.set(id2, ref);
+    if ("fragment" in ref) {
+      const fragment2 = fragments.get(ref.fragment);
+      if (!fragment2)
+        throw new CharError({ code: "assemble.fragment_missing", subject: ref.fragment });
+      admissions.set(ref.fragment, {
+        required: reason === "required",
+        reason,
+        order,
+        prefix: prefix(fragment2),
+        ...build.associations.has(catalogKey(ref)) ? { region: "system:scene" } : {}
+      });
+      return;
+    }
+    let text2;
+    if ("story" in ref) text2 = storyText(ref);
+    else if ("source" in ref) {
+      const source = artifact.catalog_index.sources.find((s) => s.id === ref.source);
+      if (!source) throw new CharError({ code: "assemble.source_missing", subject: ref.source });
+      let materialized = loadedSources.get(source.id);
+      if (!materialized) {
+        const asset = artifact.assets.find((a) => a.id === source.asset);
+        const body2 = input.source_texts?.[source.asset];
+        if (!asset || body2 === void 0)
+          throw new CharError({ code: "source.body_unavailable", subject: source.id });
+        materialized = materializeSourceText(source, asset, body2);
+        loadedSources.set(source.id, materialized);
+      }
+      const body = ref.section ? materialized.sections[ref.section] : materialized.body;
+      if (body === void 0)
+        throw new CharError({ code: "source.anchor_missing", subject: source.id });
+      text2 = `${label("sources.notice", "\u4EE5\u4E0B\u4E3A\u53C2\u8003\u8D44\u6599\uFF0C\u4E0E\u8BBE\u5B9A\u51B2\u7A81\u65F6\u4EE5\u8BBE\u5B9A\u4E3A\u51C6\u3002")}
+${local(source.title)}
+${body}`;
+    } else throw new CharError({ code: "selection.container_body", subject: id2 });
+    extra.push({
+      id: id2,
+      text: text2,
+      region: region(ref) ?? "system:story",
+      required: reason === "required",
+      reason,
+      order
+    });
+  };
+  for (const [i, ref] of build.catalog.required.entries()) admit(ref, "required", i);
+  for (const [i, ref] of build.catalog.direct.entries())
+    admit(
+      ref,
+      "direct",
+      "fragment" in ref ? directOrder.get(ref.fragment) ?? i : artifact.ir.fragments.length + i
+    );
+  const selected2 = [...plan.selected].sort(
+    (a, b) => a.rank - b.rank || compareStrings(catalogKey(a.ref), catalogKey(b.ref))
+  );
+  for (const [i, item] of selected2.entries())
+    admit(item.ref, "selected", artifact.ir.fragments.length + build.catalog.direct.length + i);
+  const output = renderPrepared({
+    ir: artifact.ir,
+    profile: input.profile,
+    session,
+    preset: parseOrThrow(ResolvedPresetSchema, preset, "preset"),
+    counter: build.counter,
+    prepared: { fragments: admissions, extra }
+  });
+  output.trace.entries = output.trace.entries.flatMap((entry) => {
+    const visibility = build.visibility.get(catalogKey({ fragment: entry.id }));
+    if (visibility && visibility.status !== "visible") {
+      return input.diagnostics === "author" ? [{ ...entry, decision: "skipped", reason: visibility.status, tokens: 0 }] : [];
+    }
+    const ref = refs.get(entry.id);
+    return [{ ...entry, ...ref ? { content_ref: ref } : {} }];
+  });
+  output.trace.selection = {
+    plan_digest: digestExactJSON(plan),
+    selector: { name: plan.selector.name, version: plan.selector.version }
+  };
+  output.trace.view = view;
+  output.trace.withheld = build.catalog.withheld;
+  if (artifact.story && turn.story && turn.scene)
+    output.trace.story = { scene: turn.scene, start: turn.story.start };
+  if (plan.fallback)
+    output.trace.entries.push({
+      id: "selection:fallback",
+      region: "selection",
+      tokens: 0,
+      decision: "skipped",
+      reason: "fallback"
+    });
+  return output;
+}
+
 // ../../packages/assembler/src/fixtures.ts
 function digestAssemblyMessages(messages) {
-  return digestOf(
+  return digestExactJSON(
     messages.map((message) => ({
       ...message,
       ...message.attachments ? {
@@ -319838,7 +323135,10 @@ async function runAssemblyFixture(input) {
     if (fixture.profile.tokenizer !== fixture.tokenizer.name)
       throw new CharError({ code: "assembly.tokenizer_mismatch", subject: fixture.tokenizer.name });
     const counter = await createPinnedTokenCounter(fixture.tokenizer);
-    const available = [input.root, ...input.dependencies ?? []];
+    const available = [
+      ..."release" in input.root ? [input.root] : [],
+      ...input.dependencies ?? []
+    ];
     const contentRoot = fixture.root === "self" ? input.root : selectedRelease(fixture.root, available);
     const content = buildCreation({
       ...input,
@@ -319852,16 +323152,26 @@ async function runAssemblyFixture(input) {
     if (policy && policy.kind !== "preset")
       throw new CharError({ code: "assembly.preset_required", subject: policy.root.ref });
     let assembled;
+    const preparation = {
+      artifact: content,
+      profile: fixture.profile,
+      turn: fixture.session,
+      preset: policy?.kind === "preset" ? policy.preset : null,
+      counter
+    };
+    const plan = fixture.selection === void 0 ? void 0 : fixedSelection(createPreparationCatalog(preparation), fixture.selection);
     try {
-      assembled = assemble({
-        ir: content.ir,
-        profile: fixture.profile,
-        session: fixture.session,
-        ...policy?.kind === "preset" ? { preset: policy.preset } : {},
-        counter
+      assembled = prepareContext({
+        ...preparation,
+        ...plan ? { plan } : {},
+        ...fixture.source_texts ? { source_texts: fixture.source_texts } : {},
+        diagnostics: "author"
       });
     } catch (error) {
       if (!isCharError(error)) throw error;
+      if (error.code.startsWith("source.") || error.code.startsWith("selection.")) throw error;
+      if (error.code.startsWith("catalog.") || error.code.startsWith("story.")) throw error;
+      if (error.code === "assembly.default_policy_missing") throw error;
       result.error = error.toJSON();
       result.ok = fixture.expected.kind === "error" && fixture.expected.code === error.code;
       if (!result.ok) result.issues.push(`unexpected error: ${error.code}`);
@@ -319928,7 +323238,7 @@ async function parseCharYaml(bytes, yamlPath, read) {
   if (bytes.byteLength > MAX_YAML_BYTES) {
     throw new CharError({ code: "cli.file_too_large", subject: yamlPath });
   }
-  const text = (() => {
+  const text2 = (() => {
     try {
       return decoder2.decode(bytes);
     } catch {
@@ -319939,7 +323249,7 @@ async function parseCharYaml(bytes, yamlPath, read) {
       });
     }
   })();
-  const doc = (0, import_yaml.parseDocument)(text, {
+  const doc = (0, import_yaml.parseDocument)(text2, {
     schema: "core",
     customTags: [],
     uniqueKeys: true,
@@ -319995,26 +323305,54 @@ function resolveInclude(ref, dir) {
   }
   return joined;
 }
-async function expandIncludes(node, dir, read) {
+var INCLUDE_TEXT_FIELDS = /* @__PURE__ */ new Set([
+  "text",
+  "caption",
+  "description",
+  "summary",
+  "display_name",
+  "title",
+  "label",
+  "intent",
+  "opening",
+  "greeting",
+  "part",
+  "goal",
+  "hint",
+  "alt",
+  "purpose",
+  "judge",
+  "time",
+  "where",
+  "scenario_hint"
+]);
+var INCLUDE_LITERAL_FIELDS = /* @__PURE__ */ new Set(["locator", "origin", "source", "data", "pin", "about"]);
+var INCLUDE_LOCALE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
+async function expandIncludes(node, dir, read, proseMap = "none") {
   if (Array.isArray(node)) {
-    for (let i = 0; i < node.length; i++) {
-      const v = node[i];
-      if (typeof v === "string" && INCLUDE_RE.test(v)) node[i] = await readInclude(v, dir, read);
-      else await expandIncludes(v, dir, read);
-    }
+    for (const value of node) await expandIncludes(value, dir, read, proseMap);
     return;
   }
   if (node && typeof node === "object") {
     const obj = node;
-    for (const [k, v] of Object.entries(obj)) {
-      if (typeof v === "string" && INCLUDE_RE.test(v)) obj[k] = await readInclude(v, dir, read);
-      else await expandIncludes(v, dir, read);
+    for (const [key, value] of Object.entries(obj)) {
+      if (INCLUDE_LITERAL_FIELDS.has(key)) continue;
+      const prose = INCLUDE_TEXT_FIELDS.has(key) || proseMap === "record" || proseMap === "locales" && key !== "ref" && INCLUDE_LOCALE.test(key);
+      if (prose && typeof value === "string" && INCLUDE_RE.test(value))
+        obj[key] = await readInclude(value, dir, read);
+      else
+        await expandIncludes(
+          value,
+          dir,
+          read,
+          key === "goals" ? "record" : prose ? "locales" : "none"
+        );
     }
   }
 }
 async function readInclude(ref, dir, read) {
-  const target = resolveInclude(ref, dir);
-  const bytes = await read(target);
+  const target2 = resolveInclude(ref, dir);
+  const bytes = await read(target2);
   if (!bytes) throw new CharError({ code: "cli.include_missing", subject: ref });
   if (bytes.byteLength > MAX_INCLUDE_BYTES) {
     throw new CharError({ code: "cli.include_too_large", subject: ref });
@@ -320027,7 +323365,6 @@ async function readInclude(ref, dir, read) {
 }
 
 // ../../packages/cli/src/commands.ts
-var LOCAL_RELEASE = "rel_00000000000000000000000000";
 function reportError(out, e) {
   if (isCharError(e)) {
     out.error(`error  ${e.code}  ${e.subject}${e.detail ? `  \u2014 ${e.detail}` : ""}`);
@@ -320043,7 +323380,7 @@ async function loadDeps(files) {
   }
   return deps;
 }
-async function buildLocal(file, depFiles = []) {
+async function loadLocalCreation(file) {
   const project = await loadCharYaml(file);
   if (project.missingIds.length > 0) {
     throw new CharError({
@@ -320052,7 +323389,7 @@ async function buildLocal(file, depFiles = []) {
       detail: "run 'char check --fix'"
     });
   }
-  const { creation } = canonicalizeCreation(project.creation);
+  const { creation, semantic_digest } = canonicalizeCreation(project.creation);
   const check = checkCreation(creation);
   const firstError = check.diagnostics.find((d) => d.severity === "error");
   if (firstError) {
@@ -320062,15 +323399,38 @@ async function buildLocal(file, depFiles = []) {
       ...firstError.detail ? { detail: firstError.detail } : {}
     });
   }
+  return { project, creation, semantic_digest };
+}
+async function buildLocal(file, depFiles = [], defaultPolicyFile) {
+  const { project, creation } = await loadLocalCreation(file);
   const dependencies = await loadDeps(depFiles);
-  const root = { release: LOCAL_RELEASE, visibility: "private", creation };
-  const build = buildCreation({ root, dependencies });
-  return { project, creation, root, dependencies, ...build };
+  let default_policy;
+  if (defaultPolicyFile) {
+    const [snapshot] = await loadDeps([defaultPolicyFile]);
+    if (!snapshot)
+      throw new CharError({ code: "cli.default_policy_missing", subject: defaultPolicyFile });
+    const canonical = canonicalizeCreation(snapshot.creation);
+    default_policy = {
+      ref: canonical.creation.ref,
+      release: snapshot.release,
+      semantic_digest: snapshot.semantic_digest ?? canonical.semantic_digest
+    };
+    dependencies.push(snapshot);
+  }
+  const config = default_policy ? { default_policy } : {};
+  const input = createLocalBuildInput({ root: { creation }, dependencies, ...config });
+  const root = input.root;
+  const build = buildCreation(input);
+  return { project, creation, root, dependencies: input.dependencies, ...config, ...build };
 }
 async function cmdTest(o, out) {
   try {
-    const build = await buildLocal(o.file, o.deps);
-    const report = await runAssemblyTests({ root: build.root, dependencies: build.dependencies });
+    const build = await buildLocal(o.file, o.deps, o.defaultPolicy);
+    const report = await runAssemblyTests({
+      root: build.root,
+      dependencies: build.dependencies,
+      ...build.default_policy ? { default_policy: build.default_policy } : {}
+    });
     for (const result of report.results) {
       out.log(
         `${result.ok ? "PASS" : "FAIL"} ${result.id}${result.messages_digest ? ` ${result.messages_digest}` : ""}`
@@ -320085,52 +323445,79 @@ async function cmdTest(o, out) {
 }
 
 // ../../packages/contracts/src/index.ts
-import { z as z12 } from "./vendor/zod.js";
-var ProblemSchema = z12.looseObject({
-  type: z12.string(),
-  title: z12.string(),
-  status: z12.number().int(),
-  code: z12.string(),
-  detail: z12.string().optional(),
-  instance: z12.string().optional()
+import { z as z18 } from "./vendor/zod.js";
+var ProblemSchema = z18.looseObject({
+  type: z18.string(),
+  title: z18.string(),
+  status: z18.number().int(),
+  code: z18.string(),
+  detail: z18.string().optional(),
+  instance: z18.string().optional()
 });
-var PageQuerySchema = z12.strictObject({
-  cursor: z12.string().max(512).optional(),
-  limit: z12.coerce.number().int().min(1).max(100).default(20)
+var PageQuerySchema = z18.strictObject({
+  cursor: z18.string().max(512).optional(),
+  limit: z18.coerce.number().int().min(1).max(100).default(20)
 });
-var NamespaceSlugSchema = z12.string().regex(NAMESPACE_RE);
-var CreationNameSchema = z12.string().regex(NAME_RE);
-var CreateNamespaceRequestSchema = z12.strictObject({ slug: NamespaceSlugSchema });
-var NamespaceSchema = z12.strictObject({
+var pageOf = (item) => z18.strictObject({ items: z18.array(item), next_cursor: z18.string().nullable() });
+var NamespaceSlugSchema = z18.string().regex(NAMESPACE_RE);
+var CreationNameSchema = z18.string().regex(NAME_RE);
+var CreateNamespaceRequestSchema = z18.strictObject({ slug: NamespaceSlugSchema });
+var NamespaceSchema = z18.strictObject({
   slug: NamespaceSlugSchema,
-  kind: z12.enum(["user", "org", "system"]),
-  status: z12.enum(["active", "suspended"])
+  kind: z18.enum(["user", "org", "system"]),
+  status: z18.enum(["active", "suspended"])
 });
-var CreateCreationRequestSchema = z12.strictObject({
+var CreateCreationRequestSchema = z18.strictObject({
+  /** Optional initial content, fixed to the newly allocated work identity by the Registry. */
+  working: z18.record(z18.string(), z18.unknown()).optional(),
   name: CreationNameSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema
 });
-var ReleaseSummarySchema = z12.strictObject({
-  id: z12.string(),
-  label: LabelSchema,
-  visibility: z12.enum(["public", "private"]),
-  status: z12.enum(["active", "yanked", "tombstoned"]),
-  status_reason: z12.string().optional(),
-  semantic_digest: DigestSchema,
-  effective_rating: RatingSchema,
-  created_at: z12.string(),
-  source: z12.object({
-    kind: z12.enum(["native", "github"]),
-    repository_id: z12.string().optional(),
-    commit: z12.string().optional(),
-    path: z12.string().optional()
-  }).optional(),
-  publisher: z12.object({ kind: z12.enum(["user", "github_actions"]), user: z12.string().optional() }).optional()
+var DeriveCreationRequestSchema = z18.strictObject({
+  source: ExactRefSchema,
+  kind: z18.enum(["remix", "sequel"]),
+  name: CreationNameSchema,
+  display_name: LocalizedTextSchema,
+  ending: z18.string().min(1).max(64).optional(),
+  from_play: StoryContinuationInputSchema.optional(),
+  /** Explicit caller declaration; OAuth authentication alone never implies agent authorship. */
+  agent: z18.boolean().optional(),
+  rights_ack: z18.strictObject({ inbound_equals_outbound: z18.literal(true) })
+}).superRefine((input, ctx) => {
+  if (input.from_play !== void 0 && (input.kind !== "sequel" || input.ending !== void 0))
+    ctx.addIssue({
+      code: "custom",
+      path: ["from_play"],
+      message: "A play-state continuation requires sequel and cannot also select an ending."
+    });
 });
-var CreationSummarySchema = z12.strictObject({
-  avatar_url: z12.string().optional(),
-  id: z12.string(),
+var CreateCreationResponseSchema = z18.strictObject({
+  id: z18.string(),
+  ref: UnversionedRefSchema,
+  type: CreationTypeSchema
+});
+var ReleaseSummarySchema = z18.strictObject({
+  contributors: z18.array(z18.strictObject({ user: z18.string(), name: z18.string() })).optional(),
+  id: z18.string(),
+  label: LabelSchema,
+  visibility: z18.enum(["public", "private"]),
+  status: z18.enum(["active", "yanked", "tombstoned"]),
+  status_reason: z18.string().optional(),
+  semantic_digest: DigestSchema2,
+  effective_rating: RatingSchema,
+  created_at: z18.string(),
+  source: z18.object({
+    kind: z18.enum(["native", "github"]),
+    repository_id: z18.string().optional(),
+    commit: z18.string().optional(),
+    path: z18.string().optional()
+  }).optional(),
+  publisher: z18.object({ kind: z18.enum(["user", "github_actions"]), user: z18.string().optional() }).optional()
+});
+var CreationSummarySchema = z18.strictObject({
+  avatar_url: z18.string().optional(),
+  id: z18.string(),
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema,
@@ -320138,111 +323525,127 @@ var CreationSummarySchema = z12.strictObject({
   rating: RatingSchema,
   /** 最新 public Release 的 effective rating：包含依赖和 asset 后的最高分级。 */
   effective_rating: RatingSchema.optional(),
-  tags: z12.array(z12.string()),
+  tags: z18.array(z18.string()),
   latest_release: ReleaseSummarySchema.optional()
 });
+var CreationPermissionsSchema = z18.strictObject({
+  read_draft: z18.boolean(),
+  edit: z18.boolean(),
+  publish: z18.boolean(),
+  update_sensitive: z18.boolean(),
+  manage_source: z18.boolean(),
+  manage_collaborators: z18.boolean()
+});
 var CreationDetailSchema = CreationSummarySchema.extend({
-  releases: z12.array(ReleaseSummarySchema),
+  permissions: CreationPermissionsSchema.optional(),
+  releases: z18.array(ReleaseSummarySchema),
   /** 被多少个其他 Creation 的 Release 依赖。 */
-  dependents_count: z12.number().int().nonnegative(),
-  contribution_policy: z12.enum(["anyone", "signed-in", "invited", "closed"]),
+  dependents_count: z18.number().int().nonnegative(),
+  contribution_policy: z18.enum(["anyone", "signed-in", "invited", "closed"]),
   /** 当前 Release 被 yank 时附带的提示。 */
-  warning: z12.string().optional()
+  warning: z18.string().optional()
 });
-var DraftSchema = z12.strictObject({
-  unconfirmed_import: z12.string().optional(),
-  version: z12.number().int().nonnegative(),
-  working: z12.unknown(),
-  base_revision_id: z12.string().nullable(),
-  updated_at: z12.string()
+var DraftSchema = z18.strictObject({
+  unconfirmed_import: z18.string().optional(),
+  version: z18.number().int().nonnegative(),
+  working: z18.unknown(),
+  base_revision_id: z18.string().nullable(),
+  updated_at: z18.string()
 });
-var PutDraftRequestSchema = z12.strictObject({ working: z12.unknown() });
-var CreateRevisionRequestSchema = z12.strictObject({
-  message: z12.string().max(500).optional()
+var PutDraftRequestSchema = z18.strictObject({ working: z18.unknown() });
+var CreateRevisionRequestSchema = z18.strictObject({
+  message: z18.string().max(500).optional()
 });
-var RevisionSchema = z12.strictObject({
-  id: z12.string(),
-  semantic_digest: DigestSchema,
-  message: z12.string().optional(),
-  created_at: z12.string()
+var RevisionSchema = z18.strictObject({
+  id: z18.string(),
+  semantic_digest: DigestSchema2,
+  message: z18.string().optional(),
+  created_at: z18.string()
 });
-var PublishRequestSchema = z12.strictObject({
-  revision: z12.string(),
+var PublishRequestSchema = z18.strictObject({
+  revision: z18.string(),
   label: LabelSchema,
-  visibility: z12.enum(["public", "private"])
+  visibility: z18.enum(["public", "private"])
 });
-var PublishIssueSchema = z12.strictObject({
-  code: z12.string(),
-  subject: z12.string(),
-  severity: z12.enum(["error", "warning"]),
-  detail: z12.string().optional(),
-  data: z12.record(z12.string(), z12.unknown()).optional()
+var PublishIssueSchema = z18.strictObject({
+  code: z18.string(),
+  subject: z18.string(),
+  severity: z18.enum(["error", "warning"]),
+  detail: z18.string().optional(),
+  data: z18.record(z18.string(), z18.unknown()).optional()
 });
-var PublishResponseSchema = z12.strictObject({
-  release: z12.string(),
-  state: z12.enum(["pending", "active", "failed"]),
+var PublishResponseSchema = z18.strictObject({
+  release: z18.string(),
+  state: z18.enum(["pending", "active", "failed"]),
   /** 同一 label 已经发布过相同内容。 */
-  idempotent: z12.boolean(),
-  report: z12.strictObject({
-    issues: z12.array(PublishIssueSchema),
-    license_check: z12.enum(["pass", "warn", "fail"])
+  idempotent: z18.boolean(),
+  report: z18.strictObject({
+    issues: z18.array(PublishIssueSchema),
+    license_check: z18.enum(["pass", "warn", "fail"])
   }).optional()
 });
-var OidcPublishRequestSchema = z12.strictObject({
+var OidcPublishRequestSchema = z18.strictObject({
   creation: UnversionedRefSchema,
   label: LabelSchema,
-  visibility: z12.enum(["public", "private"]),
+  visibility: z18.enum(["public", "private"]),
   commit: GitCommitSchema,
   /** 仓库内 char.yaml 的路径。 */
-  path: z12.string().min(1).max(512),
+  path: z18.string().min(1).max(512),
   /** Action 本地算出的 semantic digest，只用于比对，便于尽早发现不一致。 */
-  semantic_digest: DigestSchema
+  semantic_digest: DigestSchema2
 });
-var SourceBindingSchema = z12.strictObject({
-  repository_id: z12.string(),
-  repository_owner_id: z12.string(),
-  installation_id: z12.string(),
-  full_name: z12.string(),
-  path: z12.string(),
-  tracked_ref: z12.string(),
-  publish_refs: z12.array(z12.string()),
+var SourceBindingSchema = z18.strictObject({
+  repository_id: z18.string(),
+  repository_owner_id: z18.string(),
+  installation_id: z18.string(),
+  full_name: z18.string(),
+  path: z18.string(),
+  tracked_ref: z18.string(),
+  publish_refs: z18.array(z18.string()),
   /** `unbound` 只会出现在确认解绑（resolve unbind）的响应里；GET 在解绑后返回 404。 */
-  status: z12.enum(["active", "frozen", "unbound"]),
+  status: z18.enum(["active", "frozen", "unbound"]),
   /** 冻结原因，是给人看的一句说明。 */
-  frozen_reason: z12.string().optional(),
-  last_seen_commit: z12.string().optional(),
+  frozen_reason: z18.string().optional(),
+  last_seen_commit: z18.string().optional(),
   /** worker 最近一次检查仓库的结果，结构由 worker 决定，web 只做展示。 */
-  last_check: z12.record(z12.string(), z12.unknown()).optional(),
-  last_checked_at: z12.string().optional()
+  last_check: z18.record(z18.string(), z18.unknown()).optional(),
+  last_checked_at: z18.string().optional()
 });
 var UPLOAD_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 var MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 var MAX_ASSET_BYTES = 8 * 1024 * 1024;
 var MAX_CARD_JSON_BYTES = 5 * 1024 * 1024;
-var CreateUploadRequestSchema = z12.strictObject({
-  purpose: z12.enum(["asset", "import"]),
-  content_type: z12.enum([...UPLOAD_TYPES, "application/json", "application/zip"]),
-  size: z12.number().int().positive().max(MAX_UPLOAD_BYTES),
-  sha256: DigestSchema
+var MAX_DRAFT_BYTES = 5 * 1024 * 1024;
+var CreateUploadRequestSchema = z18.strictObject({
+  purpose: z18.enum(["asset", "import"]),
+  content_type: z18.enum([
+    ...UPLOAD_TYPES,
+    "text/plain",
+    "text/markdown",
+    "application/json",
+    "application/zip"
+  ]),
+  size: z18.number().int().positive().max(MAX_UPLOAD_BYTES),
+  sha256: DigestSchema2
 });
-var CreateUploadResponseSchema = z12.strictObject({
-  upload: z12.string(),
+var CreateUploadResponseSchema = z18.strictObject({
+  upload: z18.string(),
   /** 预签名 PUT URL，10 分钟内有效；必须按声明的长度与类型上传。 */
-  put_url: z12.string(),
-  headers: z12.record(z12.string(), z12.string()),
-  expires_at: z12.string()
+  put_url: z18.string(),
+  headers: z18.record(z18.string(), z18.string()),
+  expires_at: z18.string()
 });
-var UploadStatusSchema = z12.strictObject({
-  upload: z12.string(),
-  status: z12.enum(["uploaded", "processing", "ready", "rejected", "quarantined"]),
-  reject_reason: z12.string().optional(),
+var UploadStatusSchema = z18.strictObject({
+  upload: z18.string(),
+  status: z18.enum(["uploaded", "processing", "ready", "rejected", "quarantined"]),
+  reject_reason: z18.string().optional(),
   /** ready 之后可以在 Creation 中引用的 blob。 */
-  blob: z12.strictObject({ digest: DigestSchema, size: z12.number().int(), media_type: z12.string() }).optional()
+  blob: z18.strictObject({ digest: DigestSchema2, size: z18.number().int(), media_type: z18.string() }).optional()
 });
 var SearchQuerySchema = PageQuerySchema.extend({
-  q: z12.string().trim().min(1).max(200).optional(),
+  q: z18.string().trim().min(1).max(200).optional(),
   type: CreationTypeSchema.optional(),
-  tag: z12.string().max(64).optional(),
+  tag: z18.string().max(64).optional(),
   /** 只返回这个 namespace（当前的 slug，不带 `@`）下的作品，用于作者主页。 */
   ns: NamespaceSlugSchema.optional()
 });
@@ -320252,199 +323655,253 @@ var TOKEN_SCOPES = [
   "releases:publish",
   "contributions:write"
 ];
-var CreateTokenRequestSchema = z12.strictObject({
-  name: z12.string().trim().min(1).max(100),
-  scopes: z12.array(z12.enum(TOKEN_SCOPES)).min(1),
+var CreateTokenRequestSchema = z18.strictObject({
+  name: z18.string().trim().min(1).max(100),
+  scopes: z18.array(z18.enum(TOKEN_SCOPES)).min(1),
   /** 最长一年。 */
-  expires_in_days: z12.number().int().min(1).max(365),
+  expires_in_days: z18.number().int().min(1).max(365),
   /** 给 Agent 使用：用它提交的 Contribution 一律标记为 agent。 */
-  agent: z12.boolean().optional()
+  agent: z18.boolean().optional()
 });
-var CreateTokenResponseSchema = z12.strictObject({
-  id: z12.string(),
+var CreateTokenResponseSchema = z18.strictObject({
+  id: z18.string(),
   /** 明文只在创建时返回一次，服务端只保存哈希。 */
-  token: z12.string().regex(/^cp_pat_[0-9A-Za-z]{43}$/),
-  prefix: z12.string(),
-  expires_at: z12.string()
+  token: z18.string().regex(/^cp_pat_[0-9A-Za-z]{43}$/),
+  prefix: z18.string(),
+  expires_at: z18.string()
 });
-var UserSettingsSchema = z12.strictObject({
+var UserSettingsSchema = z18.strictObject({
   /** 是否显示 mature / explicit 内容。开启时必须确认已满 18 岁。 */
-  show_mature: z12.boolean(),
+  show_mature: z18.boolean(),
   /** 确认的时间；关闭后为 null。 */
-  mature_confirmed_at: z12.string().nullable(),
-  locale: z12.string().nullable()
+  mature_confirmed_at: z18.string().nullable(),
+  locale: z18.string().nullable()
 });
-var MeSchema = z12.strictObject({
-  id: z12.string(),
-  name: z12.string(),
-  image: z12.string().nullable(),
+var MeSchema = z18.strictObject({
+  id: z18.string(),
+  name: z18.string(),
+  image: z18.string().nullable(),
   /** 当前用户的个人 namespace；还没有注册时为 null。 */
   namespace: NamespaceSlugSchema.nullable(),
   settings: UserSettingsSchema
 });
-var UpdateSettingsRequestSchema = z12.strictObject({
-  show_mature: z12.boolean(),
+var UpdateSettingsRequestSchema = z18.strictObject({
+  show_mature: z18.boolean(),
   /** 开启成人内容时必须为 true：用户自我声明已满 18 岁。 */
-  confirm_adult: z12.boolean().optional()
+  confirm_adult: z18.boolean().optional()
 }).refine((v) => !v.show_mature || v.confirm_adult === true, {
   message: "turning on mature content requires confirm_adult: true",
   path: ["confirm_adult"]
 });
-var DependentSchema = z12.strictObject({
+var DependentSchema = z18.strictObject({
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema,
-  release: z12.strictObject({ id: z12.string(), label: LabelSchema }),
-  mode: z12.enum(["intrinsic", "default"]),
-  rel: z12.string().optional()
+  release: z18.strictObject({ id: z18.string(), label: LabelSchema }),
+  mode: z18.enum(["intrinsic", "default"]),
+  rel: z18.string().optional()
 });
-var PutDraftResponseSchema = z12.strictObject({
-  version: z12.number().int(),
-  semantic_digest: DigestSchema,
-  warnings: z12.array(
-    z12.strictObject({
-      code: z12.string(),
-      subject: z12.string(),
-      severity: z12.enum(["error", "warning", "info"]),
-      detail: z12.string().optional()
+var ReferenceImpactResponseSchema = z18.strictObject({
+  base: ExactRefSchema,
+  candidate: z18.strictObject({ origin: DraftBuildOriginSchema, semantic_digest: DigestSchema2 }),
+  objects: z18.array(CreationObjectAddressSchema),
+  items: z18.array(
+    z18.strictObject({
+      ref: UnversionedRefSchema,
+      display_name: LocalizedTextSchema,
+      release: z18.strictObject({
+        id: z18.string(),
+        label: LabelSchema,
+        visibility: z18.enum(["public", "private"])
+      }),
+      pins: z18.array(ExactRefSchema),
+      uses: z18.array(
+        z18.strictObject({
+          object: CreationObjectAddressSchema,
+          kind: z18.enum(["included", "explicit"]),
+          path: z18.string(),
+          defined_in: ExactRefSchema
+        })
+      )
+    })
+  ),
+  next_cursor: z18.string().nullable(),
+  scope: z18.literal("readable-published-releases")
+});
+var PutDraftResponseSchema = z18.strictObject({
+  version: z18.number().int(),
+  semantic_digest: DigestSchema2,
+  warnings: z18.array(
+    z18.strictObject({
+      code: z18.string(),
+      subject: z18.string(),
+      severity: z18.enum(["error", "warning", "info"]),
+      detail: z18.string().optional()
     })
   )
 });
-var MyCreationSchema = z12.strictObject({
-  avatar_url: z12.string().optional(),
-  open_contributions: z12.number().int().nonnegative().optional(),
+var MyCreationSchema = z18.strictObject({
+  avatar_url: z18.string().optional(),
+  open_contributions: z18.number().int().nonnegative().optional(),
   ref: UnversionedRefSchema,
   type: CreationTypeSchema,
   display_name: LocalizedTextSchema,
-  status: z12.enum(["active", "hidden", "suspended"]),
-  latest_release: z12.strictObject({
+  status: z18.enum(["active", "hidden", "suspended"]),
+  latest_release: z18.strictObject({
     label: LabelSchema,
-    visibility: z12.enum(["public", "private"]),
-    status: z12.enum(["active", "yanked", "tombstoned"])
+    visibility: z18.enum(["public", "private"]),
+    status: z18.enum(["active", "yanked", "tombstoned"])
   }).nullable(),
-  draft_updated_at: z12.string().nullable()
+  draft_updated_at: z18.string().nullable()
 });
-var MyCreationsResponseSchema = z12.strictObject({ items: z12.array(MyCreationSchema) });
+var MyCreationsResponseSchema = z18.strictObject({ items: z18.array(MyCreationSchema) });
+var FavoritesResponseSchema = pageOf(CreationSummarySchema);
+var FavoriteStateSchema = z18.strictObject({ favorited: z18.boolean() });
 var ReleaseDetailSchema = ReleaseSummarySchema.extend({
   ref: UnversionedRefSchema,
-  creation: z12.string(),
-  lock_digest: DigestSchema.nullable(),
-  context_ir_digest: DigestSchema.nullable(),
-  artifact_digest: DigestSchema.nullable().optional(),
-  license_check: z12.enum(["pass", "warn", "fail"]).nullable(),
-  availability: z12.enum(["complete", "linked"]).nullable(),
-  warning: z12.string().optional()
+  creation: z18.string(),
+  lock_digest: DigestSchema2.nullable(),
+  context_ir_digest: DigestSchema2.nullable(),
+  artifact_digest: DigestSchema2.nullable().optional(),
+  license_check: z18.enum(["pass", "warn", "fail"]).nullable(),
+  availability: z18.enum(["complete", "linked"]).nullable(),
+  warning: z18.string().optional()
 });
-var RightsAckSchema = z12.union([
-  z12.strictObject({ inbound_equals_outbound: z12.literal(true) }),
-  z12.strictObject({ explicit_grant: z12.literal(true) })
+var RightsAckSchema = z18.union([
+  z18.strictObject({ inbound_equals_outbound: z18.literal(true) }),
+  z18.strictObject({ explicit_grant: z18.literal(true) })
 ]);
-var CreateContributionRequestSchema = z12.strictObject({
-  title: z12.string().trim().min(1).max(200),
-  description: z12.string().max(2e4).optional(),
-  base_revision: z12.string(),
-  changes: z12.array(z12.unknown()).min(1).max(200),
+var CreateContributionRequestSchema = z18.strictObject({
+  changes_version: z18.literal(1).optional(),
+  title: z18.string().trim().min(1).max(200),
+  description: z18.string().max(2e4).optional(),
+  base_revision: z18.string(),
+  changes: z18.array(z18.unknown()).min(1).max(200),
   rights_ack: RightsAckSchema,
   /** 声明这是 Agent 提交的。Agent Token 提交的一律是 agent，不能改成 false。 */
-  agent: z12.boolean().optional()
+  agent: z18.boolean().optional()
 });
 var ContributionQuerySchema = PageQuerySchema.extend({
-  status: z12.enum(["open", "accepted", "rejected", "withdrawn"]).optional(),
-  agent: z12.enum(["true", "false"]).optional()
+  status: z18.enum(["open", "accepted", "rejected", "withdrawn"]).optional(),
+  agent: z18.enum(["true", "false"]).optional()
 });
-var MergePreviewSchema = z12.strictObject({
-  key: z12.string(),
-  on: z12.enum(["fragment", "edge", "asset", "metadata", "configuration"]),
-  op: z12.string(),
-  state: z12.enum(["applied", "already_applied", "conflict"]),
-  sensitive: z12.boolean(),
-  reason: z12.enum(["diverged", "slot_missing"]).optional()
+var MergePreviewSchema = z18.strictObject({
+  key: z18.string(),
+  on: z18.enum([
+    "fragment",
+    "edge",
+    "asset",
+    "metadata",
+    "configuration",
+    "story",
+    "story-order",
+    "cast",
+    "group",
+    "source"
+  ]),
+  op: z18.string(),
+  state: z18.enum(["applied", "already_applied", "conflict"]),
+  sensitive: z18.boolean(),
+  reason: z18.enum(["diverged", "slot_missing", "invalid_result"]).optional(),
+  conflict_fields: z18.array(z18.string()).optional()
 });
-var ContributionAuthorSchema = z12.union([
-  z12.strictObject({
-    user: z12.string(),
-    display_name: z12.string().optional(),
-    namespace: z12.string().optional()
+var ContributionAuthorSchema = z18.union([
+  z18.strictObject({
+    user: z18.string(),
+    display_name: z18.string().optional(),
+    namespace: z18.string().optional()
   }),
-  z12.strictObject({ guest_id: z12.string(), display_name: z12.string() })
+  z18.strictObject({ guest_id: z18.string(), display_name: z18.string() })
 ]);
-var ContributionSummarySchema = z12.strictObject({
-  change_count: z12.number().int().nonnegative().optional(),
-  has_conflicts: z12.boolean().optional(),
-  id: z12.string(),
-  number: z12.number().int().positive(),
-  title: z12.string(),
-  status: z12.enum(["open", "accepted", "rejected", "withdrawn"]),
-  agent: z12.boolean(),
+var ContributionSummarySchema = z18.strictObject({
+  client_id: z18.string().optional(),
+  change_count: z18.number().int().nonnegative().optional(),
+  has_conflicts: z18.boolean().optional(),
+  id: z18.string(),
+  number: z18.number().int().positive(),
+  title: z18.string(),
+  status: z18.enum(["open", "accepted", "rejected", "withdrawn"]),
+  agent: z18.boolean(),
   author: ContributionAuthorSchema,
-  base_revision: z12.string(),
-  created_at: z12.string(),
-  decided_at: z12.string().nullable()
+  base_revision: z18.string(),
+  created_at: z18.string(),
+  decided_at: z18.string().nullable()
 });
 var ContributionDetailSchema = ContributionSummarySchema.extend({
-  description: z12.string().optional(),
-  changes: z12.array(z12.unknown()),
+  description: z18.string().optional(),
+  changes: z18.array(z18.unknown()),
   /** 与作者当前草稿合并的预览；只有 open 状态才有。 */
-  preview: z12.strictObject({
-    mergeable: z12.boolean(),
-    outcomes: z12.array(MergePreviewSchema),
-    conflicts: z12.array(z12.string()),
+  preview: z18.strictObject({
+    mergeable: z18.boolean(),
+    merged: z18.unknown().optional(),
+    current: z18.unknown().optional(),
+    draft_version: z18.number().int().nonnegative().optional(),
+    diagnostics: z18.array(
+      z18.strictObject({
+        code: z18.string(),
+        subject: z18.string(),
+        severity: z18.enum(["error", "warning", "info"]),
+        detail: z18.string().optional()
+      })
+    ).optional(),
+    outcomes: z18.array(MergePreviewSchema),
+    conflicts: z18.array(z18.string()),
     /** 接受前必须逐项确认的敏感变更键。 */
-    sensitive_keys: z12.array(z12.string()),
+    sensitive_keys: z18.array(z18.string()),
     /** 合并后的内容不合法（例如草稿已被改得与变更不兼容）时的错误码。 */
-    error: z12.string().optional()
+    error: z18.string().optional()
   }).nullable(),
-  result_revision: z12.string().nullable(),
+  result_revision: z18.string().nullable(),
   /**
    * 作者拒绝时填写的理由。只有 rejected 状态、并且记录了理由时才有；详情只对提交者和
    * 作品所在 namespace 的成员可见，列表不返回这个字段。
    */
-  decision_reason: z12.string().optional()
+  decision_reason: z18.string().optional()
 });
-var AcceptContributionRequestSchema = z12.strictObject({
+var AcceptContributionRequestSchema = z18.strictObject({
   /** 逐项列出确认过的敏感变更键；不接受通配符。 */
-  confirm_sensitive: z12.array(z12.string().min(1).max(300)).max(200).default([])
+  confirm_sensitive: z18.array(z18.string().min(1).max(300)).max(200).default([])
 });
-var RejectContributionRequestSchema = z12.strictObject({
-  reason: z12.string().trim().min(1).max(2e3)
+var RejectContributionRequestSchema = z18.strictObject({
+  reason: z18.string().trim().min(1).max(2e3)
 });
-var ContributionSettingsRequestSchema = z12.strictObject({
-  policy: z12.enum(["anyone", "signed-in", "invited", "closed"])
+var ContributionSettingsRequestSchema = z18.strictObject({
+  policy: z18.enum(["anyone", "signed-in", "invited", "closed"])
 });
-var InviteNamespaceSchema = z12.string().regex(new RegExp(`^@?${NAMESPACE_RE.source.slice(1)}`), "not a namespace");
-var ContributionInviteRequestSchema = z12.union([
-  z12.strictObject({ user: z12.string().min(1).max(64) }),
-  z12.strictObject({ namespace: InviteNamespaceSchema })
+var InviteNamespaceSchema = z18.string().regex(new RegExp(`^@?${NAMESPACE_RE.source.slice(1)}`), "not a namespace");
+var ContributionInviteRequestSchema = z18.union([
+  z18.strictObject({ user: z18.string().min(1).max(64) }),
+  z18.strictObject({ namespace: InviteNamespaceSchema })
 ]);
-var ContributionInviteResponseSchema = z12.strictObject({
-  user: z12.string(),
-  namespace: z12.string().nullable(),
-  invited: z12.boolean()
+var ContributionInviteResponseSchema = z18.strictObject({
+  user: z18.string(),
+  namespace: z18.string().nullable(),
+  invited: z18.boolean()
 });
-var GuestDisplayNameSchema = z12.string().trim().min(1).max(64).regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
-var GuestVerificationRequestSchema = z12.strictObject({
+var GuestDisplayNameSchema = z18.string().trim().min(1).max(64).regex(/^[^\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]+$/u, "contains control characters");
+var GuestVerificationRequestSchema = z18.strictObject({
   /** 首尾空白会被去掉；大小写不影响识别为同一个访客。 */
-  email: z12.string().trim().max(254).pipe(z12.email()),
+  email: z18.string().trim().max(254).pipe(z18.email()),
   display_name: GuestDisplayNameSchema,
-  turnstile_token: z12.string().min(1).max(2048)
+  turnstile_token: z18.string().min(1).max(2048)
 });
-var GuestVerificationResponseSchema = z12.strictObject({
-  status: z12.literal("sent"),
+var GuestVerificationResponseSchema = z18.strictObject({
+  status: z18.literal("sent"),
   /** 链接的有效期（秒）。 */
-  expires_in: z12.number().int().positive()
+  expires_in: z18.number().int().positive()
 });
-var GuestConfirmRequestSchema = z12.strictObject({
-  token: z12.string().min(1).max(128)
+var GuestConfirmRequestSchema = z18.strictObject({
+  token: z18.string().min(1).max(128)
 });
-var GuestSchema = z12.strictObject({
+var GuestSchema = z18.strictObject({
   /** 访客 ID，形如 `gst_…`。 */
-  id: z12.string(),
-  display_name: z12.string(),
-  verified_at: z12.string()
+  id: z18.string(),
+  display_name: z18.string(),
+  verified_at: z18.string()
 });
-var GuestSessionResponseSchema = z12.strictObject({
+var GuestSessionResponseSchema = z18.strictObject({
   guest: GuestSchema,
-  session_expires_at: z12.string()
+  session_expires_at: z18.string()
 });
 var REPORT_CATEGORIES = [
   "sexual_minors",
@@ -320454,114 +323911,182 @@ var REPORT_CATEGORIES = [
   "illegal",
   "spam"
 ];
-var ReportCategorySchema = z12.enum(REPORT_CATEGORIES);
+var ReportCategorySchema = z18.enum(REPORT_CATEGORIES);
 var MAX_REPORT_DETAILS = 2e3;
-var CreateReportRequestSchema = z12.strictObject({
+var CreateReportRequestSchema = z18.strictObject({
   category: ReportCategorySchema,
-  details: z12.string().trim().max(MAX_REPORT_DETAILS).refine((s) => !new RegExp("\\p{Cc}", "u").test(s.replace(/[\n\r\t]/g, "")), "contains control characters").optional(),
-  turnstile_token: z12.string().min(1).max(2048).optional()
+  details: z18.string().trim().max(MAX_REPORT_DETAILS).refine((s) => !new RegExp("\\p{Cc}", "u").test(s.replace(/[\n\r\t]/g, "")), "contains control characters").optional(),
+  turnstile_token: z18.string().min(1).max(2048).optional()
 });
-var ReportReceivedResponseSchema = z12.strictObject({ status: z12.literal("received") });
-var CreateImportRequestSchema = z12.strictObject({
-  upload: z12.string().min(1).max(64),
+var ReportReceivedResponseSchema = z18.strictObject({ status: z18.literal("received") });
+var CreateImportRequestSchema = z18.strictObject({
+  upload: z18.string().min(1).max(64),
   namespace: NamespaceSlugSchema,
   name: CreationNameSchema
 });
 var IMPORT_CONFIRMATION_FIELDS = ["meta.rating", "meta.rights", "meta.license"];
-var ImportReportSchema = z12.looseObject({
-  container: z12.enum(["png", "charx", "json"]),
-  format: z12.string(),
-  spec: z12.string(),
-  spec_version: z12.string().nullable(),
-  source_digest: DigestSchema,
-  mappings: z12.array(z12.strictObject({ from: z12.string(), to: z12.string() })),
+var ImportReportSchema = z18.looseObject({
+  container: z18.enum(["png", "charx", "json"]),
+  format: z18.string(),
+  spec: z18.string(),
+  spec_version: z18.string().nullable(),
+  source_digest: DigestSchema2,
+  mappings: z18.array(z18.strictObject({ from: z18.string(), to: z18.string() })),
   /** 被省略的策略字段（例如 system_prompt）及原值。报告只有发起人能看到。 */
-  omitted_policy_fields: z12.array(z12.strictObject({ field: z12.string(), value: z12.string() })),
-  placeholders: z12.array(z12.looseObject({})),
-  lorebook: z12.array(z12.looseObject({})),
-  assets: z12.array(
-    z12.looseObject({
-      type: z12.string(),
-      name: z12.string(),
-      uri: z12.string(),
-      imported: z12.boolean(),
-      reason: z12.string().optional()
+  omitted_policy_fields: z18.array(z18.strictObject({ field: z18.string(), value: z18.string() })),
+  placeholders: z18.array(z18.looseObject({})),
+  lorebook: z18.array(z18.looseObject({})),
+  assets: z18.array(
+    z18.looseObject({
+      type: z18.string(),
+      name: z18.string(),
+      uri: z18.string(),
+      imported: z18.boolean(),
+      reason: z18.string().optional()
     })
   ),
-  dropped: z12.array(z12.strictObject({ field: z12.string(), reason: z12.string() })),
-  needs_confirmation: z12.array(z12.enum(IMPORT_CONFIRMATION_FIELDS)),
-  warnings: z12.array(z12.strictObject({ code: z12.string(), detail: z12.string() }))
+  dropped: z18.array(z18.strictObject({ field: z18.string(), reason: z18.string() })),
+  needs_confirmation: z18.array(z18.enum(IMPORT_CONFIRMATION_FIELDS)),
+  warnings: z18.array(z18.strictObject({ code: z18.string(), detail: z18.string() }))
 });
-var ImportStatusSchema = z12.strictObject({
-  import: z12.string(),
-  status: z12.enum(["pending", "processing", "succeeded", "failed"]),
-  error_code: z12.string().optional(),
-  error_detail: z12.string().optional(),
+var ImportStatusSchema = z18.strictObject({
+  import: z18.string(),
+  status: z18.enum(["pending", "processing", "succeeded", "failed"]),
+  error_code: z18.string().optional(),
+  error_detail: z18.string().optional(),
   /** 导入成功后生成的 Creation。 */
   creation: UnversionedRefSchema.optional(),
-  policy_preset: z12.strictObject({ id: z12.string(), ref: UnversionedRefSchema }).optional(),
+  policy_preset: z18.strictObject({ id: z18.string(), ref: UnversionedRefSchema }).optional(),
   /** 发布前必须由作者确认的字段；确认后为空数组。 */
-  needs_confirmation: z12.array(z12.enum(IMPORT_CONFIRMATION_FIELDS)),
-  confirmed_at: z12.string().nullable(),
+  needs_confirmation: z18.array(z18.enum(IMPORT_CONFIRMATION_FIELDS)),
+  confirmed_at: z18.string().nullable(),
   report: ImportReportSchema.optional(),
-  created_at: z12.string()
+  created_at: z18.string()
 });
-var ConfirmImportRequestSchema = z12.strictObject({
+var ConfirmImportRequestSchema = z18.strictObject({
   rating: RatingSchema,
-  rights: z12.enum(["original", "fan-work", "licensed"]),
+  rights: z18.enum(["original", "fan-work", "licensed"]),
   license: SpdxExpressionSchema,
-  policy_preset: z12.strictObject({
+  policy_preset: z18.strictObject({
     name: CreationNameSchema,
-    display_name: z12.string().trim().min(1).max(200).optional()
+    display_name: z18.string().trim().min(1).max(200).optional()
   }).optional()
 });
-var ReleaseSourceSchema = z12.strictObject({
-  revision: z12.string(),
-  semantic_digest: DigestSchema,
-  creation: z12.unknown(),
+var ReleaseSourceSchema = z18.strictObject({
+  revision: z18.string(),
+  semantic_digest: DigestSchema2,
+  creation: z18.unknown(),
   /** Release 被 yank 时附带的提示。 */
-  warning: z12.string().optional()
+  warning: z18.string().optional()
 });
-var ContributionInvitesResponseSchema = z12.strictObject({
-  items: z12.array(
-    z12.strictObject({
-      user: z12.string(),
-      namespace: z12.string().nullable(),
-      invited_at: z12.string()
+var ContributionInvitesResponseSchema = z18.strictObject({
+  items: z18.array(
+    z18.strictObject({
+      user: z18.string(),
+      namespace: z18.string().nullable(),
+      invited_at: z18.string()
     })
   )
 });
-var Ccv3LossItemSchema = z12.strictObject({ subject: z12.string(), detail: z12.string() });
-var Ccv3LossReportSchema = z12.strictObject({
-  target: z12.literal("ccv3"),
-  profile: z12.strictObject({ mode: z12.literal("narrator"), tokenizer: z12.literal("estimate") }),
-  flattened_dependencies: z12.array(
-    z12.strictObject({
-      ref: z12.string(),
-      fragments: z12.array(z12.string()),
-      tokens: z12.number().nonnegative(),
-      into: z12.array(z12.string())
+var Ccv3LossItemSchema = z18.strictObject({ subject: z18.string(), detail: z18.string() });
+var Ccv3LossReportSchema = z18.strictObject({
+  target: z18.literal("ccv3"),
+  profile: z18.strictObject({ mode: z18.literal("narrator"), tokenizer: z18.literal("estimate") }),
+  flattened_dependencies: z18.array(
+    z18.strictObject({
+      ref: z18.string(),
+      fragments: z18.array(z18.string()),
+      tokens: z18.number().nonnegative(),
+      into: z18.array(z18.string())
     })
   ),
-  activation_downgrades: z12.array(
-    Ccv3LossItemSchema.extend({ from: z12.enum(["semantic", "manual"]), to: z12.literal("dropped") })
+  activation_downgrades: z18.array(
+    Ccv3LossItemSchema.extend({ from: z18.enum(["semantic", "manual"]), to: z18.literal("dropped") })
   ),
-  visibility: z12.array(Ccv3LossItemSchema),
-  participants: z12.array(Ccv3LossItemSchema),
-  context_assets: z12.array(Ccv3LossItemSchema),
-  locales: z12.strictObject({ dropped: z12.array(z12.string()), exported: z12.string() }),
-  policy_fields: z12.array(
-    z12.strictObject({ ref: z12.string(), fields: z12.array(z12.string()), restored: z12.boolean() })
+  visibility: z18.array(Ccv3LossItemSchema),
+  participants: z18.array(Ccv3LossItemSchema),
+  context_assets: z18.array(Ccv3LossItemSchema),
+  locales: z18.strictObject({ dropped: z18.array(z18.string()), exported: z18.string() }),
+  policy_fields: z18.array(
+    z18.strictObject({ ref: z18.string(), fields: z18.array(z18.string()), restored: z18.boolean() })
   ),
-  other: z12.array(Ccv3LossItemSchema),
-  tokens: z12.strictObject({
-    description: z12.number().nonnegative(),
-    scenario: z12.number().nonnegative(),
-    character_book: z12.number().nonnegative(),
-    mes_example: z12.number().nonnegative(),
-    total: z12.number().nonnegative()
+  other: z18.array(Ccv3LossItemSchema),
+  tokens: z18.strictObject({
+    description: z18.number().nonnegative(),
+    scenario: z18.number().nonnegative(),
+    character_book: z18.number().nonnegative(),
+    mes_example: z18.number().nonnegative(),
+    total: z18.number().nonnegative()
   })
 });
+var SourceTextResponseSchema = z18.strictObject({
+  source: z18.string(),
+  asset: z18.string(),
+  digest: DigestSchema2,
+  text: z18.string()
+});
+var CollaboratorSchema = z18.strictObject({
+  user_id: z18.string(),
+  name: z18.string(),
+  namespace: NamespaceSlugSchema.nullable(),
+  status: z18.enum(["pending", "active"]),
+  license: z18.string(),
+  invited_at: z18.string(),
+  accepted_at: z18.string().nullable()
+});
+var CollaboratorsResponseSchema = z18.strictObject({ items: z18.array(CollaboratorSchema) });
+var InviteCollaboratorRequestSchema = z18.strictObject({ namespace: NamespaceSlugSchema });
+var AcceptCollaborationRequestSchema = z18.strictObject({
+  license: z18.string().min(1),
+  agree: z18.literal(true)
+});
+var CollaborationInvitationSchema = z18.strictObject({
+  creation: z18.string(),
+  ref: z18.string(),
+  display_name: LocalizedTextSchema,
+  license: z18.string(),
+  status: z18.enum(["pending", "active"])
+});
+var CollaborationInvitationsResponseSchema = z18.strictObject({
+  items: z18.array(CollaborationInvitationSchema)
+});
+var OAUTH_SCOPES = [
+  "profile",
+  "creations:read",
+  "drafts:write",
+  "contributions:write",
+  "offline_access"
+];
+var OAuthScopeSchema = z18.enum(OAUTH_SCOPES);
+var OAuthClientSchema = z18.strictObject({
+  client_id: z18.string(),
+  name: z18.string(),
+  redirect_uris: z18.array(z18.string()),
+  created_at: z18.string().nullable()
+});
+var OAuthClientsSchema = z18.strictObject({ items: z18.array(OAuthClientSchema) });
+var RegisterOAuthClientSchema = z18.strictObject({
+  name: z18.string().trim().min(1).max(120),
+  redirect_uris: z18.array(z18.url().max(2048)).min(1).max(10)
+});
+var OAuthGrantSchema = z18.strictObject({
+  client_id: z18.string(),
+  name: z18.string(),
+  scopes: z18.array(OAuthScopeSchema),
+  created_at: z18.string()
+});
+var OAuthGrantsSchema = z18.strictObject({ items: z18.array(OAuthGrantSchema) });
+var OAuthConsentRequestSchema = z18.strictObject({
+  oauth_query: z18.string().min(1).max(16384)
+});
+var OAuthConsentDetailsSchema = z18.strictObject({
+  client_id: z18.string(),
+  client_name: z18.string(),
+  redirect_uri: z18.string(),
+  scopes: z18.array(OAuthScopeSchema)
+});
+var DecideOAuthConsentSchema = OAuthConsentRequestSchema.extend({ accept: z18.boolean() });
+var OAuthConsentResultSchema = z18.strictObject({ redirect_uri: z18.string() });
 
 // src/output.ts
 import { randomUUID } from "node:crypto";
@@ -320612,16 +324137,19 @@ async function run(inputs, env, deps) {
   if (inputs.visibility !== "public" && inputs.visibility !== "private") {
     throw new CharError({ code: "action.invalid_visibility", subject: inputs.visibility });
   }
-  const { creation, artifact, warnings } = await buildLocal(inputs.path, inputs.dependencies);
-  const testStatus = await cmdTest(
-    { file: inputs.path, ...inputs.dependencies ? { deps: inputs.dependencies } : {} },
+  const { creation, semantic_digest } = await loadLocalCreation(inputs.path);
+  const testStatus = creation.assembly_tests?.length ? await cmdTest(
+    {
+      file: inputs.path,
+      ...inputs.dependencies ? { deps: inputs.dependencies } : {},
+      ...inputs.defaultPolicy ? { defaultPolicy: inputs.defaultPolicy } : {}
+    },
     { log: deps.log, error: deps.log }
-  );
+  ) : 0;
   if (testStatus !== 0)
     throw new CharError({ code: "action.assembly_tests_failed", subject: inputs.path });
-  deps.log(`built ${creation.ref}@${label}  ${artifact.root.semantic_digest}`);
-  for (const w of warnings) deps.log(`warning: ${w.code} ${w.subject}`);
-  deps.setOutput("semantic-digest", artifact.root.semantic_digest);
+  deps.log(`checked ${creation.ref}@${label}  ${semantic_digest}`);
+  deps.setOutput("semantic-digest", semantic_digest);
   if (inputs.dryRun) {
     deps.log("dry run: not publishing");
     return;
@@ -320634,7 +324162,7 @@ async function run(inputs, env, deps) {
     visibility: inputs.visibility,
     commit,
     path: inputs.path,
-    semantic_digest: artifact.root.semantic_digest
+    semantic_digest
   };
   const res = await deps.fetch(`${registry}/v1/publish/oidc`, {
     method: "POST",
@@ -320672,7 +324200,8 @@ async function main() {
         visibility: core.getInput("visibility") || "public",
         registry: core.getInput("registry") || "https://api.char.pub",
         dryRun: core.getBooleanInput("dry-run"),
-        dependencies: core.getMultilineInput("dependencies")
+        dependencies: core.getMultilineInput("dependencies"),
+        ...core.getInput("default-policy") ? { defaultPolicy: core.getInput("default-policy") } : {}
       },
       env,
       {

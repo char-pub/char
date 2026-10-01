@@ -1,3 +1,4 @@
+import { publishedIdentity, sha256Bytes } from "@char-pub/core";
 /**
  * 浏览、作品页与账号设置（mock API）。作品页用的 Context IR 由 web 自带的示例作品现场
  * 解析得到，和真实 Release 的 IR 是同一种结构：Alice 依赖一个 World 与一个 Lorebook，
@@ -7,13 +8,15 @@
  * （锁定到 Release）、被谁依赖、署名与许可；设置页保存成人内容开关。
  */
 import { expect, test } from "@playwright/test";
-import { diffPair, releases, resolveSample } from "../src/fixtures/samples";
+import { buildSample, diffPair, releases, resolveSample } from "../src/fixtures/samples";
 import { creationDetail, ME, mockApi } from "./mock-api";
 
 const ORIGIN = "http://127.0.0.1:4173";
 const BASE = "/v1/creations/@djj/alice";
 const IR_V1 = resolveSample(diffPair.from).ir;
 const IR_V2 = resolveSample(diffPair.to).ir;
+const ARTIFACT_V1 = buildSample(diffPair.from);
+const ARTIFACT_V2 = buildSample(diffPair.to);
 
 function release(label: string, rating: string, n: number) {
   return {
@@ -27,7 +30,18 @@ function release(label: string, rating: string, n: number) {
   };
 }
 
-const RELEASES = [release("1.2.0", "mature", 2), release("1.1.0", "teen", 1)];
+const RELEASES = [
+  {
+    ...release("1.2.0", "mature", 2),
+    id: publishedIdentity(ARTIFACT_V2.root).release,
+    semantic_digest: ARTIFACT_V2.root.semantic_digest,
+  },
+  {
+    ...release("1.1.0", "teen", 1),
+    id: publishedIdentity(ARTIFACT_V1.root).release,
+    semantic_digest: ARTIFACT_V1.root.semantic_digest,
+  },
+];
 
 function alice(over: Record<string, unknown> = {}) {
   return creationDetail({
@@ -46,6 +60,9 @@ function releaseDetail(label: string) {
   const r = RELEASES.find((x) => x.label === label) ?? RELEASES[0];
   return {
     ...r,
+    artifact_digest: sha256Bytes(
+      new TextEncoder().encode(JSON.stringify(label === "1.2.0" ? ARTIFACT_V2 : ARTIFACT_V1)),
+    ),
     ref: "@djj/alice",
     creation: "cr_01j00000000000000000000000",
     lock_digest: `sha256:${"c".repeat(64)}`,
@@ -80,6 +97,8 @@ async function withCreation(page: import("@playwright/test").Page, me: Me | null
   }));
   api.on(`GET ${BASE}/releases/1.2.0/ir`, { body: IR_V2 });
   api.on(`GET ${BASE}/releases/1.1.0/ir`, { body: IR_V1 });
+  api.on(`GET ${BASE}/releases/1.2.0/artifact`, { body: ARTIFACT_V2 });
+  api.on(`GET ${BASE}/releases/1.1.0/artifact`, { body: ARTIFACT_V1 });
   api.on(`GET ${BASE}/dependents`, {
     body: {
       items: [

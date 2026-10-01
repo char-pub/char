@@ -82,6 +82,38 @@ export async function principalFromToken(
     user_id: row.userId,
     banned,
     scopes: row.scopes as Scope[],
+    token_id: row.id,
     ...(row.agent ? { agent: true } : {}),
+  };
+}
+
+/** Reload a queued job's credential without persisting or reconstructing its bearer secret. */
+export async function principalFromStoredToken(
+  db: Executor,
+  tokenId: string,
+  userId: string,
+  now: Date,
+): Promise<Principal | null> {
+  const [row] = await db
+    .select({ token: apiTokens, user: authUser })
+    .from(apiTokens)
+    .innerJoin(authUser, eq(authUser.id, apiTokens.userId))
+    .where(
+      and(
+        eq(apiTokens.id, tokenId),
+        eq(apiTokens.userId, userId),
+        isNull(apiTokens.revokedAt),
+        or(isNull(apiTokens.expiresAt), gt(apiTokens.expiresAt, now)),
+      ),
+    )
+    .limit(1);
+  if (!row) return null;
+  return {
+    kind: "user",
+    user_id: userId,
+    token_id: row.token.id,
+    scopes: row.token.scopes as Scope[],
+    banned: row.user.banned && (!row.user.banExpires || row.user.banExpires > now),
+    ...(row.token.agent ? { agent: true } : {}),
   };
 }

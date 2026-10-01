@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://char.pub/schema/v0-draft/creation-artifact.schema.json",
+  "$id": "https://char.pub/schema/v1-draft/creation-artifact.schema.json",
   "title": "char.pub Creation Artifact",
   "oneOf": [
     {
@@ -8,10 +8,16 @@
       "properties": {
         "version": {
           "type": "string",
-          "const": "0-draft"
+          "const": "1-draft"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          }
         },
         "root": {
-          "$ref": "#/$defs/ExactRef"
+          "$ref": "#/$defs/PresetIdentity"
         },
         "lock": {
           "type": "array",
@@ -40,28 +46,10 @@
           "properties": {
             "ir_version": {
               "type": "string",
-              "const": "0-draft"
+              "const": "1-draft"
             },
             "root": {
-              "type": "object",
-              "properties": {
-                "ref": {
-                  "$ref": "#/$defs/UnversionedRef"
-                },
-                "release": {
-                  "type": "string",
-                  "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
-                },
-                "semantic_digest": {
-                  "$ref": "#/$defs/Digest"
-                }
-              },
-              "required": [
-                "ref",
-                "release",
-                "semantic_digest"
-              ],
-              "additionalProperties": false
+              "$ref": "#/$defs/PresetIdentity"
             },
             "lock_digest": {
               "$ref": "#/$defs/Digest"
@@ -135,7 +123,6 @@
                     },
                     "required": [
                       "id",
-                      "speaker",
                       "text"
                     ],
                     "additionalProperties": false
@@ -203,12 +190,21 @@
           ],
           "additionalProperties": false
         },
+        "catalog_index": {
+          "$ref": "#/$defs/CatalogIndex"
+        },
+        "story": {
+          "$ref": "#/$defs/Story"
+        },
+        "story_refs": {
+          "$ref": "#/$defs/StoryReferences"
+        },
         "assembly": {
           "type": "object",
           "properties": {
             "version": {
               "type": "string",
-              "const": "0-draft"
+              "const": "1-draft"
             },
             "profile": {
               "type": "object",
@@ -319,7 +315,282 @@
               "additionalProperties": false
             },
             "preset": {
-              "$ref": "#/$defs/ResolvedPreset"
+              "type": "object",
+              "properties": {
+                "ref": {
+                  "$ref": "#/$defs/UnversionedRef"
+                },
+                "semantic_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "resolver": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                },
+                "policy": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string",
+                      "const": "1-draft"
+                    },
+                    "blocks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?|@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)(?:~(?:main|after-history)~[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)?$"
+                          },
+                          "text": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "origin": {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "$ref": "#/$defs/UnversionedRef"
+                              },
+                              "semantic_digest": {
+                                "$ref": "#/$defs/Digest"
+                              },
+                              "block": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                              },
+                              "via": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                                }
+                              },
+                              "release": {
+                                "type": "string",
+                                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "semantic_digest",
+                              "block",
+                              "via",
+                              "release"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "position": {
+                            "type": "string",
+                            "enum": [
+                              "main",
+                              "after-history"
+                            ]
+                          },
+                          "placement": {
+                            "type": "object",
+                            "properties": {
+                              "block": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)*$"
+                              },
+                              "at": {
+                                "type": "string",
+                                "enum": [
+                                  "main",
+                                  "after-history"
+                                ]
+                              },
+                              "as": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                              }
+                            },
+                            "required": [
+                              "block",
+                              "at"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "position"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "selection": {
+                      "type": "object",
+                      "properties": {
+                        "catalog_budget": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "max_depth": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 32
+                        },
+                        "on_unavailable": {
+                          "type": "string",
+                          "const": "skip"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "render": {
+                      "type": "object",
+                      "properties": {
+                        "perspective.rumor": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "perspective.claim": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "perspective.belief": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "knowing.narrator": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "sources.notice": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "layout": {
+                      "minItems": 18,
+                      "maxItems": 18,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "system:character",
+                          "system:cast",
+                          "session:bindings",
+                          "system:persona",
+                          "system:world",
+                          "system:scenario",
+                          "system:scene",
+                          "system:story",
+                          "system:sources",
+                          "system:relationship",
+                          "system:knowledge",
+                          "system:style",
+                          "system:instruction",
+                          "system:examples",
+                          "session:memory",
+                          "session:state",
+                          "session:variants",
+                          "history"
+                        ]
+                      }
+                    },
+                    "region_budgets": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "enum": [
+                          "system:character",
+                          "system:cast",
+                          "system:persona",
+                          "system:world",
+                          "system:scenario",
+                          "system:scene",
+                          "system:story",
+                          "system:sources",
+                          "system:relationship",
+                          "system:knowledge",
+                          "system:style",
+                          "system:instruction",
+                          "system:examples"
+                        ]
+                      },
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "requires": {
+                      "type": "object",
+                      "properties": {
+                        "system_role": {
+                          "type": "boolean",
+                          "const": true
+                        },
+                        "multiple_system_messages": {
+                          "type": "boolean",
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "system_role"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "blocks",
+                    "layout",
+                    "requires"
+                  ],
+                  "additionalProperties": false
+                },
+                "lock": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/LockEntry"
+                  }
+                },
+                "lock_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "release": {
+                  "type": "string",
+                  "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                }
+              },
+              "required": [
+                "ref",
+                "semantic_digest",
+                "resolver",
+                "policy",
+                "release"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
@@ -330,29 +601,327 @@
             "preset"
           ],
           "additionalProperties": false
+        },
+        "default_policy": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "$ref": "#/$defs/UnversionedRef"
+            },
+            "semantic_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "resolver": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ],
+              "additionalProperties": false
+            },
+            "policy": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "string",
+                  "const": "1-draft"
+                },
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?|@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)(?:~(?:main|after-history)~[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)?$"
+                      },
+                      "text": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "origin": {
+                        "type": "object",
+                        "properties": {
+                          "ref": {
+                            "$ref": "#/$defs/UnversionedRef"
+                          },
+                          "semantic_digest": {
+                            "$ref": "#/$defs/Digest"
+                          },
+                          "block": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                          },
+                          "via": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                            }
+                          },
+                          "release": {
+                            "type": "string",
+                            "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "semantic_digest",
+                          "block",
+                          "via",
+                          "release"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "position": {
+                        "type": "string",
+                        "enum": [
+                          "main",
+                          "after-history"
+                        ]
+                      },
+                      "placement": {
+                        "type": "object",
+                        "properties": {
+                          "block": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)*$"
+                          },
+                          "at": {
+                            "type": "string",
+                            "enum": [
+                              "main",
+                              "after-history"
+                            ]
+                          },
+                          "as": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                          }
+                        },
+                        "required": [
+                          "block",
+                          "at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "text",
+                      "position"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "selection": {
+                  "type": "object",
+                  "properties": {
+                    "catalog_budget": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "max_depth": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 32
+                    },
+                    "on_unavailable": {
+                      "type": "string",
+                      "const": "skip"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "render": {
+                  "type": "object",
+                  "properties": {
+                    "perspective.rumor": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "perspective.claim": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "perspective.belief": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "knowing.narrator": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sources.notice": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "layout": {
+                  "minItems": 18,
+                  "maxItems": 18,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "system:character",
+                      "system:cast",
+                      "session:bindings",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:style",
+                      "system:instruction",
+                      "system:examples",
+                      "session:memory",
+                      "session:state",
+                      "session:variants",
+                      "history"
+                    ]
+                  }
+                },
+                "region_budgets": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "enum": [
+                      "system:character",
+                      "system:cast",
+                      "system:persona",
+                      "system:world",
+                      "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
+                      "system:relationship",
+                      "system:knowledge",
+                      "system:style",
+                      "system:instruction",
+                      "system:examples"
+                    ]
+                  },
+                  "additionalProperties": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "requires": {
+                  "type": "object",
+                  "properties": {
+                    "system_role": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "multiple_system_messages": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "system_role"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "version",
+                "blocks",
+                "layout",
+                "requires"
+              ],
+              "additionalProperties": false
+            },
+            "lock": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LockEntry"
+              }
+            },
+            "lock_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            }
+          },
+          "required": [
+            "ref",
+            "semantic_digest",
+            "resolver",
+            "policy",
+            "release"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "version",
+        "capabilities",
         "root",
         "lock",
         "lock_digest",
         "meta",
         "assets",
         "kind",
-        "ir"
+        "ir",
+        "catalog_index"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "assembly"
+          ]
+        },
+        {
+          "required": [
+            "default_policy"
+          ]
+        }
+      ]
     },
     {
       "type": "object",
       "properties": {
         "version": {
           "type": "string",
-          "const": "0-draft"
+          "const": "1-draft"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          }
         },
         "root": {
-          "$ref": "#/$defs/ExactRef"
+          "$ref": "#/$defs/PresetIdentity"
         },
         "lock": {
           "type": "array",
@@ -382,6 +951,7 @@
       },
       "required": [
         "version",
+        "capabilities",
         "root",
         "lock",
         "lock_digest",
@@ -397,10 +967,16 @@
       "properties": {
         "version": {
           "type": "string",
-          "const": "0-draft"
+          "const": "1-draft"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          }
         },
         "root": {
-          "$ref": "#/$defs/ExactRef"
+          "$ref": "#/$defs/PresetIdentity"
         },
         "lock": {
           "type": "array",
@@ -425,73 +1001,500 @@
           "const": "prompt-module"
         },
         "module": {
-          "type": "object",
-          "properties": {
-            "ref": {
-              "type": "string",
-              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
-            },
-            "release": {
-              "type": "string",
-              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
-            },
-            "semantic_digest": {
-              "type": "string",
-              "pattern": "^sha256:[0-9a-f]{64}$"
-            },
-            "resolver": {
+          "anyOf": [
+            {
               "type": "object",
               "properties": {
-                "name": {
-                  "type": "string",
-                  "minLength": 1
+                "ref": {
+                  "$ref": "#/$defs/UnversionedRef"
+                },
+                "semantic_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "resolver": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "version"
+                  ],
+                  "additionalProperties": false
                 },
                 "version": {
                   "type": "string",
-                  "minLength": 1
+                  "const": "1-draft"
+                },
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                          }
+                        ]
+                      },
+                      "text": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "default_at": {
+                        "type": "string",
+                        "enum": [
+                          "main",
+                          "after-history"
+                        ]
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "origin": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "$ref": "#/$defs/UnversionedRef"
+                              },
+                              "semantic_digest": {
+                                "$ref": "#/$defs/Digest"
+                              },
+                              "block": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                              },
+                              "via": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                                }
+                              },
+                              "release": {
+                                "type": "string",
+                                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "semantic_digest",
+                              "block",
+                              "via",
+                              "release"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "$ref": "#/$defs/UnversionedRef"
+                              },
+                              "semantic_digest": {
+                                "$ref": "#/$defs/Digest"
+                              },
+                              "block": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                              },
+                              "via": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                                }
+                              },
+                              "origin": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "draft-build"
+                                      },
+                                      "build_id": {
+                                        "type": "string",
+                                        "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                                      },
+                                      "revision": {
+                                        "type": "string",
+                                        "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                                      },
+                                      "expires_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "build_id",
+                                      "revision",
+                                      "expires_at"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "local-build"
+                                      },
+                                      "input_digest": {
+                                        "type": "string",
+                                        "pattern": "^sha256:[0-9a-f]{64}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "input_digest"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "semantic_digest",
+                              "block",
+                              "via",
+                              "origin"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "text",
+                      "default_at"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "lock": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/LockEntry"
+                  }
+                },
+                "lock_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "release": {
+                  "type": "string",
+                  "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
                 }
               },
               "required": [
-                "name",
-                "version"
+                "ref",
+                "semantic_digest",
+                "resolver",
+                "version",
+                "blocks",
+                "lock",
+                "lock_digest",
+                "release"
               ],
               "additionalProperties": false
             },
-            "version": {
-              "type": "string",
-              "const": "0-draft"
-            },
-            "blocks": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/ResolvedPolicyBlock"
-              }
-            },
-            "lock": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/LockEntry"
-              }
-            },
-            "lock_digest": {
-              "$ref": "#/$defs/Digest"
+            {
+              "type": "object",
+              "properties": {
+                "ref": {
+                  "$ref": "#/$defs/UnversionedRef"
+                },
+                "semantic_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "resolver": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                },
+                "version": {
+                  "type": "string",
+                  "const": "1-draft"
+                },
+                "blocks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                          }
+                        ]
+                      },
+                      "text": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "default_at": {
+                        "type": "string",
+                        "enum": [
+                          "main",
+                          "after-history"
+                        ]
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "origin": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "$ref": "#/$defs/UnversionedRef"
+                              },
+                              "semantic_digest": {
+                                "$ref": "#/$defs/Digest"
+                              },
+                              "block": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                              },
+                              "via": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                                }
+                              },
+                              "release": {
+                                "type": "string",
+                                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "semantic_digest",
+                              "block",
+                              "via",
+                              "release"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ref": {
+                                "$ref": "#/$defs/UnversionedRef"
+                              },
+                              "semantic_digest": {
+                                "$ref": "#/$defs/Digest"
+                              },
+                              "block": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                              },
+                              "via": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                                }
+                              },
+                              "origin": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "draft-build"
+                                      },
+                                      "build_id": {
+                                        "type": "string",
+                                        "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                                      },
+                                      "revision": {
+                                        "type": "string",
+                                        "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                                      },
+                                      "expires_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "build_id",
+                                      "revision",
+                                      "expires_at"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "local-build"
+                                      },
+                                      "input_digest": {
+                                        "type": "string",
+                                        "pattern": "^sha256:[0-9a-f]{64}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "input_digest"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "ref",
+                              "semantic_digest",
+                              "block",
+                              "via",
+                              "origin"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "text",
+                      "default_at"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "lock": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/LockEntry"
+                  }
+                },
+                "lock_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "origin": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "draft-build"
+                        },
+                        "build_id": {
+                          "type": "string",
+                          "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "build_id",
+                        "revision",
+                        "expires_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "local-build"
+                        },
+                        "input_digest": {
+                          "type": "string",
+                          "pattern": "^sha256:[0-9a-f]{64}$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "input_digest"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "ref",
+                "semantic_digest",
+                "resolver",
+                "version",
+                "blocks",
+                "lock",
+                "lock_digest",
+                "origin"
+              ],
+              "additionalProperties": false
             }
-          },
-          "required": [
-            "ref",
-            "release",
-            "semantic_digest",
-            "resolver",
-            "version",
-            "blocks",
-            "lock",
-            "lock_digest"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "version",
+        "capabilities",
         "root",
         "lock",
         "lock_digest",
@@ -504,28 +1507,119 @@
     }
   ],
   "$defs": {
-    "ExactRef": {
+    "Capability": {
       "type": "object",
       "properties": {
-        "ref": {
+        "id": {
           "type": "string",
-          "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+          "minLength": 1
         },
-        "release": {
-          "type": "string",
-          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
-        },
-        "semantic_digest": {
-          "type": "string",
-          "pattern": "^sha256:[0-9a-f]{64}$"
+        "experimental": {
+          "type": "boolean",
+          "const": true
         }
       },
       "required": [
-        "ref",
-        "release",
-        "semantic_digest"
+        "id"
       ],
       "additionalProperties": false
+    },
+    "PresetIdentity": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            },
+            "semantic_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            }
+          },
+          "required": [
+            "ref",
+            "semantic_digest",
+            "release"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            },
+            "semantic_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "origin": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "draft-build"
+                    },
+                    "build_id": {
+                      "type": "string",
+                      "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "build_id",
+                    "revision",
+                    "expires_at"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "local-build"
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "input_digest"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "ref",
+            "semantic_digest",
+            "origin"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "LockEntry": {
       "type": "object",
@@ -656,8 +1750,10 @@
           "items": {
             "type": "object",
             "properties": {
-              "ref": {
-                "$ref": "#/$defs/UnversionedRef"
+              "client_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
               },
               "author": {
                 "anyOf": [
@@ -673,11 +1769,14 @@
               "contribution": {
                 "type": "string",
                 "pattern": "^ctb_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+              },
+              "ref": {
+                "$ref": "#/$defs/UnversionedRef"
               }
             },
             "required": [
-              "ref",
-              "author"
+              "author",
+              "ref"
             ],
             "additionalProperties": false
           }
@@ -844,35 +1943,117 @@
           "$ref": "#/$defs/SpdxExpression"
         },
         "origin": {
-          "type": "object",
-          "properties": {
-            "creation": {
-              "$ref": "#/$defs/UnversionedRef"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "creation": {
+                  "$ref": "#/$defs/UnversionedRef"
+                },
+                "slot": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                },
+                "variant": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                },
+                "instance_key": {
+                  "type": "string"
+                },
+                "release": {
+                  "type": "string",
+                  "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                }
+              },
+              "required": [
+                "creation",
+                "slot",
+                "variant",
+                "instance_key",
+                "release"
+              ],
+              "additionalProperties": false
             },
-            "release": {
-              "type": "string",
-              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
-            },
-            "slot": {
-              "type": "string",
-              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
-            },
-            "variant": {
-              "type": "string",
-              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
-            },
-            "instance_key": {
-              "type": "string"
+            {
+              "type": "object",
+              "properties": {
+                "creation": {
+                  "$ref": "#/$defs/UnversionedRef"
+                },
+                "slot": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                },
+                "variant": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                },
+                "instance_key": {
+                  "type": "string"
+                },
+                "origin": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "draft-build"
+                        },
+                        "build_id": {
+                          "type": "string",
+                          "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "build_id",
+                        "revision",
+                        "expires_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "local-build"
+                        },
+                        "input_digest": {
+                          "type": "string",
+                          "pattern": "^sha256:[0-9a-f]{64}$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "input_digest"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "creation",
+                "slot",
+                "variant",
+                "instance_key",
+                "origin"
+              ],
+              "additionalProperties": false
             }
-          },
-          "required": [
-            "creation",
-            "release",
-            "slot",
-            "variant",
-            "instance_key"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -944,6 +2125,18 @@
       "properties": {
         "key": {
           "type": "string"
+        },
+        "cast_key": {
+          "type": "string"
+        },
+        "cast_scope": {
+          "type": "string"
+        },
+        "part": {
+          "$ref": "#/$defs/LocalizedText"
+        },
+        "goal": {
+          "$ref": "#/$defs/LocalizedText"
         },
         "ref": {
           "$ref": "#/$defs/UnversionedRef"
@@ -1046,6 +2239,166 @@
         },
         "kind": {
           "$ref": "#/$defs/FragmentKind"
+        },
+        "description": {
+          "$ref": "#/$defs/LocalizedText"
+        },
+        "selectable": {
+          "type": "boolean"
+        },
+        "outward": {
+          "type": "boolean"
+        },
+        "perspective": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "canon",
+                "rumor"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "claim": {
+                  "type": "string",
+                  "pattern": "^participant:.+$"
+                }
+              },
+              "required": [
+                "claim"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "belief": {
+                  "type": "string",
+                  "pattern": "^participant:.+$"
+                }
+              },
+              "required": [
+                "belief"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "about": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "use": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "use"
+          ],
+          "additionalProperties": false
+        },
+        "instance": {
+          "type": "string"
+        },
+        "style_scope": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "narration"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "scene": {
+                  "type": "string"
+                },
+                "owner": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "scene",
+                "owner"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "participant": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "participant"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "style_use": {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "type": "string"
+            },
+            "order": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "combine": {
+              "type": "string",
+              "enum": [
+                "add",
+                "replace"
+              ]
+            },
+            "path": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "owner": {
+                    "type": "string"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "combine": {
+                    "type": "string",
+                    "enum": [
+                      "add",
+                      "replace"
+                    ]
+                  }
+                },
+                "required": [
+                  "owner",
+                  "order",
+                  "combine"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "owner",
+            "order",
+            "combine"
+          ],
+          "additionalProperties": false
         },
         "content": {
           "$ref": "#/$defs/IRContent"
@@ -1398,73 +2751,212 @@
             "scene"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "const": "story-scene"
+            },
+            "scene": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "scope",
+            "scene"
+          ],
+          "additionalProperties": false
         }
       ]
     },
     "Origin": {
-      "type": "object",
-      "properties": {
-        "creation": {
-          "$ref": "#/$defs/UnversionedRef"
-        },
-        "release": {
-          "type": "string",
-          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
-        },
-        "fragment": {
-          "$ref": "#/$defs/FragmentId"
-        },
-        "via": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
-          }
-        },
-        "instance_key": {
-          "type": "string"
-        },
-        "overridden_by": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "creation": {
-                "$ref": "#/$defs/UnversionedRef"
-              },
-              "edge": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "creation": {
+              "$ref": "#/$defs/UnversionedRef"
+            },
+            "fragment": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "via": {
+              "type": "array",
+              "items": {
                 "type": "string",
                 "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
-              },
-              "op": {
-                "type": "string",
-                "enum": [
-                  "replace",
-                  "patch",
-                  "add"
-                ]
               }
             },
-            "required": [
-              "creation",
-              "op"
-            ],
-            "additionalProperties": false
-          }
+            "instance_key": {
+              "type": "string"
+            },
+            "overridden_by": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "creation": {
+                    "$ref": "#/$defs/UnversionedRef"
+                  },
+                  "edge": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  },
+                  "cast": {
+                    "type": "string"
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "replace",
+                      "patch",
+                      "add"
+                    ]
+                  }
+                },
+                "required": [
+                  "creation",
+                  "op"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "stable": {
+              "type": "boolean"
+            },
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            }
+          },
+          "required": [
+            "creation",
+            "fragment",
+            "via",
+            "instance_key",
+            "stable",
+            "release"
+          ],
+          "additionalProperties": false
         },
-        "stable": {
-          "type": "boolean"
+        {
+          "type": "object",
+          "properties": {
+            "creation": {
+              "$ref": "#/$defs/UnversionedRef"
+            },
+            "fragment": {
+              "$ref": "#/$defs/FragmentId"
+            },
+            "via": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            },
+            "instance_key": {
+              "type": "string"
+            },
+            "overridden_by": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "creation": {
+                    "$ref": "#/$defs/UnversionedRef"
+                  },
+                  "edge": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  },
+                  "cast": {
+                    "type": "string"
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "replace",
+                      "patch",
+                      "add"
+                    ]
+                  }
+                },
+                "required": [
+                  "creation",
+                  "op"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "stable": {
+              "type": "boolean"
+            },
+            "origin": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "draft-build"
+                    },
+                    "build_id": {
+                      "type": "string",
+                      "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "build_id",
+                    "revision",
+                    "expires_at"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "local-build"
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "input_digest"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "creation",
+            "fragment",
+            "via",
+            "instance_key",
+            "stable",
+            "origin"
+          ],
+          "additionalProperties": false
         }
-      },
-      "required": [
-        "creation",
-        "release",
-        "fragment",
-        "via",
-        "instance_key",
-        "stable"
-      ],
-      "additionalProperties": false
+      ]
     },
     "FragmentId": {
       "type": "string",
@@ -1476,29 +2968,105 @@
         "nodes": {
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "ref": {
-                "$ref": "#/$defs/UnversionedRef"
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "ref": {
+                    "$ref": "#/$defs/UnversionedRef"
+                  },
+                  "type": {
+                    "$ref": "#/$defs/CreationType"
+                  },
+                  "display_name": {
+                    "type": "string"
+                  },
+                  "release": {
+                    "type": "string",
+                    "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "type",
+                  "display_name",
+                  "release"
+                ],
+                "additionalProperties": false
               },
-              "release": {
-                "type": "string",
-                "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
-              },
-              "type": {
-                "$ref": "#/$defs/CreationType"
-              },
-              "display_name": {
-                "type": "string"
+              {
+                "type": "object",
+                "properties": {
+                  "ref": {
+                    "$ref": "#/$defs/UnversionedRef"
+                  },
+                  "type": {
+                    "$ref": "#/$defs/CreationType"
+                  },
+                  "display_name": {
+                    "type": "string"
+                  },
+                  "origin": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "draft-build"
+                          },
+                          "build_id": {
+                            "type": "string",
+                            "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                          },
+                          "revision": {
+                            "type": "string",
+                            "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                          },
+                          "expires_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "build_id",
+                          "revision",
+                          "expires_at"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "local-build"
+                          },
+                          "input_digest": {
+                            "type": "string",
+                            "pattern": "^sha256:[0-9a-f]{64}$"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "input_digest"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "ref",
+                  "type",
+                  "display_name",
+                  "origin"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "ref",
-              "release",
-              "type",
-              "display_name"
-            ],
-            "additionalProperties": false
+            ]
           }
         },
         "instances": {
@@ -1518,6 +3086,39 @@
                   "type": "string",
                   "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
                 }
+              },
+              "cast": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "string"
+                  },
+                  "introduced_by": {
+                    "type": "object",
+                    "properties": {
+                      "instance": {
+                        "type": "string"
+                      },
+                      "edge": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                      }
+                    },
+                    "required": [
+                      "instance",
+                      "edge"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "key",
+                  "scope"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -1563,6 +3164,29 @@
             "additionalProperties": false
           }
         },
+        "cast_edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from_instance": {
+                "type": "string"
+              },
+              "to_instance": {
+                "type": "string"
+              },
+              "cast": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "from_instance",
+              "to_instance",
+              "cast"
+            ],
+            "additionalProperties": false
+          }
+        },
         "removed": {
           "type": "array",
           "items": {
@@ -1581,6 +3205,9 @@
                   "edge": {
                     "type": "string",
                     "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  },
+                  "cast": {
+                    "type": "string"
                   },
                   "reason": {
                     "type": "string",
@@ -1627,65 +3254,1728 @@
         "prompt-module"
       ]
     },
-    "ResolvedPreset": {
+    "CatalogIndex": {
       "type": "object",
       "properties": {
-        "ref": {
-          "$ref": "#/$defs/UnversionedRef"
+        "about": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "target": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "work": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "work"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "fragment": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "fragment"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "participant": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "participant"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "ref",
+              "target"
+            ],
+            "additionalProperties": false
+          }
         },
-        "release": {
-          "type": "string",
-          "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+        "works": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "instance": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "fragments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "ref",
+              "instance",
+              "title",
+              "fragments",
+              "groups",
+              "sources"
+            ],
+            "additionalProperties": false
+          }
         },
-        "semantic_digest": {
-          "$ref": "#/$defs/Digest"
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "local_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "entries": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "owner",
+              "local_id",
+              "title",
+              "entries",
+              "groups"
+            ],
+            "additionalProperties": false
+          }
         },
-        "resolver": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "local_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "asset": {
+                "type": "string",
+                "minLength": 1
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "markdown",
+                  "text"
+                ]
+              },
+              "shared": {
+                "type": "boolean"
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "title": {
+                      "$ref": "#/$defs/LocalizedText"
+                    },
+                    "description": {
+                      "$ref": "#/$defs/LocalizedText"
+                    },
+                    "anchor": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "anchor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "owner",
+              "local_id",
+              "title",
+              "asset",
+              "format",
+              "shared",
+              "sections"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "works",
+        "groups",
+        "sources"
+      ],
+      "additionalProperties": false
+    },
+    "Story": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "number",
+          "const": 1
+        },
+        "scenes": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "time": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "where": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "place": {
+                "$ref": "#/$defs/StoryInfoRef"
+              },
+              "cast": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                }
+              },
+              "opening": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "allOf": [
+                        {
+                          "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+                        },
+                        {
+                          "pattern": "^(?!ref$)"
+                        }
+                      ],
+                      "$ref": "#/$defs/Locale"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "goals": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/LocalizedText"
+                }
+              },
+              "beats": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              },
+              "choices": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              },
+              "lore": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              },
+              "when": {
+                "$ref": "#/$defs/StoryCondition"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "beats": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "strength": {
+                "type": "string",
+                "enum": [
+                  "possible",
+                  "suggested",
+                  "required"
+                ]
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "hidden",
+                  "on-reach",
+                  "listed"
+                ]
+              },
+              "when": {
+                "$ref": "#/$defs/StoryCondition"
+              },
+              "effects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/StoryEffect"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "endings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "strength": {
+                "type": "string",
+                "enum": [
+                  "possible",
+                  "suggested",
+                  "required"
+                ]
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "hidden",
+                  "on-reach",
+                  "listed"
+                ]
+              },
+              "when": {
+                "$ref": "#/$defs/StoryCondition"
+              },
+              "effects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/StoryEffect"
+                }
+              },
+              "after": {
+                "type": "string",
+                "enum": [
+                  "stop",
+                  "continue"
+                ]
+              },
+              "priority": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "label": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "intent": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "when": {
+                "$ref": "#/$defs/StoryCondition"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "intent"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "plotlines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "scenes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              },
+              "beats": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "starts": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "scene": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "greeting": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "allOf": [
+                            {
+                              "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+                            },
+                            {
+                              "pattern": "^(?!ref$)"
+                            }
+                          ],
+                          "$ref": "#/$defs/Locale"
+                        },
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "ref": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                      }
+                    },
+                    "required": [
+                      "ref"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "set": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/StoryEffect"
+                }
+              },
+              "reached": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "vars": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/StoryVariable"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "lore": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "reveal": {
+                "type": "string",
+                "enum": [
+                  "hidden",
+                  "on-reach"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "background",
+                  "planned"
+                ]
+              },
+              "when_text": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "cast": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                }
+              },
+              "place": {
+                "$ref": "#/$defs/StoryInfoRef"
+              },
+              "truth": {
+                "$ref": "#/$defs/StoryInfoRef"
+              },
+              "lore": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "when": {
+                "$ref": "#/$defs/StoryCondition"
+              },
+              "effects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/StoryEffect"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "description",
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "timelines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              },
+              "title": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "description": {
+                "$ref": "#/$defs/LocalizedText"
+              },
+              "order": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "order"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "knowing": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/StoryInfoRef"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "object",
+                "properties": {
+                  "knows": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "const": "*"
+                      }
+                    ]
+                  },
+                  "not": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                        }
+                      },
+                      {
+                        "type": "string",
+                        "const": "*"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "enter": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "knows": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                          }
+                        },
+                        {
+                          "type": "string",
+                          "const": "*"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "knows"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "start"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "version",
+        "scenes"
+      ],
+      "additionalProperties": false
+    },
+    "StoryInfoRef": {
+      "type": "string",
+      "pattern": "^(?:#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}|@[a-z0-9][a-z0-9-]*\\/[a-z0-9][a-z0-9-]*#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}|cast:[a-z0-9][a-z0-9_-]*#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3})$"
+    },
+    "StoryCondition": {
+      "anyOf": [
+        {
           "type": "object",
           "properties": {
-            "name": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/StoryCondition"
+              }
+            }
+          },
+          "required": [
+            "all"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/StoryCondition"
+              }
+            }
+          },
+          "required": [
+            "any"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/StoryCondition"
+            }
+          },
+          "required": [
+            "not"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "in": {
               "type": "string",
-              "minLength": 1
+              "pattern": "^scene\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "in"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "visited": {
+              "type": "string",
+              "pattern": "^scene\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "visited"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "reached": {
+              "type": "string",
+              "pattern": "^beat\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "reached"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ended": {
+              "type": "string",
+              "pattern": "^ending\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "ended"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "happened": {
+              "type": "string",
+              "pattern": "^event\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "happened"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "knows": {
+              "type": "object",
+              "properties": {
+                "who": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                },
+                "info": {
+                  "$ref": "#/$defs/StoryInfoRef"
+                }
+              },
+              "required": [
+                "who",
+                "info"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "knows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "is": {
+              "type": "string",
+              "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "is"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "cmp": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "=",
+                    "!=",
+                    "<",
+                    "<=",
+                    ">",
+                    ">="
+                  ]
+                },
+                {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                }
+              ],
+              "items": false,
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "cmp"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "eq"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "has": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "has"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "judge": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "judge"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "StoryEffect": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "set": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": -2147483648,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "set"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "add": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "add"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "put": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "put"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "drop": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "drop"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "learn": {
+              "type": "object",
+              "properties": {
+                "who": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                    },
+                    {
+                      "type": "string",
+                      "const": "*"
+                    }
+                  ]
+                },
+                "info": {
+                  "$ref": "#/$defs/StoryInfoRef"
+                }
+              },
+              "required": [
+                "who",
+                "info"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "learn"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "StoryVariable": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "bool"
             },
-            "version": {
+            "init": {
+              "type": "boolean"
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "int"
+            },
+            "init": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "min": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "max": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "min",
+            "max",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "enum"
+            },
+            "init": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            "values": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "values",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "set"
+            },
+            "init": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "of": {
+              "type": "string",
+              "const": "item"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "description"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "StoryReferences": {
+      "type": "object",
+      "properties": {
+        "templates": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "locales": {
+                "type": "object",
+                "propertyNames": {
+                  "$ref": "#/$defs/Locale"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "participants": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "information": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "content": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/CatalogRef"
+          }
+        }
+      },
+      "required": [
+        "templates",
+        "participants",
+        "information",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "CatalogRef": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "work": {
               "type": "string",
               "minLength": 1
             }
           },
           "required": [
-            "name",
-            "version"
+            "work"
           ],
           "additionalProperties": false
         },
-        "policy": {
-          "$ref": "#/$defs/ResolvedPolicy"
+        {
+          "type": "object",
+          "properties": {
+            "fragment": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "fragment"
+          ],
+          "additionalProperties": false
         },
-        "lock": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/LockEntry"
-          }
+        {
+          "type": "object",
+          "properties": {
+            "group": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "group"
+          ],
+          "additionalProperties": false
         },
-        "lock_digest": {
-          "$ref": "#/$defs/Digest"
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "section": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "source"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "story": {
+              "type": "string",
+              "enum": [
+                "scene",
+                "part",
+                "goal",
+                "beat",
+                "ending"
+              ]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "story",
+            "id"
+          ],
+          "additionalProperties": false
         }
-      },
-      "required": [
-        "ref",
-        "release",
-        "semantic_digest",
-        "resolver",
-        "policy"
-      ],
-      "additionalProperties": false
+      ]
+    },
+    "ResolvedPreset": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "$ref": "#/$defs/UnversionedRef"
+            },
+            "semantic_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "resolver": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ],
+              "additionalProperties": false
+            },
+            "policy": {
+              "$ref": "#/$defs/ResolvedPolicy"
+            },
+            "lock": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LockEntry"
+              }
+            },
+            "lock_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            }
+          },
+          "required": [
+            "ref",
+            "semantic_digest",
+            "resolver",
+            "policy",
+            "release"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "$ref": "#/$defs/UnversionedRef"
+            },
+            "semantic_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "resolver": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ],
+              "additionalProperties": false
+            },
+            "policy": {
+              "$ref": "#/$defs/ResolvedPolicy"
+            },
+            "lock": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LockEntry"
+              }
+            },
+            "lock_digest": {
+              "$ref": "#/$defs/Digest"
+            },
+            "origin": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "draft-build"
+                    },
+                    "build_id": {
+                      "type": "string",
+                      "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "build_id",
+                    "revision",
+                    "expires_at"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "local-build"
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "input_digest"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "ref",
+            "semantic_digest",
+            "resolver",
+            "policy",
+            "origin"
+          ],
+          "additionalProperties": false
+        }
+      ]
     },
     "ResolvedPolicy": {
       "type": "object",
       "properties": {
         "version": {
           "type": "string",
-          "const": "0-draft"
+          "const": "1-draft"
         },
         "blocks": {
           "type": "array",
@@ -1693,9 +4983,55 @@
             "$ref": "#/$defs/ResolvedPolicyBlock"
           }
         },
+        "selection": {
+          "type": "object",
+          "properties": {
+            "catalog_budget": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "max_depth": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "on_unavailable": {
+              "type": "string",
+              "const": "skip"
+            }
+          },
+          "additionalProperties": false
+        },
+        "render": {
+          "type": "object",
+          "properties": {
+            "perspective.rumor": {
+              "type": "string",
+              "minLength": 1
+            },
+            "perspective.claim": {
+              "type": "string",
+              "minLength": 1
+            },
+            "perspective.belief": {
+              "type": "string",
+              "minLength": 1
+            },
+            "knowing.narrator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sources.notice": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
         "layout": {
-          "minItems": 15,
-          "maxItems": 15,
+          "minItems": 18,
+          "maxItems": 18,
           "type": "array",
           "items": {
             "type": "string",
@@ -1706,6 +5042,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:style",
@@ -1728,6 +5067,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:style",
@@ -1780,20 +5122,138 @@
       "type": "object",
       "properties": {
         "id": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
-            },
-            {
-              "type": "string",
-              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
-            }
-          ]
+          "type": "string",
+          "pattern": "^(?:[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?|@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)(?:~(?:main|after-history)~[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)?$"
         },
         "text": {
           "type": "string",
           "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ref": {
+                  "$ref": "#/$defs/UnversionedRef"
+                },
+                "semantic_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "block": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                },
+                "via": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  }
+                },
+                "release": {
+                  "type": "string",
+                  "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                }
+              },
+              "required": [
+                "ref",
+                "semantic_digest",
+                "block",
+                "via",
+                "release"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ref": {
+                  "$ref": "#/$defs/UnversionedRef"
+                },
+                "semantic_digest": {
+                  "$ref": "#/$defs/Digest"
+                },
+                "block": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                },
+                "via": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  }
+                },
+                "origin": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "draft-build"
+                        },
+                        "build_id": {
+                          "type": "string",
+                          "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                        },
+                        "revision": {
+                          "type": "string",
+                          "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "build_id",
+                        "revision",
+                        "expires_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "local-build"
+                        },
+                        "input_digest": {
+                          "type": "string",
+                          "pattern": "^sha256:[0-9a-f]{64}$"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "input_digest"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "ref",
+                "semantic_digest",
+                "block",
+                "via",
+                "origin"
+              ],
+              "additionalProperties": false
+            }
+          ]
         },
         "position": {
           "type": "string",
@@ -1802,42 +5262,28 @@
             "after-history"
           ]
         },
-        "enabled": {
-          "type": "boolean"
-        },
-        "origin": {
+        "placement": {
           "type": "object",
           "properties": {
-            "ref": {
-              "type": "string",
-              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
-            },
-            "release": {
-              "type": "string",
-              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
-            },
-            "semantic_digest": {
-              "type": "string",
-              "pattern": "^sha256:[0-9a-f]{64}$"
-            },
             "block": {
               "type": "string",
-              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?)*$"
             },
-            "via": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
-              }
+            "at": {
+              "type": "string",
+              "enum": [
+                "main",
+                "after-history"
+              ]
+            },
+            "as": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
             }
           },
           "required": [
-            "ref",
-            "release",
-            "semantic_digest",
             "block",
-            "via"
+            "at"
           ],
           "additionalProperties": false
         }

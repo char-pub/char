@@ -145,7 +145,7 @@ export async function createContributionHarness(
       if (nsRes.status !== 201) throw new Error(`namespace failed: ${await nsRes.text()}`);
       const cr = await me.post(`/v1/namespaces/${ns}/creations`, {
         name,
-        type: "character",
+        type: working.type ?? "character",
         display_name: "Alice",
       });
       if (cr.status !== 201) throw new Error(`creation failed: ${await cr.text()}`);

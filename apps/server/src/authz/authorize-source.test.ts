@@ -27,9 +27,9 @@ const creation = (
   }) as const satisfies Resource;
 
 describe("managing a GitHub source binding", () => {
-  it("is limited to namespace members", () => {
+  it("is limited to the namespace owner", () => {
     expect(status(authorize(alice, "creation.manage_source", creation("owner")))).toBe(200);
-    expect(status(authorize(alice, "creation.manage_source", creation("maintainer")))).toBe(200);
+    expect(status(authorize(alice, "creation.manage_source", creation("maintainer")))).toBe(403);
     expect(status(authorize(mallory, "creation.manage_source", creation(null)))).toBe(403);
     expect(status(authorize(anon, "creation.manage_source", creation(null)))).toBe(401);
     expect(

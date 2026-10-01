@@ -1,0 +1,9 @@
+{
+  "id": "203-story-view",
+  "title": "Knowledge and actual participants filter each viewpoint",
+  "kind": "story",
+  "expect": "story",
+  "spec_refs": ["story-v1 \u00a711\u201314.2", "Story goal U2/U5"],
+  "status": "draft",
+  "notes": "Authored inputs and pre-execution assertions; no expected output has been accepted."
+}

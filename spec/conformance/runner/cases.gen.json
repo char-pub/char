@@ -1260,6 +1260,50 @@
       "input": {
         "deps": [
           {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
+          {
             "release": "rel_01h455vb4pex5vsknk084sn003",
             "visibility": "public",
             "creation": {
@@ -1392,6 +1436,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -1796,6 +1847,50 @@
             }
           },
           {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
+          {
             "release": "rel_01h455vb4pex5vsknk084sn006",
             "visibility": "public",
             "creation": {
@@ -1915,6 +2010,13 @@
             ]
           }
         },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        },
         "assemble": {
           "scenarios": [
             {
@@ -1933,7 +2035,7 @@
                   "system_role": true
                 }
               },
-              "session": {
+              "turn": {
                 "bindings": {
                   "user": {
                     "kind": "persona",
@@ -1965,7 +2067,7 @@
                   "system_role": true
                 }
               },
-              "session": {
+              "turn": {
                 "bindings": {
                   "user": {
                     "kind": "persona",
@@ -2000,7 +2102,52 @@
         "notes": "Scenario window-512: the pinned instruction alone exceeds context_window - reserve_for_output, so assembling fails with assemble.pinned_over_budget (never truncated). Scenario window-16384: the same instruction fits and is included with reason pinned."
       },
       "input": {
-        "deps": [],
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
         "root": {
           "release": "rel_01h455vb4pex5vsknk084sn001",
           "visibility": "public",
@@ -2070,6 +2217,13 @@
             }
           }
         },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        },
         "assemble": {
           "scenarios": [
             {
@@ -2088,7 +2242,7 @@
                   "system_role": true
                 }
               },
-              "session": {
+              "turn": {
                 "bindings": {
                   "user": {
                     "kind": "persona",
@@ -2114,7 +2268,7 @@
                   "system_role": true
                 }
               },
-              "session": {
+              "turn": {
                 "bindings": {
                   "user": {
                     "kind": "persona",
@@ -2146,7 +2300,59 @@
         "notes": "Synthetic card: import -> canonicalize -> resolve -> export. Lorebook entries become stable: false knowledge fragments (one had a source id, one did not); system_prompt and post_history_instructions are recorded by field name only, are not exported back (empty in the exported card) and the Loss Report says restored: false."
       },
       "input": {
-        "deps": [],
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        },
         "card": {
           "spec": "chara_card_v3",
           "spec_version": "3.0",
@@ -2686,6 +2892,50 @@
       "input": {
         "deps": [
           {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
+          {
             "release": "rel_01h455vb4pex5vsknk084sn007",
             "visibility": "public",
             "creation": {
@@ -2802,6 +3052,13 @@
             ]
           }
         },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        },
         "assemble": {
           "scenarios": [
             {
@@ -2820,7 +3077,7 @@
                   "system_role": true
                 }
               },
-              "session": {
+              "turn": {
                 "bindings": {
                   "user": {
                     "kind": "persona",
@@ -2846,7 +3103,7 @@
                   "system_role": true
                 }
               },
-              "session": {
+              "turn": {
                 "bindings": {
                   "user": {
                     "kind": "persona",
@@ -3068,6 +3325,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn004",
             "visibility": "public",
@@ -3311,6 +3612,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -3329,7 +3637,52 @@
         "notes": "Move style after history; main/reminder policy blocks retain their own origins. Disabled blocks never reach messages. The default scenario preserves existing behavior. All expected output remains subject to human review."
       },
       "input": {
-        "deps": [],
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
         "root": {
           "release": "rel_01h455vb4pex5vsknk084sn001",
           "visibility": "public",
@@ -3376,6 +3729,13 @@
             ]
           }
         },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        },
         "assemble": {
           "scenarios": [
             {
@@ -3394,20 +3754,6 @@
                   "multiple_system_messages": true
                 }
               },
-              "session": {
-                "bindings": {
-                  "user": {
-                    "kind": "persona",
-                    "display_name": "Sam"
-                  }
-                },
-                "history": [
-                  {
-                    "role": "user",
-                    "text": "Where should we go?"
-                  }
-                ]
-              },
               "preset": {
                 "creation": {
                   "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -3415,23 +3761,23 @@
                   "type": "preset",
                   "display_name": "Narrator",
                   "policy": {
-                    "version": "0-draft",
+                    "version": "1-draft",
                     "blocks": [
                       {
                         "id": "main",
                         "text": "Portray the selected cast.",
-                        "position": "main"
+                        "default_at": "main"
                       },
                       {
                         "id": "reminder",
                         "text": "Continue with the next reply.",
-                        "position": "after-history"
+                        "default_at": "after-history"
                       },
                       {
                         "id": "disabled",
                         "text": "This block must never be sent.",
-                        "position": "main",
-                        "enabled": false
+                        "enabled": false,
+                        "default_at": "main"
                       }
                     ],
                     "layout": [
@@ -3441,6 +3787,9 @@
                       "system:persona",
                       "system:world",
                       "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
                       "system:relationship",
                       "system:knowledge",
                       "system:instruction",
@@ -3463,7 +3812,21 @@
                   }
                 },
                 "release": "rel_01h455vb4pex5vsknk084sn002",
-                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+                "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+              },
+              "turn": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
               }
             },
             {
@@ -3482,7 +3845,7 @@
                   "multiple_system_messages": true
                 }
               },
-              "session": {
+              "turn": {
                 "bindings": {
                   "user": {
                     "kind": "persona",
@@ -3516,7 +3879,52 @@
         "notes": "knowledge-cap skips only knowledge; pinned-region-cap fails preset_region_over_budget; fixed-over-budget fails fixed_over_budget; missing-system and split-system-unsupported fail preset_incompatible. Snapshots are canonicalized and digest-checked before assembly. These are draft cases, not accepted expected outputs."
       },
       "input": {
-        "deps": [],
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
         "root": {
           "release": "rel_01h455vb4pex5vsknk084sn001",
           "visibility": "public",
@@ -3563,6 +3971,13 @@
             ]
           }
         },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        },
         "assemble": {
           "scenarios": [
             {
@@ -3581,20 +3996,6 @@
                   "multiple_system_messages": true
                 }
               },
-              "session": {
-                "bindings": {
-                  "user": {
-                    "kind": "persona",
-                    "display_name": "Sam"
-                  }
-                },
-                "history": [
-                  {
-                    "role": "user",
-                    "text": "Where should we go?"
-                  }
-                ]
-              },
               "preset": {
                 "creation": {
                   "id": "cr_01h455vb4pex5vsknk084sn003",
@@ -3602,23 +4003,23 @@
                   "type": "preset",
                   "display_name": "Narrator",
                   "policy": {
-                    "version": "0-draft",
+                    "version": "1-draft",
                     "blocks": [
                       {
                         "id": "main",
                         "text": "Portray the selected cast.",
-                        "position": "main"
+                        "default_at": "main"
                       },
                       {
                         "id": "reminder",
                         "text": "Continue with the next reply.",
-                        "position": "after-history"
+                        "default_at": "after-history"
                       },
                       {
                         "id": "disabled",
                         "text": "This block must never be sent.",
-                        "position": "main",
-                        "enabled": false
+                        "enabled": false,
+                        "default_at": "main"
                       }
                     ],
                     "layout": [
@@ -3628,6 +4029,9 @@
                       "system:persona",
                       "system:world",
                       "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
                       "system:relationship",
                       "system:knowledge",
                       "system:instruction",
@@ -3653,7 +4057,21 @@
                   }
                 },
                 "release": "rel_01h455vb4pex5vsknk084sn003",
-                "semantic_digest": "sha256:6b80da6a43c162f5b13ffc0b06e466574b9e672c301d94cee3df03cb74f7e2df"
+                "semantic_digest": "sha256:c47e4b753cd6608d459553f56228f10e0a72ced0c8fb17d8e3a49c79b53ac09f"
+              },
+              "turn": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
               }
             },
             {
@@ -3672,20 +4090,6 @@
                   "multiple_system_messages": true
                 }
               },
-              "session": {
-                "bindings": {
-                  "user": {
-                    "kind": "persona",
-                    "display_name": "Sam"
-                  }
-                },
-                "history": [
-                  {
-                    "role": "user",
-                    "text": "Where should we go?"
-                  }
-                ]
-              },
               "preset": {
                 "creation": {
                   "id": "cr_01h455vb4pex5vsknk084sn004",
@@ -3693,23 +4097,23 @@
                   "type": "preset",
                   "display_name": "Narrator",
                   "policy": {
-                    "version": "0-draft",
+                    "version": "1-draft",
                     "blocks": [
                       {
                         "id": "main",
                         "text": "Portray the selected cast.",
-                        "position": "main"
+                        "default_at": "main"
                       },
                       {
                         "id": "reminder",
                         "text": "Continue with the next reply.",
-                        "position": "after-history"
+                        "default_at": "after-history"
                       },
                       {
                         "id": "disabled",
                         "text": "This block must never be sent.",
-                        "position": "main",
-                        "enabled": false
+                        "enabled": false,
+                        "default_at": "main"
                       }
                     ],
                     "layout": [
@@ -3719,6 +4123,9 @@
                       "system:persona",
                       "system:world",
                       "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
                       "system:relationship",
                       "system:knowledge",
                       "system:instruction",
@@ -3744,7 +4151,21 @@
                   }
                 },
                 "release": "rel_01h455vb4pex5vsknk084sn004",
-                "semantic_digest": "sha256:7f64268893799a335b62313b1d7e559051fadca87008c58e1f00b9f18a08d6cc"
+                "semantic_digest": "sha256:7b2fc65b12ef648e7a2f98ba4ec6d0f9c15321d6dac1ff8551bc597eb9ee68ff"
+              },
+              "turn": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
               }
             },
             {
@@ -3763,20 +4184,6 @@
                   "multiple_system_messages": true
                 }
               },
-              "session": {
-                "bindings": {
-                  "user": {
-                    "kind": "persona",
-                    "display_name": "Sam"
-                  }
-                },
-                "history": [
-                  {
-                    "role": "user",
-                    "text": "Where should we go?"
-                  }
-                ]
-              },
               "preset": {
                 "creation": {
                   "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -3784,23 +4191,23 @@
                   "type": "preset",
                   "display_name": "Narrator",
                   "policy": {
-                    "version": "0-draft",
+                    "version": "1-draft",
                     "blocks": [
                       {
                         "id": "main",
                         "text": "Portray the selected cast.",
-                        "position": "main"
+                        "default_at": "main"
                       },
                       {
                         "id": "reminder",
                         "text": "Continue with the next reply.",
-                        "position": "after-history"
+                        "default_at": "after-history"
                       },
                       {
                         "id": "disabled",
                         "text": "This block must never be sent.",
-                        "position": "main",
-                        "enabled": false
+                        "enabled": false,
+                        "default_at": "main"
                       }
                     ],
                     "layout": [
@@ -3810,6 +4217,9 @@
                       "system:persona",
                       "system:world",
                       "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
                       "system:relationship",
                       "system:knowledge",
                       "system:instruction",
@@ -3832,7 +4242,21 @@
                   }
                 },
                 "release": "rel_01h455vb4pex5vsknk084sn002",
-                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+                "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+              },
+              "turn": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
               }
             },
             {
@@ -3850,20 +4274,6 @@
                   "multiple_system_messages": true
                 }
               },
-              "session": {
-                "bindings": {
-                  "user": {
-                    "kind": "persona",
-                    "display_name": "Sam"
-                  }
-                },
-                "history": [
-                  {
-                    "role": "user",
-                    "text": "Where should we go?"
-                  }
-                ]
-              },
               "preset": {
                 "creation": {
                   "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -3871,23 +4281,23 @@
                   "type": "preset",
                   "display_name": "Narrator",
                   "policy": {
-                    "version": "0-draft",
+                    "version": "1-draft",
                     "blocks": [
                       {
                         "id": "main",
                         "text": "Portray the selected cast.",
-                        "position": "main"
+                        "default_at": "main"
                       },
                       {
                         "id": "reminder",
                         "text": "Continue with the next reply.",
-                        "position": "after-history"
+                        "default_at": "after-history"
                       },
                       {
                         "id": "disabled",
                         "text": "This block must never be sent.",
-                        "position": "main",
-                        "enabled": false
+                        "enabled": false,
+                        "default_at": "main"
                       }
                     ],
                     "layout": [
@@ -3897,6 +4307,9 @@
                       "system:persona",
                       "system:world",
                       "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
                       "system:relationship",
                       "system:knowledge",
                       "system:instruction",
@@ -3919,7 +4332,21 @@
                   }
                 },
                 "release": "rel_01h455vb4pex5vsknk084sn002",
-                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+                "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+              },
+              "turn": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
               }
             },
             {
@@ -3938,20 +4365,6 @@
                   "multiple_system_messages": false
                 }
               },
-              "session": {
-                "bindings": {
-                  "user": {
-                    "kind": "persona",
-                    "display_name": "Sam"
-                  }
-                },
-                "history": [
-                  {
-                    "role": "user",
-                    "text": "Where should we go?"
-                  }
-                ]
-              },
               "preset": {
                 "creation": {
                   "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -3959,23 +4372,23 @@
                   "type": "preset",
                   "display_name": "Narrator",
                   "policy": {
-                    "version": "0-draft",
+                    "version": "1-draft",
                     "blocks": [
                       {
                         "id": "main",
                         "text": "Portray the selected cast.",
-                        "position": "main"
+                        "default_at": "main"
                       },
                       {
                         "id": "reminder",
                         "text": "Continue with the next reply.",
-                        "position": "after-history"
+                        "default_at": "after-history"
                       },
                       {
                         "id": "disabled",
                         "text": "This block must never be sent.",
-                        "position": "main",
-                        "enabled": false
+                        "enabled": false,
+                        "default_at": "main"
                       }
                     ],
                     "layout": [
@@ -3985,6 +4398,9 @@
                       "system:persona",
                       "system:world",
                       "system:scenario",
+                      "system:scene",
+                      "system:story",
+                      "system:sources",
                       "system:relationship",
                       "system:knowledge",
                       "system:instruction",
@@ -4007,7 +4423,21 @@
                   }
                 },
                 "release": "rel_01h455vb4pex5vsknk084sn002",
-                "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+                "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+              },
+              "turn": {
+                "bindings": {
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Sam"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "Where should we go?"
+                  }
+                ]
               }
             }
           ]
@@ -4030,6 +4460,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn003",
             "visibility": "public",
@@ -4160,6 +4634,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -4179,6 +4660,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn003",
             "visibility": "public",
@@ -4312,6 +4837,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -4331,6 +4863,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn004",
             "visibility": "private",
@@ -4513,6 +5089,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -4532,6 +5115,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn004",
             "visibility": "public",
@@ -4835,6 +5462,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -4854,6 +5488,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn004",
             "visibility": "public",
@@ -5042,6 +5720,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -5061,6 +5746,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn006",
             "visibility": "public",
@@ -5180,6 +5909,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -5199,7 +5935,52 @@
         "notes": "The avatar upload is still processing."
       },
       "input": {
-        "deps": [],
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
         "root": {
           "release": "rel_01h455vb4pex5vsknk084sn001",
           "visibility": "public",
@@ -5269,6 +6050,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -5289,6 +6077,50 @@
       },
       "input": {
         "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          },
           {
             "release": "rel_01h455vb4pex5vsknk084sn003",
             "visibility": "public",
@@ -5420,6 +6252,13 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}
@@ -5439,7 +6278,52 @@
         "notes": "Label 1.0.0 already points to other content."
       },
       "input": {
-        "deps": [],
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
         "root": {
           "release": "rel_01h455vb4pex5vsknk084sn001",
           "visibility": "public",
@@ -5511,6 +6395,3857 @@
           "ownerNamespaces": [
             "djj"
           ]
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "201-open-story",
+      "meta": {
+        "id": "201-open-story",
+        "title": "Open scene needs no variables or branching",
+        "kind": "story",
+        "expect": "story",
+        "spec_refs": [
+          "story-v1 §9.2–9.5",
+          "story-v1 §14.2"
+        ],
+        "status": "draft",
+        "notes": "Input and semantic assertions authored from specification before execution; expected output awaits separate human review."
+      },
+      "input": {
+        "deps": [],
+        "story": {
+          "kind": "evaluation",
+          "story": {
+            "version": 1,
+            "scenes": [
+              {
+                "id": "room",
+                "title": "Room"
+              }
+            ]
+          },
+          "cast": [
+            "alice",
+            "bob"
+          ],
+          "operations": [
+            {
+              "op": "input",
+              "text": "I climb through the window instead of choosing an option."
+            },
+            {
+              "op": "available"
+            },
+            {
+              "op": "present",
+              "present": [
+                "bob"
+              ]
+            }
+          ]
+        },
+        "assertions": {
+          "initial": {
+            "state": {
+              "start": "default",
+              "scene": "room",
+              "present": [
+                "alice",
+                "bob"
+              ],
+              "visited": [
+                "room"
+              ],
+              "reached": [],
+              "ended": [],
+              "happened": [],
+              "vars": {},
+              "knowing": {},
+              "stopped": false
+            }
+          },
+          "steps": [
+            {
+              "index": 0,
+              "state": {
+                "start": "default",
+                "scene": "room",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "room"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {},
+                "knowing": {},
+                "stopped": false
+              },
+              "outcome": {
+                "input_ignored": true
+              }
+            },
+            {
+              "index": 1,
+              "state": {
+                "start": "default",
+                "scene": "room",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "room"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {},
+                "knowing": {},
+                "stopped": false
+              },
+              "outcome": {
+                "targets": [
+                  "scene/room"
+                ],
+                "choices": []
+              }
+            },
+            {
+              "index": 2,
+              "state": {
+                "start": "default",
+                "scene": "room",
+                "present": [
+                  "bob"
+                ],
+                "visited": [
+                  "room"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {},
+                "knowing": {},
+                "stopped": false
+              }
+            }
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "202-story-lifecycle",
+      "meta": {
+        "id": "202-story-lifecycle",
+        "title": "Explicit confirmations, unknown judgments, bounded effects and stop",
+        "kind": "story",
+        "expect": "story",
+        "spec_refs": [
+          "story-v1 §9.2–9.5",
+          "story-v1 §14.2"
+        ],
+        "status": "draft",
+        "notes": "Input and semantic assertions authored from specification before execution; expected output awaits separate human review."
+      },
+      "input": {
+        "deps": [],
+        "story": {
+          "kind": "evaluation",
+          "story": {
+            "version": 1,
+            "scenes": [
+              {
+                "id": "lobby",
+                "title": "Lobby",
+                "cast": [
+                  "alice",
+                  "bob"
+                ],
+                "choices": [
+                  "hand-over",
+                  "keep",
+                  "impossible"
+                ]
+              },
+              {
+                "id": "back",
+                "title": "Back door",
+                "cast": [
+                  "alice"
+                ],
+                "when": {
+                  "reached": "beat/trust"
+                }
+              }
+            ],
+            "vars": {
+              "trust": {
+                "type": "int",
+                "min": 0,
+                "max": 100,
+                "init": 0,
+                "description": "Trust points"
+              },
+              "open": {
+                "type": "bool",
+                "init": false,
+                "description": "The road is open"
+              },
+              "mood": {
+                "type": "enum",
+                "values": [
+                  "calm",
+                  "tense"
+                ],
+                "init": "calm",
+                "description": "Mood"
+              },
+              "inventory": {
+                "type": "set",
+                "of": "item",
+                "init": [
+                  "letter"
+                ],
+                "description": "Held items"
+              },
+              "marks": {
+                "type": "set",
+                "values": [
+                  "copied",
+                  "sealed"
+                ],
+                "init": [],
+                "description": "Letter marks"
+              }
+            },
+            "items": [
+              {
+                "id": "letter",
+                "title": "Letter",
+                "description": "A sealed letter"
+              }
+            ],
+            "knowing": {
+              "#secret": {
+                "start": {
+                  "knows": [
+                    "alice"
+                  ],
+                  "not": [
+                    "bob"
+                  ]
+                },
+                "enter": {
+                  "back": {
+                    "knows": [
+                      "bob"
+                    ]
+                  }
+                }
+              }
+            },
+            "choices": [
+              {
+                "id": "hand-over",
+                "label": "Hand over the letter",
+                "intent": "Give Alice the original letter",
+                "when": {
+                  "has": [
+                    "var/inventory",
+                    "item/letter"
+                  ]
+                }
+              },
+              {
+                "id": "keep",
+                "label": "Keep it",
+                "intent": "Keep the letter"
+              },
+              {
+                "id": "impossible",
+                "label": "Impossible promise",
+                "intent": "Trust is above its maximum",
+                "when": {
+                  "cmp": [
+                    "var/trust",
+                    ">",
+                    100
+                  ]
+                }
+              }
+            ],
+            "beats": [
+              {
+                "id": "trust",
+                "title": "Trust",
+                "description": "Alice chooses to trust the visitor",
+                "effects": [
+                  {
+                    "add": [
+                      "var/trust",
+                      20
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "refuse",
+                "title": "Refusal",
+                "description": "The visitor explicitly refuses",
+                "when": {
+                  "not": {
+                    "judge": "The visitor agreed"
+                  }
+                },
+                "effects": [
+                  {
+                    "set": [
+                      "var/mood",
+                      "tense"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "copy",
+                "title": "Copy the letter",
+                "description": "The visitor makes a copy",
+                "effects": [
+                  {
+                    "put": [
+                      "var/marks",
+                      "copied"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "ceiling",
+                "title": "Trust ceiling",
+                "description": "The trust score reaches its upper bound",
+                "effects": [
+                  {
+                    "add": [
+                      "var/trust",
+                      200
+                    ]
+                  },
+                  {
+                    "drop": [
+                      "var/inventory",
+                      "item/letter"
+                    ]
+                  },
+                  {
+                    "put": [
+                      "var/inventory",
+                      "item/letter"
+                    ]
+                  },
+                  {
+                    "put": [
+                      "var/inventory",
+                      "item/letter"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "floor",
+                "title": "Trust floor",
+                "description": "The trust score reaches its lower bound",
+                "effects": [
+                  {
+                    "add": [
+                      "var/trust",
+                      -200
+                    ]
+                  }
+                ]
+              }
+            ],
+            "events": [
+              {
+                "id": "old-letter",
+                "kind": "background",
+                "title": "Earlier letter",
+                "description": "A letter arrived yesterday"
+              },
+              {
+                "id": "road",
+                "kind": "planned",
+                "title": "Road opens",
+                "description": "The road becomes passable",
+                "effects": [
+                  {
+                    "set": [
+                      "var/open",
+                      true
+                    ]
+                  }
+                ]
+              }
+            ],
+            "endings": [
+              {
+                "id": "stay",
+                "title": "Stay",
+                "description": "The visit continues",
+                "after": "continue",
+                "priority": 1
+              },
+              {
+                "id": "leave",
+                "title": "Leave",
+                "description": "The visit ends",
+                "when": {
+                  "is": "var/open"
+                },
+                "after": "stop",
+                "priority": 5
+              }
+            ],
+            "plotlines": [
+              {
+                "id": "telling",
+                "title": "Suggested telling",
+                "scenes": [
+                  "lobby",
+                  "back"
+                ],
+                "beats": [
+                  "trust",
+                  "copy"
+                ]
+              }
+            ],
+            "timelines": [
+              {
+                "id": "chronology",
+                "title": "Authored chronology",
+                "order": [
+                  "old-letter",
+                  "road",
+                  "scene/lobby",
+                  "scene/back"
+                ]
+              }
+            ]
+          },
+          "cast": [
+            "alice",
+            "bob"
+          ],
+          "operations": [
+            {
+              "op": "input",
+              "text": "I copy the letter, then hand over the original."
+            },
+            {
+              "op": "available"
+            },
+            {
+              "op": "enter",
+              "scene": "back"
+            },
+            {
+              "op": "condition",
+              "condition": {
+                "not": {
+                  "judge": "The visitor agreed"
+                }
+              },
+              "target": "beat/refuse"
+            },
+            {
+              "op": "confirm",
+              "target": "beat/refuse"
+            },
+            {
+              "op": "confirm",
+              "target": "beat/refuse",
+              "judgments": [
+                {
+                  "target": "beat/refuse",
+                  "path": "/when/not",
+                  "result": "undetermined",
+                  "provider": {
+                    "name": "authored-fixture",
+                    "version": "1"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "confirm",
+              "target": "beat/refuse",
+              "judgments": [
+                {
+                  "target": "beat/refuse",
+                  "path": "/when/not",
+                  "result": "true",
+                  "provider": {
+                    "name": "authored-fixture",
+                    "version": "1"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "condition",
+              "condition": {
+                "all": [
+                  {
+                    "judge": "Unanswered"
+                  },
+                  {
+                    "any": []
+                  }
+                ]
+              }
+            },
+            {
+              "op": "condition",
+              "condition": {
+                "any": [
+                  {
+                    "judge": "Unanswered"
+                  },
+                  {
+                    "all": []
+                  }
+                ]
+              }
+            },
+            {
+              "op": "confirm",
+              "target": "beat/copy"
+            },
+            {
+              "op": "confirm",
+              "target": "beat/trust"
+            },
+            {
+              "op": "confirm",
+              "target": "beat/trust"
+            },
+            {
+              "op": "enter",
+              "scene": "back"
+            },
+            {
+              "op": "present",
+              "present": [
+                "alice",
+                "bob"
+              ]
+            },
+            {
+              "op": "condition",
+              "condition": {
+                "knows": {
+                  "who": "bob",
+                  "info": "#secret"
+                }
+              }
+            },
+            {
+              "op": "confirm",
+              "target": "beat/refuse",
+              "judgments": [
+                {
+                  "target": "beat/refuse",
+                  "path": "/when/not",
+                  "result": "false",
+                  "provider": {
+                    "name": "authored-fixture",
+                    "version": "1"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "confirm",
+              "target": "beat/ceiling"
+            },
+            {
+              "op": "confirm",
+              "target": "beat/floor"
+            },
+            {
+              "op": "confirm",
+              "target": "event/road"
+            },
+            {
+              "op": "confirm",
+              "target": "ending/stay"
+            },
+            {
+              "op": "enter",
+              "scene": "lobby"
+            },
+            {
+              "op": "confirm",
+              "target": "ending/leave"
+            },
+            {
+              "op": "enter",
+              "scene": "back"
+            },
+            {
+              "op": "confirm",
+              "target": "beat/trust"
+            },
+            {
+              "op": "available"
+            },
+            {
+              "op": "validate",
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 101,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              }
+            },
+            {
+              "op": "validate",
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 1.5,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              }
+            },
+            {
+              "op": "validate",
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": "false",
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              }
+            },
+            {
+              "op": "validate",
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "missing",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              }
+            },
+            {
+              "op": "validate",
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "missing"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              }
+            },
+            {
+              "op": "validate",
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": [
+                    "letter"
+                  ]
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              }
+            }
+          ]
+        },
+        "assertions": {
+          "initial": {
+            "state": {
+              "start": "default",
+              "scene": "lobby",
+              "present": [
+                "alice",
+                "bob"
+              ],
+              "visited": [
+                "lobby"
+              ],
+              "reached": [],
+              "ended": [],
+              "happened": [],
+              "vars": {
+                "trust": 0,
+                "open": false,
+                "mood": "calm",
+                "inventory": [
+                  "letter"
+                ],
+                "marks": []
+              },
+              "knowing": {
+                "#secret": [
+                  "alice"
+                ]
+              },
+              "stopped": false
+            }
+          },
+          "steps": [
+            {
+              "index": 0,
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              },
+              "outcome": {
+                "input_ignored": true
+              }
+            },
+            {
+              "index": 1,
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              },
+              "outcome": {
+                "choices": [
+                  "hand-over",
+                  "keep"
+                ]
+              }
+            },
+            {
+              "index": 2,
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              },
+              "error": {
+                "code": "story.condition_unsatisfied",
+                "subject": "scene/back"
+              }
+            },
+            {
+              "index": 3,
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              },
+              "outcome": {
+                "truth": "unknown"
+              }
+            },
+            {
+              "index": 4,
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              },
+              "error": {
+                "code": "story.condition_unsatisfied",
+                "subject": "beat/refuse"
+              }
+            },
+            {
+              "index": 5,
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              },
+              "error": {
+                "code": "story.condition_unsatisfied",
+                "subject": "beat/refuse"
+              }
+            },
+            {
+              "index": 6,
+              "state": {
+                "start": "default",
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "visited": [
+                  "lobby"
+                ],
+                "reached": [],
+                "ended": [],
+                "happened": [],
+                "vars": {
+                  "trust": 0,
+                  "open": false,
+                  "mood": "calm",
+                  "inventory": [
+                    "letter"
+                  ],
+                  "marks": []
+                },
+                "knowing": {
+                  "#secret": [
+                    "alice"
+                  ]
+                },
+                "stopped": false
+              },
+              "error": {
+                "code": "story.condition_unsatisfied",
+                "subject": "beat/refuse"
+              }
+            },
+            {
+              "index": 7,
+              "outcome": {
+                "truth": false
+              }
+            },
+            {
+              "index": 8,
+              "outcome": {
+                "truth": true
+              }
+            },
+            {
+              "index": 9,
+              "state": {
+                "reached": [
+                  "copy"
+                ],
+                "vars": {
+                  "marks": [
+                    "copied"
+                  ],
+                  "trust": 0
+                }
+              }
+            },
+            {
+              "index": 10,
+              "state": {
+                "reached": [
+                  "copy",
+                  "trust"
+                ],
+                "vars": {
+                  "trust": 20
+                }
+              }
+            },
+            {
+              "index": 11,
+              "error": {
+                "code": "story.already_confirmed",
+                "subject": "beat/trust"
+              },
+              "state": {
+                "reached": [
+                  "copy",
+                  "trust"
+                ],
+                "vars": {
+                  "trust": 20
+                }
+              }
+            },
+            {
+              "index": 12,
+              "state": {
+                "scene": "back",
+                "visited": [
+                  "lobby",
+                  "back"
+                ],
+                "present": [
+                  "alice"
+                ],
+                "knowing": {
+                  "#secret": [
+                    "alice",
+                    "bob"
+                  ]
+                }
+              }
+            },
+            {
+              "index": 13,
+              "state": {
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "knowing": {
+                  "#secret": [
+                    "alice",
+                    "bob"
+                  ]
+                }
+              }
+            },
+            {
+              "index": 14,
+              "outcome": {
+                "truth": true
+              }
+            },
+            {
+              "index": 15,
+              "state": {
+                "vars": {
+                  "mood": "tense"
+                }
+              }
+            },
+            {
+              "index": 16,
+              "state": {
+                "vars": {
+                  "trust": 100,
+                  "inventory": [
+                    "letter"
+                  ]
+                }
+              }
+            },
+            {
+              "index": 17,
+              "state": {
+                "vars": {
+                  "trust": 0
+                }
+              }
+            },
+            {
+              "index": 18,
+              "state": {
+                "happened": [
+                  "road"
+                ],
+                "vars": {
+                  "open": true
+                }
+              }
+            },
+            {
+              "index": 19,
+              "state": {
+                "ended": [
+                  "stay"
+                ],
+                "stopped": false
+              }
+            },
+            {
+              "index": 20,
+              "state": {
+                "scene": "lobby",
+                "stopped": false
+              }
+            },
+            {
+              "index": 21,
+              "state": {
+                "ended": [
+                  "stay",
+                  "leave"
+                ],
+                "stopped": true
+              }
+            },
+            {
+              "index": 22,
+              "error": {
+                "code": "story.stopped",
+                "subject": "lobby"
+              },
+              "state": {
+                "scene": "lobby",
+                "stopped": true
+              }
+            },
+            {
+              "index": 23,
+              "error": {
+                "code": "story.stopped",
+                "subject": "lobby"
+              },
+              "state": {
+                "stopped": true
+              }
+            },
+            {
+              "index": 24,
+              "outcome": {
+                "targets": [],
+                "choices": []
+              },
+              "state": {
+                "stopped": true
+              }
+            },
+            {
+              "index": 25,
+              "error": {
+                "code": "story.invalid_state",
+                "subject": "vars.trust"
+              },
+              "state": {
+                "stopped": true
+              }
+            },
+            {
+              "index": 26,
+              "error": {
+                "code": "story.invalid_state",
+                "subject": "vars.trust"
+              },
+              "state": {
+                "stopped": true
+              }
+            },
+            {
+              "index": 27,
+              "error": {
+                "code": "story.invalid_state",
+                "subject": "vars.open"
+              },
+              "state": {
+                "stopped": true
+              }
+            },
+            {
+              "index": 28,
+              "error": {
+                "code": "story.invalid_state",
+                "subject": "vars.mood"
+              },
+              "state": {
+                "stopped": true
+              }
+            },
+            {
+              "index": 29,
+              "error": {
+                "code": "story.invalid_state",
+                "subject": "vars.inventory"
+              },
+              "state": {
+                "stopped": true
+              }
+            },
+            {
+              "index": 30,
+              "error": {
+                "code": "story.invalid_state",
+                "subject": "vars.marks"
+              },
+              "state": {
+                "stopped": true
+              }
+            }
+          ]
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "203-story-view",
+      "meta": {
+        "id": "203-story-view",
+        "title": "Knowledge and actual participants filter each viewpoint",
+        "kind": "story",
+        "expect": "story",
+        "spec_refs": [
+          "story-v1 §11–14.2",
+          "Story goal U2/U5"
+        ],
+        "status": "draft",
+        "notes": "Authored inputs and pre-execution assertions; no expected output has been accepted."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
+        "story": {
+          "kind": "view",
+          "scenarios": [
+            {
+              "name": "bob-before-entry",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                }
+              }
+            },
+            {
+              "name": "bob-follows-alice",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "back",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby",
+                    "back"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice",
+                      "bob"
+                    ]
+                  },
+                  "stopped": false
+                }
+              }
+            },
+            {
+              "name": "bob-not-present",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "back",
+                "present": [
+                  "alice"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby",
+                    "back"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice",
+                      "bob"
+                    ]
+                  },
+                  "stopped": false
+                }
+              }
+            }
+          ]
+        },
+        "assertions": {
+          "scenarios": [
+            {
+              "name": "bob-before-entry",
+              "fragments": {
+                "@portable/door#secret~root": {
+                  "status": "withheld",
+                  "reason": "view.not_knowing"
+                },
+                "@portable/door#alice-only~root": {
+                  "status": "withheld",
+                  "reason": "view.private"
+                },
+                "@portable/door#public~root": {
+                  "status": "visible"
+                }
+              }
+            },
+            {
+              "name": "bob-follows-alice",
+              "fragments": {
+                "@portable/door#secret~root": {
+                  "status": "visible"
+                },
+                "@portable/door#alice-only~root": {
+                  "status": "withheld",
+                  "reason": "view.private"
+                }
+              }
+            },
+            {
+              "name": "bob-not-present",
+              "fragments": {
+                "@portable/door#secret~root": {
+                  "status": "visible"
+                }
+              }
+            }
+          ]
+        },
+        "root": {
+          "release": "rel_01j00000000000000000000203",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01j00000000000000000000203",
+            "ref": "@portable/door",
+            "type": "scenario",
+            "display_name": "A door with two viewpoints",
+            "meta": {
+              "default_locale": "en",
+              "rating": "general",
+              "rights": "original",
+              "license": "CC0-1.0"
+            },
+            "cast": [
+              {
+                "key": "alice",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Host",
+                "goal": "ALICE_PRIVATE_GOAL"
+              },
+              {
+                "key": "bob",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Visitor",
+                "goal": "BOB_PRIVATE_GOAL"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "required",
+                "kind": "instruction",
+                "stable": true,
+                "importance": "pinned",
+                "content": {
+                  "type": "text",
+                  "text": "REQUIRED_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "public",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "manual"
+                },
+                "content": {
+                  "type": "text",
+                  "text": "DIRECT_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "secret",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "semantic"
+                },
+                "description": "SECRET_CANDIDATE_DESCRIPTION",
+                "content": {
+                  "type": "text",
+                  "text": "SECRET_KNOWN_BODY"
+                }
+              },
+              {
+                "id": "alice-only",
+                "kind": "knowledge",
+                "stable": true,
+                "visibility": {
+                  "scope": "private",
+                  "to": [
+                    "{{cast:alice}}"
+                  ]
+                },
+                "activation": {
+                  "mode": "semantic"
+                },
+                "description": "ALICE_PRIVATE_CANDIDATE",
+                "content": {
+                  "type": "text",
+                  "text": "ALICE_PRIVATE_BODY"
+                }
+              }
+            ],
+            "story": {
+              "version": 1,
+              "scenes": [
+                {
+                  "id": "lobby",
+                  "title": "Lobby",
+                  "cast": [
+                    "alice",
+                    "bob"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                },
+                {
+                  "id": "back",
+                  "title": "Back door",
+                  "cast": [
+                    "alice"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                }
+              ],
+              "knowing": {
+                "#secret": {
+                  "start": {
+                    "knows": [
+                      "alice"
+                    ],
+                    "not": [
+                      "bob"
+                    ]
+                  },
+                  "enter": {
+                    "back": {
+                      "knows": [
+                        "bob"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "204-story-context",
+      "meta": {
+        "id": "204-story-context",
+        "title": "Filtered catalog and actual messages follow the same view",
+        "kind": "story",
+        "expect": "story",
+        "spec_refs": [
+          "story-v1 §11–14.2",
+          "Story goal U2/U5"
+        ],
+        "status": "draft",
+        "notes": "Authored inputs and pre-execution assertions; no expected output has been accepted."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
+        "story": {
+          "kind": "context",
+          "scenarios": [
+            {
+              "name": "bob-before-entry",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                }
+              },
+              "discovery": true
+            },
+            {
+              "name": "bob-follows-alice",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "back",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby",
+                    "back"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice",
+                      "bob"
+                    ]
+                  },
+                  "stopped": false
+                }
+              },
+              "discovery": true,
+              "selection": [
+                {
+                  "fragment": "@portable/door#secret~root"
+                }
+              ]
+            },
+            {
+              "name": "bob-not-present",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "back",
+                "present": [
+                  "alice"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby",
+                    "back"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice",
+                      "bob"
+                    ]
+                  },
+                  "stopped": false
+                }
+              },
+              "discovery": true
+            },
+            {
+              "name": "bob-skip-discovery",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                }
+              },
+              "discovery": false,
+              "fallback": "skip"
+            }
+          ]
+        },
+        "assertions": {
+          "scenarios": [
+            {
+              "name": "bob-before-entry",
+              "messages_include": [
+                "REQUIRED_VISIBLE_BODY",
+                "DIRECT_VISIBLE_BODY",
+                "BOB_PRIVATE_BINDING"
+              ],
+              "messages_exclude": [
+                "SECRET_KNOWN_BODY",
+                "ALICE_PRIVATE_BODY",
+                "ALICE_PRIVATE_BINDING",
+                "ALICE_PRIVATE_GOAL"
+              ],
+              "selector_exclude": [
+                "SECRET_CANDIDATE_DESCRIPTION",
+                "ALICE_PRIVATE_CANDIDATE",
+                "SECRET_KNOWN_BODY"
+              ]
+            },
+            {
+              "name": "bob-follows-alice",
+              "messages_include": [
+                "REQUIRED_VISIBLE_BODY",
+                "DIRECT_VISIBLE_BODY",
+                "SECRET_KNOWN_BODY",
+                "BOB_PRIVATE_BINDING"
+              ],
+              "messages_exclude": [
+                "ALICE_PRIVATE_BODY",
+                "ALICE_PRIVATE_BINDING",
+                "ALICE_PRIVATE_GOAL"
+              ],
+              "selector_include": [
+                "SECRET_CANDIDATE_DESCRIPTION"
+              ],
+              "selector_exclude": [
+                "ALICE_PRIVATE_CANDIDATE",
+                "SECRET_KNOWN_BODY"
+              ]
+            },
+            {
+              "name": "bob-not-present",
+              "messages_include": [
+                "REQUIRED_VISIBLE_BODY",
+                "DIRECT_VISIBLE_BODY"
+              ],
+              "messages_exclude": [
+                "BOB_PRIVATE_BINDING",
+                "BOB_PRIVATE_GOAL",
+                "ALICE_PRIVATE_BODY",
+                "ALICE_PRIVATE_BINDING"
+              ],
+              "selector_exclude": [
+                "ALICE_PRIVATE_CANDIDATE",
+                "SECRET_KNOWN_BODY"
+              ]
+            },
+            {
+              "name": "bob-skip-discovery",
+              "messages_include": [
+                "REQUIRED_VISIBLE_BODY",
+                "DIRECT_VISIBLE_BODY",
+                "BOB_PRIVATE_BINDING"
+              ],
+              "messages_exclude": [
+                "SECRET_KNOWN_BODY",
+                "ALICE_PRIVATE_BODY",
+                "ALICE_PRIVATE_BINDING",
+                "ALICE_PRIVATE_GOAL"
+              ],
+              "selector_exclude": [
+                "SECRET_CANDIDATE_DESCRIPTION",
+                "ALICE_PRIVATE_CANDIDATE",
+                "SECRET_KNOWN_BODY"
+              ]
+            }
+          ]
+        },
+        "root": {
+          "release": "rel_01j00000000000000000000203",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01j00000000000000000000203",
+            "ref": "@portable/door",
+            "type": "scenario",
+            "display_name": "A door with two viewpoints",
+            "meta": {
+              "default_locale": "en",
+              "rating": "general",
+              "rights": "original",
+              "license": "CC0-1.0"
+            },
+            "cast": [
+              {
+                "key": "alice",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Host",
+                "goal": "ALICE_PRIVATE_GOAL"
+              },
+              {
+                "key": "bob",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Visitor",
+                "goal": "BOB_PRIVATE_GOAL"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "required",
+                "kind": "instruction",
+                "stable": true,
+                "importance": "pinned",
+                "content": {
+                  "type": "text",
+                  "text": "REQUIRED_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "public",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "manual"
+                },
+                "content": {
+                  "type": "text",
+                  "text": "DIRECT_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "secret",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "semantic"
+                },
+                "description": "SECRET_CANDIDATE_DESCRIPTION",
+                "content": {
+                  "type": "text",
+                  "text": "SECRET_KNOWN_BODY"
+                }
+              },
+              {
+                "id": "alice-only",
+                "kind": "knowledge",
+                "stable": true,
+                "visibility": {
+                  "scope": "private",
+                  "to": [
+                    "{{cast:alice}}"
+                  ]
+                },
+                "activation": {
+                  "mode": "semantic"
+                },
+                "description": "ALICE_PRIVATE_CANDIDATE",
+                "content": {
+                  "type": "text",
+                  "text": "ALICE_PRIVATE_BODY"
+                }
+              }
+            ],
+            "story": {
+              "version": 1,
+              "scenes": [
+                {
+                  "id": "lobby",
+                  "title": "Lobby",
+                  "cast": [
+                    "alice",
+                    "bob"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                },
+                {
+                  "id": "back",
+                  "title": "Back door",
+                  "cast": [
+                    "alice"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                }
+              ],
+              "knowing": {
+                "#secret": {
+                  "start": {
+                    "knows": [
+                      "alice"
+                    ],
+                    "not": [
+                      "bob"
+                    ]
+                  },
+                  "enter": {
+                    "back": {
+                      "knows": [
+                        "bob"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "205-progressive-source",
+      "meta": {
+        "id": "205-progressive-source",
+        "title": "Progressive group discovery and exact source section loading",
+        "kind": "story",
+        "expect": "story",
+        "spec_refs": [
+          "story-v1 §3.2",
+          "story-v1 §13–14.2",
+          "Story goal U2/U5/U7"
+        ],
+        "status": "draft",
+        "notes": "Groups contain fragments; Source sections are a separate work-level branch. Handwritten semantic assertions, no accepted expected output."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
+        "story": {
+          "kind": "context",
+          "scenarios": [
+            {
+              "name": "descriptions-only",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {},
+                  "stopped": false
+                }
+              },
+              "discovery": true,
+              "source_texts": {
+                "@portable/library#asset/guide/default~root": "﻿# Door\r\nSELECTED_SOURCE_BODY Café  \r\n# River\r\nUNSELECTED_SOURCE_BODY\r\n"
+              }
+            },
+            {
+              "name": "three-level-entry",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {},
+                  "stopped": false
+                }
+              },
+              "discovery": true,
+              "source_texts": {
+                "@portable/library#asset/guide/default~root": "﻿# Door\r\nSELECTED_SOURCE_BODY Café  \r\n# River\r\nUNSELECTED_SOURCE_BODY\r\n"
+              },
+              "selection": [
+                {
+                  "fragment": "@portable/library#doorway~root"
+                }
+              ]
+            },
+            {
+              "name": "selected-door-section",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {},
+                  "stopped": false
+                }
+              },
+              "discovery": true,
+              "source_texts": {
+                "@portable/library#asset/guide/default~root": "﻿# Door\r\nSELECTED_SOURCE_BODY Café  \r\n# River\r\nUNSELECTED_SOURCE_BODY\r\n"
+              },
+              "selection": [
+                {
+                  "source": "@portable/library#source/guide~root",
+                  "section": "door"
+                }
+              ]
+            }
+          ]
+        },
+        "assertions": {
+          "scenarios": [
+            {
+              "messages_include": [
+                "REQUIRED_VISIBLE_BODY",
+                "DIRECT_VISIBLE_BODY"
+              ],
+              "messages_exclude": [
+                "PRIVATE_SOURCE_BODY",
+                "UNSELECTED_SOURCE_BODY",
+                "SELECTED_SOURCE_BODY",
+                "THIRD_LEVEL_SELECTED_BODY"
+              ],
+              "selector_include": [
+                "FIRST_LEVEL_DESCRIPTION",
+                "PUBLIC_SOURCE_DESCRIPTION"
+              ],
+              "selector_exclude": [
+                "SECOND_LEVEL_DESCRIPTION",
+                "THIRD_LEVEL_DESCRIPTION",
+                "THIRD_LEVEL_ENTRY_DESCRIPTION",
+                "SELECTED_SOURCE_BODY",
+                "UNSELECTED_SOURCE_BODY",
+                "PRIVATE_SOURCE_TITLE",
+                "PRIVATE_SOURCE_DESCRIPTION",
+                "PRIVATE_SOURCE_BODY"
+              ],
+              "name": "descriptions-only",
+              "source_requests": []
+            },
+            {
+              "messages_include": [
+                "REQUIRED_VISIBLE_BODY",
+                "DIRECT_VISIBLE_BODY",
+                "THIRD_LEVEL_SELECTED_BODY"
+              ],
+              "messages_exclude": [
+                "PRIVATE_SOURCE_BODY",
+                "UNSELECTED_SOURCE_BODY",
+                "SELECTED_SOURCE_BODY"
+              ],
+              "selector_include": [
+                "FIRST_LEVEL_DESCRIPTION",
+                "PUBLIC_SOURCE_DESCRIPTION"
+              ],
+              "selector_exclude": [
+                "SECOND_LEVEL_DESCRIPTION",
+                "THIRD_LEVEL_DESCRIPTION",
+                "THIRD_LEVEL_ENTRY_DESCRIPTION",
+                "SELECTED_SOURCE_BODY",
+                "UNSELECTED_SOURCE_BODY",
+                "PRIVATE_SOURCE_TITLE",
+                "PRIVATE_SOURCE_DESCRIPTION",
+                "PRIVATE_SOURCE_BODY"
+              ],
+              "name": "three-level-entry",
+              "source_requests": [],
+              "plan_expands": [
+                {
+                  "group": "@portable/library#group/building~root"
+                },
+                {
+                  "group": "@portable/library#group/floor~root"
+                },
+                {
+                  "group": "@portable/library#group/room~root"
+                }
+              ]
+            },
+            {
+              "messages_include": [
+                "REQUIRED_VISIBLE_BODY",
+                "DIRECT_VISIBLE_BODY",
+                "SELECTED_SOURCE_BODY Café"
+              ],
+              "messages_exclude": [
+                "PRIVATE_SOURCE_BODY",
+                "UNSELECTED_SOURCE_BODY",
+                "THIRD_LEVEL_SELECTED_BODY"
+              ],
+              "selector_include": [
+                "FIRST_LEVEL_DESCRIPTION",
+                "PUBLIC_SOURCE_DESCRIPTION"
+              ],
+              "selector_exclude": [
+                "SECOND_LEVEL_DESCRIPTION",
+                "THIRD_LEVEL_DESCRIPTION",
+                "THIRD_LEVEL_ENTRY_DESCRIPTION",
+                "SELECTED_SOURCE_BODY",
+                "UNSELECTED_SOURCE_BODY",
+                "PRIVATE_SOURCE_TITLE",
+                "PRIVATE_SOURCE_DESCRIPTION",
+                "PRIVATE_SOURCE_BODY"
+              ],
+              "name": "selected-door-section",
+              "source_requests": [
+                {
+                  "source": "@portable/library#source/guide~root",
+                  "asset": "@portable/library#asset/guide/default~root",
+                  "digest": "sha256:09f03333ad08522ab5a663986710a21c1b95b1d08abfe98521a351d5e0b0cffd"
+                }
+              ],
+              "plan_expands": [
+                {
+                  "source": "@portable/library#source/guide~root"
+                }
+              ]
+            }
+          ]
+        },
+        "root": {
+          "release": "rel_01j00000000000000000000205",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01j00000000000000000000205",
+            "ref": "@portable/library",
+            "type": "scenario",
+            "display_name": "Progressive reference library",
+            "meta": {
+              "default_locale": "en",
+              "rating": "general",
+              "rights": "original",
+              "license": "CC0-1.0"
+            },
+            "cast": [
+              {
+                "key": "alice",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Host",
+                "goal": "ALICE_PRIVATE_GOAL"
+              },
+              {
+                "key": "bob",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Visitor",
+                "goal": "BOB_PRIVATE_GOAL"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "required",
+                "kind": "instruction",
+                "stable": true,
+                "importance": "pinned",
+                "content": {
+                  "type": "text",
+                  "text": "REQUIRED_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "public",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "manual"
+                },
+                "content": {
+                  "type": "text",
+                  "text": "DIRECT_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "doorway",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "semantic"
+                },
+                "description": "THIRD_LEVEL_ENTRY_DESCRIPTION",
+                "content": {
+                  "type": "text",
+                  "text": "THIRD_LEVEL_SELECTED_BODY"
+                }
+              }
+            ],
+            "story": {
+              "version": 1,
+              "scenes": [
+                {
+                  "id": "lobby",
+                  "title": "Lobby",
+                  "cast": [
+                    "alice",
+                    "bob"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                },
+                {
+                  "id": "back",
+                  "title": "Back door",
+                  "cast": [
+                    "alice"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                }
+              ]
+            },
+            "description": "Library overview, not document contents",
+            "groups": [
+              {
+                "id": "building",
+                "title": "Building",
+                "description": "FIRST_LEVEL_DESCRIPTION",
+                "groups": [
+                  "floor"
+                ]
+              },
+              {
+                "id": "floor",
+                "title": "Floor",
+                "description": "SECOND_LEVEL_DESCRIPTION",
+                "groups": [
+                  "room"
+                ]
+              },
+              {
+                "id": "room",
+                "title": "Room",
+                "description": "THIRD_LEVEL_DESCRIPTION",
+                "entries": [
+                  "doorway"
+                ]
+              }
+            ],
+            "sources": [
+              {
+                "id": "guide",
+                "title": "Guide",
+                "description": "PUBLIC_SOURCE_DESCRIPTION",
+                "asset": "guide",
+                "format": "markdown",
+                "visibility": {
+                  "scope": "shared"
+                },
+                "sections": [
+                  {
+                    "id": "door",
+                    "title": "Door",
+                    "description": "DOOR_SECTION_DESCRIPTION",
+                    "anchor": "#Door"
+                  },
+                  {
+                    "id": "river",
+                    "title": "River",
+                    "description": "RIVER_SECTION_DESCRIPTION",
+                    "anchor": "#River"
+                  }
+                ]
+              },
+              {
+                "id": "private-notes",
+                "title": "PRIVATE_SOURCE_TITLE",
+                "description": "PRIVATE_SOURCE_DESCRIPTION",
+                "asset": "private-notes",
+                "format": "text"
+              }
+            ],
+            "assets": [
+              {
+                "slot": "guide",
+                "role": "context",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "text/markdown",
+                    "blob": {
+                      "digest": "sha256:09f03333ad08522ab5a663986710a21c1b95b1d08abfe98521a351d5e0b0cffd",
+                      "size": 75,
+                      "availability": "mirrored"
+                    }
+                  }
+                ]
+              },
+              {
+                "slot": "private-notes",
+                "role": "context",
+                "variants": [
+                  {
+                    "id": "default",
+                    "media_type": "text/plain",
+                    "blob": {
+                      "digest": "sha256:72b1cbd171951af11f70574214c3db28aa82b23f74a9b8d202e92173008265a3",
+                      "size": 19,
+                      "availability": "mirrored"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        }
+      },
+      "expected": {}
+    },
+    {
+      "dir": "206-exact-plan-replay",
+      "meta": {
+        "id": "206-exact-plan-replay",
+        "title": "An existing Plan binds exact runtime text, independent of JSON key order",
+        "kind": "story",
+        "expect": "story",
+        "spec_refs": [
+          "story-v1 §13.6",
+          "story-v1 §14.2"
+        ],
+        "status": "draft",
+        "notes": "Reuses the original successful Plan unchanged; independently authored rejection assertions. No expected accepted."
+      },
+      "input": {
+        "deps": [
+          {
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "visibility": "public",
+            "creation": {
+              "id": "cr_01h455vb4pex5vsknk084sn0df",
+              "ref": "@conformance/default-policy",
+              "type": "preset",
+              "display_name": "Conformance explicit empty policy",
+              "policy": {
+                "version": "1-draft",
+                "blocks": [],
+                "layout": [
+                  "system:character",
+                  "system:cast",
+                  "session:bindings",
+                  "system:persona",
+                  "system:world",
+                  "system:scenario",
+                  "system:scene",
+                  "system:story",
+                  "system:sources",
+                  "system:relationship",
+                  "system:knowledge",
+                  "system:style",
+                  "system:instruction",
+                  "system:examples",
+                  "session:memory",
+                  "session:state",
+                  "session:variants",
+                  "history"
+                ],
+                "requires": {
+                  "system_role": true
+                }
+              },
+              "meta": {
+                "default_locale": "en",
+                "rating": "general",
+                "rights": "original",
+                "license": "CC0-1.0"
+              }
+            },
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
+        ],
+        "story": {
+          "kind": "context",
+          "scenarios": [
+            {
+              "name": "original",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\r\nthe letter Café  "
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\r\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\r\nnorth",
+                    "name": "Café",
+                    "memo": "Keep  "
+                  }
+                }
+              },
+              "discovery": true,
+              "selection": []
+            },
+            {
+              "name": "history-newline",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\nthe letter Café  "
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\r\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\r\nnorth",
+                    "name": "Café",
+                    "memo": "Keep  "
+                  }
+                }
+              },
+              "discovery": true,
+              "plan_from": "original"
+            },
+            {
+              "name": "history-unicode",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\r\nthe letter Café  "
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\r\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\r\nnorth",
+                    "name": "Café",
+                    "memo": "Keep  "
+                  }
+                }
+              },
+              "discovery": true,
+              "plan_from": "original"
+            },
+            {
+              "name": "history-trailing-space",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\r\nthe letter Café"
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\r\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\r\nnorth",
+                    "name": "Café",
+                    "memo": "Keep  "
+                  }
+                }
+              },
+              "discovery": true,
+              "plan_from": "original"
+            },
+            {
+              "name": "focus-newline",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\r\nthe letter Café  "
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\r\nnorth",
+                    "name": "Café",
+                    "memo": "Keep  "
+                  }
+                }
+              },
+              "discovery": true,
+              "plan_from": "original"
+            },
+            {
+              "name": "overlay-newline",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\r\nthe letter Café  "
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\r\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\nnorth",
+                    "name": "Café",
+                    "memo": "Keep  "
+                  }
+                }
+              },
+              "discovery": true,
+              "plan_from": "original"
+            },
+            {
+              "name": "overlay-unicode",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\r\nthe letter Café  "
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\r\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\r\nnorth",
+                    "name": "Café",
+                    "memo": "Keep  "
+                  }
+                }
+              },
+              "discovery": true,
+              "plan_from": "original"
+            },
+            {
+              "name": "overlay-trailing-space",
+              "profile": {
+                "runtime": {
+                  "name": "portable-story-fixture",
+                  "version": "1"
+                },
+                "tokenizer": "estimate",
+                "context_window": 8192,
+                "reserve_for_output": 256,
+                "mode": "per-agent",
+                "capabilities": {
+                  "system_role": true,
+                  "multiple_system_messages": true
+                }
+              },
+              "turn": {
+                "bindings": {
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "kind": "character",
+                    "display_name": "Alice",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "outward_description": "ALICE_OUTWARD"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "kind": "character",
+                    "display_name": "Bob",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "outward_description": "BOB_OUTWARD"
+                  },
+                  "user": {
+                    "kind": "persona",
+                    "display_name": "Reader"
+                  }
+                },
+                "history": [
+                  {
+                    "role": "user",
+                    "text": "I copy\r\nthe letter Café  "
+                  }
+                ],
+                "scene": "lobby",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "for_participant": "bob",
+                "story": {
+                  "start": "default",
+                  "visited": [
+                    "lobby"
+                  ],
+                  "reached": [],
+                  "ended": [],
+                  "happened": [],
+                  "vars": {},
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "stopped": false
+                },
+                "focus": "Door\r\nnow  ",
+                "overlay": {
+                  "state": {
+                    "place": "vault\r\nnorth",
+                    "name": "Café",
+                    "memo": "Keep"
+                  }
+                }
+              },
+              "discovery": true,
+              "plan_from": "original"
+            },
+            {
+              "discovery": true,
+              "turn": {
+                "overlay": {
+                  "state": {
+                    "memo": "Keep  ",
+                    "name": "Café",
+                    "place": "vault\r\nnorth"
+                  }
+                },
+                "focus": "Door\r\nnow  ",
+                "story": {
+                  "stopped": false,
+                  "knowing": {
+                    "#secret": [
+                      "alice"
+                    ]
+                  },
+                  "vars": {},
+                  "happened": [],
+                  "ended": [],
+                  "reached": [],
+                  "visited": [
+                    "lobby"
+                  ],
+                  "start": "default"
+                },
+                "for_participant": "bob",
+                "present": [
+                  "alice",
+                  "bob"
+                ],
+                "scene": "lobby",
+                "history": [
+                  {
+                    "text": "I copy\r\nthe letter Café  ",
+                    "role": "user"
+                  }
+                ],
+                "bindings": {
+                  "user": {
+                    "display_name": "Reader",
+                    "kind": "persona"
+                  },
+                  "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+                    "outward_description": "BOB_OUTWARD",
+                    "description": "BOB_PRIVATE_BINDING",
+                    "display_name": "Bob",
+                    "kind": "character"
+                  },
+                  "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+                    "outward_description": "ALICE_OUTWARD",
+                    "description": "ALICE_PRIVATE_BINDING",
+                    "display_name": "Alice",
+                    "kind": "character"
+                  }
+                }
+              },
+              "profile": {
+                "capabilities": {
+                  "multiple_system_messages": true,
+                  "system_role": true
+                },
+                "mode": "per-agent",
+                "reserve_for_output": 256,
+                "context_window": 8192,
+                "tokenizer": "estimate",
+                "runtime": {
+                  "version": "1",
+                  "name": "portable-story-fixture"
+                }
+              },
+              "name": "same-values-reordered-keys",
+              "plan_from": "original"
+            }
+          ]
+        },
+        "assertions": {
+          "scenarios": [
+            {
+              "name": "original",
+              "messages_include": [
+                "I copy\r\nthe letter Café  "
+              ]
+            },
+            {
+              "name": "history-newline",
+              "error": {
+                "code": "selection.input_mismatch",
+                "subject": "input"
+              },
+              "plan_equals": "original"
+            },
+            {
+              "name": "history-unicode",
+              "error": {
+                "code": "selection.input_mismatch",
+                "subject": "input"
+              },
+              "plan_equals": "original"
+            },
+            {
+              "name": "history-trailing-space",
+              "error": {
+                "code": "selection.input_mismatch",
+                "subject": "input"
+              },
+              "plan_equals": "original"
+            },
+            {
+              "name": "focus-newline",
+              "error": {
+                "code": "selection.input_mismatch",
+                "subject": "input"
+              },
+              "plan_equals": "original"
+            },
+            {
+              "name": "overlay-newline",
+              "error": {
+                "code": "selection.input_mismatch",
+                "subject": "input"
+              },
+              "plan_equals": "original"
+            },
+            {
+              "name": "overlay-unicode",
+              "error": {
+                "code": "selection.input_mismatch",
+                "subject": "input"
+              },
+              "plan_equals": "original"
+            },
+            {
+              "name": "overlay-trailing-space",
+              "error": {
+                "code": "selection.input_mismatch",
+                "subject": "input"
+              },
+              "plan_equals": "original"
+            },
+            {
+              "name": "same-values-reordered-keys",
+              "plan_equals": "original",
+              "messages_equal": "original"
+            }
+          ]
+        },
+        "root": {
+          "release": "rel_01j00000000000000000000203",
+          "visibility": "public",
+          "creation": {
+            "id": "cr_01j00000000000000000000203",
+            "ref": "@portable/door",
+            "type": "scenario",
+            "display_name": "A door with two viewpoints",
+            "meta": {
+              "default_locale": "en",
+              "rating": "general",
+              "rights": "original",
+              "license": "CC0-1.0"
+            },
+            "cast": [
+              {
+                "key": "alice",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Host",
+                "goal": "ALICE_PRIVATE_GOAL"
+              },
+              {
+                "key": "bob",
+                "who": {
+                  "late": "character"
+                },
+                "part": "Visitor",
+                "goal": "BOB_PRIVATE_GOAL"
+              }
+            ],
+            "fragments": [
+              {
+                "id": "required",
+                "kind": "instruction",
+                "stable": true,
+                "importance": "pinned",
+                "content": {
+                  "type": "text",
+                  "text": "REQUIRED_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "public",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "manual"
+                },
+                "content": {
+                  "type": "text",
+                  "text": "DIRECT_VISIBLE_BODY"
+                }
+              },
+              {
+                "id": "secret",
+                "kind": "knowledge",
+                "stable": true,
+                "activation": {
+                  "mode": "semantic"
+                },
+                "description": "SECRET_CANDIDATE_DESCRIPTION",
+                "content": {
+                  "type": "text",
+                  "text": "SECRET_KNOWN_BODY"
+                }
+              },
+              {
+                "id": "alice-only",
+                "kind": "knowledge",
+                "stable": true,
+                "visibility": {
+                  "scope": "private",
+                  "to": [
+                    "{{cast:alice}}"
+                  ]
+                },
+                "activation": {
+                  "mode": "semantic"
+                },
+                "description": "ALICE_PRIVATE_CANDIDATE",
+                "content": {
+                  "type": "text",
+                  "text": "ALICE_PRIVATE_BODY"
+                }
+              }
+            ],
+            "story": {
+              "version": 1,
+              "scenes": [
+                {
+                  "id": "lobby",
+                  "title": "Lobby",
+                  "cast": [
+                    "alice",
+                    "bob"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                },
+                {
+                  "id": "back",
+                  "title": "Back door",
+                  "cast": [
+                    "alice"
+                  ],
+                  "lore": [
+                    "#public"
+                  ]
+                }
+              ],
+              "knowing": {
+                "#secret": {
+                  "start": {
+                    "knows": [
+                      "alice"
+                    ],
+                    "not": [
+                      "bob"
+                    ]
+                  },
+                  "enter": {
+                    "back": {
+                      "knows": [
+                        "bob"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "options": {
+          "default_policy": {
+            "ref": "@conformance/default-policy",
+            "release": "rel_01h455vb4pex5vsknk084sn0df",
+            "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+          }
         }
       },
       "expected": {}

@@ -12,16 +12,33 @@
 import { type ZodType, z } from "zod";
 import * as A from "./schema/artifact.js";
 import * as F from "./schema/assembly.js";
+import * as CAP from "./schema/capabilities.js";
+import * as CAT from "./schema/catalog.js";
+import * as CT from "./schema/context.js";
 import * as C from "./schema/creation.js";
 import * as ID from "./schema/identity.js";
 import * as IR from "./schema/ir.js";
 import * as P from "./schema/policy.js";
 import * as PR from "./schema/preset.js";
 import * as R from "./schema/release.js";
+import * as RP from "./schema/runtime-preview.js";
+import * as S from "./schema/story.js";
 
-export const SCHEMA_BASE_URL = "https://char.pub/schema/v0-draft";
+export const SCHEMA_BASE_URL = "https://char.pub/schema/v1-draft";
 
 export const PUBLISHED_SCHEMAS = {
+  "catalog-index": { schema: CAT.CatalogIndexSchema, title: "char.pub Published Catalog Index" },
+  "turn-view": { schema: CT.TurnViewSchema, title: "char.pub Turn View" },
+  "runtime-preview-input": {
+    schema: RP.RuntimePreviewInputSchema,
+    title: "char.pub Runtime Synthetic Preview Input",
+  },
+  "selection-plan": { schema: CT.SelectionPlanSchema, title: "char.pub Selection Plan" },
+  "story-continuation-input": {
+    schema: S.StoryContinuationInputSchema,
+    title: "char.pub Reviewed Sequel Opening",
+  },
+  story: { schema: S.StorySchema, title: "char.pub Story" },
   creation: { schema: C.CreationSchema, title: "char.pub Creation (Canonical Model)" },
   "creation-artifact": { schema: A.CreationArtifactSchema, title: "char.pub Creation Artifact" },
   "resolved-prompt-module": {
@@ -41,6 +58,16 @@ export type PublishedSchemaName = keyof typeof PUBLISHED_SCHEMAS;
 
 /** 在 `$defs` 中使用的名字。只有被引用的定义才会出现在输出里。 */
 const NAMED_DEFS: [ZodType, string][] = [
+  [CAP.CapabilitySchema, "Capability"],
+  [CAT.CatalogIndexSchema, "CatalogIndex"],
+  [CAT.CatalogRefSchema, "CatalogRef"],
+  [CAT.StoryReferencesSchema, "StoryReferences"],
+  [CT.TurnStorySchema, "TurnStory"],
+  [S.StorySchema, "Story"],
+  [S.StoryConditionSchema, "StoryCondition"],
+  [S.StoryEffectSchema, "StoryEffect"],
+  [S.StoryInfoRefSchema, "StoryInfoRef"],
+  [S.StoryVariableSchema, "StoryVariable"],
   [C.DigestSchema, "Digest"],
   [C.UnversionedRefSchema, "UnversionedRef"],
   [C.CreationRefSchema, "CreationRef"],
@@ -136,6 +163,8 @@ export function buildJsonSchema(name: PublishedSchemaName): Record<string, unkno
             fragments: { maxItems: 0 },
             references: { maxItems: 0 },
             cast: { maxItems: 0 },
+            groups: { maxItems: 0 },
+            sources: { maxItems: 0 },
             slots: { maxProperties: 0 },
             params: { maxProperties: 0 },
             assets: { items: { properties: { role: { const: "presentation" } } } },
@@ -156,10 +185,10 @@ export function buildJsonSchema(name: PublishedSchemaName): Record<string, unkno
           {
             if: { properties: { type: { not: { const: "scenario" } } } },
             // biome-ignore lint/suspicious/noThenProperty: JSON Schema condition.
-            then: { not: { required: ["assembly"] } },
+            then: { not: { anyOf: [{ required: ["assembly"] }, { required: ["story"] }] } },
           },
           {
-            if: { properties: { type: { not: { enum: ["scenario", "preset"] } } } },
+            if: { properties: { type: { const: "prompt-module" } } },
             // biome-ignore lint/suspicious/noThenProperty: JSON Schema condition.
             then: { properties: { assembly_tests: { maxItems: 0 } } },
           },
@@ -186,6 +215,14 @@ export function buildJsonSchema(name: PublishedSchemaName): Record<string, unkno
     },
   }) as Record<string, unknown>;
   const { $schema, ...rest } = body;
+  if (name === "creation-artifact") {
+    const branches = rest.oneOf as Record<string, unknown>[];
+    const content = branches?.find(
+      (branch) =>
+        (branch.properties as Record<string, { const?: string }>)?.kind?.const === "content",
+    );
+    if (content) content.anyOf = [{ required: ["assembly"] }, { required: ["default_policy"] }];
+  }
   return { $schema, $id: `${SCHEMA_BASE_URL}/${name}.schema.json`, title, ...rest };
 }
 

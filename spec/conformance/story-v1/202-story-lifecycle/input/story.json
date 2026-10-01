@@ -1,0 +1,516 @@
+{
+  "kind": "evaluation",
+  "story": {
+    "version": 1,
+    "scenes": [
+      {
+        "id": "lobby",
+        "title": "Lobby",
+        "cast": ["alice", "bob"],
+        "choices": ["hand-over", "keep", "impossible"]
+      },
+      {
+        "id": "back",
+        "title": "Back door",
+        "cast": ["alice"],
+        "when": {
+          "reached": "beat/trust"
+        }
+      }
+    ],
+    "vars": {
+      "trust": {
+        "type": "int",
+        "min": 0,
+        "max": 100,
+        "init": 0,
+        "description": "Trust points"
+      },
+      "open": {
+        "type": "bool",
+        "init": false,
+        "description": "The road is open"
+      },
+      "mood": {
+        "type": "enum",
+        "values": ["calm", "tense"],
+        "init": "calm",
+        "description": "Mood"
+      },
+      "inventory": {
+        "type": "set",
+        "of": "item",
+        "init": ["letter"],
+        "description": "Held items"
+      },
+      "marks": {
+        "type": "set",
+        "values": ["copied", "sealed"],
+        "init": [],
+        "description": "Letter marks"
+      }
+    },
+    "items": [
+      {
+        "id": "letter",
+        "title": "Letter",
+        "description": "A sealed letter"
+      }
+    ],
+    "knowing": {
+      "#secret": {
+        "start": {
+          "knows": ["alice"],
+          "not": ["bob"]
+        },
+        "enter": {
+          "back": {
+            "knows": ["bob"]
+          }
+        }
+      }
+    },
+    "choices": [
+      {
+        "id": "hand-over",
+        "label": "Hand over the letter",
+        "intent": "Give Alice the original letter",
+        "when": {
+          "has": ["var/inventory", "item/letter"]
+        }
+      },
+      {
+        "id": "keep",
+        "label": "Keep it",
+        "intent": "Keep the letter"
+      },
+      {
+        "id": "impossible",
+        "label": "Impossible promise",
+        "intent": "Trust is above its maximum",
+        "when": {
+          "cmp": ["var/trust", ">", 100]
+        }
+      }
+    ],
+    "beats": [
+      {
+        "id": "trust",
+        "title": "Trust",
+        "description": "Alice chooses to trust the visitor",
+        "effects": [
+          {
+            "add": ["var/trust", 20]
+          }
+        ]
+      },
+      {
+        "id": "refuse",
+        "title": "Refusal",
+        "description": "The visitor explicitly refuses",
+        "when": {
+          "not": {
+            "judge": "The visitor agreed"
+          }
+        },
+        "effects": [
+          {
+            "set": ["var/mood", "tense"]
+          }
+        ]
+      },
+      {
+        "id": "copy",
+        "title": "Copy the letter",
+        "description": "The visitor makes a copy",
+        "effects": [
+          {
+            "put": ["var/marks", "copied"]
+          }
+        ]
+      },
+      {
+        "id": "ceiling",
+        "title": "Trust ceiling",
+        "description": "The trust score reaches its upper bound",
+        "effects": [
+          {
+            "add": ["var/trust", 200]
+          },
+          {
+            "drop": ["var/inventory", "item/letter"]
+          },
+          {
+            "put": ["var/inventory", "item/letter"]
+          },
+          {
+            "put": ["var/inventory", "item/letter"]
+          }
+        ]
+      },
+      {
+        "id": "floor",
+        "title": "Trust floor",
+        "description": "The trust score reaches its lower bound",
+        "effects": [
+          {
+            "add": ["var/trust", -200]
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "id": "old-letter",
+        "kind": "background",
+        "title": "Earlier letter",
+        "description": "A letter arrived yesterday"
+      },
+      {
+        "id": "road",
+        "kind": "planned",
+        "title": "Road opens",
+        "description": "The road becomes passable",
+        "effects": [
+          {
+            "set": ["var/open", true]
+          }
+        ]
+      }
+    ],
+    "endings": [
+      {
+        "id": "stay",
+        "title": "Stay",
+        "description": "The visit continues",
+        "after": "continue",
+        "priority": 1
+      },
+      {
+        "id": "leave",
+        "title": "Leave",
+        "description": "The visit ends",
+        "when": {
+          "is": "var/open"
+        },
+        "after": "stop",
+        "priority": 5
+      }
+    ],
+    "plotlines": [
+      {
+        "id": "telling",
+        "title": "Suggested telling",
+        "scenes": ["lobby", "back"],
+        "beats": ["trust", "copy"]
+      }
+    ],
+    "timelines": [
+      {
+        "id": "chronology",
+        "title": "Authored chronology",
+        "order": ["old-letter", "road", "scene/lobby", "scene/back"]
+      }
+    ]
+  },
+  "cast": ["alice", "bob"],
+  "operations": [
+    {
+      "op": "input",
+      "text": "I copy the letter, then hand over the original."
+    },
+    {
+      "op": "available"
+    },
+    {
+      "op": "enter",
+      "scene": "back"
+    },
+    {
+      "op": "condition",
+      "condition": {
+        "not": {
+          "judge": "The visitor agreed"
+        }
+      },
+      "target": "beat/refuse"
+    },
+    {
+      "op": "confirm",
+      "target": "beat/refuse"
+    },
+    {
+      "op": "confirm",
+      "target": "beat/refuse",
+      "judgments": [
+        {
+          "target": "beat/refuse",
+          "path": "/when/not",
+          "result": "undetermined",
+          "provider": {
+            "name": "authored-fixture",
+            "version": "1"
+          }
+        }
+      ]
+    },
+    {
+      "op": "confirm",
+      "target": "beat/refuse",
+      "judgments": [
+        {
+          "target": "beat/refuse",
+          "path": "/when/not",
+          "result": "true",
+          "provider": {
+            "name": "authored-fixture",
+            "version": "1"
+          }
+        }
+      ]
+    },
+    {
+      "op": "condition",
+      "condition": {
+        "all": [
+          {
+            "judge": "Unanswered"
+          },
+          {
+            "any": []
+          }
+        ]
+      }
+    },
+    {
+      "op": "condition",
+      "condition": {
+        "any": [
+          {
+            "judge": "Unanswered"
+          },
+          {
+            "all": []
+          }
+        ]
+      }
+    },
+    {
+      "op": "confirm",
+      "target": "beat/copy"
+    },
+    {
+      "op": "confirm",
+      "target": "beat/trust"
+    },
+    {
+      "op": "confirm",
+      "target": "beat/trust"
+    },
+    {
+      "op": "enter",
+      "scene": "back"
+    },
+    {
+      "op": "present",
+      "present": ["alice", "bob"]
+    },
+    {
+      "op": "condition",
+      "condition": {
+        "knows": {
+          "who": "bob",
+          "info": "#secret"
+        }
+      }
+    },
+    {
+      "op": "confirm",
+      "target": "beat/refuse",
+      "judgments": [
+        {
+          "target": "beat/refuse",
+          "path": "/when/not",
+          "result": "false",
+          "provider": {
+            "name": "authored-fixture",
+            "version": "1"
+          }
+        }
+      ]
+    },
+    {
+      "op": "confirm",
+      "target": "beat/ceiling"
+    },
+    {
+      "op": "confirm",
+      "target": "beat/floor"
+    },
+    {
+      "op": "confirm",
+      "target": "event/road"
+    },
+    {
+      "op": "confirm",
+      "target": "ending/stay"
+    },
+    {
+      "op": "enter",
+      "scene": "lobby"
+    },
+    {
+      "op": "confirm",
+      "target": "ending/leave"
+    },
+    {
+      "op": "enter",
+      "scene": "back"
+    },
+    {
+      "op": "confirm",
+      "target": "beat/trust"
+    },
+    {
+      "op": "available"
+    },
+    {
+      "op": "validate",
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 101,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      }
+    },
+    {
+      "op": "validate",
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 1.5,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      }
+    },
+    {
+      "op": "validate",
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": "false",
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      }
+    },
+    {
+      "op": "validate",
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "missing",
+          "inventory": ["letter"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      }
+    },
+    {
+      "op": "validate",
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["missing"],
+          "marks": []
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      }
+    },
+    {
+      "op": "validate",
+      "state": {
+        "start": "default",
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "visited": ["lobby"],
+        "reached": [],
+        "ended": [],
+        "happened": [],
+        "vars": {
+          "trust": 0,
+          "open": false,
+          "mood": "calm",
+          "inventory": ["letter"],
+          "marks": ["letter"]
+        },
+        "knowing": {
+          "#secret": ["alice"]
+        },
+        "stopped": false
+      }
+    }
+  ]
+}

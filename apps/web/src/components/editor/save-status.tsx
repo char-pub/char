@@ -21,6 +21,8 @@ export function saveStatusText(state: SaveState): string {
       return "Unsaved changes";
     case "saving":
       return "Saving…";
+    case "denied":
+      return "Not saved — access changed";
     case "conflict":
       return "Not saved — changed elsewhere";
     case "invalid":
@@ -39,6 +41,7 @@ const STYLE: Record<SaveState["kind"], { icon: typeof CloudCheck; className: str
     icon: GitCompareArrows,
     className: "rounded-full bg-danger-soft px-2.5 text-danger",
   },
+  denied: { icon: CloudOff, className: "rounded-full bg-danger-soft px-2.5 text-danger" },
   error: { icon: CloudOff, className: "rounded-full bg-danger-soft px-2.5 text-danger" },
 };
 

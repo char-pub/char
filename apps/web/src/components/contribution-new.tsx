@@ -129,12 +129,12 @@ export function NewContributionTab({ ns, name }: { ns: string; name: string }) {
       </Layout>
     );
   }
-  if (me.data?.namespace === ns) {
+  if (d.permissions?.edit) {
     return (
       <Layout owner={ns}>
         <EmptyState
           icon={Pencil}
-          title="This is your creation"
+          title="You can edit this creation"
           description="Edit the draft directly instead of proposing a change to yourself."
           action={
             <Link to="/c/$ns/$name/edit" params={{ ns, name }} className={buttonVariants()}>

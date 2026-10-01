@@ -1,16 +1,20 @@
-/** 统一发布产物读取。旧 Release 保留原存储布局，读取时从不可变快照重建。 */
+/** Read stored artifacts, or rebuild only from the release's fixed snapshot/configuration. */
 import {
   buildCreation,
-  ContextIRSchema,
-  type CreationArtifact,
+  CharError,
   CreationArtifactSchema,
+  canonicalizeCreation,
+  digestOf,
+  type PublishedCreationArtifact,
   type ReleaseInput,
+  requirePublishedArtifact,
 } from "@char-pub/core";
 import { and, eq } from "drizzle-orm";
 import { authorize, type Principal } from "../authz/authorize.js";
 import type { Executor } from "../db/client.js";
 import { creations, namespaces, releases } from "../db/schema/index.js";
 import type { Cas } from "../storage/cas.js";
+import { collaborationAccess } from "./collaboration-access.js";
 import { loadSnapshot } from "./content.js";
 import { decodeId, encodeId } from "./ids.js";
 import { namespaceContext, type ReleaseRow } from "./read.js";
@@ -28,33 +32,56 @@ export async function authorizedRelease(db: Executor, principal: Principal, publ
     .limit(1);
   if (!found) return null;
   const ns = await namespaceContext(db, found.namespace, principal);
+  const collaborator = await collaborationAccess(db, found.creation.id, principal);
   const decision = authorize(principal, "release.read", {
     type: "release",
     id: found.row.id,
     creation_id: found.creation.id,
     ns,
+    collaborator,
     visibility: found.row.visibility,
     status: found.row.status,
     creation_status: found.creation.status,
   });
-  return decision.allow ? found : null;
+  return decision.allow ? { ...found, collaborator } : null;
 }
 
 export async function readArtifact(
   cas: Cas,
   row: ReleaseRow,
   publicAssetBaseUrl: string,
-): Promise<CreationArtifact> {
+): Promise<PublishedCreationArtifact> {
   const bucket = row.visibility === "public" ? "public" : "private";
   if (row.artifactDigest) {
     const bytes = await cas.getBlob(bucket, row.artifactDigest);
-    return CreationArtifactSchema.parse(JSON.parse(new TextDecoder().decode(bytes)));
+    const artifact = requirePublishedArtifact(
+      CreationArtifactSchema.parse(JSON.parse(new TextDecoder().decode(bytes))),
+      encodeId("release", row.id),
+    );
+    if (artifact.root.semantic_digest !== row.semanticDigest)
+      throw new CharError({ code: "registry.artifact_mismatch", subject: row.id });
+    return artifact;
   }
   if (!row.snapshotDigest) throw new Error("completed release has no snapshot");
   const snapshot = await loadSnapshot(cas, bucket, row.snapshotDigest);
+  if (
+    snapshot.default_policy &&
+    row.defaultPolicy &&
+    digestOf(snapshot.default_policy) !== digestOf(row.defaultPolicy)
+  )
+    throw new CharError({ code: "registry.default_policy_mismatch", subject: row.id });
+  const defaultPolicy = snapshot.default_policy ?? row.defaultPolicy;
+  const creation = canonicalizeCreation(snapshot.root).creation;
+  if (
+    creation.type !== "preset" &&
+    creation.type !== "prompt-module" &&
+    !creation.assembly &&
+    !defaultPolicy
+  )
+    throw new CharError({ code: "registry.default_policy_missing", subject: row.id });
   const dependencies: ReleaseInput[] = snapshot.dependencies.map((d) => ({
     ...d,
-    visibility: row.visibility,
+    visibility: d.visibility ?? row.visibility,
   }));
   const artifact = buildCreation({
     root: {
@@ -64,20 +91,8 @@ export async function readArtifact(
       creation: snapshot.root,
     },
     dependencies,
+    ...(defaultPolicy ? { default_policy: defaultPolicy } : {}),
     publicAssetBaseUrl,
   }).artifact;
-  // 保留旧发布实际存储的渲染产物，避免当前编译器或依赖可见性改变旧文本与资源 URL。
-  if (artifact.kind === "content" && row.contextIrDigest) {
-    const bytes = await cas.getBlob(bucket, row.contextIrDigest);
-    const ir = ContextIRSchema.parse(JSON.parse(new TextDecoder().decode(bytes)));
-    return {
-      ...artifact,
-      ir,
-      root: ir.root,
-      lock_digest: ir.lock_digest,
-      meta: ir.meta,
-      assets: ir.assets,
-    };
-  }
-  return artifact;
+  return requirePublishedArtifact(artifact, encodeId("release", row.id));
 }

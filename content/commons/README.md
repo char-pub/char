@@ -1,6 +1,6 @@
 # `@commons` 种子内容
 
-这个目录是 `@commons` namespace 的种子内容草稿：12 个 World、12 个 Lorebook，以及一个引用它们的示例 Character（`examples/wren-the-harbor-guide`）。
+这个目录是 `@commons` namespace 的种子内容草稿：12 个 World、12 个 Lorebook、一个默认 Preset，以及一个引用它们的示例 Character（`examples/wren-the-harbor-guide`）。
 
 - **来源**：AI 辅助起草的原创内容，每个 Creation 的 `provenance.authored_by_agent` 都是 `true`。
 - **许可**：全部是 `CC0-1.0`，评级 `general`，署名 `char.pub commons`。
@@ -21,6 +21,7 @@ pnpm commons:check --snapshots /tmp/snap   # 另外写出 Release 快照，便�
 `pnpm commons:check` 做的事：
 
 - 用与 Registry 相同的发布校验检查每个 Creation；
+- 先检查默认 Preset，再把本地模拟的精确身份作为内容构建的 default_policy；模拟 Release ID 不可用作生产配置；
 - 依赖的 pin 固定到本地模拟发布的 Release；
 - 不把任何 namespace 当作同一权利人，所以种子内容必须是任何人都能再分发的；
 - 另外检查种子内容自己的约定：许可为 CC0-1.0、评级为 general、署名包含 `char.pub commons`、正文里没有链接或邮箱地址。
@@ -33,7 +34,8 @@ pnpm commons:check --snapshots /tmp/snap   # 另外写出 Release 快照，便�
 S=/tmp/snap
 node packages/cli/dist/bin.js preview -f $S/wren-the-harbor-guide.pinned.yaml \
   --dep $S/saltmere.release.json --dep $S/saltmere-guilds.release.json \
-  --dep $S/weather-and-seasons.release.json -m "Where can I find a pilot?"
+  --dep $S/weather-and-seasons.release.json \
+  --default-policy $S/default-preset.release.json -m "Where can I find a pilot?"
 ```
 
 （先运行 `pnpm --filter @char-pub/cli build`。）
@@ -45,3 +47,13 @@ Only items whose three checkboxes in `REVIEW.md` are ticked and signed are publi
 1. The curator signs in to www once, so the account exists.
 2. On the deployed worker: `node dist/main.js bootstrap --system-namespace commons --member <curator email>` creates `@commons` (if needed) and adds the curator as a maintainer. It is written to the audit log and safe to repeat.
 3. The curator creates a personal token with `creations:write` and `releases:publish`, then runs `char login` and `char publish` for each reviewed directory, dependencies first (worlds and lorebooks before the example character).
+
+
+## 默认策略候选
+
+`default-preset/char.yaml` 是 Story v1 的公开默认策略候选，仍须完成 REVIEW.md 人工审阅并通过普通发布流程。生产配置应使用发布成功返回的真实 Release ID 与 semantic digest，不使用离线检查的模拟 ID。
+
+`char build`、`char preview`、`char test` 可通过 `--default-policy <release-snapshot.json>` 显式提供精确快照，导入模块仍用 `--dep`。输入会纳入构建锁、评级、许可、资产及黑名单检查；不会通过运行时的 latest 选择版本。
+
+
+Registry API的`DEFAULT_PRESET`环境变量接收上述精确身份JSON。首次内容发布请求将它写入Release的default_policy列；worker不读取当前环境默认值。更新配置后，旧任务重试与同label/同Idempotency-Key回放仍使用原身份。未配置时可先发布Preset/Module完成初始化；没有显式assembly的内容发布返回`publish.default_policy_unavailable`。

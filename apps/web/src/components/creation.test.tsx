@@ -1,7 +1,8 @@
+import { publishedIdentity } from "@char-pub/core";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { diffPair, resolveSample, samples } from "@/fixtures/samples";
+import { buildSample, diffPair, resolveSample, samples } from "@/fixtures/samples";
 import { ApiError, type Dependent } from "@/lib/api";
 import { fakeClient, ME, renderWithApp } from "@/test/render";
 import { BuiltOn, Credits, matureReason, UsedBy, WhyThisRating } from "./creation-facts";
@@ -13,7 +14,7 @@ const MATURE = resolveSample(diffPair.to).ir;
 
 describe("Overview facts", () => {
   it("explains which dependency sets the effective rating", async () => {
-    renderWithApp(<WhyThisRating ir={MATURE} name="Alice" />);
+    renderWithApp(<WhyThisRating source={MATURE} ir={MATURE} name="Alice" />);
     const card = await screen.findByRole("region", { name: "Why this rating" });
     expect(card.textContent).toContain(
       "Mature, because a dependency is rated Mature. Alice on its own is General.",
@@ -21,14 +22,16 @@ describe("Overview facts", () => {
     const decisive = within(card).getByText("sets the rating").closest("li");
     expect(decisive?.textContent).toContain("@cyberpunk/night-city");
     expect(decisive?.textContent).toContain("World · Core");
-    expect(matureReason(MATURE)).toBe("Rated Mature because of @cyberpunk/night-city (World).");
+    expect(matureReason(MATURE, MATURE)).toBe(
+      "Rated Mature because of @cyberpunk/night-city (World).",
+    );
   });
 
   it("lists what it is built on with the relationship, the mode and the locked version", async () => {
     const ir = MATURE;
     const night = ir.graph.nodes.find((n) => n.ref === "@cyberpunk/night-city");
-    const labels = new Map(night ? [[night.release, "2.0.0"]] : []);
-    renderWithApp(<BuiltOn ir={ir} labels={labels} />);
+    const labels = new Map(night ? [[publishedIdentity(night).release, "2.0.0"]] : []);
+    renderWithApp(<BuiltOn source={buildSample(diffPair.to)} ir={ir} labels={labels} />);
     const card = await screen.findByRole("region", { name: "Built on" });
     const items = within(card).getAllByRole("listitem");
     expect(items[0]?.textContent).toContain("Knows about Corporations of Night City");
@@ -64,7 +67,7 @@ describe("Overview facts", () => {
   });
 
   it("credits authors and licenses per creation", async () => {
-    renderWithApp(<Credits ir={MATURE} />);
+    renderWithApp(<Credits source={MATURE} ir={MATURE} />);
     const card = await screen.findByRole("region", { name: "Credits & licenses" });
     const rows = within(card).getAllByRole("listitem");
     const alice = rows.find(

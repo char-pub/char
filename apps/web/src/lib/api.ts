@@ -9,6 +9,8 @@
 import {
   type Ccv3LossReport,
   Ccv3LossReportSchema,
+  CollaborationInvitationsResponseSchema,
+  CollaboratorsResponseSchema,
   type ConfirmImportRequestSchema,
   ContributionDetailSchema,
   type ContributionInvite,
@@ -18,12 +20,18 @@ import {
   type ContributionSettingsRequestSchema,
   ContributionSummarySchema,
   type CreateContributionRequestSchema,
+  CreateCreationResponseSchema,
   CreateTokenResponseSchema,
   CreateUploadResponseSchema,
   CreationDetailSchema,
   CreationSummarySchema,
   DependentSchema,
+  type DeriveCreationRequest,
+  type DraftBuildResponse,
+  DraftBuildResponseSchema,
   DraftSchema,
+  FavoriteStateSchema,
+  FavoritesResponseSchema,
   GuestSessionResponseSchema,
   GuestVerificationResponseSchema,
   ImportStatusSchema,
@@ -31,8 +39,18 @@ import {
   MeSchema,
   MyCreationsResponseSchema,
   NamespaceSchema,
+  type OAuthClient,
+  OAuthClientSchema,
+  OAuthClientsSchema,
+  type OAuthConsentDetails,
+  OAuthConsentDetailsSchema,
+  OAuthConsentResultSchema,
+  type OAuthGrant,
+  OAuthGrantsSchema,
   PublishResponseSchema,
   PutDraftResponseSchema,
+  type ReferenceImpactResponse,
+  ReferenceImpactResponseSchema,
   ReleaseDetailSchema,
   type ReleaseSource,
   ReleaseSourceSchema,
@@ -43,6 +61,7 @@ import {
   RevisionSchema,
   type SourceBinding,
   SourceBindingSchema,
+  SourceTextResponseSchema,
   type TOKEN_SCOPES,
   UploadStatusSchema,
 } from "@char-pub/contracts";
@@ -54,6 +73,11 @@ import {
   type CreationType,
   CreationTypeSchema,
   type Digest,
+  type ExactRef,
+  ExactRefSchema,
+  type PublishedCreationArtifact,
+  requirePublishedArtifact,
+  sha256Bytes,
 } from "@char-pub/core";
 import { z } from "zod";
 
@@ -219,9 +243,34 @@ export type ExportState =
   | { state: "ready"; url: string };
 
 export interface RegistryClient {
+  oauthClients(): Promise<{ items: OAuthClient[] }>;
+  registerOAuthClient(input: { name: string; redirect_uris: string[] }): Promise<OAuthClient>;
+  deleteOAuthClient(clientId: string): Promise<void>;
+  oauthGrants(): Promise<{ items: OAuthGrant[] }>;
+  revokeOAuthGrant(clientId: string): Promise<void>;
+  oauthConsent(oauthQuery: string): Promise<OAuthConsentDetails>;
+  decideOAuthConsent(input: {
+    oauth_query: string;
+    accept: boolean;
+  }): Promise<{ redirect_uri: string }>;
+  collaborators(ns: string, name: string): Promise<z.infer<typeof CollaboratorsResponseSchema>>;
+  inviteCollaborator(ns: string, name: string, namespace: string): Promise<void>;
+  removeCollaborator(ns: string, name: string, userId: string): Promise<void>;
+  collaborationInvitations(): Promise<z.infer<typeof CollaborationInvitationsResponseSchema>>;
+  acceptCollaboration(ns: string, name: string, license: string): Promise<void>;
+  defaultPolicy(): Promise<ExactRef>;
   me(): Promise<Me | null>;
   updateSettings(body: { show_mature: boolean; confirm_adult?: boolean }): Promise<Me>;
   myCreations(): Promise<z.infer<typeof MyCreationsResponseSchema>>;
+  favorites(options?: {
+    cursor?: string;
+    limit?: number;
+  }): Promise<z.infer<typeof FavoritesResponseSchema>>;
+  setFavorite(
+    ns: string,
+    name: string,
+    saved: boolean,
+  ): Promise<z.infer<typeof FavoriteStateSchema>>;
   tokens(): Promise<{ items: PersonalToken[] }>;
   /** 新 Token 的明文只在这次响应里出现一次。 */
   createToken(body: {
@@ -247,7 +296,30 @@ export interface RegistryClient {
     name: string,
     label: string,
     opts?: { private?: boolean },
-  ): Promise<CreationArtifact>;
+  ): Promise<PublishedCreationArtifact>;
+  sourceText(
+    release: string,
+    source: string,
+    signal?: AbortSignal,
+  ): Promise<z.infer<typeof SourceTextResponseSchema>>;
+  createDraftBuild(
+    ns: string,
+    name: string,
+    version: number,
+    signal?: AbortSignal,
+  ): Promise<DraftBuildResponse>;
+  draftBuild(id: string, signal?: AbortSignal): Promise<DraftBuildResponse>;
+  draftReferenceImpact(
+    id: string,
+    baseRelease: string,
+    options?: { cursor?: string; signal?: AbortSignal },
+  ): Promise<ReferenceImpactResponse>;
+  draftArtifact(build: DraftBuildResponse, signal?: AbortSignal): Promise<CreationArtifact>;
+  draftSourceText(
+    id: string,
+    source: string,
+    signal?: AbortSignal,
+  ): Promise<z.infer<typeof SourceTextResponseSchema>>;
   dependents(ns: string, name: string): Promise<DependentsPage>;
   exportCcv3(ns: string, name: string, label: string, preset?: string): Promise<ExportState>;
   getCcv3Loss(ns: string, name: string, label: string, preset?: string): Promise<Ccv3LossReport>;
@@ -288,8 +360,17 @@ export interface RegistryClient {
   renameNamespace(slug: string, newSlug: string): Promise<Namespace>;
   createCreation(
     ns: string,
-    body: { name: string; type: CreationType; display_name: string },
+    body: {
+      name: string;
+      type: CreationType;
+      display_name: string;
+      working?: Record<string, unknown>;
+    },
   ): Promise<{ id: string; ref: string; type: CreationType }>;
+  deriveCreation(
+    ns: string,
+    body: DeriveCreationRequest,
+  ): Promise<z.infer<typeof CreateCreationResponseSchema>>;
   draftAvatar(ns: string, name: string): Promise<{ url: string; digest: string }>;
   draft(ns: string, name: string): Promise<Draft>;
   /** 保存草稿。`version` 是读到的版本号，服务端据此做乐观锁，冲突时抛出 409。 */
@@ -418,7 +499,11 @@ export function createRegistryClient(
   async function send(
     method: string,
     path: string,
-    init: { body?: unknown; headers?: Record<string, string> } = {},
+    init: {
+      body?: unknown;
+      headers?: Record<string, string>;
+      signal?: AbortSignal | undefined;
+    } = {},
   ): Promise<Response> {
     const headers: Record<string, string> = { accept: "application/json", ...init.headers };
     if (init.body !== undefined) headers["content-type"] = "application/json";
@@ -428,9 +513,11 @@ export function createRegistryClient(
         method,
         headers,
         credentials: "include",
+        ...(init.signal ? { signal: init.signal } : {}),
         ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       });
-    } catch {
+    } catch (error) {
+      if (init.signal?.aborted) throw error;
       throw new ApiError(0, "network.unreachable", "could not reach the registry");
     }
     if (!res.ok) throw await problemOf(res);
@@ -441,7 +528,7 @@ export function createRegistryClient(
     schema: T,
     method: string,
     path: string,
-    init?: { body?: unknown; headers?: Record<string, string> },
+    init?: { body?: unknown; headers?: Record<string, string>; signal?: AbortSignal | undefined },
   ): Promise<z.infer<T>> {
     const res = await send(method, path, init);
     const parsed = schema.safeParse(await res.json());
@@ -455,6 +542,7 @@ export function createRegistryClient(
     `${creationPath(ns, name)}/releases/${encodeURIComponent(label)}`;
 
   return {
+    defaultPolicy: () => json(ExactRefSchema, "GET", "/v1/default-policy"),
     async me() {
       try {
         return await json(MeSchema, "GET", "/v1/me");
@@ -465,6 +553,14 @@ export function createRegistryClient(
     },
     updateSettings: (body) => json(MeSchema, "PUT", "/v1/me/settings", { body }),
     myCreations: () => json(MyCreationsResponseSchema, "GET", "/v1/me/creations"),
+    favorites: (options = {}) =>
+      json(
+        FavoritesResponseSchema,
+        "GET",
+        `/v1/me/favorites?${new URLSearchParams(Object.entries(options).map(([key, value]) => [key, String(value)]))}`,
+      ),
+    setFavorite: (ns, name, saved) =>
+      json(FavoriteStateSchema, saved ? "PUT" : "DELETE", `${creationPath(ns, name)}/favorite`),
     tokens: () => json(z.object({ items: z.array(TokenSchema) }), "GET", "/v1/me/tokens"),
     createToken: (body) => json(CreateTokenResponseSchema, "POST", "/v1/me/tokens", { body }),
     async revokeToken(id) {
@@ -477,6 +573,37 @@ export function createRegistryClient(
       }
       const qs = q.toString();
       return json(SearchPageSchema, "GET", `/v1/search${qs ? `?${qs}` : ""}`);
+    },
+    oauthClients: () => json(OAuthClientsSchema, "GET", "/v1/me/oauth/clients"),
+    registerOAuthClient: (input) =>
+      json(OAuthClientSchema, "POST", "/v1/me/oauth/clients", { body: input }),
+    deleteOAuthClient: async (id) => {
+      await send("DELETE", `/v1/me/oauth/clients/${encodeURIComponent(id)}`);
+    },
+    oauthGrants: () => json(OAuthGrantsSchema, "GET", "/v1/me/oauth/grants"),
+    revokeOAuthGrant: async (id) => {
+      await send("DELETE", `/v1/me/oauth/grants/${encodeURIComponent(id)}`);
+    },
+    oauthConsent: (oauth_query) =>
+      json(OAuthConsentDetailsSchema, "POST", "/v1/oauth/consent/details", {
+        body: { oauth_query },
+      }),
+    decideOAuthConsent: (input) =>
+      json(OAuthConsentResultSchema, "POST", "/v1/oauth/consent", { body: input }),
+    collaborators: (ns, name) =>
+      json(CollaboratorsResponseSchema, "GET", `${creationPath(ns, name)}/collaborators`),
+    inviteCollaborator: async (ns, name, namespace) => {
+      await send("POST", `${creationPath(ns, name)}/collaborators`, { body: { namespace } });
+    },
+    removeCollaborator: async (ns, name, user) => {
+      await send("DELETE", `${creationPath(ns, name)}/collaborators/${encodeURIComponent(user)}`);
+    },
+    collaborationInvitations: () =>
+      json(CollaborationInvitationsResponseSchema, "GET", "/v1/me/collaborations"),
+    acceptCollaboration: async (ns, name, license) => {
+      await send("POST", `${creationPath(ns, name)}/collaborators/accept`, {
+        body: { license, agree: true },
+      });
     },
     creation: (ns, name) => json(CreationDetailSchema, "GET", creationPath(ns, name)),
     release: (ns, name, label) => json(ReleaseDetailSchema, "GET", release(ns, name, label)),
@@ -512,6 +639,67 @@ export function createRegistryClient(
       const parsed = CreationArtifactSchema.safeParse(await res.json());
       if (!parsed.success)
         throw new ApiError(res.status, "response.invalid", parsed.error.issues[0]?.message);
+      try {
+        return requirePublishedArtifact(parsed.data);
+      } catch {
+        throw new ApiError(res.status, "response.invalid", "expected a published Release artifact");
+      }
+    },
+    sourceText: (release, source, signal) =>
+      json(
+        SourceTextResponseSchema,
+        "GET",
+        `/v1/releases/${encodeURIComponent(release)}/source-text?${new URLSearchParams({ source })}`,
+        { signal },
+      ),
+    createDraftBuild: (ns, name, version, signal) =>
+      json(DraftBuildResponseSchema, "POST", `${creationPath(ns, name)}/draft-builds`, {
+        body: {},
+        headers: { "if-match": String(version) },
+        signal,
+      }),
+    draftBuild: (id, signal) =>
+      json(DraftBuildResponseSchema, "GET", `/v1/draft-builds/${encodeURIComponent(id)}`, {
+        signal,
+      }),
+    draftReferenceImpact: (id, baseRelease, options = {}) =>
+      json(
+        ReferenceImpactResponseSchema,
+        "GET",
+        `/v1/draft-builds/${encodeURIComponent(id)}/reference-impact?${new URLSearchParams({ base_release: baseRelease, ...(options.cursor ? { cursor: options.cursor } : {}) })}`,
+        { signal: options.signal },
+      ),
+    draftSourceText: (id, source, signal) =>
+      json(
+        SourceTextResponseSchema,
+        "GET",
+        `/v1/draft-builds/${encodeURIComponent(id)}/source-text?${new URLSearchParams({ source })}`,
+        { signal },
+      ),
+    async draftArtifact(build, signal) {
+      if (build.state !== "ready" || !build.artifact_digest)
+        throw new ApiError(409, "draft_build.not_ready");
+      const response = await send(
+        "GET",
+        `/v1/draft-builds/${encodeURIComponent(build.origin.build_id)}/artifact`,
+        { signal },
+      );
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (sha256Bytes(bytes) !== build.artifact_digest)
+        throw new ApiError(502, "response.invalid", "draft artifact digest mismatch");
+      const parsed = CreationArtifactSchema.safeParse(JSON.parse(new TextDecoder().decode(bytes)));
+      if (!parsed.success) throw new ApiError(502, "response.invalid", "invalid draft artifact");
+      const root = parsed.data.root;
+      if (
+        !("origin" in root) ||
+        root.origin.kind !== "draft-build" ||
+        root.origin.build_id !== build.origin.build_id ||
+        root.origin.revision !== build.origin.revision ||
+        root.origin.expires_at !== build.origin.expires_at ||
+        root.semantic_digest !== build.semantic_digest ||
+        parsed.data.lock_digest !== build.lock_digest
+      )
+        throw new ApiError(502, "response.invalid", "draft artifact identity mismatch");
       return parsed.data;
     },
     dependents: (ns, name) =>
@@ -587,6 +775,13 @@ export function createRegistryClient(
         z.object({ id: z.string(), ref: z.string(), type: CreationTypeSchema }),
         "POST",
         `/v1/namespaces/${encodeURIComponent(ns)}/creations`,
+        { body },
+      ),
+    deriveCreation: (ns, body) =>
+      json(
+        CreateCreationResponseSchema,
+        "POST",
+        `/v1/namespaces/${encodeURIComponent(ns)}/derivations`,
         { body },
       ),
     draft: (ns, name) => json(DraftSchema, "GET", `${creationPath(ns, name)}/draft`),

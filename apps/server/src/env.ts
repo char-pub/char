@@ -5,10 +5,33 @@
  * 各进程只校验自己需要的部分：api / admin / worker 共用数据库与存储配置，
  * 迁移命令只需要 owner 角色的连接串。
  */
+
+import { ExactRefSchema } from "@char-pub/core";
 import { z } from "zod";
 
 const url = z.url();
 const nonEmpty = z.string().min(1);
+
+export const DefaultPolicyEnvSchema = z.object({
+  /** JSON exact identity obtained after publishing the reviewed Commons preset. */
+  DEFAULT_PRESET: z
+    .string()
+    .transform((value, ctx) => {
+      try {
+        return JSON.parse(value) as unknown;
+      } catch {
+        ctx.addIssue({ code: "custom", message: "expected exact Preset identity JSON" });
+        return z.NEVER;
+      }
+    })
+    .pipe(
+      ExactRefSchema.refine(
+        (value) => value.ref === "@commons/default-preset",
+        "expected @commons/default-preset",
+      ),
+    )
+    .optional(),
+});
 
 export const DatabaseEnvSchema = z.object({
   /** 应用运行时使用的非 owner 角色连接串。 */
@@ -45,9 +68,12 @@ export const RuntimeEnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 });
 
-export const ServerEnvSchema = RuntimeEnvSchema.extend(DatabaseEnvSchema.shape).extend(
-  StorageEnvSchema.shape,
-);
+export const ServerEnvSchema = RuntimeEnvSchema.extend(DatabaseEnvSchema.shape)
+  .extend(StorageEnvSchema.shape)
+  .extend({
+    DRAFT_BUILD_MAX_RETAINED: z.coerce.number().int().min(1).max(1000).default(20),
+    DRAFT_BUILD_MAX_PER_HOUR: z.coerce.number().int().min(1).max(10000).default(60),
+  });
 
 /** 自助删除申请使用与管理端相同的密钥；未配置时仅关闭受理入口。 */
 export const DeletionEnvSchema = z.object({
@@ -93,6 +119,8 @@ export const AuthEnvSchema = z
     BETTER_AUTH_URL: url,
     /** 允许发起登录与写请求的前端 Origin，逗号分隔。 */
     AUTH_TRUSTED_ORIGINS: originList,
+    /** Primary browser origin for OAuth authorization; defaults to first trusted origin. */
+    OAUTH_APP_URL: url.optional(),
     GITHUB_CLIENT_ID: nonEmpty.optional(),
     GITHUB_CLIENT_SECRET: nonEmpty.optional(),
     DISCORD_CLIENT_ID: nonEmpty.optional(),
@@ -101,6 +129,15 @@ export const AuthEnvSchema = z
     GOOGLE_CLIENT_SECRET: nonEmpty.optional(),
   })
   .superRefine((env, ctx) => {
+    if (
+      env.OAUTH_APP_URL &&
+      !env.AUTH_TRUSTED_ORIGINS.includes(env.OAUTH_APP_URL.replace(/\/$/, ""))
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["OAUTH_APP_URL"],
+        message: "OAuth app URL must be an exact trusted browser origin",
+      });
     for (const p of ["GITHUB", "DISCORD", "GOOGLE"] as const) {
       const id = env[`${p}_CLIENT_ID`];
       const secret = env[`${p}_CLIENT_SECRET`];

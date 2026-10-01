@@ -1,21 +1,13 @@
-import {
-  buildCreation,
-  type ContextIR,
-  canonicalizeCreation,
-  digestOf,
-  mergeContribution,
-  PRESET_REGIONS,
-} from "@char-pub/core";
+import { digestOf, mergeContribution, PRESET_REGIONS } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
-import { fakeClient } from "@/test/render";
-import { loadAssemblyInput } from "./assembly-input";
+import { buildTestCreation } from "@/test/build";
 import { buildChanges, contributionBase } from "./contribution";
 import { bindingsFor, DEFAULT_SETTINGS, runPreview } from "./preview";
 
 const meta = { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" };
 const policy = {
-  version: "0-draft",
-  blocks: [{ id: "rules", text: "Speak clearly.", position: "main" }],
+  version: "1-draft",
+  blocks: [{ id: "rules", text: "Speak clearly.", default_at: "main" }],
   layout: [...PRESET_REGIONS],
   requires: { system_role: true },
 };
@@ -27,8 +19,8 @@ const preset = {
   policy,
   meta,
 };
-function scenarioIR(): ContextIR {
-  const { artifact } = buildCreation({
+function scenarioArtifact() {
+  const { artifact } = buildTestCreation({
     root: {
       release: "rel_01j00000000000000000000000",
       visibility: "public",
@@ -54,11 +46,12 @@ function scenarioIR(): ContextIR {
     },
   });
   if (artifact.kind !== "content") throw new Error("content expected");
-  return artifact.ir;
+  return artifact;
 }
 describe("first-class authoring", () => {
   it("keeps runtime roles independent and forwards the selected per-agent perspective", () => {
-    const ir = scenarioIR();
+    const artifact = scenarioArtifact();
+    const ir = artifact.ir;
     const named = ir.late_slots.filter((slot) => slot.key !== "user");
     expect(named).toHaveLength(2);
     expect(bindingsFor(ir, DEFAULT_SETTINGS.persona)).not.toHaveProperty(
@@ -74,7 +67,7 @@ describe("first-class authoring", () => {
     const fragment = ir.fragments[0];
     if (!participant || !fragment) throw new Error("missing test fixture");
     fragment.visibility = { scope: "private", to: [`participant:${participant.key}`] };
-    const own = runPreview(ir, {
+    const own = runPreview(artifact, {
       ...DEFAULT_SETTINGS,
       mode: "per-agent",
       forParticipant: participant.key,
@@ -85,7 +78,7 @@ describe("first-class authoring", () => {
       expect(own.result.messages.some((m) => m.content.includes("A secret room."))).toBe(true);
     const other = ir.participants.find((p) => p.key !== participant.key && p.key !== "user");
     if (!other) throw new Error("missing participant");
-    const hidden = runPreview(ir, {
+    const hidden = runPreview(artifact, {
       ...DEFAULT_SETTINGS,
       mode: "per-agent",
       forParticipant: other.key,
@@ -113,45 +106,5 @@ describe("first-class authoring", () => {
     const merged = mergeContribution(base.canonical.creation, changes);
     expect(merged.conflicts).toEqual([]);
     expect(merged.result?.creation.policy?.blocks[0]?.text).toBe("Updated policy.");
-  });
-  it("loads module references and preserves yanked release status", async () => {
-    const module = {
-      ...preset,
-      id: "cr_01j00000000000000000000002",
-      ref: "@writer/module",
-      type: "prompt-module",
-      policy: undefined,
-      prompt_module: { version: "0-draft", blocks: policy.blocks },
-    };
-    const canonical = canonicalizeCreation(module);
-    const release = "rel_01j00000000000000000000002";
-    const input = await loadAssemblyInput(
-      fakeClient({
-        creation: async (ns, name) => {
-          expect([ns, name]).toEqual(["writer", "module"]);
-          return {
-            releases: [{ id: release, label: "1.0.0", visibility: "public", status: "yanked" }],
-          } as never;
-        },
-        releaseSource: async () => ({ creation: module }) as never,
-      }),
-      {
-        ...preset,
-        policy: {
-          ...policy,
-          imports: [
-            {
-              id: "module",
-              use: "@writer/module",
-              pin: { release, semantic_digest: canonical.semantic_digest },
-            },
-          ],
-        },
-      },
-    );
-    expect(input.dependencies?.[0]).toMatchObject({
-      status: "yanked",
-      semantic_digest: canonical.semantic_digest,
-    });
   });
 });

@@ -1,13 +1,35 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { ASSEMBLER, TOKENIZER_VERSIONS } from "@char-pub/assembler";
+import { canonicalizeCreation } from "@char-pub/core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cmdBuild, cmdCheck, cmdInit, cmdPreview, cmdTest, type Output } from "../src/commands.js";
-import { generateFragmentIds, loadCharYaml, placeholderCreationId } from "../src/project.js";
+import { TEST_DEFAULT_PIN, TEST_DEFAULT_POLICY } from "../../core/test/build.js";
+import {
+  cmdCheck,
+  cmdInit,
+  type Output,
+  cmdBuild as rawBuild,
+  cmdPreview as rawPreview,
+  cmdTest as rawTest,
+} from "../src/commands.js";
+import {
+  generateFragmentIds,
+  loadCharYaml,
+  parseCharYaml,
+  placeholderCreationId,
+} from "../src/project.js";
 
 let dir: string;
+const cmdBuild = (input: Parameters<typeof rawBuild>[0], output: Output) =>
+  rawBuild({ defaultPolicy: path.join(dir, "default-policy.json"), ...input }, output);
+const cmdPreview = (input: Parameters<typeof rawPreview>[0], output: Output) =>
+  rawPreview({ defaultPolicy: path.join(dir, "default-policy.json"), ...input }, output);
+const cmdTest = (input: Parameters<typeof rawTest>[0], output: Output) =>
+  rawTest({ defaultPolicy: path.join(dir, "default-policy.json"), ...input }, output);
 beforeEach(async () => {
   dir = await mkdtemp(path.join(tmpdir(), "char-cli-"));
+  await writeFile(path.join(dir, "default-policy.json"), JSON.stringify(TEST_DEFAULT_POLICY));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
@@ -104,6 +126,52 @@ describe("check --fix", () => {
 });
 
 describe("safety of char.yaml", () => {
+  it("expands localized Story prose without following source provenance or structured data paths", async () => {
+    const reads: string[] = [];
+    const data = {
+      ref: "@djj/prose",
+      type: "scenario",
+      display_name: "Prose",
+      fragments: [
+        {
+          kind: "knowledge",
+          content: { type: "structured", schema: "test/data", data: { text: "./payload.md" } },
+        },
+      ],
+      story: {
+        version: 1,
+        scenes: [{ id: "lobby", title: "Lobby", opening: { en: "./opening.md" } }],
+        starts: [{ id: "start", greeting: { ref: "./literal.md" } }],
+      },
+      sources: [{ id: "book", origin: { note: "./origin.md" } }],
+      assets: [
+        {
+          slot: "book",
+          variants: [
+            {
+              blob: {
+                locator: { provider: "http", path: "./book.md", url: "https://example.com/book" },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const parsed = await parseCharYaml(
+      new TextEncoder().encode(JSON.stringify(data)),
+      "char.yaml",
+      async (file) => {
+        reads.push(file);
+        return new TextEncoder().encode("Included prose");
+      },
+    );
+    expect(reads).toEqual(["opening.md"]);
+    expect(JSON.stringify(parsed.creation)).toContain("Included prose");
+    expect(JSON.stringify(parsed.creation)).toContain("./book.md");
+    expect(JSON.stringify(parsed.creation)).toContain("./payload.md");
+    expect(JSON.stringify(parsed.creation)).toContain("./literal.md");
+  });
+
   it("rejects includes outside the project root", async () => {
     const sub = path.join(dir, "project");
     await writeFile(path.join(dir, "secret.md"), "top secret");
@@ -157,11 +225,209 @@ describe("safety of char.yaml", () => {
 });
 
 describe("build and preview", () => {
+  it("requires a pinned default for local content builds", async () => {
+    const out = capture();
+    expect(await cmdInit({ dir, ref: "@djj/actor", type: "character", name: "Actor" }, out)).toBe(
+      0,
+    );
+    expect(
+      await rawBuild({ file: path.join(dir, "char.yaml"), outDir: path.join(dir, "dist") }, out),
+    ).toBe(1);
+    expect(out.err.join("\n")).toContain("resolve.default_policy_required");
+  });
   async function project(text: string) {
     const file = path.join(dir, "char.yaml");
     await writeFile(file, text);
     return file;
   }
+
+  it("uses the locked profile language for both startup greeting and scene context", async () => {
+    const actor = {
+      release: "rel_01j00000000000000000000002",
+      visibility: "public",
+      creation: {
+        id: "cr_01j00000000000000000000002",
+        ref: "@djj/locale-host",
+        type: "character",
+        display_name: "Host",
+        meta: TEST_DEFAULT_POLICY.creation.meta,
+        fragments: [
+          {
+            id: "description",
+            stable: true,
+            kind: "character",
+            content: { type: "text", text: "A host." },
+          },
+        ],
+      },
+    };
+    const dependency = path.join(dir, "locale-host.json");
+    await writeFile(dependency, JSON.stringify(actor));
+    const file = await project(
+      JSON.stringify({
+        ref: "@djj/locale-start",
+        references: [
+          {
+            id: "host",
+            use: actor.creation.ref,
+            mode: "default",
+            pin: {
+              release: actor.release,
+              semantic_digest: canonicalizeCreation(actor.creation).semantic_digest,
+            },
+          },
+        ],
+        cast: [{ key: "host", who: actor.creation.ref }],
+        type: "scenario",
+        display_name: "Locale start",
+        meta: { default_locale: "en", rating: "general", rights: "original", license: "CC0-1.0" },
+        story: {
+          version: 1,
+          scenes: [{ id: "lobby", title: "Lobby", opening: { en: "EN_SCENE", ja: "JA_SCENE" } }],
+          starts: [{ id: "arrive", greeting: { en: "EN_GREETING", ja: "JA_GREETING" } }],
+        },
+        assembly: {
+          version: "1-draft",
+          preset: TEST_DEFAULT_PIN,
+          profile: {
+            runtime: { name: "locked", version: "1" },
+            tokenizer: "estimate",
+            context_window: 4096,
+            reserve_for_output: 256,
+            mode: "narrator",
+            locale: "ja",
+            capabilities: { system_role: true, multiple_system_messages: true },
+          },
+          assembler: ASSEMBLER,
+          tokenizer: { name: "estimate", version: TOKENIZER_VERSIONS.estimate },
+        },
+      }),
+    );
+    const options = {
+      file,
+      deps: [dependency],
+      tokenizer: "estimate" as const,
+      contextWindow: 4096,
+      mode: "narrator" as const,
+      persona: "Sam",
+      messages: [],
+    };
+    const result = capture();
+    expect(await cmdPreview(options, result), result.err.join("\n")).toBe(0);
+    expect(result.out.join("\n")).toContain("JA_SCENE");
+    expect(result.out.join("\n")).toContain("JA_GREETING");
+    expect(result.out.join("\n")).not.toContain("EN_GREETING");
+    const explicit = capture();
+    expect(await cmdPreview({ ...options, locale: "en" }, explicit), explicit.err.join("\n")).toBe(
+      0,
+    );
+    expect(explicit.out.join("\n")).toContain("EN_SCENE");
+    expect(explicit.out.join("\n")).toContain("EN_GREETING");
+  });
+
+  it("previews the selected story opening and rejects partial supplied snapshots", async () => {
+    const { canonicalizeCreation } = await import("@char-pub/core");
+    const host = {
+      release: "rel_01j00000000000000000000001",
+      visibility: "public",
+      creation: {
+        id: "cr_01j00000000000000000000001",
+        ref: "@djj/host",
+        type: "character",
+        display_name: "Host",
+        meta: { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" },
+        fragments: [
+          {
+            id: "description",
+            stable: true,
+            kind: "character",
+            content: { type: "text", text: "A quiet innkeeper." },
+          },
+        ],
+      },
+    };
+    const dependency = path.join(dir, "host.json");
+    await writeFile(dependency, JSON.stringify(host));
+    const file = await project(
+      JSON.stringify({
+        ref: "@djj/inn",
+        type: "scenario",
+        display_name: "Inn",
+        meta: { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" },
+        references: [
+          {
+            id: "host",
+            use: host.creation.ref,
+            mode: "default",
+            pin: {
+              release: host.release,
+              semantic_digest: canonicalizeCreation(host.creation).semantic_digest,
+            },
+          },
+        ],
+        cast: [{ key: "host", who: host.creation.ref, part: "Innkeeper" }],
+        fragments: [
+          {
+            id: "setting",
+            stable: true,
+            kind: "scenario",
+            content: { type: "text", text: "An old inn." },
+          },
+        ],
+        story: {
+          version: 1,
+          scenes: [
+            { id: "arrival", title: "Arrival", opening: "{{user}} arrives before sunset." },
+            { id: "night", title: "Night", opening: "{{user}} hears a knock after midnight." },
+          ],
+          starts: [
+            {
+              id: "early",
+              title: "Before sunset",
+              description: "Arrive while the inn is open.",
+              scene: "arrival",
+            },
+            {
+              id: "late",
+              title: "After midnight",
+              description: "Arrive after everyone is asleep.",
+              scene: "night",
+              greeting: "Welcome after midnight, {{user}}.",
+            },
+          ],
+        },
+      }),
+    );
+    const options = {
+      file,
+      deps: [dependency],
+      tokenizer: "estimate" as const,
+      contextWindow: 4096,
+      mode: "narrator" as const,
+      persona: "Sam",
+      messages: [],
+    };
+    const out = capture();
+    const code = await cmdPreview({ ...options, start: "late" }, out);
+    expect(code, out.err.join("\n")).toBe(0);
+    expect(out.out.join("\n")).toContain("Sam hears a knock after midnight.");
+    expect(out.out.join("\n")).not.toContain("arrives before sunset");
+    expect(out.out.join("\n")).toContain("Welcome after midnight, Sam.");
+    const unselected = capture();
+    expect(await cmdPreview(options, unselected)).toBe(1);
+    expect(unselected.err.join("\n")).toContain("story.start_required");
+    const session = path.join(dir, "session.json");
+    await writeFile(
+      session,
+      JSON.stringify({ bindings: { user: { kind: "persona", display_name: "Sam" } }, history: [] }),
+    );
+    const partial = capture();
+    expect(await cmdPreview({ ...options, session }, partial)).toBe(1);
+    expect(partial.err.join("\n")).toContain("catalog.story_state_required");
+    const conflict = capture();
+    expect(await cmdPreview({ ...options, session, start: "late" }, conflict)).toBe(1);
+    expect(conflict.err.join("\n")).toContain("cli.conflicting_options");
+  });
 
   it("refuses to build before ids are fixed, and fails on check errors", async () => {
     const o = capture();
@@ -237,8 +503,8 @@ meta: { default_locale: en, rating: general, rights: original, license: CC-BY-4.
     expect(code).toBe(0);
     expect(p.out[0]).toMatch(/^Context Preview · \d+ tokens · tokenizer: estimate \(estimate\)$/);
     const body = p.out.join("\n");
-    expect(body).toMatch(/included\s+always\s+\d+\s+@djj\/alice#description~root/);
-    expect(body).toMatch(/included\s+keyword:Arasaka/);
+    expect(body).toMatch(/included\s+direct\s+\d+\s+@djj\/alice#description~root/);
+    expect(body).toMatch(/included\s+direct\s+\d+\s+@djj\/alice#lore\/arasaka/);
     expect(body).toContain("via: lives-in");
   });
 

@@ -415,7 +415,14 @@ describe("UC-4: publishing from GitHub with OIDC", () => {
       .from(auditLog)
       .where(eq(auditLog.action, "release.publish_requested"));
     expect(rows.length).toBeGreaterThanOrEqual(4);
-    expect(rows.every((r) => (r.actor as { kind: string }).kind === "oidc")).toBe(true);
+    const seeded = rows.filter((r) => (r.actor as { kind: string }).kind === "system");
+    expect(seeded).toHaveLength(1);
+    expect(seeded[0]?.actor).toEqual({ kind: "system", id: "test" });
+    expect(
+      rows
+        .filter((r) => r !== seeded[0])
+        .every((r) => (r.actor as { kind: string }).kind === "oidc"),
+    ).toBe(true);
     expect((await verifyAuditChain(t.app.db)).ok).toBe(true);
   });
 });

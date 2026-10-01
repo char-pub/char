@@ -1,0 +1,26 @@
+{
+  "kind": "evaluation",
+  "story": {
+    "version": 1,
+    "scenes": [
+      {
+        "id": "room",
+        "title": "Room"
+      }
+    ]
+  },
+  "cast": ["alice", "bob"],
+  "operations": [
+    {
+      "op": "input",
+      "text": "I climb through the window instead of choosing an option."
+    },
+    {
+      "op": "available"
+    },
+    {
+      "op": "present",
+      "present": ["bob"]
+    }
+  ]
+}

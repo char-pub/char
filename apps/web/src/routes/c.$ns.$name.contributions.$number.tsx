@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ContributionReview } from "@/components/contribution-review";
+import { useCreation } from "@/components/creation-context";
 import { PageSkeleton } from "@/components/skeletons";
 import { NotFound } from "@/components/states";
 import { useGuest, useMe } from "@/lib/registry";
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/c/$ns/$name/contributions/$number")({
 function ContributionRoute() {
   const { ns, name, number } = Route.useParams();
   const me = useMe();
+  const creation = useCreation();
   const guest = useGuest(!me.isPending && !me.data);
   const n = Number(number);
   if (!Number.isSafeInteger(n) || n <= 0) {
@@ -24,7 +26,9 @@ function ContributionRoute() {
       ns={ns}
       name={name}
       number={n}
-      member={!!me.data && me.data.namespace === ns}
+      member={creation.canEdit}
+      canUpdateSensitive={creation.isOwner}
+      key={`${me.data?.id ?? guest.data?.guest.id ?? "anonymous"}:${ns}/${name}/${n}`}
       meId={me.data?.id}
       guest={guest.data}
     />

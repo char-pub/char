@@ -7,25 +7,26 @@
  *   PUT URL；文件不经过 API。
  * - worker 下载原件后重新计算 sha256，与声明值不一致就拒绝；再查黑名单、识别真实类型、
  *   限制像素、重新编码（去掉全部元数据）、生成缩略图，最后做 CSAM 扫描。
- * - 只有 ready 的上传可以被 Creation 引用。原件处理完即删除，对外只分发重新编码后的版本。
+ * - 只有 ready 的上传可以被 Creation 引用。图片原件处理完删除；参考文本先验证UTF-8，再按原字节保存，保留摘要与固定锚点。
  * - 扫描服务暂时不可用时保持 processing 并抛出可重试错误，按队列的退避策略重试，
  *   不会自动放行。
  */
 import { MAX_ASSET_BYTES, MAX_CARD_JSON_BYTES, MAX_UPLOAD_BYTES } from "@char-pub/contracts";
-import { sha256Bytes } from "@char-pub/core";
-import { and, eq, gt, inArray } from "drizzle-orm";
+import { isCharError, sha256Bytes } from "@char-pub/core";
+import { and, eq, gt, inArray, like } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { assetMeta, blockedDigests, uploads } from "../db/schema/index.js";
 import type { JobQueue } from "../jobs/queue.js";
 import { type CsamHitResult, handleCsamHit } from "../moderation/csam.js";
 import type { Cas } from "../storage/cas.js";
+import { decodeSourceBytes } from "../storage/text.js";
 import { type CsamScanner, decideUpload, noopScanner } from "./csam.js";
 import { ImageRejected, processImage } from "./image.js";
 
 /** 每种用途允许的类型和大小上限。 */
 export const UPLOAD_LIMITS = {
   asset: {
-    types: ["image/png", "image/jpeg", "image/webp", "image/gif"],
+    types: ["image/png", "image/jpeg", "image/webp", "image/gif", "text/plain", "text/markdown"],
     maxBytes: MAX_ASSET_BYTES,
   },
   import: {
@@ -46,7 +47,7 @@ export function stagingKeyFor(uploadId: string): string {
 /** 上传 result 列的内容。 */
 export interface UploadResultRecord {
   original_digest: string;
-  blob?: { digest: string; size: number; media_type: string; width: number; height: number };
+  blob?: { digest: string; size: number; media_type: string; width?: number; height?: number };
   thumbnail?: string;
   scan?: { status: string; provider: string };
 }
@@ -111,6 +112,44 @@ export async function processUpload(
     .from(blockedDigests)
     .where(inArray(blockedDigests.digest, [digest]));
   if (blocked.length > 0) return reject("upload.blocked_content");
+
+  if (purpose === "asset" && ["text/plain", "text/markdown"].includes(u.declaredType)) {
+    try {
+      decodeSourceBytes(original, uploadId);
+    } catch (error) {
+      if (isCharError(error)) return reject(error.code);
+      throw error;
+    }
+    const blob = await cas.putBlob(db, {
+      bucket: "private",
+      bytes: original,
+      mediaType: u.declaredType,
+      kind: "asset",
+      digest,
+    });
+    const result = {
+      declared_sha256: digest,
+      original_digest: digest,
+      purpose,
+      blob: { digest: blob.digest, size: blob.size, media_type: u.declaredType },
+    };
+    await db.transaction(async (tx) => {
+      const updated = await tx
+        .update(uploads)
+        .set({ status: "ready", result, updatedAt: deps.now() })
+        .where(and(eq(uploads.id, uploadId), eq(uploads.status, "processing")))
+        .returning({ id: uploads.id });
+      if (!updated.length) return;
+      await tx
+        .insert(assetMeta)
+        .values({ digest, mediaType: u.declaredType, scanStatus: "not_scanned" })
+        .onConflictDoNothing();
+    });
+    await cas.deleteUpload(u.stagingKey);
+    return { state: "ready", blob: digest, thumbnail: "" };
+  }
+  if (purpose === "asset" && !u.declaredType.startsWith("image/"))
+    return reject("upload.type_not_allowed");
 
   // 导入用的卡片（PNG / CHARX / JSON）在这里只校验完整性与黑名单，原件原样留给导入任务：
   // PNG 卡片的角色数据就在图片的文本 chunk 里，重新编码会把它丢掉。卡片里的图片由导入任务
@@ -255,7 +294,13 @@ export async function rescanAll(
     const page = await deps.db
       .select({ digest: assetMeta.digest })
       .from(assetMeta)
-      .where(and(eq(assetMeta.scanStatus, "not_scanned"), gt(assetMeta.digest, after)))
+      .where(
+        and(
+          eq(assetMeta.scanStatus, "not_scanned"),
+          like(assetMeta.mediaType, "image/%"),
+          gt(assetMeta.digest, after),
+        ),
+      )
       .orderBy(assetMeta.digest)
       .limit(pageSize);
     if (page.length === 0) break;

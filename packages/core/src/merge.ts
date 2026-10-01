@@ -39,9 +39,12 @@ import {
   canonicalizeCreation,
   canonicalPolicy,
   canonicalPromptModule,
+  configurationDigest,
   digestOf,
+  normalizeConfigurationValue,
   normalizeValue,
 } from "./canonical.js";
+import { type CheckDiagnostic, checkCreation } from "./check.js";
 import { CharError } from "./errors.js";
 import { AssemblyConfigSchema, AssemblyFixtureSchema } from "./schema/assembly.js";
 import {
@@ -63,6 +66,19 @@ import {
   REQUIRED_METADATA_FIELDS,
   SENSITIVE_METADATA_FIELDS,
 } from "./schema/release.js";
+import { assertConditionLimits } from "./story/limits.js";
+import {
+  applyComposition,
+  applyCompositionOrder,
+  assertSafeCompositionValue,
+  canonicalCompositionValue,
+  compositionDigest,
+  compositionValue,
+  isCompositionChange,
+  mergeCompositionObject,
+  mergeCompositionOrder,
+  removeEmptyStory,
+} from "./story-merge.js";
 
 export type MergeState = "applied" | "already_applied" | "conflict";
 
@@ -81,7 +97,8 @@ export interface MergeOutcome {
    * 只在冲突时出现。diverged：两边都改了这个键；slot_missing：要给一个不存在的
    * asset slot 添加 variant（slot 已被删除，或从来没有）。
    */
-  reason?: "diverged" | "slot_missing";
+  reason?: "diverged" | "slot_missing" | "invalid_result";
+  conflict_fields?: string[];
 }
 
 export interface MergeResult {
@@ -95,11 +112,22 @@ export interface MergeResult {
   sensitive_keys: string[];
   /** 没有冲突时的合并结果；只要有一个冲突就是 null，调用方不能生成新 Revision。 */
   result: CanonicalResult | null;
+  diagnostics?: CheckDiagnostic[];
 }
 
 /** 变更的比较键。同一个 Contribution 内不能有两个相同的键。 */
 export function changeKey(c: Change): string {
   switch (c.on) {
+    case "story":
+      return `story:${c.kind}:${c.id}`;
+    case "story-order":
+      return `story-order:${c.list}`;
+    case "cast":
+      return `cast:${c.key}`;
+    case "group":
+      return `group:${c.id}`;
+    case "source":
+      return `source:${c.id}`;
     case "fragment":
       return `fragment:${c.id}`;
     case "edge":
@@ -181,8 +209,49 @@ function validateMetadataValue(field: MetadataField, value: JSONValue, subject: 
   }
 }
 
+/** Normalize the change envelope while retaining exact fixture snapshots in a typed after field. */
+export function normalizeContributionChange(raw: unknown, path = "$"): JSONValue {
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "on" in raw &&
+    raw.on === "story" &&
+    "after" in raw &&
+    raw.after &&
+    typeof raw.after === "object" &&
+    "when" in raw.after
+  )
+    assertConditionLimits(raw.after.when, `${path}.after.when`);
+  if (
+    raw &&
+    typeof raw === "object" &&
+    "on" in raw &&
+    ["story", "story-order", "cast", "group", "source"].includes(String(raw.on))
+  )
+    assertSafeCompositionValue(raw);
+  if (
+    raw &&
+    typeof raw === "object" &&
+    !Array.isArray(raw) &&
+    (Object.getPrototypeOf(raw) === Object.prototype || Object.getPrototypeOf(raw) === null) &&
+    "on" in raw &&
+    raw.on === "configuration" &&
+    "field" in raw &&
+    raw.field === "assembly_tests" &&
+    "after" in raw &&
+    raw.after !== undefined
+  ) {
+    const { after, ...envelope } = raw;
+    return {
+      ...(normalizeValue(envelope, path) as Record<string, JSONValue>),
+      after: normalizeConfigurationValue("assembly_tests", after, `${path}.after`),
+    };
+  }
+  return normalizeValue(raw, path);
+}
+
 function parseChange(raw: unknown, index: number): Change {
-  const parsed = ChangeSchema.safeParse(normalizeValue(raw, `changes[${index}]`));
+  const parsed = ChangeSchema.safeParse(normalizeContributionChange(raw, `changes[${index}]`));
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     throw invalid(
@@ -256,6 +325,7 @@ function checkShape(c: Change, key: string): void {
 /** after 的 canonical digest。 */
 function afterDigest(c: Change): string | undefined {
   if (c.after === undefined) return undefined;
+  if (isCompositionChange(c)) return digestOf(canonicalCompositionValue(c, c.after));
   switch (c.on) {
     case "fragment":
       return canonicalFragment(c.after).digest;
@@ -268,7 +338,7 @@ function afterDigest(c: Change): string | undefined {
     case "metadata":
       return digestOf(c.after);
     case "configuration":
-      return digestOf(canonicalConfiguration(c));
+      return configurationDigest(c.field, canonicalConfiguration(c));
   }
 }
 
@@ -284,6 +354,7 @@ interface Current {
 
 function currentOf(base: CanonicalResult, c: Change): Current {
   const creation = base.creation;
+  if (isCompositionChange(c)) return { digest: compositionDigest(creation, c) };
   switch (c.on) {
     case "fragment":
       return { digest: creation.fragments.find((f) => f.id === c.id)?.digest };
@@ -299,7 +370,7 @@ function currentOf(base: CanonicalResult, c: Change): Current {
     }
     case "configuration": {
       const value = (base.json as Record<string, JSONValue>)[c.field];
-      return { digest: value === undefined ? undefined : digestOf(value) };
+      return { digest: value === undefined ? undefined : configurationDigest(c.field, value) };
     }
     case "metadata": {
       // 读 canonical JSON：默认值和空列表在那里已被省略，视为缺失。
@@ -358,6 +429,14 @@ function upsert<T>(list: T[], match: (x: T) => boolean, value: T | undefined): v
 }
 
 function apply(w: Working, c: Change): void {
+  if (isCompositionChange(c)) {
+    applyComposition(
+      w,
+      c,
+      c.after === undefined ? undefined : canonicalCompositionValue(c, c.after),
+    );
+    return;
+  }
   switch (c.on) {
     case "fragment":
       upsert(w.fragments, (f) => f.id === c.id, c.after && canonicalFragment(c.after));
@@ -402,14 +481,37 @@ function apply(w: Working, c: Change): void {
  *
  * 形状错误（op 与 base_digest / after 不匹配、键重复、整个 slot 与其 variant 同时变更、
  * unset 必填字段等）直接抛出 `contribution.*` 错误，因为这说明 Contribution 本身不合法。
- * 冲突不抛异常，而是体现在 outcomes 里，并让 result 为 null。
+ * 新对象变更要求第三参数为Registry从不可变Revision加载的原始基线；不能信任客户端
+ * 提供的基线对象。base_digest逐对象核对，字段独立合并，列表顺序独立处理。
+ * 冲突及合并后静态错误不抛异常，返回outcomes/conflict_fields/diagnostics与result:null。
  */
 export function mergeContribution(
   targetDraft: CanonicalCreation | CreationInput,
   rawChanges: readonly unknown[],
+  baseCreation?: CanonicalCreation | CreationInput,
 ): MergeResult {
   const base = canonicalizeCreation(targetDraft);
   const changes = rawChanges.map(parseChange);
+  const original = baseCreation === undefined ? undefined : canonicalizeCreation(baseCreation);
+  if (changes.some(isCompositionChange) && !original)
+    throw new CharError({
+      code: "contribution.base_required",
+      subject: "base_creation",
+      detail: "Field-level changes require the immutable Revision baseline.",
+    });
+  if (
+    original &&
+    ["id", "ref", "type"].some(
+      (field) =>
+        original.creation[field as "id" | "ref" | "type"] !==
+        base.creation[field as "id" | "ref" | "type"],
+    )
+  )
+    throw new CharError({
+      code: "contribution.base_identity_mismatch",
+      subject: base.creation.ref,
+    });
+  const compositionResults = new Map<number, JSONValue | undefined>();
 
   const keys = changes.map(changeKey);
   const seen = new Set<string>();
@@ -441,6 +543,16 @@ export function mergeContribution(
         detail: "after is identical to the base value",
       });
     }
+    if (
+      isCompositionChange(c) &&
+      original &&
+      compositionDigest(original.creation, c) !== c.base_digest
+    )
+      throw new CharError({
+        code: "contribution.base_mismatch",
+        subject: key,
+        detail: "base_digest does not match the immutable Revision object.",
+      });
     const current = currentOf(base, c);
     const outcome: MergeOutcome = {
       index,
@@ -450,40 +562,101 @@ export function mergeContribution(
       sensitive: computeSensitive(c),
       ...decide(c, current, after),
     };
+    if (isCompositionChange(c) && c.on !== "story-order" && original) {
+      const merged = mergeCompositionObject(
+        c,
+        compositionValue(original.creation, c),
+        compositionValue(base.creation, c),
+      );
+      compositionResults.set(index, merged.value);
+      outcome.state = merged.conflict_fields.length
+        ? "conflict"
+        : (
+              merged.value === undefined
+                ? current.digest === undefined
+                : digestOf(merged.value) === current.digest
+            )
+          ? "already_applied"
+          : "applied";
+      delete outcome.reason;
+      if (merged.conflict_fields.length) {
+        outcome.reason = "diverged";
+        outcome.conflict_fields = merged.conflict_fields;
+      }
+    }
     if (c.base_digest !== undefined) outcome.base_digest = c.base_digest;
     if (current.digest !== undefined) outcome.current_digest = current.digest;
     if (after !== undefined) outcome.after_digest = after;
     return outcome;
   });
 
-  const conflicts = outcomes.filter((o) => o.state === "conflict");
-  const sensitive_keys = outcomes.filter((o) => o.sensitive).map((o) => o.key);
+  const working = JSON.parse(JSON.stringify(base.creation)) as Working;
+  const proposed = original
+    ? (JSON.parse(JSON.stringify(original.creation)) as Working)
+    : undefined;
+  for (const [index, c] of changes.entries()) {
+    if (isCompositionChange(c) && c.on === "story-order") continue;
+    if (proposed && isCompositionChange(c)) apply(proposed, c);
+    if (outcomes[index]?.state !== "applied") continue;
+    if (isCompositionChange(c)) applyComposition(working, c, compositionResults.get(index));
+    else apply(working, c);
+  }
+  for (const [index, c] of changes.entries()) {
+    if (c.on !== "story-order" || !original || !proposed) continue;
+    const membership = compositionValue(proposed as unknown as CreationInput, c) as string[];
+    if (membership.length !== c.after.length || membership.some((id) => !c.after.includes(id)))
+      throw invalid(
+        changeKey(c),
+        "order must name every proposed object exactly once; add/remove objects with object changes",
+      );
+    const merged = mergeCompositionOrder(
+      compositionValue(original.creation, c) as string[],
+      compositionValue(base.creation, c) as string[],
+      c.after,
+      compositionValue(working as unknown as CreationInput, c) as string[],
+    );
+    const outcome = outcomes[index] as MergeOutcome;
+    if (merged.conflict_fields.length) {
+      outcome.state = "conflict";
+      outcome.reason = "diverged";
+      outcome.conflict_fields = merged.conflict_fields;
+    } else {
+      delete outcome.reason;
+      outcome.state =
+        digestOf(merged.value) === outcome.current_digest ? "already_applied" : "applied";
+      applyCompositionOrder(working, c, merged.value as string[]);
+    }
+  }
+  if (changes.some(isCompositionChange)) removeEmptyStory(working);
+  const conflicts = outcomes.filter((outcome) => outcome.state === "conflict");
   const report = {
     base_semantic_digest: base.semantic_digest,
     changes,
     outcomes,
     conflicts,
-    sensitive_keys,
+    sensitive_keys: outcomes.filter((outcome) => outcome.sensitive).map((outcome) => outcome.key),
   };
-  if (conflicts.length > 0) return { ...report, result: null };
-
-  const working = normalizeValue(base.creation) as unknown as Working;
-  for (const o of outcomes) {
-    if (o.state === "applied") apply(working, changes[o.index] as Change);
-  }
-
+  if (conflicts.length) return { ...report, result: null };
+  let diagnostics: CheckDiagnostic[] = [];
+  let result: CanonicalResult | undefined;
   try {
-    return { ...report, result: canonicalizeCreation(working) };
-  } catch (e) {
-    // canonicalizeCreation 只抛 CharError；这里把它包装成 Contribution 层面的错误。
-    const cause = e as CharError;
-    throw new CharError({
-      code: "contribution.invalid_result",
-      subject: cause.subject,
-      detail: `merged creation is invalid: ${cause.message}`,
-      data: { cause: cause.toJSON() },
-    });
+    result = canonicalizeCreation(working);
+    diagnostics = checkCreation(result.creation).diagnostics.filter((d) => d.severity === "error");
+  } catch (error) {
+    if (!(error instanceof CharError)) throw error;
+    diagnostics = [
+      { severity: "error", code: error.code, subject: error.subject, detail: error.message },
+    ];
   }
+  if (diagnostics.length) {
+    for (const outcome of outcomes) {
+      outcome.state = "conflict";
+      outcome.reason = "invalid_result";
+      outcome.conflict_fields = [...new Set(diagnostics.map((d) => d.subject))];
+    }
+    return { ...report, conflicts: [...outcomes], result: null, diagnostics };
+  }
+  return { ...report, result: result ?? null };
 }
 
 /**

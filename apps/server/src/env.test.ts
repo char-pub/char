@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  AuthEnvSchema,
   DatabaseEnvSchema,
+  DefaultPolicyEnvSchema,
   EnvError,
   GitHubEnvSchema,
   GuestEnvSchema,
@@ -24,6 +26,43 @@ const storage = {
 };
 
 describe("parseEnv", () => {
+  it("keeps OAuth consent on an explicitly trusted browser origin", () => {
+    const auth = {
+      BETTER_AUTH_SECRET: "s".repeat(32),
+      BETTER_AUTH_URL: "https://api.example.test",
+      AUTH_TRUSTED_ORIGINS: "https://app.example.test,https://other.example.test",
+    };
+    expect(parseEnv(AuthEnvSchema, auth).OAUTH_APP_URL).toBeUndefined();
+    expect(
+      parseEnv(AuthEnvSchema, { ...auth, OAUTH_APP_URL: "https://other.example.test/" })
+        .OAUTH_APP_URL,
+    ).toBe("https://other.example.test/");
+    for (const OAUTH_APP_URL of [
+      "https://outside.example.test",
+      "https://app.example.test/consent",
+      "https://app.example.test?return=elsewhere",
+      "https://app.example.test#consent",
+      "https://user@app.example.test",
+    ])
+      expect(() => parseEnv(AuthEnvSchema, { ...auth, OAUTH_APP_URL })).toThrow(EnvError);
+  });
+  it("requires an exact reviewed Commons identity when a default preset is configured", () => {
+    const pin = {
+      ref: "@commons/default-preset",
+      release: "rel_01j00000000000000000000000",
+      semantic_digest: `sha256:${"a".repeat(64)}`,
+    };
+    expect(
+      parseEnv(DefaultPolicyEnvSchema, { DEFAULT_PRESET: JSON.stringify(pin) }).DEFAULT_PRESET,
+    ).toEqual(pin);
+    expect(parseEnv(DefaultPolicyEnvSchema, {}).DEFAULT_PRESET).toBeUndefined();
+    for (const value of [
+      "{",
+      JSON.stringify({ ...pin, release: "latest" }),
+      JSON.stringify({ ...pin, ref: "@other/preset" }),
+    ])
+      expect(() => parseEnv(DefaultPolicyEnvSchema, { DEFAULT_PRESET: value })).toThrow(EnvError);
+  });
   it("parses and applies defaults", () => {
     const env = parseEnv(ServerEnvSchema, {
       DATABASE_URL: "postgres://app@localhost:5432/charpub",

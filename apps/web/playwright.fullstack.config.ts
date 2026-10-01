@@ -11,6 +11,7 @@ const API_PORT = 3100;
 export default defineConfig({
   testDir: "./e2e",
   testMatch: /fullstack(-[a-z0-9-]+)?\.spec\.ts$/,
+  testIgnore: "**/fullstack-harness*.spec.ts",
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -23,7 +24,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `pnpm build && pnpm preview --host localhost --port ${WEB_PORT}`,
+    // Keep API-bound bytes separate from the mock-browser suite's production build.
+    command: `pnpm exec tsc -b && pnpm exec vite build --outDir node_modules/.cache/e2e-fullstack && pnpm exec vite preview --outDir node_modules/.cache/e2e-fullstack --host localhost --port ${WEB_PORT} --strictPort`,
     url: `http://localhost:${WEB_PORT}`,
     reuseExistingServer: false,
     timeout: 180_000,

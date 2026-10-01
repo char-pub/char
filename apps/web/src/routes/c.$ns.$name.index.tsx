@@ -14,10 +14,10 @@ import {
 import { CreationContent } from "@/components/creation-overview";
 import { MatureGate } from "@/components/mature-gate";
 import { PolicyContent } from "@/components/policy-artifact";
-import { RATING_LABEL } from "@/components/rating";
+import { RequiredCapabilities } from "@/components/required-capabilities";
 import { ErrorState } from "@/components/states";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { dependenciesOf } from "@/lib/creation-graph";
 import { keys, useRegistry } from "@/lib/registry";
 import { localized } from "@/lib/text";
 
@@ -51,7 +51,7 @@ function OverviewTab() {
     queryKey: keys.dependents(c.ns, c.name),
     queryFn: () => client.dependents(c.ns, c.name),
   });
-  const labels = useReleaseLabels(c.ir ? dependenciesOf(c.ir).map((d) => d.ref) : []);
+  const labels = useReleaseLabels([...new Set(c.artifact?.lock.map((entry) => entry.ref) ?? [])]);
   const title = localized(c.detail.display_name);
 
   return (
@@ -73,7 +73,7 @@ function OverviewTab() {
             rating={c.rating}
             allowed={c.allowMature}
             remember={c.detail.ref}
-            reason={matureReason(c.ir)}
+            reason={c.artifact ? matureReason(c.artifact, c.ir) : undefined}
             signedIn={!!c.me}
           >
             <CreationContent ir={c.ir} />
@@ -90,17 +90,31 @@ function OverviewTab() {
       </div>
 
       <aside aria-label="About this creation" className="space-y-4">
-        {c.ir ? (
-          <WhyThisRating ir={c.ir} name={title} />
+        {c.artifact ? (
+          <>
+            <WhyThisRating source={c.artifact} ir={c.ir} name={title} />
+            <RequiredCapabilities capabilities={c.artifact.capabilities} />
+            <BuiltOn source={c.artifact} ir={c.ir} labels={labels} />
+            <Credits source={c.artifact} />
+          </>
         ) : (
-          <FactCard id="c-rating" title="Why this rating">
-            <p className="text-sm text-text-2">
-              Rated {RATING_LABEL[c.rating]}: the highest rating found in the creation, its
-              dependencies and its images.
+          <FactCard id="c-metadata" title="Release details">
+            <p role="status" className="text-sm text-text-2">
+              {c.metadataState === "loading"
+                ? "Loading complete credits, licenses, rating sources and runtime requirements…"
+                : c.metadataState === "none"
+                  ? "No available release to inspect."
+                  : c.metadataState === "unavailable"
+                    ? "This release has no complete artifact. Its full credits, licenses and runtime requirements are unavailable."
+                    : "Complete release details could not be loaded. Credits, licenses, rating sources and runtime requirements are unavailable."}
             </p>
+            {c.metadataState === "error" ? (
+              <Button variant="outline" onClick={c.retryIr}>
+                Retry release details
+              </Button>
+            ) : null}
           </FactCard>
         )}
-        {c.ir ? <BuiltOn ir={c.ir} labels={labels} /> : null}
         <UsedBy
           items={dependents.data?.items}
           total={Math.max(c.detail.dependents_count, dependents.data?.items.length ?? 0)}
@@ -108,7 +122,15 @@ function OverviewTab() {
           expanded={allDependents}
           onExpand={() => setAllDependents(true)}
         />
-        {c.ir ? <Credits ir={c.ir} /> : null}
+        {c.selected?.contributors?.length ? (
+          <FactCard id="c-collaborators" title="Contributors to this version">
+            <ul className="space-y-1 text-sm">
+              {c.selected.contributors.map((person) => (
+                <li key={person.user}>{person.name}</li>
+              ))}
+            </ul>
+          </FactCard>
+        ) : null}
         {c.selected ? <ReleaseFacts ns={c.ns} summary={c.selected} detail={c.release} /> : null}
       </aside>
     </div>

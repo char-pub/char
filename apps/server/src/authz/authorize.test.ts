@@ -265,6 +265,29 @@ describe("account state, tokens and kill switches", () => {
 });
 
 describe("OIDC publishing", () => {
+  it("denies agent publication despite owner and publish scope, while keeping draft access", () => {
+    const agent: Principal = {
+      kind: "user",
+      user_id: "u_alice",
+      banned: false,
+      agent: true,
+      scopes: ["creations:read", "creations:write", "releases:publish"],
+    };
+    expect(authorize(agent, "creation.publish", creation(OWNER_NS))).toMatchObject({
+      allow: false,
+      status: 403,
+      code: "agent.action_not_allowed",
+    });
+    expect(status(authorize(agent, "creation.edit", creation(OWNER_NS)))).toBe(200);
+    expect(
+      status(
+        authorize(agent, "creation.publish", creation(FOREIGN_NS, { has_public_release: false })),
+      ),
+    ).toBe(404);
+    expect(
+      status(authorize({ ...agent, agent: false }, "creation.publish", creation(OWNER_NS))),
+    ).toBe(200);
+  });
   it("can publish only the bound creation", () => {
     expect(status(authorize(oidc, "creation.publish", creation(FOREIGN_NS)))).toBe(200);
     expect(authorize(oidc, "creation.publish", creation(FOREIGN_NS, { id: "cr2" }))).toMatchObject({
@@ -597,4 +620,191 @@ describe("card imports", () => {
     const readOnly: AuthzContext = { disabled: new Set(["read_only"]) };
     expect(status(authorize(alice, "import.confirm", imp(OWNER_NS), readOnly))).toBe(503);
   });
+});
+
+describe("accepted collaboration is scoped to one creation", () => {
+  const shared = creation(FOREIGN_NS, { has_public_release: false, collaborator: true });
+  const sharedRelease = release(FOREIGN_NS, { visibility: "private", collaborator: true });
+  const proposal: Resource = {
+    type: "contribution",
+    id: "proposal",
+    ns: FOREIGN_NS,
+    collaborator: true,
+    author: { user_id: "someone-else" },
+    status: "open",
+  };
+  it.each(["creation.read", "creation.read_draft", "creation.edit"] as Action[])(
+    "allows collaborator %s",
+    (action) => {
+      expect(authorize(mallory, action, shared).allow).toBe(true);
+    },
+  );
+  it("allows private release reads and contribution review only on the accepted work", () => {
+    expect(authorize(mallory, "release.read", sharedRelease).allow).toBe(true);
+    expect(authorize(mallory, "contribution.read", proposal).allow).toBe(true);
+    expect(authorize(mallory, "contribution.decide", proposal).allow).toBe(true);
+    expect(status(authorize(mallory, "contribution.withdraw", proposal))).toBe(403);
+    expect(
+      status(
+        authorize(mallory, "creation.read", { ...shared, id: "sibling", collaborator: false }),
+      ),
+    ).toBe(404);
+    expect(
+      status(
+        authorize(mallory, "release.read", {
+          ...sharedRelease,
+          creation_id: "sibling",
+          collaborator: false,
+        }),
+      ),
+    ).toBe(404);
+    expect(
+      status(authorize(mallory, "contribution.read", { ...proposal, collaborator: false })),
+    ).toBe(404);
+    expect(
+      status(authorize(mallory, "creation.create", { type: "namespace", ns: FOREIGN_NS })),
+    ).toBe(403);
+    expect(
+      status(authorize(mallory, "namespace.rename", { type: "namespace", ns: FOREIGN_NS })),
+    ).toBe(403);
+  });
+  it.each([
+    "creation.publish",
+    "creation.update_settings",
+    "creation.manage_source",
+    "creation.manage_collaborators",
+    "creation.delete_request",
+  ] as Action[])("denies collaborator owner action %s, even with every token scope", (action) => {
+    expect(
+      status(
+        authorize(
+          {
+            ...mallory,
+            scopes: [
+              "creations:read",
+              "creations:write",
+              "releases:publish",
+              "contributions:write",
+            ],
+          },
+          action,
+          shared,
+        ),
+      ),
+    ).toBe(403);
+    expect(status(authorize(alice, action, { ...shared, ns: OWNER_NS }))).toBe(200);
+  });
+  it("cannot yank an accepted work's private release", () => {
+    expect(status(authorize(mallory, "release.yank", sharedRelease))).toBe(403);
+  });
+  it("does not grant pending/revoked, anonymous, guest or unrelated OIDC identities access", () => {
+    for (const principal of [
+      anon,
+      guest,
+      { kind: "oidc", creation_id: "different", binding_id: "binding" } as Principal,
+    ]) {
+      expect(status(authorize(principal, "creation.read_draft", shared))).toBe(404);
+      expect(status(authorize(principal, "release.read", sharedRelease))).toBe(404);
+    }
+    expect(status(authorize(mallory, "creation.edit", { ...shared, collaborator: false }))).toBe(
+      404,
+    );
+  });
+  it("still enforces write scopes, bans, namespace suspension and read-only", () => {
+    expect(
+      authorize({ ...mallory, scopes: ["creations:read"] }, "creation.edit", shared),
+    ).toMatchObject({ code: "token.insufficient_scope" });
+    expect(authorize({ ...mallory, banned: true }, "creation.edit", shared)).toMatchObject({
+      code: "account.banned",
+    });
+    expect(
+      authorize(mallory, "creation.edit", {
+        ...shared,
+        ns: { ...FOREIGN_NS, status: "suspended" },
+      }),
+    ).toMatchObject({ code: "namespace.suspended" });
+    expect(
+      authorize(mallory, "creation.edit", shared, { disabled: new Set(["read_only"]) }),
+    ).toMatchObject({ code: "feature.read_only" });
+    expect(
+      authorize(mallory, "contribution.decide", proposal, { disabled: new Set(["read_only"]) }),
+    ).toMatchObject({ code: "feature.read_only" });
+  });
+  it("grants namespace maintenance only to explicit system namespaces", () => {
+    const maintainer = { ...OWNER_NS, role: "maintainer" as const, kind: "user" as const };
+    for (const action of [
+      "creation.read_draft",
+      "creation.edit",
+      "creation.publish",
+      "creation.manage_collaborators",
+      "creation.delete_request",
+    ] as Action[]) {
+      expect(
+        status(authorize(alice, action, creation(maintainer, { has_public_release: false }))),
+      ).toBe(404);
+      expect(
+        authorize(
+          alice,
+          action,
+          creation({ ...maintainer, kind: "system" }, { has_public_release: false }),
+        ).allow,
+      ).toBe(true);
+    }
+    expect(status(authorize(alice, "creation.create", { type: "namespace", ns: maintainer }))).toBe(
+      403,
+    );
+    expect(
+      authorize(alice, "creation.create", {
+        type: "namespace",
+        ns: { ...maintainer, kind: "system" },
+      }).allow,
+    ).toBe(true);
+  });
+});
+
+it("intersects private read permissions with token scopes without restricting anonymous public content", () => {
+  const token: Principal = { ...alice, scopes: ["releases:publish"] };
+  const privateWork = creation(OWNER_NS, { has_public_release: false });
+  expect(authorize(token, "creation.read", privateWork)).toMatchObject({
+    code: "token.insufficient_scope",
+  });
+  expect(
+    authorize(token, "release.read", release(OWNER_NS, { visibility: "private" })),
+  ).toMatchObject({ code: "token.insufficient_scope" });
+  expect(authorize(token, "creation.publish", privateWork).allow).toBe(true);
+  expect(authorize(token, "creation.read", creation(OWNER_NS)).allow).toBe(true);
+  expect(authorize(token, "release.read", release(OWNER_NS)).allow).toBe(true);
+  expect(
+    authorize(token, "contribution.read", {
+      type: "contribution",
+      id: "proposal",
+      ns: OWNER_NS,
+      author: { user_id: alice.user_id },
+      status: "open",
+    }),
+  ).toMatchObject({ code: "token.insufficient_scope" });
+  const collaborator = creation(FOREIGN_NS, { has_public_release: false, collaborator: true });
+  expect(authorize(token, "creation.read", collaborator)).toMatchObject({
+    code: "token.insufficient_scope",
+  });
+  expect(
+    authorize({ ...token, scopes: ["creations:read"] }, "creation.read", collaborator).allow,
+  ).toBe(true);
+});
+
+it("requires creations:read for the private author list without requiring it for ordinary account identity", () => {
+  const account: Resource = { type: "account", user_id: alice.user_id };
+  const publishOnly: Principal = { ...alice, scopes: ["releases:publish"] };
+  expect(authorize(publishOnly, "account.list_creations", account)).toMatchObject({
+    code: "token.insufficient_scope",
+  });
+  expect(authorize(publishOnly, "account.read", account).allow).toBe(true);
+  expect(
+    authorize({ ...alice, scopes: ["creations:read"] }, "account.list_creations", account).allow,
+  ).toBe(true);
+  expect(authorize(alice, "account.list_creations", account).allow).toBe(true);
+  expect(status(authorize(mallory, "account.list_creations", account))).toBe(404);
+  expect(
+    authorize(alice, "account.list_creations", account, { disabled: new Set(["read_only"]) }).allow,
+  ).toBe(true);
 });

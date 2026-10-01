@@ -15,6 +15,7 @@ import { Link } from "@tanstack/react-router";
 import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import { RATING_LABEL } from "@/components/rating";
 import { getGreeting, getMainText, getMeta, getName, type Working } from "@/lib/draft";
+import { describeEditorSubject } from "@/lib/editor-location";
 import { formatDate } from "@/lib/text";
 import type { SaveState } from "@/lib/use-draft-editor";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,8 @@ export interface CheckItem {
   title: string;
   detail?: string | undefined;
   code?: string | undefined;
+  subject?: string | undefined;
+  objectLabel?: string | undefined;
   target?: Target | null | undefined;
 }
 
@@ -39,6 +42,8 @@ function fromDiagnostic(d: CheckDiagnostic, i: number, type: CreationType, w: Wo
     tone: d.severity === "error" ? "error" : "warn",
     title: d.detail ? d.detail.charAt(0).toUpperCase() + d.detail.slice(1) : d.code,
     code: d.code,
+    subject: d.subject,
+    objectLabel: describeEditorSubject(w, d.subject)?.objectLabel,
     target: targetOf(d.subject, type, w),
   };
 }
@@ -61,12 +66,15 @@ export function buildChecks({
   const name = getName(working).trim();
   const text = getMainText(working, type).trim();
 
+  if (state.kind === "denied") {
+    items.push({ key: "denied", tone: "error", title: "Saving stopped: your access changed." });
+  }
   if (state.kind === "conflict") {
     items.push({
       key: "conflict",
       tone: "error",
       title: "Changed somewhere else",
-      detail: "Reload the latest draft before publishing.",
+      detail: "Compare and resolve the draft changes before publishing.",
     });
   }
   if (name === "") {
@@ -189,10 +197,11 @@ const TONE: Record<CheckTone, { icon: typeof Info; className: string; label: str
 };
 
 /** 检查栏的标题下面一行：还有几个错误和警告，或者可以发布了。 */
-export function checksSummary(items: readonly CheckItem[]): string {
+export function checksSummary(items: readonly CheckItem[], canPublish = true): string {
   const errors = items.filter((i) => i.tone === "error").length;
   const warns = items.filter((i) => i.tone === "warn").length;
-  if (errors === 0 && warns === 0) return "Ready to publish.";
+  if (errors === 0 && warns === 0)
+    return canPublish ? "Ready to publish." : "Ready for owner review.";
   const parts = [];
   if (errors > 0) parts.push(`${errors} ${errors === 1 ? "error" : "errors"}`);
   if (warns > 0) parts.push(`${warns} ${warns === 1 ? "warning" : "warnings"}`);
@@ -202,8 +211,10 @@ export function checksSummary(items: readonly CheckItem[]): string {
 export function ChecksPanel({
   items,
   onLocate,
+  canPublish = true,
 }: {
   items: readonly CheckItem[];
+  canPublish?: boolean;
   onLocate: (target: Target) => void;
 }) {
   return (
@@ -214,9 +225,9 @@ export function ChecksPanel({
     >
       <div className="space-y-0.5">
         <h2 id="checks-h" className="font-bold tracking-tight">
-          Before you publish
+          {canPublish ? "Before you publish" : "Draft checks"}
         </h2>
-        <p className="text-xs text-text-2">{checksSummary(items)}</p>
+        <p className="text-xs text-text-2">{checksSummary(items, canPublish)}</p>
       </div>
       <ul className="space-y-3.5">
         {items.map((item) => {
@@ -241,6 +252,14 @@ export function ChecksPanel({
                   )}
                 </p>
                 {item.detail ? <p className="text-xs text-text-2">{item.detail}</p> : null}
+                {item.objectLabel ? (
+                  <p className="text-xs text-text-2">{item.objectLabel}</p>
+                ) : null}
+                {item.subject ? (
+                  <p className="font-mono text-[0.7rem] text-text-2 [overflow-wrap:anywhere]">
+                    {item.subject}
+                  </p>
+                ) : null}
                 {item.code ? (
                   <p className="font-mono text-[0.7rem] text-text-3">{item.code}</p>
                 ) : null}

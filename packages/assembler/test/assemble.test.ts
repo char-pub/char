@@ -1,7 +1,9 @@
-import { isCharError, lateSlotKey, participantKey } from "@char-pub/core";
+import { buildIdentity, isCharError, lateSlotKey, participantKey } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
-import { assemble, regionFor, startSession } from "../src/assemble.js";
+import { regionFor } from "../src/assemble.js";
+import { startSession } from "../src/index.js";
 import type { SessionInput } from "../src/session.js";
+import { artifactFor, assemble } from "./fixtures/assemble.js";
 import {
   asset,
   buildIR,
@@ -41,7 +43,7 @@ describe("level 0 character", () => {
     const r = assemble({ ir, profile: profile(), session: baseSession });
     const d = r.trace.entries[0];
     expect(d?.decision).toBe("included");
-    expect(d?.reason).toBe("always");
+    expect(d?.reason).toBe("direct");
     expect(d?.region).toBe("system:character");
     expect(d?.origin?.fragment).toBe("description");
     expect(r.messages).toEqual([
@@ -54,7 +56,12 @@ describe("level 0 character", () => {
     expect(JSON.stringify(r.messages)).not.toContain("{{");
     expect(r.trace.estimated).toBe(true);
     expect(r.trace.profile.tokenizer).toBe("estimate");
-    expect(r.trace.ir).toEqual({ root: ROOT_REF, lock_digest: ir.lock_digest });
+    expect(r.trace.ir).toEqual({
+      root: ROOT_REF,
+      ...buildIdentity(ir.root),
+      semantic_digest: ir.root.semantic_digest,
+      lock_digest: ir.lock_digest,
+    });
   });
 
   it("fails when the session user persona is not bound", () => {
@@ -94,7 +101,7 @@ describe("level 0 character", () => {
           session: { bindings: { user: { kind: "persona" } } } as never,
         }),
       ),
-    ).toBe("assemble.invalid_input");
+    ).toBe("catalog.invalid_input");
   });
 });
 
@@ -203,7 +210,7 @@ describe("locale", () => {
   it("uses the session locale when a variant exists and falls back otherwise", () => {
     const r = assemble({ ir, profile: profile(), session: { ...baseSession, locale: "ja" } });
     expect(decisions(r)).toMatchObject({
-      [`${ROOT_REF}#description~root`]: "included:always",
+      [`${ROOT_REF}#description~root`]: "included:direct",
       [`${ROOT_REF}#lore/city~root`]: "included:locale-fallback",
     });
     expect(r.messages[0]?.content).toBe("アリスは運び屋。");
@@ -220,7 +227,7 @@ describe("locale", () => {
     });
     expect(r2.messages[0]?.content).toBe("Alice is a courier.");
     const r3 = assemble({ ir, profile: profile(), session: baseSession });
-    expect(decisions(r3)[`${ROOT_REF}#lore/city~root`]).toBe("included:always");
+    expect(decisions(r3)[`${ROOT_REF}#lore/city~root`]).toBe("included:direct");
   });
 
   it("matches a more specific requested tag to its base language", () => {
@@ -285,23 +292,23 @@ describe("visibility", () => {
   it("narrator mode includes private fragments with an explicit note", () => {
     const r = assemble({ ir, profile: profile({ mode: "narrator" }), session: baseSession });
     expect(decisions(r)).toMatchObject({
-      [ids.secret]: "included:always",
-      [ids.bob]: "included:always",
+      [ids.secret]: "included:direct",
+      [ids.bob]: "included:direct",
     });
     const knowledge = r.messages.find((m) => m.source.includes(ids.bob));
-    expect(knowledge?.content).toContain("[Only Bob knows the following.");
-    expect(knowledge?.content).toContain("[Only Alice knows the following.");
+    expect(knowledge?.content).toContain("（知道此事：Bob；不知道：Alice）");
+    expect(knowledge?.content).toContain("（知道此事：Alice；不知道：Bob）");
     expect(knowledge?.content).toContain("Bob is a spy.");
   });
 
   it("per-agent mode excludes private fragments not addressed to the current participant", () => {
     const r = assemble({ ir, profile: profile({ mode: "per-agent" }), session: baseSession });
     expect(decisions(r)).toMatchObject({
-      [ids.secret]: "included:always",
-      [ids.bob]: "skipped:visibility",
+      [ids.secret]: "included:direct",
+      [ids.bob]: "skipped:withheld",
     });
     expect(JSON.stringify(r.messages)).not.toContain("Bob is a spy");
-    expect(JSON.stringify(r.messages)).not.toContain("[Only");
+    expect(JSON.stringify(r.messages)).not.toContain("知道此事");
   });
 
   it("per-agent mode assembles for another participant", () => {
@@ -311,8 +318,8 @@ describe("visibility", () => {
       session: { ...baseSession, for_participant: bob },
     });
     expect(decisions(r)).toMatchObject({
-      [ids.secret]: "skipped:visibility",
-      [ids.bob]: "included:always",
+      [ids.secret]: "skipped:withheld",
+      [ids.bob]: "included:direct",
     });
   });
 
@@ -325,18 +332,18 @@ describe("visibility", () => {
           session: { ...baseSession, for_participant: "p:x" },
         }),
       ),
-    ).toBe("assemble.unknown_participant");
+    ).toBe("catalog.participant_missing");
   });
 
   it("scene fragments are included only in their scene", () => {
     expect(decisions(assemble({ ir, profile: profile(), session: baseSession }))[ids.scene]).toBe(
-      "skipped:visibility",
+      "skipped:excluded",
     );
     expect(
       decisions(
         assemble({ ir, profile: profile(), session: { ...baseSession, scene: "rooftop" } }),
       )[ids.scene],
-    ).toBe("included:always");
+    ).toBe("included:direct");
   });
 });
 
@@ -404,15 +411,15 @@ describe("activation", () => {
       },
     });
     expect(decisions(r)).toMatchObject({
-      [id("description")]: "included:always",
-      [id("lore/arasaka")]: "included:keyword:corp",
+      [id("description")]: "included:direct",
+      [id("lore/arasaka")]: "included:direct",
       [id("lore/militech")]: "skipped:inactive",
       [id("lore/cs")]: "skipped:inactive",
-      [id("lore/word")]: "included:keyword:art",
-      [id("lore/deep")]: "included:keyword:dragon",
+      [id("lore/word")]: "included:direct",
+      [id("lore/deep")]: "included:direct",
       [id("lore/manual")]: "skipped:inactive",
-      [id("lore/semantic")]: "skipped:semantic",
-      [id("lore/pinned")]: "included:pinned",
+      [id("lore/semantic")]: "skipped:inactive",
+      [id("lore/pinned")]: "included:required",
       history: "included:always",
     });
   });
@@ -439,7 +446,7 @@ describe("activation", () => {
       profile: profile(),
       session: { ...baseSession, history: [{ role: "user", text: "Militech gun war" }] },
     });
-    expect(decisions(r)[id("lore/militech")]).toBe("included:keyword:Militech");
+    expect(decisions(r)[id("lore/militech")]).toBe("included:direct");
   });
 
   it("whole word matching rejects substrings", () => {
@@ -458,8 +465,8 @@ describe("activation", () => {
       session: { ...baseSession, manual_enabled: [id("lore/manual"), id("lore/semantic")] },
     });
     expect(decisions(r)).toMatchObject({
-      [id("lore/manual")]: "included:manual",
-      [id("lore/semantic")]: "included:manual",
+      [id("lore/manual")]: "included:direct",
+      [id("lore/semantic")]: "included:direct",
     });
   });
 
@@ -493,13 +500,13 @@ describe("budget", () => {
       counter: charCounter,
     });
     expect(decisions(r)).toMatchObject({
-      [id("description")]: "included:pinned",
-      [id("lore/a")]: "included:always",
+      [id("description")]: "included:required",
+      [id("lore/a")]: "included:direct",
       [id("lore/b")]: "skipped:budget",
       [id("lore/c")]: "skipped:budget",
-      [id("lore/d")]: "included:always",
+      [id("lore/d")]: "included:direct",
     });
-    expect(r.trace.total_tokens).toBe(45);
+    expect(r.trace.total_tokens).toBe(47);
     expect(r.trace.estimated).toBe(false);
     expect(r.trace.profile.tokenizer).toBe("chars");
     for (const m of r.messages) {
@@ -517,11 +524,11 @@ describe("budget", () => {
       session: { ...baseSession, history: [{ role: "user", text: "h".repeat(20) }] },
       counter: charCounter,
     });
-    // 可用 50 - 20 = 30：pinned 10 → 20；a(30) 跳过；c(15) 纳入 → 5；d(5) 纳入。
+    // 剩余 30：pinned 10 + c(15)；d(5) 连同区域分隔符需再花 7，因此整条跳过。
     expect(decisions(r)).toMatchObject({
       [id("lore/a")]: "skipped:budget",
-      [id("lore/c")]: "included:always",
-      [id("lore/d")]: "included:always",
+      [id("lore/c")]: "included:direct",
+      [id("lore/d")]: "skipped:budget",
     });
     expect(r.messages.at(-1)).toEqual({
       role: "user",
@@ -550,7 +557,7 @@ describe("budget", () => {
       session: baseSession,
       counter: charCounter,
     });
-    expect(decisions(r)[id("description")]).toBe("included:pinned");
+    expect(decisions(r)[id("description")]).toBe("included:required");
     expect(r.messages[0]?.content).toBe("x".repeat(10));
   });
 });
@@ -622,7 +629,9 @@ describe("media", () => {
   it("uses alt text or drops the image when the runtime has no image support", () => {
     const r = assemble({
       ir,
-      profile: profile({ capabilities: { images: false } }),
+      profile: profile({
+        capabilities: { system_role: true, multiple_system_messages: true, images: false },
+      }),
       session: baseSession,
     });
     expect(decisions(r)).toMatchObject({
@@ -638,12 +647,14 @@ describe("media", () => {
   it("attaches context images when supported, but never presentation assets", () => {
     const r = assemble({
       ir,
-      profile: profile({ capabilities: { images: true } }),
+      profile: profile({
+        capabilities: { system_role: true, multiple_system_messages: true, images: true },
+      }),
       session: baseSession,
     });
     expect(decisions(r)).toMatchObject({
-      [id("map")]: "included:always",
-      [id("photo")]: "included:always",
+      [id("map")]: "included:direct",
+      [id("photo")]: "included:direct",
       [id("description")]: "included:unsupported-media",
     });
     const world = r.messages.find((m) => m.source.includes(id("map")));
@@ -666,7 +677,7 @@ describe("media", () => {
   });
 });
 
-describe("default layout", () => {
+describe("locked default policy layout", () => {
   const cast = participantKey("root", "friend");
   const ir = buildIR({
     fragments: [
@@ -731,7 +742,11 @@ describe("default layout", () => {
       profile: profile(),
       session: { ...baseSession, history: [{ role: "user", text: "x" }] },
     });
-    expect(r.trace.entries.map((e) => e.id)).toEqual([...ir.fragments.map((f) => f.id), "history"]);
+    expect(r.trace.entries.map((e) => e.id)).toEqual([
+      ...ir.fragments.map((f) => f.id),
+      "history",
+      "assembly:formatting",
+    ]);
     const included = r.trace.entries.filter((e) => e.decision === "included");
     expect(r.trace.total_tokens).toBe(included.reduce((n, e) => n + e.tokens, 0));
   });
@@ -739,20 +754,23 @@ describe("default layout", () => {
   it("merges into one system message when multiple system messages are not supported", () => {
     const r = assemble({
       ir,
-      profile: profile({ capabilities: { multiple_system_messages: false } }),
+      profile: profile({ capabilities: { system_role: true, multiple_system_messages: false } }),
       session: baseSession,
     });
     expect(r.messages).toHaveLength(1);
     expect(r.messages[0]?.source).toHaveLength(ir.fragments.length);
   });
 
-  it("uses the user role when the runtime has no system role", () => {
-    const r = assemble({
-      ir,
-      profile: profile({ capabilities: { system_role: false } }),
-      session: baseSession,
-    });
-    expect(r.messages.every((m) => m.role === "user")).toBe(true);
+  it("rejects a runtime that cannot represent the locked policy's system role", () => {
+    expect(
+      codeOf(() =>
+        assemble({
+          ir,
+          profile: profile({ capabilities: { system_role: false } }),
+          session: baseSession,
+        }),
+      ),
+    ).toBe("assemble.preset_incompatible");
   });
 
   it("maps placement hints to regions", () => {
@@ -848,31 +866,45 @@ describe("startSession", () => {
   });
 
   it("returns the first greeting with late placeholders bound", () => {
-    expect(startSession(ir, baseSession)).toEqual({
+    expect(startSession({ artifact: artifactFor(ir), bindings: { user: USER } }).opening).toEqual({
       role: "assistant",
       content: "You're late, Kai.",
       speaker: "self",
-      greeting_id: "default",
+      source: { kind: "bootstrap", id: "default" },
       locale_fallback: false,
     });
   });
 
   it("selects a greeting by id and locale", () => {
-    expect(startSession(ir, { ...baseSession, locale: "ja" }).content).toBe("遅いよ、Kai。");
-    const r = startSession(ir, baseSession, { greetingId: "rooftop", locale: "fr" });
-    expect(r.content).toBe("Nice view.");
-    expect(r.locale_fallback).toBe(true);
+    expect(
+      startSession({ artifact: artifactFor(ir), bindings: { user: USER }, locale: "ja" }).opening
+        ?.content,
+    ).toBe("遅いよ、Kai。");
+    const r = startSession({
+      artifact: artifactFor(ir),
+      bindings: { user: USER },
+      greeting_id: "rooftop",
+      locale: "fr",
+    }).opening;
+    expect(r?.content).toBe("Nice view.");
+    expect(r?.locale_fallback).toBe(true);
   });
 
   it("fails for an unknown greeting or unbound user", () => {
-    expect(codeOf(() => startSession(ir, baseSession, { greetingId: "nope" }))).toBe(
-      "assemble.no_greeting",
+    expect(
+      codeOf(() =>
+        startSession({ artifact: artifactFor(ir), bindings: { user: USER }, greeting_id: "nope" }),
+      ),
+    ).toBe("assemble.no_greeting");
+    expect(codeOf(() => startSession({ artifact: artifactFor(ir), bindings: {} }))).toBe(
+      "assemble.late_slot_unbound",
     );
-    expect(codeOf(() => startSession(ir, { bindings: {} }))).toBe("assemble.late_slot_unbound");
   });
 
-  it("fails when there are no greetings", () => {
+  it("starts with empty history when there are no greetings", () => {
     const empty = buildIR({ fragments: [frag({ fid: "description" })], greetings: [] });
-    expect(codeOf(() => startSession(empty, baseSession))).toBe("assemble.no_greeting");
+    const result = startSession({ artifact: artifactFor(empty), bindings: { user: USER } });
+    expect(result.opening).toBeNull();
+    expect(result.turn.history).toEqual([]);
   });
 });

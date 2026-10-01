@@ -9,6 +9,11 @@
  * - 数值必须是有限数，整数必须在安全整数范围内，避免不同运行时序列化出不同结果。
  */
 import { z } from "zod";
+import { LocaleSchema, LocalizedTextSchema, TemplateTextSchema } from "./text.js";
+
+export type { LocalizedText } from "./text.js";
+export { LocaleSchema, LocalizedTextSchema, TemplateTextSchema } from "./text.js";
+
 import {
   CAST_KEY_RE,
   DIGEST_RE,
@@ -23,6 +28,7 @@ import {
 } from "../ids.js";
 import { AssemblyConfigSchema, AssemblyFixtureSchema } from "./assembly.js";
 import { PresetPolicySchema, PromptModuleSchema } from "./policy.js";
+import { StorySchema } from "./story.js";
 
 // ---------------------------------------------------------------------------
 // 基础类型
@@ -56,7 +62,6 @@ export const UserIdSchema = z.string().regex(idPattern("user"));
 export const ContributionIdSchema = z.string().regex(idPattern("contribution"));
 
 /** BCP 47 语言标签（只做语法层面的宽松校验）。 */
-export const LocaleSchema = z.string().regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/);
 
 /** SPDX 表达式，例如 `CC-BY-4.0`、`MIT OR Apache-2.0`、`LicenseRef-All-Rights-Reserved`。 */
 export const SpdxExpressionSchema = z
@@ -90,14 +95,6 @@ export const JSONValueSchema: z.ZodType<JSONValue> = z.lazy(() =>
  * 可本地化文本：一个不区分语言的字符串，或者 locale → 文本的映射。
  * 两种写法语义不同（后者声明了语言），canonicalize 不会互相转换。
  */
-export const LocalizedTextSchema = z.union([
-  z.string().min(1),
-  z
-    .record(LocaleSchema, z.string().min(1))
-    .refine((r) => Object.keys(r).length > 0, "localized text must not be empty"),
-]);
-export type LocalizedText = z.infer<typeof LocalizedTextSchema>;
-
 export const RATINGS = ["general", "teen", "mature", "explicit"] as const;
 export const RatingSchema = z.enum(RATINGS);
 export type Rating = z.infer<typeof RatingSchema>;
@@ -137,7 +134,6 @@ export type FragmentKind = z.infer<typeof FragmentKindSchema>;
 // ---------------------------------------------------------------------------
 
 /** 模板文本：只允许纯替换占位符，占位符合法性由 `char check` 检查。 */
-export const TemplateTextSchema = z.string();
 
 /** 说话人：`{{self}}`、`{{user}}`、`{{slot:x}}`、`{{cast:x}}`，或某个 Creation 的公共标识。 */
 export const SpeakerRefSchema = z.union([
@@ -274,6 +270,7 @@ export const VisibilitySchema = z.discriminatedUnion("scope", [
   /** 只对列出的角色可见。在 narrator 模式下这只是提示，不是安全边界。 */
   z.strictObject({ scope: z.literal("private"), to: z.array(SpeakerRefSchema).min(1) }),
   z.strictObject({ scope: z.literal("scene"), scene: FragmentIdSchema.optional() }),
+  z.strictObject({ scope: z.literal("story-scene"), scene: SegmentSchema }),
 ]);
 export type Visibility = z.infer<typeof VisibilitySchema>;
 
@@ -294,6 +291,18 @@ export const FragmentSchema = z.strictObject({
   /** false 时可以运行，但不能被其他 Creation 当作 override 目标。 */
   stable: z.boolean(),
   kind: FragmentKindSchema,
+  description: LocalizedTextSchema.optional(),
+  selectable: z.boolean().optional(),
+  outward: z.boolean().optional(),
+  perspective: z
+    .union([
+      z.enum(["canon", "rumor"]),
+      z.strictObject({ claim: SpeakerRefSchema }),
+      z.strictObject({ belief: SpeakerRefSchema }),
+    ])
+    .optional(),
+  about: z.array(z.string().min(1)).optional(),
+  source: z.strictObject({ use: z.string().min(1) }).optional(),
   content: FragmentContentSchema,
   locale: LocaleMapSchema.optional(),
   /** 缺省为 always。 */
@@ -361,6 +370,9 @@ export type Selector = z.infer<typeof SelectorSchema>;
 
 export const FragmentPatchSchema = z
   .strictObject({
+    description: LocalizedTextSchema.optional(),
+    selectable: z.boolean().optional(),
+    outward: z.boolean().optional(),
     activation: ActivationSchema.optional(),
     visibility: VisibilitySchema.optional(),
     importance: ImportanceSchema.optional(),
@@ -410,6 +422,14 @@ export const ReferenceEdgeSchema = z.strictObject({
   params: z.record(ParamNameSchema, ScalarValueSchema).optional(),
   select: SelectorSchema.optional(),
   override: z.array(FragmentOverrideSchema).optional(),
+  scope: z
+    .union([
+      z.literal("narration"),
+      z.strictObject({ scene: SegmentSchema }),
+      z.strictObject({ cast: CastKeySchema }),
+    ])
+    .optional(),
+  combine: z.enum(["add", "replace"]).optional(),
 });
 export type ReferenceEdge = z.infer<typeof ReferenceEdgeSchema>;
 
@@ -461,17 +481,27 @@ export const AttributionAuthorSchema = z.strictObject({
 export type AttributionAuthor = z.infer<typeof AttributionAuthorSchema>;
 
 export const ContributorSchema = z.strictObject({
+  client_id: z.string().min(1).max(256).optional(),
   author: z.union([UserIdSchema, GuestAuthorSchema]),
   contribution: ContributionIdSchema.optional(),
 });
 
+/** Legacy display-only ancestry or an exact source dependency for a derivative work. */
+export const DerivationSourceSchema = z.union([
+  z.strictObject({ release: ReleaseIdSchema, relation: z.enum(["fork", "remix", "import"]) }),
+  z.strictObject({
+    release: ReleaseIdSchema,
+    relation: z.enum(["fork", "remix", "import", "sequel"]),
+    ref: UnversionedRefSchema,
+    semantic_digest: DigestSchema,
+  }),
+]);
+
 export const ProvenanceSchema = z.strictObject({
-  /** 创作来源，只用于展示，不参与 resolve。 */
-  derived_from: z
-    .array(
-      z.strictObject({ release: ReleaseIdSchema, relation: z.enum(["fork", "remix", "import"]) }),
-    )
-    .optional(),
+  /** OAuth application that created the initial draft; descriptive origin, never authority. */
+  client_id: z.string().min(1).max(256).optional(),
+  /** Exact sources join the publication closure, without injecting their content graph. */
+  derived_from: z.array(DerivationSourceSchema).optional(),
   imported_from: z
     .strictObject({
       format: z.string().min(1),
@@ -492,12 +522,46 @@ export const CastMemberSchema = z.strictObject({
   key: CastKeySchema,
   who: BindingSchema,
   role: z.enum(["lead", "support", "user"]).optional(),
+  part: LocalizedTextSchema.optional(),
+  goal: LocalizedTextSchema.optional(),
+  override: z.array(FragmentOverrideSchema).optional(),
 });
 export type CastMember = z.infer<typeof CastMemberSchema>;
 
 // ---------------------------------------------------------------------------
 // Creation
 // ---------------------------------------------------------------------------
+
+export const ContentGroupSchema = z.strictObject({
+  id: SegmentSchema,
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  entries: z.array(FragmentIdSchema).optional(),
+  groups: z.array(SegmentSchema).optional(),
+});
+export const KnowledgeSourceSchema = z.strictObject({
+  id: SegmentSchema,
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  asset: SegmentSchema,
+  format: z.enum(["markdown", "text"]),
+  visibility: z.strictObject({ scope: z.literal("shared") }).optional(),
+  sections: z
+    .array(
+      z.strictObject({
+        id: SegmentSchema,
+        title: LocalizedTextSchema,
+        anchor: z.string().min(1),
+        description: LocalizedTextSchema.optional(),
+      }),
+    )
+    .optional(),
+  origin: z
+    .strictObject({ title: LocalizedTextSchema.optional(), url: HttpsUrlSchema.optional() })
+    .optional(),
+});
+export type ContentGroup = z.infer<typeof ContentGroupSchema>;
+export type KnowledgeSource = z.infer<typeof KnowledgeSourceSchema>;
 
 export const CreationSchema = z
   .strictObject({
@@ -506,6 +570,9 @@ export const CreationSchema = z
     type: CreationTypeSchema,
     display_name: LocalizedTextSchema,
     summary: LocalizedTextSchema.optional(),
+    description: LocalizedTextSchema.optional(),
+    groups: z.array(ContentGroupSchema).optional(),
+    sources: z.array(KnowledgeSourceSchema).optional(),
     /** 可归属的原作者；导入时保留源卡的 creator。 */
     authors: z.array(AttributionAuthorSchema).optional(),
     slots: z.record(SlotNameSchema, SlotDeclSchema).optional(),
@@ -516,6 +583,7 @@ export const CreationSchema = z
     bootstrap: BootstrapSchema.optional(),
     /** 只在 type 为 scenario 时出现。 */
     cast: z.array(CastMemberSchema).optional(),
+    story: StorySchema.optional(),
     /** Preset 的运行策略，与 Creative 内容分开表达。 */
     policy: PresetPolicySchema.optional(),
     prompt_module: PromptModuleSchema.optional(),
@@ -527,18 +595,16 @@ export const CreationSchema = z
   .superRefine((creation, ctx) => {
     const issue = (path: (string | number)[], message: string) =>
       ctx.addIssue({ code: "custom", path, message });
+    if (creation.type !== "scenario" && creation.story !== undefined)
+      issue(["story"], "only a scenario may declare story");
     if (creation.type !== "preset" && creation.policy !== undefined)
       issue(["policy"], "only a preset may declare policy");
     if (creation.type !== "prompt-module" && creation.prompt_module !== undefined)
       issue(["prompt_module"], "only a prompt-module may declare prompt_module");
     if (creation.type !== "scenario" && creation.assembly !== undefined)
       issue(["assembly"], "only a scenario may declare assembly");
-    if (
-      creation.assembly_tests?.length &&
-      creation.type !== "scenario" &&
-      creation.type !== "preset"
-    )
-      issue(["assembly_tests"], "assembly tests require a scenario or preset");
+    if (creation.assembly_tests?.length && creation.type === "prompt-module")
+      issue(["assembly_tests"], "assembly tests require Creative content or a preset");
     const testIds = new Set<string>();
     creation.assembly_tests?.forEach((test, i) => {
       if (testIds.has(test.id)) issue(["assembly_tests", i, "id"], "duplicate test id");
@@ -553,7 +619,15 @@ export const CreationSchema = z
       issue(["policy"], "a preset requires policy");
     if (creation.type === "prompt-module" && creation.prompt_module === undefined)
       issue(["prompt_module"], "a prompt-module requires prompt_module");
-    for (const key of ["fragments", "references", "slots", "params", "cast"] as const) {
+    for (const key of [
+      "fragments",
+      "references",
+      "slots",
+      "params",
+      "cast",
+      "groups",
+      "sources",
+    ] as const) {
       const value = creation[key];
       if (value !== undefined && Object.keys(value).length > 0) {
         issue([key], `a preset cannot declare ${key}`);

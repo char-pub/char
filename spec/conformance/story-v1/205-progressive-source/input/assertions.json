@@ -1,0 +1,94 @@
+{
+  "scenarios": [
+    {
+      "messages_include": ["REQUIRED_VISIBLE_BODY", "DIRECT_VISIBLE_BODY"],
+      "messages_exclude": [
+        "PRIVATE_SOURCE_BODY",
+        "UNSELECTED_SOURCE_BODY",
+        "SELECTED_SOURCE_BODY",
+        "THIRD_LEVEL_SELECTED_BODY"
+      ],
+      "selector_include": ["FIRST_LEVEL_DESCRIPTION", "PUBLIC_SOURCE_DESCRIPTION"],
+      "selector_exclude": [
+        "SECOND_LEVEL_DESCRIPTION",
+        "THIRD_LEVEL_DESCRIPTION",
+        "THIRD_LEVEL_ENTRY_DESCRIPTION",
+        "SELECTED_SOURCE_BODY",
+        "UNSELECTED_SOURCE_BODY",
+        "PRIVATE_SOURCE_TITLE",
+        "PRIVATE_SOURCE_DESCRIPTION",
+        "PRIVATE_SOURCE_BODY"
+      ],
+      "name": "descriptions-only",
+      "source_requests": []
+    },
+    {
+      "messages_include": [
+        "REQUIRED_VISIBLE_BODY",
+        "DIRECT_VISIBLE_BODY",
+        "THIRD_LEVEL_SELECTED_BODY"
+      ],
+      "messages_exclude": ["PRIVATE_SOURCE_BODY", "UNSELECTED_SOURCE_BODY", "SELECTED_SOURCE_BODY"],
+      "selector_include": ["FIRST_LEVEL_DESCRIPTION", "PUBLIC_SOURCE_DESCRIPTION"],
+      "selector_exclude": [
+        "SECOND_LEVEL_DESCRIPTION",
+        "THIRD_LEVEL_DESCRIPTION",
+        "THIRD_LEVEL_ENTRY_DESCRIPTION",
+        "SELECTED_SOURCE_BODY",
+        "UNSELECTED_SOURCE_BODY",
+        "PRIVATE_SOURCE_TITLE",
+        "PRIVATE_SOURCE_DESCRIPTION",
+        "PRIVATE_SOURCE_BODY"
+      ],
+      "name": "three-level-entry",
+      "source_requests": [],
+      "plan_expands": [
+        {
+          "group": "@portable/library#group/building~root"
+        },
+        {
+          "group": "@portable/library#group/floor~root"
+        },
+        {
+          "group": "@portable/library#group/room~root"
+        }
+      ]
+    },
+    {
+      "messages_include": [
+        "REQUIRED_VISIBLE_BODY",
+        "DIRECT_VISIBLE_BODY",
+        "SELECTED_SOURCE_BODY Cafe\u0301"
+      ],
+      "messages_exclude": [
+        "PRIVATE_SOURCE_BODY",
+        "UNSELECTED_SOURCE_BODY",
+        "THIRD_LEVEL_SELECTED_BODY"
+      ],
+      "selector_include": ["FIRST_LEVEL_DESCRIPTION", "PUBLIC_SOURCE_DESCRIPTION"],
+      "selector_exclude": [
+        "SECOND_LEVEL_DESCRIPTION",
+        "THIRD_LEVEL_DESCRIPTION",
+        "THIRD_LEVEL_ENTRY_DESCRIPTION",
+        "SELECTED_SOURCE_BODY",
+        "UNSELECTED_SOURCE_BODY",
+        "PRIVATE_SOURCE_TITLE",
+        "PRIVATE_SOURCE_DESCRIPTION",
+        "PRIVATE_SOURCE_BODY"
+      ],
+      "name": "selected-door-section",
+      "source_requests": [
+        {
+          "source": "@portable/library#source/guide~root",
+          "asset": "@portable/library#asset/guide/default~root",
+          "digest": "sha256:09f03333ad08522ab5a663986710a21c1b95b1d08abfe98521a351d5e0b0cffd"
+        }
+      ],
+      "plan_expands": [
+        {
+          "source": "@portable/library#source/guide~root"
+        }
+      ]
+    }
+  ]
+}
