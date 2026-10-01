@@ -1095,3 +1095,5 @@ recorder完成`.llmdoc-tmp/investigations/story-v1-runtime-continuation-dry-run.
 - 定向验证：CLI 7 项、隔离真实 accept 命令的竞态/失效回执测试 1 项、Playwright 4 项通过；CCv3 全包 108 项、6 万组旧新随机差分一致、独立测试类型检查通过。完整类型检查、范围 Biome、Action 重建及分发一致性检查通过；三个运行时 conformance 仍为 316 通过/105 todo。日志在 `/tmp/story-codeql-*` 与 `/tmp/char-ccv3-redos-*`，真实规范案例未被接受。
 - 用户明确选择 `apps/admin/src/lib/mock-api.ts` 的既有示例标签修改保留本地，禁止提交或还原。8 张 Vitest 自动失败截图保留原磁盘字节，两个确定的生成目录加入精确 gitignore；不忽略源码或规范 expected。完整更新后预计仅剩这 1 个有意保留的本地修改提示。
 - 本段记录源码修复和本地证据，远端 CodeQL 结论须以更新 PR 后的新分析为准；不会用旧绿检查或本地测试冒称告警已在 GitHub 消失。
+
+- 第一轮更新后的 GitHub 扫描确认 5 个告警消失，#15 仍定位到 accept 写入 case.json：固定 draft 文本没有同时修复元数据路径可被替换的问题。现元数据写入专用临时目录的独占新文件，再通过同目录文件系统 rename 原子替换目标；不跟随被换成符号链接的 case.json 去覆盖其它文件。隔离真实命令测试同时模拟 draft 替换和元数据符号链接替换，确认 expected 仍是已验证文本、目标 case.json 是普通文件且无关目标原字节未变；测试、类型与格式检查均通过（`/tmp/story-codeql-accept-atomic-{tests,types}.log`）。最终仍待更新 HEAD 的远端 CodeQL 确认。

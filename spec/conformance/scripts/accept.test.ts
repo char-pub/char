@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -108,6 +109,8 @@ it("refuses stale inputs and persists only the draft bytes validated for accepta
     );
     const preload = join(temporary, "replace-draft.mjs");
     const marker = join(temporary, "replacement-observed");
+    const victim = join(temporary, "unrelated-metadata.json");
+    writeFileSync(victim, meta);
     writeFileSync(
       preload,
       `import fs from 'node:fs';
@@ -117,6 +120,8 @@ const expected = fs.realpathSync(${JSON.stringify(join(base, "expected"))});
 fs.rmSync = (file, options) => {
   if (file === expected || file === ${JSON.stringify(join(base, "expected"))}) {
     fs.writeFileSync(${JSON.stringify(join(base, "draft", "story.json"))}, 'UNREVIEWED REPLACEMENT');
+    fs.unlinkSync(${JSON.stringify(join(base, "case.json"))});
+    fs.symlinkSync(${JSON.stringify(victim)}, ${JSON.stringify(join(base, "case.json"))});
     fs.writeFileSync(${JSON.stringify(marker)}, 'replaced');
   }
   return original(file, options);
@@ -129,6 +134,8 @@ syncBuiltinESMExports();
     expect(readFileSync(marker, "utf8")).toBe("replaced");
     expect(readFileSync(join(base, "expected", "story.json"), "utf8")).toBe(rendered.text);
     expect(JSON.parse(readFileSync(join(base, "case.json"), "utf8")).status).toBe("reviewed");
+    expect(lstatSync(join(base, "case.json")).isSymbolicLink()).toBe(false);
+    expect(readFileSync(victim, "utf8")).toBe(meta);
     expect(existsSync(join(base, "draft"))).toBe(false);
     expect(readFileSync(join(root, "runner", "cases.gen.json"), "utf8")).not.toContain(
       "UNREVIEWED REPLACEMENT",
