@@ -1,8 +1,10 @@
 ---
-description: "三进程部署与迁移；精确默认策略、OAuth issuer/浏览器Origin、dbld生命周期配置及生产字节隔离"
+description: "三进程部署与迁移；普通dev启动的真实本地默认Preset引导、生产精确策略配置、OAuth Origin与dbld生命周期"
 kind: guide
 code:
   paths:
+    - "apps/server/scripts/dev-default-policy.ts"
+    - "scripts/dev.ts"
     - "apps/web/vite.config.ts"
     - "apps/server/src/processes/modules.ts"
     - "apps/server/src/env.ts"
@@ -41,4 +43,6 @@ relations:
 
 运营只保留一个 production 主站，不设 staging；本地全栈与 CI 承担上线前验证。不要假定提交一定触发 Railway 自动部署，宣布完成前核对三个服务实际源 commit。Access 策略须把组织成员条件作为 Include，并要求 GitHub 身份，不能把任何 GitHub 登录当作员工授权。
 
-内容构建配置DEFAULT_PRESET为已审阅发布的精确Commons策略身份，由API首次请求固定到业务记录；worker不能读取当前环境默认重解释旧请求。缺失或不可读默认时显式不可用，不注入代码fallback。OAUTH_APP_URL必须是可信浏览器Origin，issuer/discovery/Consent/callback链需实际同源配置；开发Vite代理也要覆盖标准well-known路径。dbld配额与专属payload生命周期需要对应schema/队列迁移，迁移未执行不能称服务已具备这些能力。
+生产内容构建配置DEFAULT_PRESET为已审阅发布的精确Commons策略身份，由API首次请求固定到业务记录；worker不能读取当前环境默认重解释旧请求。缺失或不可读默认时显式不可用，不注入代码fallback。OAUTH_APP_URL必须是可信浏览器Origin，issuer/discovery/Consent/callback链需实际同源配置；开发Vite代理也要覆盖标准well-known路径。dbld配额与专属payload生命周期需要对应schema/队列迁移，迁移未执行不能称服务已具备这些能力。
+
+普通 `pnpm dev` 在启动服务前保留显式 DEFAULT_PRESET；未配置时，通过受限本地脚本真实创建 Revision、请求发布并执行 publish worker，校验 active public Preset 的完整产物后固定精确 pin。该脚本在连接或写入前要求 development、loopback 的 charpub 数据库与本地对象存储桶；不适用于生产或任意数据库。重启复用同一受管发布，发现同名作品不属于本地引导时拒绝替换，要求显式配置。它使用专门声明的开发策略，不读取或发布尚待人工审校的 Commons 候选，也不证明生产默认策略已就绪。

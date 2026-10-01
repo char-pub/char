@@ -101,9 +101,13 @@ Save author test是独立动作：来自当前有效预览的完整合成session
 
 邀请绑定作品与当前许可，用户明确确认后才获得编辑权；撤销/许可变更保持稿不丢并提示失权，不承诺抹去已加载字节。Contribution审阅的current/merged来自同一次服务器结果，敏感字段单独确认；接受只更新draft，另行发布。Remix/Sequel显示精确来源及真实许可范围，创建本人新稿；静态结局/from_play不是恢复玩家存档或自动改写背景。
 
-Runtime启动选择外部目标URL、精确作品/构建、开局、locale与视角；只交接无凭据intent，外部Runtime另行OAuth并明确新建Session。导入RuntimePreviewInput从本地文件开始，核精确root/lock/artifact/Profile/tokenizer并先审阅再载入；不自动保存、不重绑旧Release到新dbld。载入预览与Save author test是两个独立确认。token或原聊天不得混入作者分享数据。
+Runtime启动选择外部目标URL、精确作品/构建、开局、locale与视角；只交接无凭据intent，外部Runtime另行OAuth并明确新建Session。当前宿主无法继续新标签页跳转时，提供显式的当前标签页备用入口；两种入口在点击时共用账号、当前构建、过期与开局/视角检查，再生成精确信封，不预先暴露可用的过期href。新标签调用返回不能冒充用户已到达Runtime。
+
+导入RuntimePreviewInput从本地文件开始，核精确root/lock/artifact/Profile/tokenizer并先审阅再载入；不自动保存、不重绑旧Release到新dbld。载入预览与Save author test是两个独立确认。token或原聊天不得混入作者分享数据。
 
 作品页聚合评级/警告/许可/署名/能力来自当前精确Artifact，旧IR不冒充完整结果；评级门禁按内容与策略最高值并隔离主体与对象。加载、空、错误/重试、未登录、关闭、404、410和回执各有真实状态，不伪造数据或无功能按钮。
+
+服务前置配置缺失应与作者内容错误区分：说明需要管理员配置后重试，并保留已保存草稿，不让作者误以为改正文能修复服务。可读错误只解释失败，不能以浏览器fallback或伪策略代替真实修复。
 
 ## 品牌与视觉约定
 
