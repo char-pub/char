@@ -33,7 +33,7 @@
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
     },
     "interoperability/conformance.mdx": {
-      "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
+      "validatedRevision": "8eab4b3e0201dee144869c1495228b3969b18edb"
     },
     "model/canonical-identity.mdx": {
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
@@ -99,7 +99,7 @@
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
     },
     "engineering/release-readiness.mdx": {
-      "validatedRevision": "0a3cbace122f84fa4d5aa4016367c6db44d1b0eb"
+      "validatedRevision": "8eab4b3e0201dee144869c1495228b3969b18edb"
     },
     "engineering/working-agreements.mdx": {
       "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
