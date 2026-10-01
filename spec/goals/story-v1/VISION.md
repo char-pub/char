@@ -33,3 +33,8 @@
 - S7：建立独立 harness monorepo，记录上游固定提交与许可，提供消费 char.pub 产物和可替换决策提供方的最小可验证入口。
 - U9：harness 消费一个合成 Story 产物，使用固定决策完成一轮；Jev/Laya 通过适配接口接入。真实在线调用仅在可用配置下另记证据，不以替身宣称质量已验证。
 - 独立目录为 `/Users/djj/code/char-harness`，已按固定上游与公开SDK建立。2026-10-01公开资料核验找到匹配的Laya官方候选 `NandhaKishorM/laya` / `convaiinnovations/laya`；以此作为可替换接入假设继续实现，无需让链接缺失阻塞其他工作。该假设不声称用户已确认具体仓库。
+
+
+## Harness 后续追加（2026-10-01）
+
+用户进一步要求同步最新 DeepSeek Harness、设计实现游玩 UI、推送至 char-pub/char-harness 并补 llmdoc。这些工作在独立仓库完成，以其 `spec/goals/roleplay/` 的 H5–H8 为交付依据；授权包括该组织仓库推送，不包括 char.pub 主仓推送、生产部署或公共内容发布。创作平台与真实 Session/模型执行的分界保持不变。
