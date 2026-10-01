@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCreation } from "../src/build.js";
+import { buildCreation as strictBuild } from "../src/build.js";
 import { canonicalizeCreation, digestOf } from "../src/canonical.js";
 import { getCreationDependencies } from "../src/dependencies.js";
 import { mergeContribution } from "../src/merge.js";
@@ -11,6 +11,7 @@ import { CreationArtifactSchema } from "../src/schema/artifact.js";
 import { type AssemblyFixtureInput, AssemblyFixtureSchema } from "../src/schema/assembly.js";
 import { type CreationInput, CreationSchema, OPEN_CREATION_TYPES } from "../src/schema/creation.js";
 import { PRESET_REGIONS, type PresetPolicy } from "../src/schema/policy.js";
+import { buildTestCreation as buildCreation, withTestDefault } from "./build.js";
 import { D, level0Character, tid } from "./fixtures.js";
 
 const profile = {
@@ -26,8 +27,8 @@ const engines = {
   tokenizer: { name: "estimate", version: "tokenx@2.1.0" },
 };
 const policy: PresetPolicy = {
-  version: "0-draft",
-  blocks: [{ id: "main", text: "Root", position: "main" }],
+  version: "1-draft",
+  blocks: [{ id: "main", text: "Root", default_at: "main" }],
   layout: [...PRESET_REGIONS],
   requires: { system_role: true },
 };
@@ -48,8 +49,8 @@ function creation(
   if (type === "preset") c.policy = extra.policy ?? structuredClone(policy);
   else if (type === "prompt-module")
     c.prompt_module = extra.prompt_module ?? {
-      version: "0-draft",
-      blocks: [{ id: "main", text: `Module ${n}`, position: "main" }],
+      version: "1-draft",
+      blocks: [{ id: "main", text: `Module ${n}`, default_at: "main" }],
     };
   else if (type === "scenario")
     c.cast = extra.cast ?? [{ key: "player", who: { late: "persona" } }];
@@ -100,21 +101,25 @@ function publish(
   root: ReleaseInput,
   deps: ReleaseInput[] = [],
   registry: Partial<PublishInput["registry"]> = {},
+  default_policy?: PublishInput["default_policy"],
 ) {
-  return checkPublish({
-    release: root.release,
-    label: "v1",
-    visibility: root.visibility,
-    creation: root.creation,
-    dependencies: deps,
-    registry: {
-      existingLabels: {},
-      assetStatus: {},
-      blockedDigests: new Set(),
-      ownerNamespaces: new Set(["test"]),
-      ...registry,
-    },
-  });
+  return checkPublish(
+    withTestDefault({
+      release: root.release,
+      label: "v1",
+      visibility: root.visibility,
+      creation: root.creation,
+      dependencies: deps,
+      ...(default_policy ? { default_policy } : {}),
+      registry: {
+        existingLabels: {},
+        assetStatus: {},
+        blockedDigests: new Set(),
+        ownerNamespaces: new Set(["test"]),
+        ...registry,
+      },
+    }),
+  );
 }
 function fixture(extra: Partial<AssemblyFixtureInput> = {}): AssemblyFixtureInput {
   return {
@@ -134,10 +139,10 @@ describe("first-class authoring schemas", () => {
     expect(OPEN_CREATION_TYPES).toContain("scenario");
     expect(CreationSchema.safeParse(creation("prompt-module", 1)).success).toBe(true);
     for (const c of [
-      creation("character", 1, { prompt_module: { version: "0-draft", blocks: [] } }),
+      creation("character", 1, { prompt_module: { version: "1-draft", blocks: [] } }),
       { ...creation("prompt-module", 1), prompt_module: undefined },
       creation("prompt-module", 1, { fragments: level0Character().fragments }),
-      creation("preset", 1, { prompt_module: { version: "0-draft", blocks: [] } }),
+      creation("preset", 1, { prompt_module: { version: "1-draft", blocks: [] } }),
     ])
       expect(CreationSchema.safeParse(c).success).toBe(false);
   });
@@ -146,15 +151,15 @@ describe("first-class authoring schemas", () => {
       b = release(creation("prompt-module", 3), 3);
     const c = creation("prompt-module", 1, {
       prompt_module: {
-        version: "0-draft",
-        blocks: [{ id: "main", text: "Café \r\nX\t", position: "main", enabled: true }],
+        version: "1-draft",
+        blocks: [{ id: "main", text: "Café \r\nX\t", default_at: "main", enabled: true }],
         imports: [],
       },
     });
     const canon = canonicalizeCreation(c);
     expect(canon.creation.prompt_module).toEqual({
-      version: "0-draft",
-      blocks: [{ id: "main", text: "Café\nX", position: "main" }],
+      version: "1-draft",
+      blocks: [{ id: "main", text: "Café\nX", default_at: "main" }],
     });
     const first = creation("preset", 1, {
       policy: { ...policy, imports: [imp("a", a), imp("b", b)] },
@@ -173,7 +178,7 @@ describe("first-class authoring schemas", () => {
   });
   it("keeps private Session data out of assembly and validates fixture self references and assertions", () => {
     const p = release(creation("preset", 2), 2);
-    const assembly = { version: "0-draft" as const, preset: exact(p), profile, ...engines };
+    const assembly = { version: "1-draft" as const, preset: exact(p), profile, ...engines };
     expect(CreationSchema.safeParse(creation("scenario", 1, { assembly })).success).toBe(true);
     expect(
       CreationSchema.safeParse({
@@ -206,13 +211,89 @@ describe("first-class authoring schemas", () => {
 });
 
 describe("policy dependency graph", () => {
+  it("looks up one path through deep repeated diamonds without enumerating every path", () => {
+    let child = release(creation("prompt-module", 40), 40);
+    const dependencies = [child];
+    for (let n = 41; n < 63; n++) {
+      child = release(
+        creation("prompt-module", n, {
+          prompt_module: {
+            version: "1-draft",
+            blocks: [],
+            imports: [imp("left", child), imp("right", child)],
+          },
+        }),
+        n,
+      );
+      dependencies.push(child);
+    }
+    const root = release(
+      creation("preset", 1, {
+        policy: {
+          ...policy,
+          imports: [imp("top", child)],
+          placements: [{ block: `top/${"right/".repeat(22)}main`, at: "after-history" }],
+        },
+      }),
+      1,
+    );
+    const resolved = resolvePreset(policyInput(root, dependencies));
+    expect(resolved.policy.blocks).toHaveLength(2);
+    expect(resolved.policy.blocks[0]?.origin?.ref).toBe("@test/item-40");
+    expect(resolved.lock).toHaveLength(23);
+  });
+  it("resolves every diamond alias but preserves explicitly repeated placement instances", () => {
+    const leaf = release(creation("prompt-module", 4), 4);
+    const parent = release(
+      creation("prompt-module", 2, {
+        prompt_module: { version: "1-draft", blocks: [], imports: [imp("shared", leaf)] },
+      }),
+      2,
+    );
+    const make = (placements: NonNullable<PresetPolicy["placements"]>) =>
+      release(
+        creation("preset", 1, {
+          policy: { ...policy, imports: [imp("one", parent), imp("two", parent)], placements },
+        }),
+        1,
+      );
+    const root = make([
+      { block: "two/shared/main", at: "after-history", as: "reminder" },
+      { block: "main", at: "main", as: "first" },
+      { block: "one/shared/main", at: "main" },
+    ]);
+    const resolved = resolvePreset(policyInput(root, [parent, leaf]));
+    expect(resolved.policy.blocks.map((b) => [b.id, b.position])).toEqual([
+      ["@test/item-4#main~after-history~reminder", "after-history"],
+      ["main~main~first", "main"],
+      ["@test/item-4#main~main~main", "main"],
+    ]);
+    expect(resolved.policy.blocks[0]?.origin).toMatchObject({
+      ref: "@test/item-4",
+      via: ["one", "shared"],
+    });
+    expect(resolved.policy.blocks[0]?.placement?.block).toBe("two/shared/main");
+    expect(resolved.lock).toHaveLength(2);
+    const duplicate = make([
+      { block: "one/shared/main", at: "main" },
+      { block: "two/shared/main", at: "main" },
+    ]);
+    expect(() => resolvePreset(policyInput(duplicate, [parent, leaf]))).toThrow(
+      "resolve.duplicate_placement",
+    );
+    expect(() =>
+      resolvePreset(
+        policyInput(make([{ block: "two/shared/missing", at: "main" }]), [parent, leaf]),
+      ),
+    ).toThrow("resolve.placement_missing");
+  });
   it("expands dependency-first in declaration order, deduplicates diamonds, and records stable origin/locks", () => {
     const leaf = release(creation("prompt-module", 4), 4);
     const a = release(
       creation("prompt-module", 2, {
         prompt_module: {
-          version: "0-draft",
-          blocks: [{ id: "own", text: "A", position: "main" }],
+          version: "1-draft",
+          blocks: [{ id: "own", text: "A", default_at: "main" }],
           imports: [imp("shared", leaf)],
         },
       }),
@@ -221,8 +302,8 @@ describe("policy dependency graph", () => {
     const b = release(
       creation("prompt-module", 3, {
         prompt_module: {
-          version: "0-draft",
-          blocks: [{ id: "own", text: "B", position: "after-history" }],
+          version: "1-draft",
+          blocks: [{ id: "own", text: "B", default_at: "after-history" }],
           imports: [imp("shared", leaf)],
         },
       }),
@@ -296,7 +377,7 @@ describe("policy dependency graph", () => {
   it("detects cycles before duplicate-injection suppression", () => {
     const c = creation("prompt-module", 1, {
       prompt_module: {
-        version: "0-draft",
+        version: "1-draft",
         blocks: [],
         imports: [
           {
@@ -318,7 +399,7 @@ describe("policy dependency graph", () => {
     for (let i = 79; i >= 50; i--) {
       leaf = release(
         creation("prompt-module", i, {
-          prompt_module: { version: "0-draft", blocks: [], imports: [imp("child", leaf)] },
+          prompt_module: { version: "1-draft", blocks: [], imports: [imp("child", leaf)] },
         }),
         i,
       );
@@ -329,7 +410,7 @@ describe("policy dependency graph", () => {
     for (let i = 49; i >= 45; i--) {
       long = release(
         creation("prompt-module", i, {
-          prompt_module: { version: "0-draft", blocks: [], imports: [imp("child", long)] },
+          prompt_module: { version: "1-draft", blocks: [], imports: [imp("child", long)] },
         }),
         i,
       );
@@ -347,7 +428,79 @@ describe("policy dependency graph", () => {
 });
 
 describe("aggregate artifacts and publication", () => {
-  it("preserves legacy Creative lock paths and digests including the first sorted edge", () => {
+  it("requires an explicit locked policy in complete content artifacts and rejects v0", () => {
+    const root = release(creation("character", 1), 1);
+    expect(() => strictBuild({ root })).toThrow("resolve.default_policy_required");
+    const { artifact } = buildCreation({ root });
+    expect(artifact.version).toBe("1-draft");
+    expect(
+      CreationArtifactSchema.safeParse({ ...artifact, default_policy: undefined }).success,
+    ).toBe(false);
+    expect(CreationArtifactSchema.safeParse({ ...artifact, version: "0-draft" }).success).toBe(
+      false,
+    );
+  });
+  it("locks an external default policy without changing the authored content identity", () => {
+    const root = release(creation("character", 1), 1);
+    const mod = release(
+      creation("prompt-module", 3, { meta: { ...level0Character().meta, rating: "mature" } }),
+      3,
+    );
+    const policyRelease = release(
+      creation("preset", 2, { policy: { ...policy, imports: [imp("rules", mod)] } }),
+      2,
+    );
+    const input = {
+      root,
+      dependencies: [policyRelease, mod],
+      default_policy: exact(policyRelease),
+    };
+    const first = buildCreation(input);
+    expect(first.artifact.root.semantic_digest).toBe(root.semantic_digest);
+    expect(first.lock.map((entry) => entry.ref)).toEqual(["@test/item-2", "@test/item-3"]);
+    expect(first.artifact.meta.rating).toBe("mature");
+    expect(first.artifact.meta.licenses.map((entry) => entry.ref)).toContain("@test/item-2");
+    if (first.artifact.kind !== "content") throw new Error("Expected content");
+    expect(first.artifact.default_policy?.release).toBe(policyRelease.release);
+    expect(first.artifact.ir.fragments.every((f) => f.origin.creation === "@test/item-1")).toBe(
+      true,
+    );
+    expect(buildCreation(input).json).toBe(first.json);
+    const changed = release(
+      creation("preset", 2, {
+        policy: {
+          ...policy,
+          blocks: [{ id: "different", text: "Updated default", default_at: "main" }],
+        },
+      }),
+      4,
+    );
+    const next = buildCreation({ root, dependencies: [changed], default_policy: exact(changed) });
+    expect(next.artifact.root.semantic_digest).toBe(first.artifact.root.semantic_digest);
+    expect(next.digest).not.toBe(first.digest);
+    expect(() =>
+      buildCreation({
+        ...input,
+        default_policy: { ...exact(policyRelease), semantic_digest: D("f") },
+      }),
+    ).toThrow("resolve.pin_digest_mismatch");
+    expect(() =>
+      buildCreation({ ...input, dependencies: [{ ...policyRelease, visibility: "private" }, mod] }),
+    ).toThrow("resolve.default_policy_not_public");
+    expect(() =>
+      buildCreation({ ...input, dependencies: [policyRelease, { ...mod, visibility: "private" }] }),
+    ).toThrow("resolve.default_policy_not_public");
+    expect(publish(root, [policyRelease, mod], {}, exact(policyRelease)).ok).toBe(true);
+    expect(
+      publish(
+        root,
+        [policyRelease, mod],
+        { blockedDigests: new Set([mod.semantic_digest]) },
+        exact(policyRelease),
+      ).issues.some((issue) => issue.code === "publish.blocked_content"),
+    ).toBe(true);
+  });
+  it("separates Creative locks from the policy closure while preserving sorted reference paths", () => {
     const world = release(creation("world", 2), 2);
     const reference = {
       use: exact(world).ref,
@@ -364,9 +517,11 @@ describe("aggregate artifacts and publication", () => {
       1,
     );
     const built = buildCreation({ root, dependencies: [world] });
-    expect(built.lock).toEqual(built.resolved?.lock);
-    expect(built.lock[0]?.via).toEqual(["a"]);
-    expect(built.artifact.lock_digest).toBe(built.resolved?.ir.lock_digest);
+    expect(built.lock.filter((entry) => entry.ref !== "@fixtures/default-policy")).toEqual(
+      built.resolved?.lock,
+    );
+    expect(built.lock.find((entry) => entry.ref === "@test/item-2")?.via).toEqual(["a"]);
+    expect(built.artifact.lock_digest).not.toBe(built.resolved?.ir.lock_digest);
   });
   it("builds policy artifacts without an IR and exposes exact aggregate locks", () => {
     const mod = release(
@@ -395,7 +550,7 @@ describe("aggregate artifacts and publication", () => {
       content = release(creation("character", 3), 3);
     const root = release(
       creation("scenario", 1, {
-        assembly: { version: "0-draft", preset: exact(preset), profile, ...engines },
+        assembly: { version: "1-draft", preset: exact(preset), profile, ...engines },
         assembly_tests: [fixture({ root: exact(content), preset: exact(preset) })],
       }),
       1,
@@ -430,7 +585,7 @@ describe("aggregate artifacts and publication", () => {
             mode: "intrinsic",
           },
         ],
-        assembly: { version: "0-draft", preset: exact(p), profile, ...engines },
+        assembly: { version: "1-draft", preset: exact(p), profile, ...engines },
       }),
       1,
     );
@@ -439,7 +594,7 @@ describe("aggregate artifacts and publication", () => {
     );
     const wrong = release(
       creation("scenario", 1, {
-        assembly: { version: "0-draft", preset: exact(a), profile, ...engines },
+        assembly: { version: "1-draft", preset: exact(a), profile, ...engines },
       }),
       1,
     );
@@ -512,7 +667,7 @@ describe("configuration contributions", () => {
       field: "policy",
       op: "set",
       base_digest: digestOf(canonical.creation.policy),
-      after: { ...policy, blocks: [{ id: "main", text: "Changed", position: "main" }] },
+      after: { ...policy, blocks: [{ id: "main", text: "Changed", default_at: "main" }] },
     };
     const first = mergeContribution({ ...base, display_name: "Other author edit" }, [change]);
     expect(first.result?.creation.policy?.blocks[0]?.text).toBe("Changed");
@@ -560,7 +715,7 @@ describe("configuration contributions", () => {
   it("adds/removes assembly and fixtures and supports module changes without Creative writes", () => {
     const p = release(creation("preset", 2), 2);
     const base = creation("scenario", 1);
-    const assembly = { version: "0-draft", preset: exact(p), profile, ...engines };
+    const assembly = { version: "1-draft", preset: exact(p), profile, ...engines };
     const change = { on: "configuration", field: "assembly", op: "set", after: assembly };
     const merged = mergeContribution(base, [
       change,
@@ -578,7 +733,7 @@ describe("configuration contributions", () => {
       field: "prompt_module",
       op: "set",
       base_digest: digestOf(module.prompt_module),
-      after: { version: "0-draft", blocks: [] },
+      after: { version: "1-draft", blocks: [] },
     };
     expect(
       mergeContribution(module, [moduleChange]).result?.creation.prompt_module?.blocks,
@@ -647,7 +802,7 @@ describe("policy upgrade provenance", () => {
     const middle = release(
       creation("prompt-module", 2, {
         meta: { ...level0Character().meta, license: "MIT" },
-        prompt_module: { version: "0-draft", blocks: [], imports: [imp("leaf", leaf)] },
+        prompt_module: { version: "1-draft", blocks: [], imports: [imp("leaf", leaf)] },
       }),
       2,
     );

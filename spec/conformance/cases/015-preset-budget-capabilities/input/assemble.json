@@ -16,20 +16,6 @@
           "multiple_system_messages": true
         }
       },
-      "session": {
-        "bindings": {
-          "user": {
-            "kind": "persona",
-            "display_name": "Sam"
-          }
-        },
-        "history": [
-          {
-            "role": "user",
-            "text": "Where should we go?"
-          }
-        ]
-      },
       "preset": {
         "creation": {
           "id": "cr_01h455vb4pex5vsknk084sn003",
@@ -37,23 +23,23 @@
           "type": "preset",
           "display_name": "Narrator",
           "policy": {
-            "version": "0-draft",
+            "version": "1-draft",
             "blocks": [
               {
                 "id": "main",
                 "text": "Portray the selected cast.",
-                "position": "main"
+                "default_at": "main"
               },
               {
                 "id": "reminder",
                 "text": "Continue with the next reply.",
-                "position": "after-history"
+                "default_at": "after-history"
               },
               {
                 "id": "disabled",
                 "text": "This block must never be sent.",
-                "position": "main",
-                "enabled": false
+                "enabled": false,
+                "default_at": "main"
               }
             ],
             "layout": [
@@ -63,6 +49,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:instruction",
@@ -88,7 +77,21 @@
           }
         },
         "release": "rel_01h455vb4pex5vsknk084sn003",
-        "semantic_digest": "sha256:6b80da6a43c162f5b13ffc0b06e466574b9e672c301d94cee3df03cb74f7e2df"
+        "semantic_digest": "sha256:c47e4b753cd6608d459553f56228f10e0a72ced0c8fb17d8e3a49c79b53ac09f"
+      },
+      "turn": {
+        "bindings": {
+          "user": {
+            "kind": "persona",
+            "display_name": "Sam"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "Where should we go?"
+          }
+        ]
       }
     },
     {
@@ -107,20 +110,6 @@
           "multiple_system_messages": true
         }
       },
-      "session": {
-        "bindings": {
-          "user": {
-            "kind": "persona",
-            "display_name": "Sam"
-          }
-        },
-        "history": [
-          {
-            "role": "user",
-            "text": "Where should we go?"
-          }
-        ]
-      },
       "preset": {
         "creation": {
           "id": "cr_01h455vb4pex5vsknk084sn004",
@@ -128,23 +117,23 @@
           "type": "preset",
           "display_name": "Narrator",
           "policy": {
-            "version": "0-draft",
+            "version": "1-draft",
             "blocks": [
               {
                 "id": "main",
                 "text": "Portray the selected cast.",
-                "position": "main"
+                "default_at": "main"
               },
               {
                 "id": "reminder",
                 "text": "Continue with the next reply.",
-                "position": "after-history"
+                "default_at": "after-history"
               },
               {
                 "id": "disabled",
                 "text": "This block must never be sent.",
-                "position": "main",
-                "enabled": false
+                "enabled": false,
+                "default_at": "main"
               }
             ],
             "layout": [
@@ -154,6 +143,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:instruction",
@@ -179,7 +171,21 @@
           }
         },
         "release": "rel_01h455vb4pex5vsknk084sn004",
-        "semantic_digest": "sha256:7f64268893799a335b62313b1d7e559051fadca87008c58e1f00b9f18a08d6cc"
+        "semantic_digest": "sha256:7b2fc65b12ef648e7a2f98ba4ec6d0f9c15321d6dac1ff8551bc597eb9ee68ff"
+      },
+      "turn": {
+        "bindings": {
+          "user": {
+            "kind": "persona",
+            "display_name": "Sam"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "Where should we go?"
+          }
+        ]
       }
     },
     {
@@ -198,20 +204,6 @@
           "multiple_system_messages": true
         }
       },
-      "session": {
-        "bindings": {
-          "user": {
-            "kind": "persona",
-            "display_name": "Sam"
-          }
-        },
-        "history": [
-          {
-            "role": "user",
-            "text": "Where should we go?"
-          }
-        ]
-      },
       "preset": {
         "creation": {
           "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -219,23 +211,23 @@
           "type": "preset",
           "display_name": "Narrator",
           "policy": {
-            "version": "0-draft",
+            "version": "1-draft",
             "blocks": [
               {
                 "id": "main",
                 "text": "Portray the selected cast.",
-                "position": "main"
+                "default_at": "main"
               },
               {
                 "id": "reminder",
                 "text": "Continue with the next reply.",
-                "position": "after-history"
+                "default_at": "after-history"
               },
               {
                 "id": "disabled",
                 "text": "This block must never be sent.",
-                "position": "main",
-                "enabled": false
+                "enabled": false,
+                "default_at": "main"
               }
             ],
             "layout": [
@@ -245,6 +237,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:instruction",
@@ -267,7 +262,21 @@
           }
         },
         "release": "rel_01h455vb4pex5vsknk084sn002",
-        "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+        "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+      },
+      "turn": {
+        "bindings": {
+          "user": {
+            "kind": "persona",
+            "display_name": "Sam"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "Where should we go?"
+          }
+        ]
       }
     },
     {
@@ -285,20 +294,6 @@
           "multiple_system_messages": true
         }
       },
-      "session": {
-        "bindings": {
-          "user": {
-            "kind": "persona",
-            "display_name": "Sam"
-          }
-        },
-        "history": [
-          {
-            "role": "user",
-            "text": "Where should we go?"
-          }
-        ]
-      },
       "preset": {
         "creation": {
           "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -306,23 +301,23 @@
           "type": "preset",
           "display_name": "Narrator",
           "policy": {
-            "version": "0-draft",
+            "version": "1-draft",
             "blocks": [
               {
                 "id": "main",
                 "text": "Portray the selected cast.",
-                "position": "main"
+                "default_at": "main"
               },
               {
                 "id": "reminder",
                 "text": "Continue with the next reply.",
-                "position": "after-history"
+                "default_at": "after-history"
               },
               {
                 "id": "disabled",
                 "text": "This block must never be sent.",
-                "position": "main",
-                "enabled": false
+                "enabled": false,
+                "default_at": "main"
               }
             ],
             "layout": [
@@ -332,6 +327,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:instruction",
@@ -354,7 +352,21 @@
           }
         },
         "release": "rel_01h455vb4pex5vsknk084sn002",
-        "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+        "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+      },
+      "turn": {
+        "bindings": {
+          "user": {
+            "kind": "persona",
+            "display_name": "Sam"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "Where should we go?"
+          }
+        ]
       }
     },
     {
@@ -373,20 +385,6 @@
           "multiple_system_messages": false
         }
       },
-      "session": {
-        "bindings": {
-          "user": {
-            "kind": "persona",
-            "display_name": "Sam"
-          }
-        },
-        "history": [
-          {
-            "role": "user",
-            "text": "Where should we go?"
-          }
-        ]
-      },
       "preset": {
         "creation": {
           "id": "cr_01h455vb4pex5vsknk084sn002",
@@ -394,23 +392,23 @@
           "type": "preset",
           "display_name": "Narrator",
           "policy": {
-            "version": "0-draft",
+            "version": "1-draft",
             "blocks": [
               {
                 "id": "main",
                 "text": "Portray the selected cast.",
-                "position": "main"
+                "default_at": "main"
               },
               {
                 "id": "reminder",
                 "text": "Continue with the next reply.",
-                "position": "after-history"
+                "default_at": "after-history"
               },
               {
                 "id": "disabled",
                 "text": "This block must never be sent.",
-                "position": "main",
-                "enabled": false
+                "enabled": false,
+                "default_at": "main"
               }
             ],
             "layout": [
@@ -420,6 +418,9 @@
               "system:persona",
               "system:world",
               "system:scenario",
+              "system:scene",
+              "system:story",
+              "system:sources",
               "system:relationship",
               "system:knowledge",
               "system:instruction",
@@ -442,7 +443,21 @@
           }
         },
         "release": "rel_01h455vb4pex5vsknk084sn002",
-        "semantic_digest": "sha256:9e1f922608b83db1d1db8571512e42213ea62792b75a369d86c8f8f77ba21045"
+        "semantic_digest": "sha256:fc35e807ad614e502581965a27c2dd6105374692a915cb40add5fbbab8635fb8"
+      },
+      "turn": {
+        "bindings": {
+          "user": {
+            "kind": "persona",
+            "display_name": "Sam"
+          }
+        },
+        "history": [
+          {
+            "role": "user",
+            "text": "Where should we go?"
+          }
+        ]
       }
     }
   ]

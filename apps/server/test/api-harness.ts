@@ -14,8 +14,12 @@ import type { Principal } from "../src/authz/authorize.js";
 import { authUser, featureFlags } from "../src/db/schema/index.js";
 import { JobQueue } from "../src/jobs/queue.js";
 import type { Cas } from "../src/storage/cas.js";
+import { casConfigFromEnv } from "../src/storage/cas.js";
+import { DraftPayloadStore } from "../src/storage/draft-payload.js";
 import { handlePublish, type PublishDeps } from "../src/worker/publish.js";
+import { publishDefaultPolicy } from "./fixtures/default-policy.js";
 import type { TestDatabase } from "./helpers.js";
+import { testStorageEnv } from "./helpers.js";
 
 export const ORIGIN = "https://www.char.pub";
 export const TEST_PUBLIC_BASE = "https://assets.char.pub/cas/sha256";
@@ -48,7 +52,7 @@ export interface Requester {
 export async function createHarness(
   t: TestDatabase,
   cas: Cas,
-  opts: { extraModules?: readonly ((app: Hono<Env>) => void)[] } = {},
+  opts: { extraModules?: readonly ((app: Hono<Env>) => void)[]; defaultPolicy?: false } = {},
 ): Promise<ApiHarness> {
   const queue = new JobQueue({ connectionString: t.appUrl, max: 4 });
   queue.boss.on("error", () => {});
@@ -70,12 +74,14 @@ export async function createHarness(
   const services: Services = {
     db,
     cas,
+    draftPayloads: new DraftPayloadStore(casConfigFromEnv(testStorageEnv())),
     queue,
     clock,
     ids: { uuid: () => uuidv7() },
     flags: disabled,
     publicAssetBaseUrl: TEST_PUBLIC_BASE,
   };
+  if (opts.defaultPolicy !== false) services.defaultPolicy = await publishDefaultPolicy(services);
   const sessionPrincipal = async (req: Request): Promise<Principal | null> => {
     const id = req.headers.get("x-test-user");
     return id ? { kind: "user", user_id: id, banned: false } : null;

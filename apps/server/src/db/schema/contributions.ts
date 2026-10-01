@@ -27,6 +27,11 @@ export const changeTargetEnum = app.enum("change_target", [
   "asset",
   "metadata",
   "configuration",
+  "story",
+  "story-order",
+  "cast",
+  "group",
+  "source",
 ]);
 export const changeOpEnum = app.enum("change_op", ["add", "modify", "remove", "set", "unset"]);
 export const mergeStateEnum = app.enum("merge_state", [
@@ -39,6 +44,7 @@ export const mergeStateEnum = app.enum("merge_state", [
 export const contributions = app.table(
   "contributions",
   {
+    clientId: text("client_id"),
     id: pk(),
     targetCreationId: uuid("target_creation_id")
       .notNull()

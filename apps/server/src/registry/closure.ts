@@ -7,12 +7,13 @@
  */
 import {
   type CanonicalCreation,
+  type ExactRef,
   getCreationDependencies,
   type JSONValue,
   type ReleaseInput,
 } from "@char-pub/core";
 import { and, eq, inArray, ne } from "drizzle-orm";
-import type { Principal } from "../authz/authorize.js";
+import { isNamespaceOwner, type Principal } from "../authz/authorize.js";
 import type { Executor } from "../db/client.js";
 import {
   assetMeta,
@@ -75,8 +76,12 @@ export async function loadClosure(
   cas: Cas,
   root: CanonicalCreation,
   principal: Principal,
+  extraDependencies: readonly ExactRef[] = [],
 ): Promise<Closure> {
-  const direct = pinnedReleases(root);
+  const direct = [
+    ...pinnedReleases(root),
+    ...extraDependencies.map((dependency) => dependency.release),
+  ];
   const closure: Closure = { releases: new Map(), unavailable: [], denied: [] };
   if (direct.length === 0) return closure;
 
@@ -155,7 +160,7 @@ export type AssetStatus = "ready" | "processing" | "rejected" | "quarantined";
 
 /**
  * 发布校验需要的 Registry 状态。
- * - asset：处理完成的图片会登记在 asset_meta 中；扫描命中的视为隔离，其余视为 ready。
+ * - asset：处理完成的图片/UTF-8参考文本会登记在 asset_meta 中；扫描命中的视为隔离，其余视为 ready。
  * - 黑名单只查询这次涉及的 digest。
  * - 同一权利人：被发布 Creation 所在的 namespace，以及发布者所属的所有 namespace。
  */
@@ -182,6 +187,18 @@ export async function loadRegistryState(
   const existingLabels: Record<string, string> = {};
   for (const l of labels) existingLabels[l.label] = l.semantic;
 
+  return { existingLabels, ...(await loadContentRegistryState(db, input)) };
+}
+
+export async function loadContentRegistryState(
+  db: Executor,
+  input: {
+    namespaceSlug: string;
+    publisherUserId: string | null;
+    digests: readonly string[];
+    assetDigests: readonly string[];
+  },
+) {
   const assetStatus: Record<string, AssetStatus> = {};
   if (input.assetDigests.length > 0) {
     const metas = await db
@@ -203,11 +220,11 @@ export async function loadRegistryState(
   const owners = new Set<string>([input.namespaceSlug]);
   if (input.publisherUserId) {
     const rows = await db
-      .select({ slug: namespaces.slug })
+      .select({ slug: namespaces.slug, kind: namespaces.kind, role: namespaceMembers.role })
       .from(namespaces)
       .innerJoin(namespaceMembers, eq(namespaceMembers.namespaceId, namespaces.id))
       .where(eq(namespaceMembers.userId, input.publisherUserId));
-    for (const r of rows) owners.add(r.slug);
+    for (const r of rows) if (isNamespaceOwner(r)) owners.add(r.slug);
   }
-  return { existingLabels, assetStatus, blockedDigests: blocked, ownerNamespaces: owners };
+  return { assetStatus, blockedDigests: blocked, ownerNamespaces: owners };
 }

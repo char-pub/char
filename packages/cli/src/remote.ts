@@ -10,7 +10,7 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { ProblemSchema, PublishResponseSchema } from "@char-pub/contracts";
 import { CharError, isCharError, isLabel } from "@char-pub/core";
-import { buildLocal, cmdTest, type Output } from "./commands.js";
+import { cmdTest, loadLocalCreation, type Output } from "./commands.js";
 
 export const DEFAULT_REGISTRY = "https://api.char.pub";
 export const TOKEN_RE = /^cp_pat_[0-9A-Za-z]{43}$/;
@@ -74,6 +74,7 @@ export async function cmdLogin(o: LoginOptions, out: Output): Promise<number> {
 }
 
 export interface PublishOptions {
+  defaultPolicy?: string;
   file: string;
   label: string;
   visibility: "public" | "private";
@@ -115,7 +116,7 @@ async function api<T>(
 }
 
 /**
- * 发布本地的 char.yaml：先在本地检查并构建（与 Registry 用同一个 Resolver），然后
+ * 发布本地的 char.yaml：先校验源内容，并执行已声明的作者测试，然后
  * 上传草稿 → 创建 Revision → 发布 Release。Registry 会重新校验，不采信本地结果。
  */
 export async function cmdPublish(o: PublishOptions, out: Output): Promise<number> {
@@ -130,8 +131,19 @@ export async function cmdPublish(o: PublishOptions, out: Output): Promise<number
       });
     }
     const f = o.fetch ?? fetch;
-    const { creation, artifact, project } = await buildLocal(o.file, o.deps);
-    if ((await cmdTest({ file: o.file, ...(o.deps ? { deps: o.deps } : {}) }, out)) !== 0) return 1;
+    const { creation, semantic_digest, project } = await loadLocalCreation(o.file);
+    if (
+      creation.assembly_tests?.length &&
+      (await cmdTest(
+        {
+          file: o.file,
+          ...(o.deps ? { deps: o.deps } : {}),
+          ...(o.defaultPolicy ? { defaultPolicy: o.defaultPolicy } : {}),
+        },
+        out,
+      )) !== 0
+    )
+      return 1;
     const ref = creation.ref.slice(1);
     const base = `/v1/creations/@${ref}`;
 
@@ -149,8 +161,7 @@ export async function cmdPublish(o: PublishOptions, out: Output): Promise<number
     const rev = await api<{ id: string }>(f, cred, "POST", `${base}/revisions`, {
       message: `char publish ${o.label}`,
     });
-    const key =
-      o.idempotencyKey ?? `cli:${creation.ref}:${o.label}:${artifact.root.semantic_digest}`;
+    const key = o.idempotencyKey ?? `cli:${creation.ref}:${o.label}:${semantic_digest}`;
     const pub = await api<unknown>(
       f,
       cred,

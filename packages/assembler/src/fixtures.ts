@@ -2,25 +2,28 @@
 import {
   type AssemblyFixture,
   AssemblyFixtureSchema,
+  type BuildCreationInput,
   buildCreation,
   CharError,
   type CreationArtifact,
   CreationArtifactSchema,
   canonicalizeCreation,
-  digestOf,
+  digestExactJSON,
   type ExactRef,
   isCharError,
   type ReleaseInput,
-  type ResolveInput,
-  type SessionInput,
+  type SelectionPlan,
+  type TurnViewInput,
 } from "@char-pub/core";
-import { ASSEMBLER, type AssembledMessage, type AssembleResult, assemble } from "./assemble.js";
+import { ASSEMBLER, type AssembledMessage, type AssembleResult } from "./assemble.js";
+import { createPreparationCatalog, prepareContext } from "./prepare.js";
+import { fixedSelection } from "./selection.js";
 import { createPinnedTokenCounter } from "./tokens.js";
 
 export function digestAssemblyMessages(messages: readonly AssembledMessage[]): string {
   // Transport URLs differ between local builds, public CDN and private signed reads.
   // The attachment digest remains the content identity under test.
-  return digestOf(
+  return digestExactJSON(
     messages.map((message) => ({
       ...message,
       ...(message.attachments
@@ -43,7 +46,9 @@ function assertAssembler(identity: { name: string; version: string }): void {
 
 export async function assembleArtifact(input: {
   artifact: CreationArtifact;
-  session: SessionInput;
+  session: TurnViewInput;
+  plan?: SelectionPlan;
+  source_texts?: Readonly<Record<string, string>>;
 }): Promise<AssembleResult> {
   const parsed = CreationArtifactSchema.safeParse(input.artifact);
   if (!parsed.success)
@@ -60,11 +65,13 @@ export async function assembleArtifact(input: {
   if (config.profile.tokenizer !== config.tokenizer.name)
     throw new CharError({ code: "assembly.tokenizer_mismatch", subject: config.tokenizer.name });
   const counter = await createPinnedTokenCounter(config.tokenizer);
-  return assemble({
-    ir: artifact.ir,
+  return prepareContext({
+    artifact,
     profile: config.profile,
     preset: config.preset,
-    session: input.session,
+    turn: input.session,
+    ...(input.plan ? { plan: input.plan } : {}),
+    ...(input.source_texts ? { source_texts: input.source_texts } : {}),
     counter,
   });
 }
@@ -88,7 +95,7 @@ function selectedRelease(ref: ExactRef, inputs: readonly ReleaseInput[]): Releas
 }
 
 export async function runAssemblyFixture(
-  input: ResolveInput & {
+  input: BuildCreationInput & {
     fixture: AssemblyFixture;
   },
 ): Promise<AssemblyTestResult> {
@@ -107,7 +114,10 @@ export async function runAssemblyFixture(
     if (fixture.profile.tokenizer !== fixture.tokenizer.name)
       throw new CharError({ code: "assembly.tokenizer_mismatch", subject: fixture.tokenizer.name });
     const counter = await createPinnedTokenCounter(fixture.tokenizer);
-    const available = [input.root, ...(input.dependencies ?? [])];
+    const available = [
+      ...("release" in input.root ? [input.root] : []),
+      ...(input.dependencies ?? []),
+    ];
     const contentRoot =
       fixture.root === "self" ? input.root : selectedRelease(fixture.root, available);
     const content = buildCreation({
@@ -129,16 +139,29 @@ export async function runAssemblyFixture(
     if (policy && policy.kind !== "preset")
       throw new CharError({ code: "assembly.preset_required", subject: policy.root.ref });
     let assembled: AssembleResult;
+    const preparation = {
+      artifact: content,
+      profile: fixture.profile,
+      turn: fixture.session,
+      preset: policy?.kind === "preset" ? policy.preset : null,
+      counter,
+    };
+    const plan =
+      fixture.selection === undefined
+        ? undefined
+        : fixedSelection(createPreparationCatalog(preparation), fixture.selection);
     try {
-      assembled = assemble({
-        ir: content.ir,
-        profile: fixture.profile,
-        session: fixture.session,
-        ...(policy?.kind === "preset" ? { preset: policy.preset } : {}),
-        counter,
+      assembled = prepareContext({
+        ...preparation,
+        ...(plan ? { plan } : {}),
+        ...(fixture.source_texts ? { source_texts: fixture.source_texts } : {}),
+        diagnostics: "author",
       });
     } catch (error) {
       if (!isCharError(error)) throw error;
+      if (error.code.startsWith("source.") || error.code.startsWith("selection.")) throw error;
+      if (error.code.startsWith("catalog.") || error.code.startsWith("story.")) throw error;
+      if (error.code === "assembly.default_policy_missing") throw error;
       result.error = error.toJSON();
       result.ok = fixture.expected.kind === "error" && fixture.expected.code === error.code;
       if (!result.ok) result.issues.push(`unexpected error: ${error.code}`);
@@ -177,7 +200,7 @@ export async function runAssemblyFixture(
   return result;
 }
 
-export async function runAssemblyTests(input: ResolveInput): Promise<{
+export async function runAssemblyTests(input: BuildCreationInput): Promise<{
   ok: boolean;
   results: AssemblyTestResult[];
 }> {

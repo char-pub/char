@@ -6,29 +6,31 @@
  * 可变的 Registry 状态，不进入 IR。
  */
 import { z } from "zod";
+import { CatalogRefSchema } from "./catalog.js";
 import {
   ActivationSchema,
   AttributionAuthorSchema,
-  ContributionIdSchema,
+  ContributorSchema,
   CreationTypeSchema,
   DigestSchema,
   FragmentIdSchema,
   FragmentKindSchema,
-  GuestAuthorSchema,
+  FragmentSchema,
   JSONValueSchema,
   LocaleSchema,
   LocalizedTextSchema,
   RatingSchema,
-  ReleaseIdSchema,
   SegmentSchema,
   SourceLocatorSchema,
   SpdxExpressionSchema,
   UnversionedRefSchema,
-  UserIdSchema,
 } from "./creation.js";
+import { BuildRefSchema, withBuildIdentity } from "./identity.js";
+import { PolicyPlacementSchema } from "./policy.js";
+import { PolicyBlockOriginSchema } from "./preset.js";
 
-export const IR_VERSION = "0-draft";
-export const IR_MEDIA_TYPE = "application/vnd.char.context-ir+json; version=0-draft";
+export const IR_VERSION = "1-draft";
+export const IR_MEDIA_TYPE = "application/vnd.char.context-ir+json; version=1-draft";
 
 /** `<creation-ref>#<fragment-id>~<instance-key>`，在整个 IR 内唯一。 */
 export const IRFragmentIdSchema = z.string().min(1);
@@ -56,18 +58,19 @@ export const IRVisibilitySchema = z.discriminatedUnion("scope", [
   /** `to` 是 participant key 列表（已排序）。 */
   z.strictObject({ scope: z.literal("private"), to: z.array(z.string()).min(1) }),
   z.strictObject({ scope: z.literal("scene"), scene: z.string() }),
+  z.strictObject({ scope: z.literal("story-scene"), scene: z.string() }),
 ]);
 export type IRVisibility = z.infer<typeof IRVisibilitySchema>;
 
 export const OverriddenBySchema = z.strictObject({
   creation: UnversionedRefSchema,
   edge: SegmentSchema.optional(),
+  cast: z.string().optional(),
   op: z.enum(["replace", "patch", "add"]),
 });
 
-export const OriginSchema = z.strictObject({
+export const OriginSchema = withBuildIdentity({
   creation: UnversionedRefSchema,
-  release: ReleaseIdSchema,
   fragment: FragmentIdSchema,
   /** 从根到这个引用实例的 edge ID 路径。 */
   via: z.array(SegmentSchema),
@@ -82,6 +85,43 @@ export type Origin = z.infer<typeof OriginSchema>;
 export const IRFragmentSchema = z.strictObject({
   id: IRFragmentIdSchema,
   kind: FragmentKindSchema,
+  description: LocalizedTextSchema.optional(),
+  selectable: z.boolean().optional(),
+  outward: z.boolean().optional(),
+  perspective: z
+    .union([
+      z.enum(["canon", "rumor"]),
+      z.strictObject({ claim: z.string().regex(/^participant:.+$/) }),
+      z.strictObject({ belief: z.string().regex(/^participant:.+$/) }),
+    ])
+    .optional(),
+  about: FragmentSchema.shape.about,
+  source: FragmentSchema.shape.source,
+  instance: z.string().optional(),
+  style_scope: z
+    .union([
+      z.literal("narration"),
+      z.strictObject({ scene: z.string(), owner: z.string() }),
+      z.strictObject({ participant: z.string() }),
+    ])
+    .optional(),
+  style_use: z
+    .strictObject({
+      owner: z.string(),
+      order: z.number().int().nonnegative(),
+      combine: z.enum(["add", "replace"]),
+      /** Nested Style uses inherit the outer scope while retaining local composition. */
+      path: z
+        .array(
+          z.strictObject({
+            owner: z.string(),
+            order: z.number().int().nonnegative(),
+            combine: z.enum(["add", "replace"]),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
   /** 已完成 early binding、params 替换和 override。 */
   content: IRContentSchema,
   locales: z.record(LocaleSchema, IRContentSchema).optional(),
@@ -102,6 +142,10 @@ export type IRFragment = z.infer<typeof IRFragmentSchema>;
 export const ParticipantSchema = z.strictObject({
   /** 根角色是 `self`；其他参与者是 `p:<hex>`。 */
   key: z.string(),
+  cast_key: z.string().optional(),
+  cast_scope: z.string().optional(),
+  part: LocalizedTextSchema.optional(),
+  goal: LocalizedTextSchema.optional(),
   ref: UnversionedRefSchema.optional(),
   display_name: LocalizedTextSchema,
   kind: z.enum(["character", "persona"]),
@@ -128,7 +172,8 @@ export const IRBootstrapSchema = z.strictObject({
   greetings: z.array(
     z.strictObject({
       id: z.string(),
-      speaker: z.string(),
+      /** Omitted for a narrated Scenario opening; characters retain their actual participant. */
+      speaker: z.string().optional(),
       /** 可以含有 `{{late:*}}`。 */
       text: z.string(),
       locales: z.record(LocaleSchema, z.string()).optional(),
@@ -151,9 +196,8 @@ export const IRAssetSchema = z.strictObject({
   alt: z.string().optional(),
   rating: RatingSchema,
   license: SpdxExpressionSchema,
-  origin: z.strictObject({
+  origin: withBuildIdentity({
     creation: UnversionedRefSchema,
-    release: ReleaseIdSchema,
     slot: SegmentSchema,
     variant: SegmentSchema,
     instance_key: z.string(),
@@ -161,10 +205,8 @@ export const IRAssetSchema = z.strictObject({
 });
 export type IRAsset = z.infer<typeof IRAssetSchema>;
 
-export const IRContributorSchema = z.strictObject({
+export const IRContributorSchema = ContributorSchema.extend({
   ref: UnversionedRefSchema,
-  author: z.union([UserIdSchema, GuestAuthorSchema]),
-  contribution: ContributionIdSchema.optional(),
 });
 
 export const EffectiveMetaSchema = z.strictObject({
@@ -203,15 +245,25 @@ export type EffectiveMeta = z.infer<typeof EffectiveMetaSchema>;
 
 export const IRGraphSchema = z.strictObject({
   nodes: z.array(
-    z.strictObject({
+    withBuildIdentity({
       ref: UnversionedRefSchema,
-      release: ReleaseIdSchema,
       type: CreationTypeSchema,
       display_name: z.string(),
     }),
   ),
   instances: z.array(
-    z.strictObject({ key: z.string(), ref: UnversionedRefSchema, via: z.array(SegmentSchema) }),
+    z.strictObject({
+      key: z.string(),
+      ref: UnversionedRefSchema,
+      via: z.array(SegmentSchema),
+      cast: z
+        .strictObject({
+          key: z.string(),
+          scope: z.string(),
+          introduced_by: z.strictObject({ instance: z.string(), edge: SegmentSchema }).optional(),
+        })
+        .optional(),
+    }),
   ),
   edges: z.array(
     z.strictObject({
@@ -222,12 +274,23 @@ export const IRGraphSchema = z.strictObject({
       mode: z.enum(["intrinsic", "default"]),
     }),
   ),
+  /** Role ownership, distinct from authored reference edges and lexical introduction. */
+  cast_edges: z
+    .array(
+      z.strictObject({
+        from_instance: z.string(),
+        to_instance: z.string(),
+        cast: z.string(),
+      }),
+    )
+    .optional(),
   removed: z.array(
     z.strictObject({
       id: IRFragmentIdSchema,
       by: z.strictObject({
         creation: UnversionedRefSchema,
         edge: SegmentSchema.optional(),
+        cast: z.string().optional(),
         reason: z.enum(["select", "override"]),
       }),
     }),
@@ -244,11 +307,7 @@ export const IRDiagnosticSchema = z.strictObject({
 
 export const ContextIRSchema = z.strictObject({
   ir_version: z.literal(IR_VERSION),
-  root: z.strictObject({
-    ref: UnversionedRefSchema,
-    release: ReleaseIdSchema,
-    semantic_digest: DigestSchema,
-  }),
+  root: BuildRefSchema,
   lock_digest: DigestSchema,
   resolver: z.strictObject({ name: z.string(), version: z.string() }),
   meta: EffectiveMetaSchema,
@@ -278,22 +337,40 @@ export const TRACE_REASONS = [
   "locale-fallback",
   "unsupported-media",
   "inactive",
+  "required",
+  "direct",
+  "selected",
+  "withheld",
+  "excluded",
+  "fallback",
 ] as const;
 
 /** `keyword:<命中的关键词>` 或固定原因之一。 */
 export const TraceReasonSchema = z.union([z.enum(TRACE_REASONS), z.string().regex(/^keyword:.+$/)]);
 
 export const AssemblyTraceSchema = z.strictObject({
-  ir: z.strictObject({ root: UnversionedRefSchema, lock_digest: DigestSchema }),
-  /** 实际采用的运行策略身份；推荐列表不构成已选用的 Preset。 */
-  preset: z
+  selection: z
     .strictObject({
-      ref: UnversionedRefSchema,
-      release: ReleaseIdSchema,
-      semantic_digest: DigestSchema,
-      resolver: z.strictObject({ name: z.string(), version: z.string() }),
+      plan_digest: DigestSchema,
+      selector: z.strictObject({ name: z.string(), version: z.string() }),
     })
     .optional(),
+  view: z
+    .strictObject({ mode: z.enum(["narrator", "per-agent"]), for: z.string().optional() })
+    .optional(),
+  story: z.strictObject({ scene: z.string(), start: z.string() }).optional(),
+  withheld: z.number().int().nonnegative().optional(),
+  ir: withBuildIdentity({
+    root: UnversionedRefSchema,
+    semantic_digest: DigestSchema,
+    lock_digest: DigestSchema,
+  }),
+  /** 实际采用的运行策略身份；推荐列表不构成已选用的 Preset。 */
+  preset: withBuildIdentity({
+    ref: UnversionedRefSchema,
+    semantic_digest: DigestSchema,
+    resolver: z.strictObject({ name: z.string(), version: z.string() }),
+  }).optional(),
   /** 可选以兼容旧 Trace；参考 Assembler 的新输出始终携带。 */
   assembler: z
     .strictObject({
@@ -307,12 +384,16 @@ export const AssemblyTraceSchema = z.strictObject({
   estimated: z.boolean(),
   entries: z.array(
     z.strictObject({
+      content_ref: CatalogRefSchema.optional(),
       id: z.string(),
       region: z.string(),
       tokens: z.number(),
       decision: z.enum(["included", "skipped"]),
       reason: TraceReasonSchema,
       origin: OriginSchema.optional(),
+      policy_origin: PolicyBlockOriginSchema.optional(),
+      policy_placement: PolicyPlacementSchema.optional(),
+      purpose: z.string().optional(),
     }),
   ),
 });

@@ -15,6 +15,7 @@ import {
 /**
  * 新建 Creation 时的草稿。许可默认“保留所有权利”：作者本人可以发布，别人不能再分发，
  * 这是在作者做出选择之前最保守的默认值。作者默认是新建它的用户，作者可以在编辑器里修改。
+ * 创作正文由作者填写；编辑提示不能作为片段进入模型上下文。
  */
 export function initialDraft(input: {
   id: string;
@@ -37,37 +38,22 @@ export function initialDraft(input: {
       license: "LicenseRef-All-Rights-Reserved",
     },
   };
-  const fragment = (kind: string, text: string) => ({
-    id: "description",
-    stable: true,
-    kind,
-    content: { type: "text", text },
-  });
   if (input.type === "preset") {
     draft.policy = {
-      version: "0-draft",
+      version: "1-draft",
       blocks: [],
       layout: [...PRESET_REGIONS],
       requires: { system_role: true },
     };
   } else if (input.type === "prompt-module") {
-    draft.prompt_module = { version: "0-draft", blocks: [] };
+    draft.prompt_module = { version: "1-draft", blocks: [] };
   } else if (input.type === "relationship") {
     draft.slots = {
       first: { accepts: ["character", "persona"], required: false },
       second: { accepts: ["character", "persona"], required: false },
     };
-    draft.fragments = [fragment("relationship", "Describe their relationship.")];
   } else if (input.type === "scenario") {
     draft.cast = [{ key: "player", who: { late: "persona" }, role: "user" }];
-    draft.fragments = [fragment("scenario", "Describe the opening situation.")];
-  } else if (input.type === "persona" || input.type === "style") {
-    draft.fragments = [
-      fragment(
-        input.type,
-        input.type === "persona" ? "Describe your persona." : "Describe the expressive style.",
-      ),
-    ];
   }
   return draft;
 }

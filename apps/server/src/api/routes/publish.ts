@@ -76,6 +76,13 @@ export function publishResultResponse(
         "publish.import_unconfirmed",
         "confirm the rating, rights and license of the imported card before publishing",
       );
+    case "default_policy_unavailable":
+      return problem(
+        c,
+        503,
+        "publish.default_policy_unavailable",
+        "The registry's default preset is not configured; publish a reviewed preset and configure its exact release first.",
+      );
   }
 }
 

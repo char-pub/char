@@ -144,7 +144,23 @@ export default async function setup(): Promise<() => Promise<void>> {
   );
   await db.end();
 
-  const api = startProcess("api", API_PORT, env);
+  // Real published policy, isolated to charpub_e2e; no synthetic Release or implicit fallback.
+  const defaultPolicy = JSON.parse(
+    execFileSync(
+      "pnpm",
+      ["exec", "tsx", "--conditions=@char-pub/source", "apps/server/scripts/e2e-seed-default.ts"],
+      {
+        cwd: ROOT,
+        env: { ...env, E2E_FULLSTACK: "1" },
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    ).trim(),
+  ) as unknown;
+  const api = startProcess("api", API_PORT, {
+    ...env,
+    DEFAULT_PRESET: JSON.stringify(defaultPolicy),
+  });
   const worker = startProcess("worker", WORKER_PORT, env);
   state.pids = [api.pid ?? 0, worker.pid ?? 0];
   mkdirSync(fileURLToPath(new URL("../../test-results/", import.meta.url)), { recursive: true });

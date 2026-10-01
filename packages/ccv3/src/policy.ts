@@ -28,9 +28,9 @@ export function importPolicyPreset(
   const blocks = report.omitted_policy_fields.flatMap<PresetBlock>(({ field, value }) => {
     if (value.trim() === "") return [];
     if (field === "system_prompt")
-      return [{ id: "system", text: value, position: "main" as const }];
+      return [{ id: "system", text: value, default_at: "main" as const }];
     if (field === "post_history_instructions")
-      return [{ id: "post-history", text: value, position: "after-history" as const }];
+      return [{ id: "post-history", text: value, default_at: "after-history" as const }];
     return [];
   });
   if (blocks.length === 0) throw new CharError({ code: "ccv3.policy_empty", subject: options.ref });
@@ -38,7 +38,7 @@ export function importPolicyPreset(
     ...options,
     type: "preset",
     policy: {
-      version: "0-draft",
+      version: "1-draft",
       blocks,
       layout: [...PRESET_REGIONS],
       requires: { system_role: true },
@@ -70,6 +70,15 @@ export function exportPolicyFields(input: ResolvedPreset): {
     losses.push({
       subject: "policy.region_budgets",
       detail: "CCv3 cannot enforce region token budgets",
+    });
+  for (const field of ["selection", "render"] as const)
+    if (preset.policy[field])
+      losses.push({ subject: `policy.${field}`, detail: `CCv3 cannot enforce ${field} rules` });
+  if (blocks.some((block) => block.placement))
+    losses.push({
+      subject: "policy.placements",
+      detail:
+        "Repeated placement text is retained, but placement identities and aliases are not executable in CCv3",
     });
   if (blocks.some((block) => block.id.includes("#")))
     losses.push({

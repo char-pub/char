@@ -2,18 +2,18 @@
  * `pnpm conformance:precheck [<case>...]`：对 draft 中的 Context IR 运行机器预检。
  * 检查项见 precheck-lib.ts。通过预检不代表可以跳过人工审阅。
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CASES_DIR } from "./cases.js";
+import { caseDirectory, listCaseDirs } from "./cases.js";
 import { precheck } from "./precheck-lib.js";
 
 const wanted = process.argv.slice(2);
 let failed = 0;
-for (const dir of readdirSync(CASES_DIR).sort()) {
+for (const dir of listCaseDirs()) {
   if (wanted.length > 0 && !wanted.includes(dir)) continue;
   let text: string;
   try {
-    text = readFileSync(join(CASES_DIR, dir, "draft", "context-ir.json"), "utf8");
+    text = readFileSync(join(caseDirectory(dir), "draft", "context-ir.json"), "utf8");
   } catch {
     continue;
   }

@@ -2,26 +2,23 @@ import { describe, expect, it } from "vitest";
 import { canonicalizeCreation } from "../src/canonical.js";
 import { resolvePreset } from "../src/preset.js";
 import { diffPresets } from "../src/preset-diff.js";
+import { publishedIdentity } from "../src/schema/identity.js";
 import { PRESET_REGIONS, type PresetBlock, type PresetPolicy } from "../src/schema/policy.js";
 import { PresetDiffSchema, type ResolvedPreset } from "../src/schema/preset.js";
 import { level0Character, tid } from "./fixtures.js";
 
 function block(id: string, extra: Partial<PresetBlock> = {}): PresetBlock {
-  return { id, text: `Text for ${id}`, position: "main", ...extra };
+  return { id, text: `Text for ${id}`, default_at: "main", ...extra };
 }
 
-function resolved(
-  overrides: Partial<PresetPolicy> = {},
-  release = 1,
-  displayName = "Preset",
-): ResolvedPreset {
+function resolved(overrides: Partial<PresetPolicy> = {}, release = 1, displayName = "Preset") {
   const creation = level0Character({
     type: "preset",
     fragments: [],
     bootstrap: undefined,
     display_name: displayName,
     policy: {
-      version: "0-draft",
+      version: "1-draft",
       blocks: [block("alpha"), block("bravo"), block("charlie")],
       layout: [...PRESET_REGIONS],
       requires: { system_role: true },
@@ -44,7 +41,7 @@ describe("diffPresets", () => {
       {
         blocks: [
           block("new-z"),
-          block("alpha", { text: "Different", position: "after-history", enabled: false }),
+          block("alpha", { text: "Different", default_at: "after-history", enabled: false }),
           block("bravo", { enabled: false }),
           block("new-a"),
         ],
@@ -89,7 +86,9 @@ describe("diffPresets", () => {
   it("detects reordering even without changed text or membership", () => {
     const from = resolved();
     const to = resolved({
-      blocks: [...from.policy.blocks].reverse().map(({ origin: _origin, ...block }) => block),
+      blocks: [...from.policy.blocks]
+        .reverse()
+        .map(({ origin: _origin, position, ...block }) => ({ ...block, default_at: position })),
     });
     expect(diffPresets(from, to).blocks).toEqual({
       added: [],
@@ -105,7 +104,7 @@ describe("diffPresets", () => {
       ...from,
       policy: {
         ...from.policy,
-        blocks: [block("a", { text: "Café  \r\n{{self}}\t", enabled: true })],
+        blocks: [{ id: "a", position: "main", text: "Café  \r\n{{self}}\t", enabled: true }],
         region_budgets: {},
       },
     };
@@ -140,7 +139,7 @@ describe("diffPresets", () => {
     to.resolver = { name: "another-resolver", version: "1.0.0" };
     const diff = diffPresets(from, to);
     expect(diff.from.semantic_digest).not.toBe(diff.to.semantic_digest);
-    expect(diff.from.release).not.toBe(diff.to.release);
+    expect(publishedIdentity(diff.from).release).not.toBe(publishedIdentity(diff.to).release);
     expect(diff.blocks).toEqual({ added: [], removed: [], modified: [], order_changed: false });
     expect(diff.policy_changes).toEqual([]);
   });

@@ -1,9 +1,11 @@
-/**
- * 新建 Creation。v0 只对创作者开放 character、world、lorebook 三种类型；
- * 其余类型的数据模型已经存在，但还没有创作界面，暂不允许新建。
- */
+/** 新建 Creation；可一次提交完整初始定义，身份和作者由服务端确定。 */
 import { CreateCreationRequestSchema } from "@char-pub/contracts";
-import { OPEN_CREATION_TYPES } from "@char-pub/core";
+import {
+  canonicalizeCreation,
+  checkCreation,
+  isCharError,
+  OPEN_CREATION_TYPES,
+} from "@char-pub/core";
 import { and, eq } from "drizzle-orm";
 import type { Hono } from "hono";
 import { appendAudit } from "../../audit/audit.js";
@@ -17,7 +19,7 @@ import {
 } from "../../db/schema/index.js";
 import { problem } from "../../http/middleware.js";
 import { auditActor, param, requestIdOf, userIdOf } from "../../registry/context.js";
-import { initialDraft } from "../../registry/drafts.js";
+import { forceIdentity, initialDraft } from "../../registry/drafts.js";
 import { encodeId } from "../../registry/ids.js";
 import { lookupNamespace } from "../../registry/lookup.js";
 import { type Env, notFound, route } from "../app.js";
@@ -61,13 +63,47 @@ export function register(app: Hono<Env>): void {
       const id = ids.uuid();
       const userId = userIdOf(c.var.principal);
       const ref = `@${ns.slug}/${body.name}`;
-      const working = initialDraft({
+      const initial = initialDraft({
         id: encodeId("creation", id),
         ref,
         type: body.type,
         display_name: body.display_name,
         author: { name: `@${await authorHandle(db, ns, userId)}`, user: encodeId("user", userId) },
       });
+      const principal = c.var.principal;
+      const clientId = principal.kind === "user" ? principal.oauth?.client_id : undefined;
+      let working = initial;
+      if (body.working) {
+        try {
+          const proposed = forceIdentity(
+            {
+              ...initial,
+              ...body.working,
+              authors: initial.authors,
+              display_name: body.display_name,
+            },
+            { id: encodeId("creation", id), ref, type: body.type },
+          );
+          const provenance =
+            proposed.provenance &&
+            typeof proposed.provenance === "object" &&
+            !Array.isArray(proposed.provenance)
+              ? (proposed.provenance as Record<string, unknown>)
+              : {};
+          proposed.provenance = { ...provenance, ...(clientId ? { client_id: clientId } : {}) };
+          const canonical = canonicalizeCreation(proposed);
+          const checks = checkCreation(canonical.creation);
+          if (!checks.ok)
+            return problem(c, 422, "check.failed", "The initial draft has errors.", {
+              diagnostics: checks.diagnostics,
+            });
+          working = canonical.json as Record<string, unknown>;
+        } catch (error) {
+          if (isCharError(error)) return problem(c, 422, error.code, error.detail);
+          throw error;
+        }
+      } else if (clientId) working = { ...initial, provenance: { client_id: clientId } };
+      const meta = working.meta as { rating: "general" | "teen" | "mature" | "explicit" };
       await db.transaction(async (tx) => {
         await tx.insert(creations).values({
           id,
@@ -75,7 +111,8 @@ export function register(app: Hono<Env>): void {
           name: body.name,
           type: body.type,
           displayName: body.display_name,
-          rating: "general",
+          rating: meta.rating,
+          ...(clientId ? { clientId } : {}),
         });
         await tx.insert(creationDrafts).values({ creationId: id, working, updatedBy: userId });
         await appendAudit(tx, {
@@ -84,7 +121,7 @@ export function register(app: Hono<Env>): void {
           action: "creation.create",
           subject: `creation:${id}`,
           requestId: requestIdOf(c),
-          after: { ref, type: body.type },
+          after: { ref, type: body.type, ...(clientId ? { client_id: clientId } : {}) },
         });
       });
       return c.json({ id: encodeId("creation", id), ref, type: body.type }, 201);

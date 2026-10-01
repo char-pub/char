@@ -36,6 +36,10 @@ export type SlotValue =
 
 export interface ParticipantDraft {
   key: string;
+  cast_key?: string;
+  cast_scope?: string;
+  part?: LocalizedText;
+  goal?: LocalizedText;
   ref?: string;
   display_name: LocalizedText;
   kind: "character" | "persona";
@@ -67,6 +71,7 @@ export interface InstanceEnv {
 export interface Environment {
   envs: Map<GraphInstance, InstanceEnv>;
   participants: Map<string, ParticipantDraft>;
+  participantsFor: (instance: GraphInstance, ref: string) => string[];
   lateSlots: Map<string, LateSlotDraft>;
   /** 有没有 intrinsic 依赖被强制 override。 */
   au: boolean;
@@ -96,9 +101,13 @@ export function buildEnvironment(graph: LoadedGraph): Environment {
   const participants = new Map<string, ParticipantDraft>();
   const lateSlots = new Map<string, LateSlotDraft>();
 
-  const firstInstanceOf = new Map<string, GraphInstance>();
+  const castInstances = new Map<string, GraphInstance>();
   for (const inst of graph.instances) {
-    if (!firstInstanceOf.has(inst.release.ref)) firstInstanceOf.set(inst.release.ref, inst);
+    if (!inst.cast) continue;
+    const key = participantKey(inst.cast.owner.key, inst.cast.member.key);
+    if (castInstances.has(key))
+      throw new CharError({ code: "resolve.ambiguous_cast_context", subject: key });
+    castInstances.set(key, inst);
   }
 
   lateSlots.set(USER_LATE_SLOT, {
@@ -171,9 +180,21 @@ export function buildEnvironment(graph: LoadedGraph): Environment {
         const key = participantKey(inst.key, member.key);
         const subject = `${c.ref}/cast/${member.key}`;
         const who = member.who;
+        const arrangement = {
+          cast_key: member.key,
+          cast_scope: inst.key,
+          ...(member.part !== undefined ? { part: member.part } : {}),
+          ...(member.goal !== undefined ? { goal: member.goal } : {}),
+        };
         if (typeof who === "object") {
           const late = addLate(lateSlotKey(inst.key, member.key), [who.late], true, who.hint);
-          const p: ParticipantDraft = { key, display_name: member.key, kind: who.late, late };
+          const p: ParticipantDraft = {
+            key,
+            display_name: member.key,
+            kind: who.late,
+            late,
+            ...arrangement,
+          };
           if (member.role) p.role = member.role;
           addParticipant(p);
           cast.set(member.key, { kind: "late", participant: key, late });
@@ -185,14 +206,17 @@ export function buildEnvironment(graph: LoadedGraph): Environment {
         const rel = earlyTarget(resolveUseRef(who, c.ref), ["character", "persona"], subject);
         const kind = rel.creation.type === "persona" ? "persona" : "character";
         const p: ParticipantDraft = {
+          ...arrangement,
           key,
           ref: rel.ref,
           display_name: rel.creation.display_name,
           kind,
         };
         if (member.role) p.role = member.role;
-        const avatarInstance = firstInstanceOf.get(rel.ref);
-        if (avatarInstance) p.avatarInstance = avatarInstance;
+        const avatarInstance = castInstances.get(key);
+        if (!avatarInstance || avatarInstance.release.ref !== rel.ref)
+          throw new CharError({ code: "resolve.cast_instance_missing", subject });
+        p.avatarInstance = avatarInstance;
         addParticipant(p);
         cast.set(member.key, {
           kind: "early",
@@ -224,16 +248,9 @@ export function buildEnvironment(graph: LoadedGraph): Environment {
       );
       continue;
     }
-    const parent = inst.parent?.instance;
-    const parentCast = parent ? castEnvs.get(parent) : undefined;
     let key: string | null = null;
-    if (parentCast) {
-      for (const v of parentCast.values()) {
-        if (v.kind === "early" && v.ref === c.ref) {
-          key = v.participant;
-          break;
-        }
-      }
+    if (inst.cast) {
+      key = castEnvs.get(inst.cast.owner)?.get(inst.cast.member.key)?.participant ?? null;
     }
     if (key === null) {
       key = addParticipant({
@@ -246,6 +263,37 @@ export function buildEnvironment(graph: LoadedGraph): Environment {
     }
     instanceParticipant.set(inst, key);
   }
+
+  const owned = new Map<GraphInstance, GraphInstance[]>();
+  for (const inst of castInstances.values()) {
+    if (!inst.cast) continue;
+    const list = owned.get(inst.cast.owner) ?? [];
+    list.push(inst);
+    owned.set(inst.cast.owner, list);
+  }
+  const scopeCache = new Map<GraphInstance, Set<GraphInstance>>();
+  const scopedInstances = (instance: GraphInstance): Set<GraphInstance> => {
+    const cached = scopeCache.get(instance);
+    if (cached) return cached;
+    const result = new Set<GraphInstance>();
+    const pending = [instance];
+    while (pending.length) {
+      const next = pending.pop();
+      if (!next || result.has(next)) continue;
+      result.add(next);
+      pending.push(...next.children, ...(owned.get(next) ?? []));
+    }
+    scopeCache.set(instance, result);
+    return result;
+  };
+  const participantsFor = (instance: GraphInstance, ref: string): string[] => {
+    const keys = new Set<string>();
+    for (const target of scopedInstances(instance)) {
+      const key = instanceParticipant.get(target);
+      if (target.release.ref === ref && key) keys.add(key);
+    }
+    return [...keys];
+  };
 
   for (const inst of graph.instances) {
     const c = inst.release.creation;
@@ -341,27 +389,38 @@ export function buildEnvironment(graph: LoadedGraph): Environment {
         const rel = earlyTarget(v.ref, accepts, subject);
         return { ...v, display_name: rel.creation.display_name };
       }
+      const target = lateSlots.get(v.late);
+      if (!target || target.accepts.some((kind) => !accepts.includes(kind)))
+        throw new CharError({
+          code: "resolve.binding_type_mismatch",
+          subject,
+          detail: `cast ${key} accepts ${target?.accepts.join(", ") ?? "unknown"}; slot accepts ${accepts.join(", ")}`,
+        });
       return v;
     }
     const declaringRef = parent?.release.ref ?? inst.release.ref;
-    const rel = earlyTarget(resolveUseRef(b, declaringRef), accepts, subject);
+    const targetRef = resolveUseRef(b, declaringRef);
+    if (![...scopedInstances(parent ?? inst)].some((target) => target.release.ref === targetRef))
+      throw new CharError({ code: "resolve.binding_not_in_graph", subject, detail: targetRef });
+    const rel = earlyTarget(targetRef, accepts, subject);
     let participant: string | null = null;
     if (isParticipantType(rel.creation.type)) {
-      const p: ParticipantDraft = {
-        key: participantKey(inst.key, name),
-        ref: rel.ref,
-        display_name: rel.creation.display_name,
-        kind: rel.creation.type,
-      };
-      const avatarInstance = firstInstanceOf.get(rel.ref);
-      if (avatarInstance) p.avatarInstance = avatarInstance;
-      participant = addParticipant(p);
+      // A slot names an existing actor. A public ref cannot choose between distinct instances.
+      const candidates = new Set(participantsFor(parent ?? inst, rel.ref));
+      if (candidates.size !== 1)
+        throw new CharError({
+          code:
+            candidates.size > 1 ? "resolve.ambiguous_participant" : "resolve.binding_not_in_graph",
+          subject,
+          detail: `${rel.ref} must identify one participant; use {{cast:<key>}} to select an instance`,
+        });
+      participant = [...candidates][0] ?? null;
     }
     return { kind: "early", participant, display_name: rel.creation.display_name, ref: rel.ref };
   }
 
   const au = graph.instances.some((i) => i.release.creation.provenance.au === true);
-  return { envs, participants, lateSlots, au };
+  return { envs, participants, participantsFor, lateSlots, au };
 }
 
 function resolveParams(inst: GraphInstance, subjectBase: string): Map<string, ScalarValue> {

@@ -1,11 +1,14 @@
-import { buildCreation, canonicalizeCreation, PRESET_REGIONS } from "@char-pub/core";
+import { CreationArtifactSchema, PRESET_REGIONS } from "@char-pub/core";
 import { expect, type Page, test } from "@playwright/test";
-import { creationDetail, ME, type MockApi, mockApi, OTHER } from "./mock-api";
+import { sampleDefaultPolicy } from "../src/fixtures/samples";
+import { buildTestCreation } from "../src/test/build";
+import { draftBuildFixture } from "./fixtures/draft-build";
+import { creationDetail, ME, type MockApi, mockApi, OTHER, OWNER_PERMISSIONS } from "./mock-api";
 
 const meta = { default_locale: "en", rating: "general", rights: "original", license: "CC-BY-4.0" };
 const policy = {
-  version: "0-draft",
-  blocks: [{ id: "rules", text: "Keep the scene vivid.", position: "main" }],
+  version: "1-draft",
+  blocks: [{ id: "rules", text: "Keep the scene vivid.", default_at: "main" }],
   layout: [...PRESET_REGIONS],
   requires: { system_role: true },
 };
@@ -37,7 +40,7 @@ const scene = {
   ],
 };
 const release = "rel_01j00000000000000000000002";
-const artifact = buildCreation({
+const artifact = buildTestCreation({
   root: { creation: preset, release, visibility: "public" },
 }).artifact;
 
@@ -76,6 +79,7 @@ async function editor(page: Page, working: Record<string, unknown>) {
   const ref = String(working.ref);
   api.on(`GET /v1/creations/${ref}`, {
     body: creationDetail({
+      permissions: OWNER_PERMISSIONS,
       id: working.id,
       ref: working.ref,
       type: working.type,
@@ -84,18 +88,42 @@ async function editor(page: Page, working: Record<string, unknown>) {
       latest_release: undefined,
     }),
   });
-  api.on(`GET /v1/creations/${ref}/draft`, {
-    body: { version: 1, working, base_revision_id: null, updated_at: "2026-09-26T00:00:00Z" },
-  });
-  let version = 1;
-  api.on(`PUT /v1/creations/${ref}/draft`, {
-    body: {
-      version: ++version,
-      semantic_digest: canonicalizeCreation(working).semantic_digest,
-      warnings: [],
+  const draftBuilds = draftBuildFixture(api, working, {
+    dependencies: [
+      {
+        creation: preset,
+        release,
+        visibility: "public",
+        semantic_digest: artifact.root.semantic_digest,
+      },
+      sampleDefaultPolicy,
+    ],
+    defaultPolicy: {
+      ref: "@examples/preview-policy",
+      release: sampleDefaultPolicy.release,
+      semantic_digest: sampleDefaultPolicy.semantic_digest,
     },
   });
-  return api;
+  return Object.assign(api, { draftBuilds });
+}
+function completedDraft(api: Awaited<ReturnType<typeof editor>>) {
+  const record = [...api.draftBuilds.values()].find(
+    (build) => build.polled && build.completed.state === "ready",
+  );
+  expect(record).toBeDefined();
+  const built = CreationArtifactSchema.parse(record?.artifact);
+  expect(built.root).toHaveProperty("origin.kind", "draft-build");
+  expect(built.root).not.toHaveProperty("release");
+  expect(
+    api.calls.some((call) => call.method === "POST" && call.path.endsWith("/draft-builds")),
+  ).toBe(true);
+  expect(
+    api.calls.some(
+      (call) =>
+        call.method === "GET" && /^\/v1\/draft-builds\/dbld_[^/]+\/artifact$/.test(call.path),
+    ),
+  ).toBe(true);
+  return record;
 }
 async function choose(page: Page, label: string) {
   const picker = page.getByRole("group", { name: label, exact: true });
@@ -120,6 +148,7 @@ test("Preset and module policies have real block editors and preserve stable IDs
   await expect(
     page.getByRole("paragraph").filter({ hasText: /^Write concise scenes.$/ }),
   ).toBeVisible();
+  completedDraft(api);
   await page.screenshot({ path: "/tmp/char-pub-preset-editor.png", fullPage: true });
   await expect(page.getByText("All changes saved")).toBeVisible();
   expect(api.calls.findLast((c) => c.method === "PUT")?.body).toMatchObject({
@@ -134,12 +163,13 @@ test("Preset and module policies have real block editors and preserve stable IDs
   });
 });
 
-test("Scenario locks an exact preset, binds each role independently, and runs a published synthetic author test", async ({
+test("Scenario locks an exact preset, binds each role independently, and runs author tests through a private draft build", async ({
   page,
 }) => {
   const api = await editor(page, scene);
   published(api);
   await page.goto("/c/writer/scene/edit");
+  await page.getByText("Story settings: cast, bindings and presets", { exact: true }).click();
   await choose(page, "Lock a preset");
   await expect(page.getByRole("button", { name: "Remove locked assembly" })).toBeVisible();
   await page.getByRole("button", { name: "Add author test" }).click();
@@ -147,7 +177,7 @@ test("Scenario locks an exact preset, binds each role independently, and runs a 
   await page.getByLabel("Synthetic session JSON").fill("[]");
   await page.getByRole("button", { name: "Apply session JSON" }).click();
   await expect(page.getByRole("alert")).toContainText("Invalid input");
-  const resolved = buildCreation({
+  const resolved = buildTestCreation({
     root: { creation: scene, release, visibility: "public" },
   }).artifact;
   if (resolved.kind !== "content") throw new Error("content");
@@ -182,6 +212,11 @@ test("Scenario locks an exact preset, binds each role independently, and runs a 
   await expect(roles.nth(0).getByLabel("Name", { exact: true })).toHaveValue("Lena");
   await expect(roles.nth(1).getByLabel("Name", { exact: true })).toHaveValue("Rhea");
   await expect(page.getByText("Policy: @writer/policy", { exact: false })).toBeVisible();
+  expect(completedDraft(api)?.completed.report).toMatchObject({
+    assembly_tests: [
+      { id: "example", ok: true, messages_digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/) },
+    ],
+  });
   await page.screenshot({ path: "/tmp/char-pub-assembly-preview.png", fullPage: true });
   await expect(page.getByText("All changes saved")).toBeVisible();
   expect(api.calls.findLast((c) => c.method === "PUT")?.body).toMatchObject({
@@ -240,9 +275,9 @@ test("a prompt module is edited and previewed without a fictitious content IR", 
     ref: "@writer/module",
     type: "prompt-module",
     display_name: "Module",
-    prompt_module: { version: "0-draft", blocks: omitted.blocks },
+    prompt_module: { version: "1-draft", blocks: omitted.blocks },
   };
-  await editor(page, working);
+  const api = await editor(page, working);
   await page.goto("/c/writer/module/edit");
   await page.getByLabel("Instructions for rules").fill("Reusable module text.");
   await expect(page.getByRole("list", { name: "Context layout" })).toHaveCount(0);
@@ -251,4 +286,5 @@ test("a prompt module is edited and previewed without a fictitious content IR", 
     page.getByRole("paragraph").filter({ hasText: /^Reusable module text.$/ }),
   ).toBeVisible();
   await expect(page.getByRole("list", { name: "Assembled messages" })).toHaveCount(0);
+  expect(CreationArtifactSchema.parse(completedDraft(api)?.artifact).kind).toBe("prompt-module");
 });

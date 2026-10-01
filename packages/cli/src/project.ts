@@ -146,20 +146,57 @@ export function resolveInclude(ref: string, dir: string): string {
   return joined;
 }
 
-async function expandIncludes(node: unknown, dir: string, read: FileReader): Promise<void> {
+const INCLUDE_TEXT_FIELDS = new Set([
+  "text",
+  "caption",
+  "description",
+  "summary",
+  "display_name",
+  "title",
+  "label",
+  "intent",
+  "opening",
+  "greeting",
+  "part",
+  "goal",
+  "hint",
+  "alt",
+  "purpose",
+  "judge",
+  "time",
+  "where",
+  "scenario_hint",
+]);
+const INCLUDE_LITERAL_FIELDS = new Set(["locator", "origin", "source", "data", "pin", "about"]);
+const INCLUDE_LOCALE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
+
+async function expandIncludes(
+  node: unknown,
+  dir: string,
+  read: FileReader,
+  proseMap: "none" | "locales" | "record" = "none",
+): Promise<void> {
   if (Array.isArray(node)) {
-    for (let i = 0; i < node.length; i++) {
-      const v = node[i];
-      if (typeof v === "string" && INCLUDE_RE.test(v)) node[i] = await readInclude(v, dir, read);
-      else await expandIncludes(v, dir, read);
-    }
+    for (const value of node) await expandIncludes(value, dir, read, proseMap);
     return;
   }
   if (node && typeof node === "object") {
     const obj = node as Record<string, unknown>;
-    for (const [k, v] of Object.entries(obj)) {
-      if (typeof v === "string" && INCLUDE_RE.test(v)) obj[k] = await readInclude(v, dir, read);
-      else await expandIncludes(v, dir, read);
+    for (const [key, value] of Object.entries(obj)) {
+      if (INCLUDE_LITERAL_FIELDS.has(key)) continue;
+      const prose =
+        INCLUDE_TEXT_FIELDS.has(key) ||
+        proseMap === "record" ||
+        (proseMap === "locales" && key !== "ref" && INCLUDE_LOCALE.test(key));
+      if (prose && typeof value === "string" && INCLUDE_RE.test(value))
+        obj[key] = await readInclude(value, dir, read);
+      else
+        await expandIncludes(
+          value,
+          dir,
+          read,
+          key === "goals" ? "record" : prose ? "locales" : "none",
+        );
     }
   }
 }

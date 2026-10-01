@@ -1,19 +1,19 @@
 import {
   type AssemblyFixture,
-  buildCreation,
   type CreationInput,
   canonicalizeCreation,
   PRESET_REGIONS,
   type ReleaseInput,
 } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
-import { ASSEMBLER, assemble } from "../src/assemble.js";
+import { buildTestCreation, withTestDefault } from "../../core/test/build.js";
 import {
   assembleArtifact,
   digestAssemblyMessages,
   runAssemblyFixture,
   runAssemblyTests,
 } from "../src/fixtures.js";
+import { ASSEMBLER, assemble } from "../src/index.js";
 import { estimateCounter, TOKENIZER_VERSIONS } from "../src/tokens.js";
 
 const release = "rel_01h455vb4pex5vsknk084sn001";
@@ -48,7 +48,7 @@ const profile = {
   mode: "narrator" as const,
   capabilities: { system_role: true, multiple_system_messages: true },
 };
-const sampleArtifact = buildCreation({ root }).artifact;
+const sampleArtifact = buildTestCreation({ root }).artifact;
 if (sampleArtifact.kind !== "content") throw new Error("sample content required");
 const session = {
   bindings: Object.fromEntries(
@@ -77,51 +77,55 @@ function fixture(): AssemblyFixture {
 
 it("checks messages and reports a mismatch without rewriting author expectations", async () => {
   const test = fixture();
-  const initial = await runAssemblyFixture({ root, fixture: test });
+  const initial = await runAssemblyFixture(withTestDefault({ root, fixture: test }));
   expect(initial.ok).toBe(false);
   expect(initial.messages_digest).toMatch(/^sha256:/);
   const digest = initial.messages_digest;
   if (!digest) throw new Error("no message digest");
   const passing = { ...test, expected: { kind: "success" as const, messages_digest: digest } };
-  expect((await runAssemblyFixture({ root, fixture: passing })).ok).toBe(true);
+  expect((await runAssemblyFixture(withTestDefault({ root, fixture: passing }))).ok).toBe(true);
   expect(
     (
-      await runAssemblyFixture({
-        root: {
-          ...root,
-          creation: {
-            ...creation,
-            fragments: [
-              {
-                id: "setting",
-                stable: true,
-                kind: "scenario",
-                content: { type: "text", text: "Sun shines." },
-              },
-            ],
+      await runAssemblyFixture(
+        withTestDefault({
+          root: {
+            ...root,
+            creation: {
+              ...creation,
+              fragments: [
+                {
+                  id: "setting",
+                  stable: true,
+                  kind: "scenario",
+                  content: { type: "text", text: "Sun shines." },
+                },
+              ],
+            },
           },
-        },
-        fixture: passing,
-      })
+          fixture: passing,
+        }),
+      )
     ).ok,
   ).toBe(false);
   expect(test.expected).toEqual({ kind: "success", messages_digest: `sha256:${"0".repeat(64)}` });
 });
 
 it("validates activation trace assertions and distinguishes missing sources", async () => {
-  const built = buildCreation({ root }).artifact;
+  const built = buildTestCreation({ root }).artifact;
   if (built.kind !== "content") throw new Error("content required");
   const source = built.ir.fragments[0]?.id;
   if (!source) throw new Error("fragment required");
   const test = {
     ...fixture(),
-    expected: { kind: "success" as const, trace: [{ source, included: true, reason: "always" }] },
+    expected: { kind: "success" as const, trace: [{ source, included: true, reason: "direct" }] },
   };
-  expect((await runAssemblyFixture({ root, fixture: test })).ok).toBe(true);
+  expect((await runAssemblyFixture(withTestDefault({ root, fixture: test }))).ok).toBe(true);
   test.expected.trace[0] = { source, included: false, reason: "budget" };
-  expect((await runAssemblyFixture({ root, fixture: test })).issues).toHaveLength(2);
+  expect((await runAssemblyFixture(withTestDefault({ root, fixture: test }))).issues).toHaveLength(
+    2,
+  );
   test.expected.trace[0] = { source: "missing", included: true, reason: "always" };
-  expect((await runAssemblyFixture({ root, fixture: test })).issues).toEqual([
+  expect((await runAssemblyFixture(withTestDefault({ root, fixture: test }))).issues).toEqual([
     "trace source missing: missing",
   ]);
 });
@@ -132,13 +136,15 @@ it("rejects engine mismatch even if the fixture expects that setup error", async
     tokenizer: { name: "estimate", version: "unknown" },
     expected: { kind: "error" as const, code: "assembly.tokenizer_version_unsupported" },
   };
-  const result = await runAssemblyFixture({ root, fixture: test });
+  const result = await runAssemblyFixture(withTestDefault({ root, fixture: test }));
   expect(result.ok).toBe(false);
   expect(result.error?.code).toBe("assembly.tokenizer_version_unsupported");
-  const wrongEngine = await runAssemblyFixture({
-    root,
-    fixture: { ...test, assembler: { name: ASSEMBLER.name, version: "future" } },
-  });
+  const wrongEngine = await runAssemblyFixture(
+    withTestDefault({
+      root,
+      fixture: { ...test, assembler: { name: ASSEMBLER.name, version: "future" } },
+    }),
+  );
   expect(wrongEngine.error?.code).toBe("assembly.assembler_version_unsupported");
 });
 
@@ -149,8 +155,8 @@ const presetCreation: CreationInput = {
   display_name: "Preset",
   meta,
   policy: {
-    version: "0-draft",
-    blocks: [{ id: "rules", position: "main", text: "Describe only observable actions." }],
+    version: "1-draft",
+    blocks: [{ id: "rules", default_at: "main", text: "Describe only observable actions." }],
     layout: [...PRESET_REGIONS],
     requires: { system_role: true },
   },
@@ -169,13 +175,13 @@ const presetPin = {
 describe("locked scenario execution", () => {
   it("uses exact policy and engine configuration with caller-owned Session", async () => {
     const assembly = {
-      version: "0-draft" as const,
+      version: "1-draft" as const,
       preset: presetPin,
       profile,
       assembler: ASSEMBLER,
       tokenizer: { name: "estimate", version: TOKENIZER_VERSIONS.estimate },
     };
-    const artifact = buildCreation({
+    const artifact = buildTestCreation({
       root: { ...root, creation: { ...creation, assembly } },
       dependencies: [presetRelease],
     }).artifact;
@@ -186,10 +192,10 @@ describe("locked scenario execution", () => {
     expect(digestAssemblyMessages(result.messages)).toBe(
       digestAssemblyMessages(
         assemble({
-          ir: artifact.ir,
+          artifact,
           preset: artifact.assembly.preset,
           profile,
-          session,
+          turn: session,
           counter: estimateCounter,
         }).messages,
       ),
@@ -203,21 +209,27 @@ describe("locked scenario execution", () => {
       expected: { kind: "error" as const, code: "assemble.preset_incompatible" },
     };
     expect(
-      (await runAssemblyFixture({ root, dependencies: [presetRelease], fixture: test })).ok,
+      (
+        await runAssemblyFixture(
+          withTestDefault({ root, dependencies: [presetRelease], fixture: test }),
+        )
+      ).ok,
     ).toBe(true);
-    expect((await runAssemblyFixture({ root, fixture: test })).error?.code).toBe(
+    expect((await runAssemblyFixture(withTestDefault({ root, fixture: test }))).error?.code).toBe(
       "assembly.release_missing",
     );
     expect(
       (
-        await runAssemblyFixture({
-          root,
-          dependencies: [presetRelease],
-          fixture: {
-            ...test,
-            preset: { ...presetPin, semantic_digest: `sha256:${"f".repeat(64)}` },
-          },
-        })
+        await runAssemblyFixture(
+          withTestDefault({
+            root,
+            dependencies: [presetRelease],
+            fixture: {
+              ...test,
+              preset: { ...presetPin, semantic_digest: `sha256:${"f".repeat(64)}` },
+            },
+          }),
+        )
       ).error?.code,
     ).toBe("assembly.pin_mismatch");
   });
@@ -234,10 +246,12 @@ describe("locked scenario execution", () => {
       profile: { ...profile, capabilities: {} },
       expected: { kind: "error" as const, code: "assemble.preset_incompatible" },
     };
-    const report = await runAssemblyTests({
-      root: { ...presetRelease, creation: { ...presetCreation, assembly_tests: [test] } },
-      dependencies: [root],
-    });
+    const report = await runAssemblyTests(
+      withTestDefault({
+        root: { ...presetRelease, creation: { ...presetCreation, assembly_tests: [test] } },
+        dependencies: [root],
+      }),
+    );
     expect(report.ok).toBe(true);
     expect(report.results).toHaveLength(1);
   });

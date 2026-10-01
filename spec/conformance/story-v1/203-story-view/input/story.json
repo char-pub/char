@@ -1,0 +1,164 @@
+{
+  "kind": "view",
+  "scenarios": [
+    {
+      "name": "bob-before-entry",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [],
+        "scene": "lobby",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice"]
+          },
+          "stopped": false
+        }
+      }
+    },
+    {
+      "name": "bob-follows-alice",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [],
+        "scene": "back",
+        "present": ["alice", "bob"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby", "back"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice", "bob"]
+          },
+          "stopped": false
+        }
+      }
+    },
+    {
+      "name": "bob-not-present",
+      "profile": {
+        "runtime": {
+          "name": "portable-story-fixture",
+          "version": "1"
+        },
+        "tokenizer": "estimate",
+        "context_window": 8192,
+        "reserve_for_output": 256,
+        "mode": "per-agent",
+        "capabilities": {
+          "system_role": true,
+          "multiple_system_messages": true
+        }
+      },
+      "turn": {
+        "bindings": {
+          "l:51a094224ac6fffda1a9cff4a86236c5eb4b211b3facd527b57a227b9fec4f09": {
+            "kind": "character",
+            "display_name": "Alice",
+            "description": "ALICE_PRIVATE_BINDING",
+            "outward_description": "ALICE_OUTWARD"
+          },
+          "l:82adc5c575af1f2214f015ac0ab9ad7fa57272f46398130462e8d6898158deae": {
+            "kind": "character",
+            "display_name": "Bob",
+            "description": "BOB_PRIVATE_BINDING",
+            "outward_description": "BOB_OUTWARD"
+          },
+          "user": {
+            "kind": "persona",
+            "display_name": "Reader"
+          }
+        },
+        "history": [],
+        "scene": "back",
+        "present": ["alice"],
+        "for_participant": "bob",
+        "story": {
+          "start": "default",
+          "visited": ["lobby", "back"],
+          "reached": [],
+          "ended": [],
+          "happened": [],
+          "vars": {},
+          "knowing": {
+            "#secret": ["alice", "bob"]
+          },
+          "stopped": false
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE "app"."releases" ADD COLUMN "default_policy" jsonb;

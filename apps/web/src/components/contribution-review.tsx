@@ -30,6 +30,8 @@ import { timeAgo } from "@/lib/text";
 import { ChangeCard, shortKey } from "./contribution-changes";
 import { ContributorCard, DecisionPanel, OutcomePanel } from "./contribution-decision";
 import { AgentBadge, authorLabel } from "./contribution-list";
+import { DiagnosticList } from "./editor/diagnostics";
+import { ProposalPreview } from "./proposal-preview";
 import { UserMarkdown, UserText } from "./user-content";
 
 /**
@@ -68,6 +70,7 @@ export function ContributionReview({
   name,
   number,
   member,
+  canUpdateSensitive = false,
   meId,
   guest,
 }: {
@@ -75,21 +78,22 @@ export function ContributionReview({
   name: string;
   number: number;
   member: boolean;
+  canUpdateSensitive?: boolean;
   meId?: string | undefined;
   guest?: GuestSession | null | undefined;
 }) {
   const client = useRegistry();
   const qc = useQueryClient();
   const detail = useQuery({
-    queryKey: keys.contribution(ns, name, number),
+    queryKey: [...keys.contribution(ns, name, number), meId ?? guest?.guest.id ?? null],
     queryFn: () => client.contribution(ns, name, number),
   });
   const open = detail.data?.status === "open";
   // “改之前”取当前草稿里的值；只有成员读得到草稿。编辑器用的键不共享，避免互相覆盖缓存。
   const draft = useQuery({
-    queryKey: [...keys.draft(ns, name), "review"],
+    queryKey: [...keys.draft(ns, name), "review", meId ?? null],
     queryFn: () => client.draft(ns, name),
-    enabled: member && open,
+    enabled: member && open && detail.data?.preview?.current === undefined,
     retry: false,
   });
   const base = useBaseInfo(ns, name, detail.data, meId);
@@ -120,12 +124,13 @@ export function ContributionReview({
   const byKey = new Map(c.changes.map((raw) => [rawChangeKey(raw), raw]));
   const outcomes = preview?.outcomes ?? [];
   const mustConfirm = outcomes.filter((o) => o.sensitive && o.state === "applied");
+  const ownerNeeded = !canUpdateSensitive && mustConfirm.length > 0;
   const allConfirmed = mustConfirm.every((o) => confirmed.has(o.key));
   const isAuthor =
     ("user" in c.author && c.author.user === meId) ||
     ("guest_id" in c.author && c.author.guest_id === guest?.guest.id);
   const author = authorLabel(c.author, { user: meId, guest: guest?.guest.id });
-  const working = draft.data?.working;
+  const working = preview?.current ?? draft.data?.working;
 
   const reload = async () => {
     setStale(false);
@@ -305,12 +310,26 @@ export function ContributionReview({
         </div>
       ) : null}
 
+      {member && preview?.merged ? <ProposalPreview working={preview.merged} /> : null}
+      {member && preview?.diagnostics?.length ? (
+        <DiagnosticList
+          items={preview.diagnostics.map(({ detail, ...d }) =>
+            detail === undefined ? d : { ...d, detail },
+          )}
+        />
+      ) : null}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {preview ? (
           <section aria-labelledby="c-preview" className="min-w-0 space-y-3">
             <h3 id="c-preview" className="text-base font-semibold">
               {member ? "Changes against your current draft" : "Changes against the author's draft"}
             </h3>
+            {ownerNeeded ? (
+              <p role="note" className="text-sm text-text-2">
+                Only the owner can accept changes to the license, rights, rating or other protected
+                fields.
+              </p>
+            ) : null}
             {preview.error ? (
               <p role="alert" className="text-sm text-danger">
                 These changes can no longer be applied to the draft ({preview.error}).
@@ -336,8 +355,14 @@ export function ContributionReview({
                   key={o.key}
                   outcome={o}
                   before={member ? draftValue(working, o.key) : null}
-                  after={changeAfter(byKey.get(o.key))}
-                  canConfirm={member && open}
+                  after={
+                    preview?.merged &&
+                    o.state !== "conflict" &&
+                    ["story", "story-order", "cast", "group", "source"].includes(o.on)
+                      ? draftValue(preview.merged, o.key)
+                      : changeAfter(byKey.get(o.key))
+                  }
+                  canConfirm={member && canUpdateSensitive && open}
                   confirmed={confirmed.has(o.key)}
                   onConfirm={(v) =>
                     setConfirmed((s) => {
@@ -391,7 +416,7 @@ export function ContributionReview({
               confirmedCount={mustConfirm.filter((o) => confirmed.has(o.key)).length}
               author={author}
               busy={busy}
-              canAccept={!busy && !stale && !!preview?.mergeable && allConfirmed}
+              canAccept={!busy && !stale && !ownerNeeded && !!preview?.mergeable && allConfirmed}
               onAccept={() => void accept()}
               onReject={(reason) => void reject(reason)}
             />

@@ -7,24 +7,29 @@
  *   相同。预期文件就是一行 JCS 文本，不带尾随换行；比较前只去掉文件末尾可能存在的一个 `\n`。
  * - 错误用例：比较错误的 `code`；预期里写了 `subject` 时也比较 `subject`。
  * - 发布用例：比较 `ok`、error 级问题的 code 列表和 warning 级问题的 code 列表（按报告顺序）。
- * - Assembler 用例：按场景比较 Trace 中每个 entry 的 `id`、`decision`、`reason`，或组装失败的
+ * - Assembler 用例：比较有序 messages digest 和 Trace 的 `id`、`decision`、`reason`，或失败的
  *   错误码（见 assemble.ts）。
  * - CCv3 用例：比较往返的 Loss Report 摘要（见 ccv3.ts）。
  *
  * 状态为 draft 的用例只运行、不比较：它们的预期输出还没有经过人工审阅。
  */
 import {
+  buildCreation,
+  CatalogRefSchema,
   CharError,
   CreationSchema,
   checkPublish,
+  ExactRefSchema,
   isCharError,
   type PublishReport,
   RuntimeProfileSchema,
   resolve,
   sha256Hex,
+  TurnViewSchema,
 } from "@char-pub/core";
 import { compareTraces, runAssembleScenarios } from "./assemble.js";
 import { compareLoss, runRoundTrip } from "./ccv3.js";
+import { runStoryFixture, storyResultJSON, validateStoryFixture } from "./story.js";
 import type {
   Bundle,
   BundledCase,
@@ -32,11 +37,13 @@ import type {
   ExpectKind,
   LossSummary,
   PublishSummary,
+  StoryExpectation,
   TraceExpectation,
 } from "./types.js";
 
 /** 运行一个用例得到的实际结果，形态与预期文件一一对应。 */
 export type Actual =
+  | { kind: "story"; story: StoryExpectation; violations: string[] }
   | { kind: "context-ir"; text: string; digest: string }
   | { kind: "error"; error: ErrorExpectation; detail?: string }
   | { kind: "publish"; summary: PublishSummary }
@@ -81,12 +88,31 @@ function toError(e: unknown): Actual {
 /** 按用例声明的形态运行实现。不会抛出 CharError；其他异常说明实现有 bug，原样抛出。 */
 export function runCase(c: BundledCase): Actual {
   const { meta, input } = c;
+  if (meta.kind === "story") {
+    const problems = validateStoryFixture(input);
+    if (problems.length)
+      return toError(
+        new CharError({
+          code: "conformance.invalid_story",
+          subject: c.dir,
+          detail: problems.join("; "),
+        }),
+      );
+    try {
+      const { expectation, violations } = runStoryFixture(input);
+      return { kind: "story", story: expectation, violations };
+    } catch (error) {
+      return toError(error);
+    }
+  }
+  if (!["resolver", "assembler", "publish", "ccv3"].includes(meta.kind))
+    return { kind: "unsupported", reason: "Unknown case kind" };
   if (meta.kind === "ccv3") {
     if (input.card === undefined) {
       return toError(new CharError({ code: "conformance.missing_card", subject: c.dir }));
     }
     try {
-      return { kind: "loss-report", summary: runRoundTrip(input.card) };
+      return { kind: "loss-report", summary: runRoundTrip(input.card, input) };
     } catch (e) {
       return toError(e);
     }
@@ -104,6 +130,7 @@ export function runCase(c: BundledCase): Actual {
       visibility: input.root.visibility,
       creation: input.root.creation,
       dependencies: input.deps,
+      ...(input.options?.default_policy ? { default_policy: input.options.default_policy } : {}),
       registry: {
         existingLabels: reg.existingLabels,
         assetStatus: reg.assetStatus,
@@ -117,20 +144,22 @@ export function runCase(c: BundledCase): Actual {
     return { kind: "publish", summary: summarizePublish(report) };
   }
   try {
-    const out = resolve({
+    const buildInput = {
       root: input.root,
       dependencies: input.deps,
       ...(input.options?.publicAssetBaseUrl
         ? { publicAssetBaseUrl: input.options.publicAssetBaseUrl }
         : {}),
-    });
+      ...(input.options?.default_policy ? { default_policy: input.options.default_policy } : {}),
+    };
     if (meta.kind === "assembler") {
-      if (!input.assemble) {
+      if (!input.assemble)
         return toError(new CharError({ code: "conformance.missing_assemble", subject: c.dir }));
-      }
-      const { expectation, violations } = runAssembleScenarios(out.ir, input.assemble);
+      const { artifact } = buildCreation(buildInput);
+      const { expectation, violations } = runAssembleScenarios(artifact, input.assemble);
       return { kind: "trace", trace: expectation, violations };
     }
+    const out = resolve(buildInput);
     return { kind: "context-ir", text: out.json, digest: textDigest(out.json) };
   } catch (e) {
     return toError(e);
@@ -143,6 +172,10 @@ export function runCase(c: BundledCase): Actual {
  */
 export function validateInput(c: BundledCase): string[] {
   const problems: string[] = [];
+  if (c.meta.kind === "story") problems.push(...validateStoryFixture(c.input));
+  else if (c.input.story !== undefined) problems.push("story input requires story case kind");
+  if (!["resolver", "assembler", "publish", "ccv3", "story"].includes(c.meta.kind))
+    problems.push("unsupported case kind");
   const releases = [...(c.input.root ? [c.input.root] : []), ...c.input.deps];
   for (const r of releases) {
     const parsed = CreationSchema.safeParse(r.creation);
@@ -150,6 +183,11 @@ export function validateInput(c: BundledCase): string[] {
       problems.push(`${r.release}: ${parsed.error.issues[0]?.message ?? "invalid creation"}`);
     }
   }
+  if (
+    c.input.options?.default_policy &&
+    !ExactRefSchema.safeParse(c.input.options.default_policy).success
+  )
+    problems.push("invalid default policy identity");
   const assemble = c.input.assemble;
   if (c.meta.kind === "assembler") {
     const scenarios = assemble?.scenarios ?? [];
@@ -161,6 +199,9 @@ export function validateInput(c: BundledCase): string[] {
       names.add(s.name);
       const parsed = RuntimeProfileSchema.safeParse(s.profile);
       if (!parsed.success) problems.push(`${s.name}: ${parsed.error.issues[0]?.message}`);
+      if (!TurnViewSchema.safeParse(s.turn).success) problems.push(`${s.name}: invalid turn`);
+      if (s.selection?.some((ref) => !CatalogRefSchema.safeParse(ref).success))
+        problems.push(`${s.name}: invalid selection ref`);
       if (s.preset) {
         const policy = CreationSchema.safeParse(s.preset.creation);
         if (!policy.success) problems.push(`${s.name}: invalid preset creation`);
@@ -185,7 +226,7 @@ export function judge(c: BundledCase, actual: Actual): Verdict {
   const base = { dir: c.dir, actual };
   if (actual.kind === "unsupported") return { ...base, status: "todo", message: actual.reason };
   // 硬性要求与是否审阅无关：违反时直接失败。
-  if (actual.kind === "trace" && actual.violations.length > 0) {
+  if ((actual.kind === "trace" || actual.kind === "story") && actual.violations.length > 0) {
     return { ...base, status: "fail", message: actual.violations.join("; ") };
   }
   if (c.meta.status !== "reviewed") return { ...base, status: "draft" };
@@ -201,6 +242,15 @@ export function judge(c: BundledCase, actual: Actual): Verdict {
     };
   }
   switch (actual.kind) {
+    case "story": {
+      if (!c.expected.story)
+        return { ...base, status: "fail", message: "missing expected/story.json" };
+      const expected = storyResultJSON(c.expected.story),
+        received = storyResultJSON(actual.story);
+      return expected === received
+        ? { ...base, status: "pass" }
+        : { ...base, status: "fail", message: firstDifference(expected, received) };
+    }
     case "context-ir": {
       const expected = c.expected["context-ir"];
       if (expected === undefined)
@@ -269,6 +319,8 @@ export function runBundle(bundle: Bundle): Verdict[] {
 /** 把实际结果转成预期文件的内容（供 draft 工具使用）。 */
 export function renderDraft(actual: Actual): { file: ExpectKind; text: string } | null {
   switch (actual.kind) {
+    case "story":
+      return { file: "story", text: `${JSON.stringify(actual.story, null, 2)}\n` };
     case "context-ir":
       return { file: "context-ir", text: actual.text };
     case "error":

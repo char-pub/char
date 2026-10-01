@@ -5,11 +5,11 @@ import type { CreationInput, ReleasePin } from "./schema/creation.js";
 import type { ExactRef } from "./schema/identity.js";
 
 export interface CreationDependency {
-  domain: "content" | "policy" | "assembly" | "test";
+  domain: "content" | "policy" | "assembly" | "test" | "derivation";
   id: string;
   ref: string;
   pin?: ReleasePin;
-  accepts: "content" | "preset" | "prompt-module";
+  accepts: "content" | "preset" | "prompt-module" | "any";
 }
 
 /** Direct dependencies only. No IO, no latest resolution; all domains share publication authorization. */
@@ -51,6 +51,16 @@ export function getCreationDependencies(
   for (const test of creation.assembly_tests ?? []) {
     if (test.root !== "self") add("test", test.id, test.root, "content");
     if (test.preset && test.preset !== "self") add("test", test.id, test.preset, "preset");
+  }
+  for (const [index, source] of (creation.provenance?.derived_from ?? []).entries()) {
+    if (!("ref" in source)) continue;
+    out.push({
+      domain: "derivation",
+      id: String(index),
+      ref: source.ref,
+      pin: { release: source.release, semantic_digest: source.semantic_digest },
+      accepts: "any",
+    });
   }
   return out;
 }

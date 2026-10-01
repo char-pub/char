@@ -1,0 +1,1180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v1-draft/story.schema.json",
+  "title": "char.pub Story",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "scenes": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "time": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "where": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "place": {
+            "$ref": "#/$defs/StoryInfoRef"
+          },
+          "cast": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+            }
+          },
+          "opening": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "allOf": [
+                    {
+                      "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+                    },
+                    {
+                      "pattern": "^(?!ref$)"
+                    }
+                  ],
+                  "$ref": "#/$defs/Locale"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "goals": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "beats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          },
+          "lore": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          },
+          "when": {
+            "$ref": "#/$defs/StoryCondition"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "beats": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "strength": {
+            "type": "string",
+            "enum": [
+              "possible",
+              "suggested",
+              "required"
+            ]
+          },
+          "reveal": {
+            "type": "string",
+            "enum": [
+              "hidden",
+              "on-reach",
+              "listed"
+            ]
+          },
+          "when": {
+            "$ref": "#/$defs/StoryCondition"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/StoryEffect"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "endings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "strength": {
+            "type": "string",
+            "enum": [
+              "possible",
+              "suggested",
+              "required"
+            ]
+          },
+          "reveal": {
+            "type": "string",
+            "enum": [
+              "hidden",
+              "on-reach",
+              "listed"
+            ]
+          },
+          "when": {
+            "$ref": "#/$defs/StoryCondition"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/StoryEffect"
+            }
+          },
+          "after": {
+            "type": "string",
+            "enum": [
+              "stop",
+              "continue"
+            ]
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "choices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "label": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "intent": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "when": {
+            "$ref": "#/$defs/StoryCondition"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "intent"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "plotlines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "scenes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          },
+          "beats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "starts": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "scene": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "greeting": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "allOf": [
+                        {
+                          "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+                        },
+                        {
+                          "pattern": "^(?!ref$)"
+                        }
+                      ],
+                      "$ref": "#/$defs/Locale"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "ref": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                  }
+                },
+                "required": [
+                  "ref"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "set": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/StoryEffect"
+            }
+          },
+          "reached": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            }
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "vars": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/StoryVariable"
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "lore": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "reveal": {
+            "type": "string",
+            "enum": [
+              "hidden",
+              "on-reach"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "background",
+              "planned"
+            ]
+          },
+          "when_text": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "cast": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+            }
+          },
+          "place": {
+            "$ref": "#/$defs/StoryInfoRef"
+          },
+          "truth": {
+            "$ref": "#/$defs/StoryInfoRef"
+          },
+          "lore": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "when": {
+            "$ref": "#/$defs/StoryCondition"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/StoryEffect"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "timelines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "order": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "order"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "knowing": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/StoryInfoRef"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "object",
+            "properties": {
+              "knows": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "const": "*"
+                  }
+                ]
+              },
+              "not": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "const": "*"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "enter": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "knows": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "const": "*"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "knows"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "start"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "scenes"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "LocalizedText": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Locale"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ]
+    },
+    "Locale": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+    },
+    "StoryInfoRef": {
+      "type": "string",
+      "pattern": "^(?:#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}|@[a-z0-9][a-z0-9-]*\\/[a-z0-9][a-z0-9-]*#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3}|cast:[a-z0-9][a-z0-9_-]*#[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?(?:\\/[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?){0,3})$"
+    },
+    "StoryCondition": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/StoryCondition"
+              }
+            }
+          },
+          "required": [
+            "all"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/StoryCondition"
+              }
+            }
+          },
+          "required": [
+            "any"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/StoryCondition"
+            }
+          },
+          "required": [
+            "not"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "in": {
+              "type": "string",
+              "pattern": "^scene\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "in"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "visited": {
+              "type": "string",
+              "pattern": "^scene\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "visited"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "reached": {
+              "type": "string",
+              "pattern": "^beat\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "reached"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ended": {
+              "type": "string",
+              "pattern": "^ending\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "ended"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "happened": {
+              "type": "string",
+              "pattern": "^event\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "happened"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "knows": {
+              "type": "object",
+              "properties": {
+                "who": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                },
+                "info": {
+                  "$ref": "#/$defs/StoryInfoRef"
+                }
+              },
+              "required": [
+                "who",
+                "info"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "knows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "is": {
+              "type": "string",
+              "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+            }
+          },
+          "required": [
+            "is"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "cmp": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "=",
+                    "!=",
+                    "<",
+                    "<=",
+                    ">",
+                    ">="
+                  ]
+                },
+                {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                }
+              ],
+              "items": false,
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "cmp"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "eq"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "has": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "has"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "judge": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "judge"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "StoryEffect": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "set": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": -2147483648,
+                      "maximum": 2147483647
+                    },
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "set"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "add": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "integer",
+                  "minimum": -2147483648,
+                  "maximum": 2147483647
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "add"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "put": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "put"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "drop": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^var\\/[a-z0-9][a-z0-9_-]*$"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "drop"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "learn": {
+              "type": "object",
+              "properties": {
+                "who": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+                    },
+                    {
+                      "type": "string",
+                      "const": "*"
+                    }
+                  ]
+                },
+                "info": {
+                  "$ref": "#/$defs/StoryInfoRef"
+                }
+              },
+              "required": [
+                "who",
+                "info"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "learn"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "StoryVariable": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "bool"
+            },
+            "init": {
+              "type": "boolean"
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "int"
+            },
+            "init": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "min": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "max": {
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "min",
+            "max",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "enum"
+            },
+            "init": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+            },
+            "values": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "values",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "set"
+            },
+            "init": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "of": {
+              "type": "string",
+              "const": "item"
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9](?:[a-z0-9_-]{0,62}[a-z0-9])?$"
+              }
+            },
+            "description": {
+              "$ref": "#/$defs/LocalizedText"
+            }
+          },
+          "required": [
+            "type",
+            "init",
+            "description"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

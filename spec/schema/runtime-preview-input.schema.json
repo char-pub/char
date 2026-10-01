@@ -1,0 +1,427 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v1-draft/runtime-preview-input.schema.json",
+  "title": "char.pub Runtime Synthetic Preview Input",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "char.pub/runtime-preview"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/PresetIdentity"
+        },
+        "lock_digest": {
+          "$ref": "#/$defs/Digest"
+        },
+        "artifact_json_digest": {
+          "$ref": "#/$defs/Digest"
+        }
+      },
+      "required": [
+        "root",
+        "lock_digest",
+        "artifact_json_digest"
+      ],
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "string"
+        },
+        "tokenizer": {
+          "type": "string"
+        },
+        "context_window": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reserve_for_output": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "narrator",
+            "per-agent"
+          ]
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "images": {
+              "type": "boolean"
+            },
+            "system_role": {
+              "type": "boolean"
+            },
+            "multiple_system_messages": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "locale": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+        }
+      },
+      "required": [
+        "runtime",
+        "tokenizer",
+        "context_window",
+        "reserve_for_output",
+        "mode",
+        "capabilities"
+      ],
+      "additionalProperties": false
+    },
+    "preset": {
+      "$ref": "#/$defs/PresetIdentity"
+    },
+    "tokenizer": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "turn": {
+      "type": "object",
+      "properties": {
+        "locale": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+        },
+        "bindings": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "persona",
+                  "character"
+                ]
+              },
+              "display_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "outward_description": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "display_name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "assistant"
+                ]
+              },
+              "speaker": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "role",
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "scene": {
+          "type": "string",
+          "minLength": 1
+        },
+        "present": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "story": {
+          "$ref": "#/$defs/TurnStory"
+        },
+        "for_participant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "story_guidance": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "locale",
+        "bindings",
+        "history",
+        "scene",
+        "present",
+        "story"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "source",
+    "profile",
+    "preset",
+    "tokenizer",
+    "turn"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "PresetIdentity": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            },
+            "semantic_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "release": {
+              "type": "string",
+              "pattern": "^rel_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+            }
+          },
+          "required": [
+            "ref",
+            "semantic_digest",
+            "release"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "pattern": "^@[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?\\/[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+            },
+            "semantic_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "origin": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "draft-build"
+                    },
+                    "build_id": {
+                      "type": "string",
+                      "pattern": "^dbld_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^rev_[0-7][0-9a-hjkmnp-tv-z]{25}$"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "build_id",
+                    "revision",
+                    "expires_at"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "local-build"
+                    },
+                    "input_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "input_digest"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "ref",
+            "semantic_digest",
+            "origin"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "TurnStory": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string"
+        },
+        "visited": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reached": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ended": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "happened": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vars": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        },
+        "knowing": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "stopped": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "start",
+        "visited",
+        "reached",
+        "ended",
+        "happened",
+        "vars",
+        "knowing",
+        "stopped"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

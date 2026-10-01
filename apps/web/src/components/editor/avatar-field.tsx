@@ -7,16 +7,14 @@
  * - 已经发布过的头像从最新 public 版本的 Context IR 里找同一个 digest 的公共地址；
  * - 没有本地或已发布预览时，向草稿接口申请本人上传图片的短期读取地址，换设备后仍可预览。
  */
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ImageIcon, ImageUp, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import type { Me } from "@/lib/api";
 import { type BlobInfo, getAvatar, setAvatar, type Working } from "@/lib/draft";
-import { keys, useRegistry } from "@/lib/registry";
+import { keys, useMe, useRegistry } from "@/lib/registry";
 import { IMAGE_TYPES, UploadError, uploadImage } from "@/lib/upload";
-
-/** 本次会话里上传过的图片：digest → blob URL。页面关闭时浏览器会回收它们。 */
-const localPreviews = new Map<string, string>();
 
 function digestOf(w: Working): string | undefined {
   const v = getAvatar(w)?.variants[0];
@@ -37,11 +35,24 @@ export function AvatarField({
   latestLabel?: string | undefined;
 }) {
   const client = useRegistry();
+  const queryClient = useQueryClient();
+  const actor = useMe().data?.id;
+  const localPreviews = useRef(new Map<string, string>()).current;
+  const scope = `${actor ?? "anonymous"}:${ns}:${name}:`;
+  const active = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      active.current?.abort();
+      for (const url of localPreviews.values()) URL.revokeObjectURL(url);
+      localPreviews.clear();
+    },
+    [localPreviews],
+  );
   const input = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const digest = digestOf(working);
-  const local = digest ? localPreviews.get(digest) : undefined;
+  const local = digest ? localPreviews.get(`${scope}${digest}`) : undefined;
 
   // 已发布的头像：只在没有本地预览时去读最新版本的 IR。
   const ir = useQuery({
@@ -55,7 +66,7 @@ export function AvatarField({
     ? ir.data?.assets.find((a) => a.digest === digest && a.url)?.url
     : undefined;
   const privatePreview = useQuery({
-    queryKey: [...keys.draft(ns, name), "avatar", digest],
+    queryKey: [...keys.draft(ns, name), actor ?? "anonymous", "avatar", digest],
     queryFn: () => client.draftAvatar(ns, name),
     enabled: !!digest && !local && !published,
     retry: false,
@@ -81,17 +92,30 @@ export function AvatarField({
   );
 
   const pick = async (file: File) => {
+    active.current?.abort();
+    const controller = new AbortController();
+    active.current = controller;
+    const current = () =>
+      active.current === controller &&
+      !controller.signal.aborted &&
+      queryClient.getQueryData<Me | null>(keys.me)?.id === actor;
     setError(null);
     const url = typeof URL.createObjectURL === "function" ? URL.createObjectURL(file) : null;
     setUploading(url ?? "");
     try {
-      const blob: BlobInfo = await uploadImage(client, file);
-      if (url) localPreviews.set(blob.digest, url);
+      const blob: BlobInfo = await uploadImage(client, file, {
+        signal: controller.signal,
+        isCurrent: current,
+      });
+      if (!current()) return;
+      if (url) localPreviews.set(`${scope}${blob.digest}`, url);
       update((w) => setAvatar(w, blob));
     } catch (e) {
+      if (!current()) return;
       setError(e instanceof UploadError ? e.message : "The upload failed. Try again.");
     } finally {
-      setUploading(null);
+      if (current()) setUploading(null);
+      else if (url) URL.revokeObjectURL(url);
     }
   };
 

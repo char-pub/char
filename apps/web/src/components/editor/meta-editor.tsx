@@ -67,10 +67,12 @@ function Field({
 }
 
 export function MetaEditor({
+  canUpdateSensitive = false,
   working,
   update,
   diagnostics,
 }: {
+  canUpdateSensitive?: boolean;
   working: Working;
   update: (fn: (w: Working) => Working) => void;
   diagnostics: readonly CheckDiagnostic[];
@@ -89,6 +91,11 @@ export function MetaEditor({
 
   return (
     <div className="grid gap-5 sm:grid-cols-2">
+      {!canUpdateSensitive ? (
+        <p className="text-sm text-text-2 sm:col-span-2">
+          Only the owner can change the rating, rights and license. You can still edit tags.
+        </p>
+      ) : null}
       <div className="space-y-1">
         <Field
           id={ids.rating}
@@ -96,6 +103,7 @@ export function MetaEditor({
           help="Be honest: a dependency with a higher rating raises it anyway."
         >
           <NativeSelect
+            disabled={!canUpdateSensitive}
             id={ids.rating}
             value={meta.rating}
             onChange={(e) => set({ rating: e.target.value as Rating })}
@@ -111,6 +119,7 @@ export function MetaEditor({
       </div>
       <Field id={ids.warnings} label="Content warnings" help="Comma separated.">
         <ListInput
+          disabled={!canUpdateSensitive}
           id={ids.warnings}
           value={meta.content_warnings ?? []}
           placeholder="e.g. violence, grief"
@@ -123,6 +132,7 @@ export function MetaEditor({
         help={RIGHTS_OPTIONS.find((r) => r.id === meta.rights)?.note}
       >
         <NativeSelect
+          disabled={!canUpdateSensitive}
           id={ids.rights}
           value={meta.rights}
           onChange={(e) => set({ rights: e.target.value as CreationMeta["rights"] })}
@@ -137,6 +147,7 @@ export function MetaEditor({
       <div className="space-y-1">
         <Field id={ids.license} label="License" help={LICENSE_HELP}>
           <NativeSelect
+            disabled={!canUpdateSensitive}
             id={ids.license}
             value={preset}
             onChange={(e) => {
@@ -152,6 +163,7 @@ export function MetaEditor({
           </NativeSelect>
           {preset === "custom" ? (
             <Input
+              disabled={!canUpdateSensitive}
               id={ids.custom}
               aria-label="SPDX license expression"
               className="font-mono"

@@ -5,7 +5,7 @@
  */
 import { expect, type Page, test } from "@playwright/test";
 import { diffPair, resolveSample } from "../src/fixtures/samples";
-import { creationDetail, ME, mockApi, problem } from "./mock-api";
+import { creationDetail, ME, mockApi, OWNER_PERMISSIONS, problem } from "./mock-api";
 
 const ORIGIN = "http://127.0.0.1:4173";
 const BASE = "/v1/creations/@djj/alice";
@@ -31,6 +31,7 @@ async function setup(page: Page, me: typeof ME | null) {
   api.on("GET /v1/me", me ? { body: me } : { status: 401, body: { code: "auth.required" } });
   api.on(`GET ${BASE}`, () => ({
     body: creationDetail({
+      permissions: me?.namespace === "djj" ? OWNER_PERMISSIONS : undefined,
       ref: "@djj/alice",
       display_name: "Alice",
       releases,
@@ -69,6 +70,7 @@ async function setup(page: Page, me: typeof ME | null) {
     policy = (req.postDataJSON() as { policy: string }).policy;
     return { status: 204 };
   });
+  api.on(`GET ${BASE}/collaborators`, { body: { items: [] } });
   return api;
 }
 

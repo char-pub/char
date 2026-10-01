@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canonicalizeCreation } from "../src/canonical.js";
 import { isCharError } from "../src/errors.js";
-import { displayFragmentId, instanceKey, participantKey } from "../src/keys.js";
+import { displayFragmentId, participantKey } from "../src/keys.js";
 import { type ReleaseInput, resolve } from "../src/resolve/index.js";
 import type { CreationInput } from "../src/schema/creation.js";
 import {
@@ -11,6 +11,7 @@ import {
   placeholderText,
   tokenizeTemplate,
 } from "../src/template.js";
+import { buildTestCreation } from "./build.js";
 import { level0Character, tid } from "./fixtures.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: 反例输入不需要满足类型
@@ -145,7 +146,7 @@ describe("scenario with cast", () => {
     });
     const night = ir.fragments.find((f) => f.origin.fragment === "night");
     expect(night?.visibility).toEqual({ scope: "scene", scene: "instance:root" });
-    expect(ir.bootstrap.greetings[0]?.speaker).toBe("participant:self");
+    expect(ir.bootstrap.greetings[0]).not.toHaveProperty("speaker");
   });
 
   it("rejects cast members that are not in the graph or bound to {{self}}", () => {
@@ -297,19 +298,20 @@ describe("early binding to other creations", () => {
     });
     const ir = resolve({ root: rel(1, c), dependencies: [b, f] }).ir;
     const bond = ir.fragments.find((x) => x.origin.fragment === "bond");
-    const inst = instanceKey(["friends"]);
+    const bobParticipant = ir.participants.filter((p) => p.ref === "@djj/bob");
+    expect(bobParticipant).toHaveLength(1);
+    const bobKey = bobParticipant[0]?.key;
+    expect(ir.fragments.find((x) => x.origin.creation === "@djj/bob")?.subject).toBe(bobKey);
     expect(bond?.content).toEqual({
       type: "dialogue",
       turns: [
         { speaker: "participant:self", text: "Hey Bob." },
-        { speaker: `participant:${participantKey(inst, "b")}`, text: "Hey." },
+        { speaker: `participant:${bobKey}`, text: "Hey." },
       ],
     });
     // 可选 slot c 没有被使用，不产生 late slot；非角色类型的可选 slot w 被跳过。
     expect(ir.late_slots.map((s) => s.key)).toEqual(["user"]);
-    expect(
-      ir.participants.find((p) => p.key === participantKey(inst, "b"))?.avatar,
-    ).toBeUndefined();
+    expect(bobParticipant[0]?.avatar).toBeUndefined();
   });
 
   it("rejects bindings to creations of the wrong type or outside the graph", () => {
@@ -571,7 +573,11 @@ describe("resolver edge cases", () => {
       authors: [{ name: "DJJ" }],
       provenance: {
         contributors: [
-          { author: { guest_id: "g1", display_name: "Guest" }, contribution: tid("ctb", 1) },
+          {
+            author: { guest_id: "g1", display_name: "Guest" },
+            contribution: tid("ctb", 1),
+            client_id: "runtime-app",
+          },
         ],
         imported_from: {
           format: "ccv3",
@@ -588,8 +594,11 @@ describe("resolver edge cases", () => {
         ref: "@djj/alice",
         author: { guest_id: "g1", display_name: "Guest" },
         contribution: tid("ctb", 1),
+        client_id: "runtime-app",
       },
     ]);
+    const artifact = buildTestCreation({ root: rel(1, c) }).artifact;
+    expect(artifact.meta.contributors).toEqual(ir.meta.contributors);
     expect(ir.meta.import_omissions).toEqual([
       { ref: "@djj/alice", fields: ["post_history_instructions", "system_prompt"] },
     ]);

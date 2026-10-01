@@ -15,6 +15,7 @@
     "e2e",
     "playwright.config.ts",
     "playwright.fullstack.config.ts",
+    "playwright.harness.config.ts",
     "vite.config.ts",
     "vitest.config.ts"
   ]

@@ -73,10 +73,13 @@ describe("TokenManager", () => {
     await userEvent.type(within(form).getByLabelText("Token name"), "laptop cli");
     await userEvent.click(within(form).getByLabelText(/Publish releases/));
     await userEvent.click(within(form).getByLabelText(/For an agent/));
+    const publishScope = within(form).getByLabelText(/Publish releases/);
+    expect(publishScope.getAttribute("data-state")).toBe("unchecked");
+    expect(publishScope.hasAttribute("disabled")).toBe(true);
     await userEvent.click(within(form).getByRole("button", { name: "Create token" }));
     expect(createToken).toHaveBeenCalledWith({
       name: "laptop cli",
-      scopes: ["creations:read", "releases:publish"],
+      scopes: ["creations:read"],
       expires_in_days: 90,
       agent: true,
     });

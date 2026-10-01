@@ -1,20 +1,24 @@
-import { ASSEMBLER, runAssemblyTests, TOKENIZER_VERSIONS } from "@char-pub/assembler";
+import { ASSEMBLER, TOKENIZER_VERSIONS } from "@char-pub/assembler";
 import {
   type AssemblyConfig,
   type AssemblyFixture,
+  publishedIdentity,
   type RuntimeProfile,
   SessionSchema,
 } from "@char-pub/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { ArtifactPicker } from "@/components/artifact-picker";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { loadAssemblyInput } from "@/lib/assembly-input";
+import type { Me } from "@/lib/api";
 import { nextId, type Working } from "@/lib/draft";
+import { authorTestResults, buildSavedDraft } from "@/lib/draft-build";
 import { parseHistory } from "@/lib/preview";
-import { useRegistry } from "@/lib/registry";
+import { keys, useMe, useRegistry } from "@/lib/registry";
+import type { SavedDraftSnapshot } from "@/lib/use-draft-editor";
 import { Field } from "./policy-editor";
 
 export const DEFAULT_PROFILE: RuntimeProfile = {
@@ -157,7 +161,7 @@ export function AssemblyEditor({
           update((w) => ({
             ...w,
             assembly: {
-              version: "0-draft",
+              version: "1-draft",
               preset: artifact.root,
               profile: assembly?.profile ?? DEFAULT_PROFILE,
               assembler: ASSEMBLER,
@@ -173,25 +177,39 @@ export function AssemblyEditor({
 export function AuthorTestsEditor({
   working,
   update,
+  ns,
+  name,
+  save,
 }: {
   working: Working;
   update: (fn: (w: Working) => Working) => void;
+  ns?: string;
+  name?: string;
+  save?: () => Promise<SavedDraftSnapshot | null>;
 }) {
   const client = useRegistry();
+  const actor = useMe().data?.id;
+  const queryClient = useQueryClient();
   const current = useRef(working);
   current.current = working;
   const request = useRef(0);
+  const abort = useRef<AbortController | null>(null);
   useEffect(() => {
     request.current += 1;
+    abort.current?.abort();
     setResults(null);
     setBusy(false);
     setError(null);
+    return () => {
+      abort.current?.abort();
+    };
   }, [working]);
   const fixtures = (working.assembly_tests as AssemblyFixture[] | undefined) ?? [];
+  const lockedPreset = (working.assembly as AssemblyConfig | undefined)?.preset;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<
-    { id: string; ok: boolean; issues: string[]; messages_digest?: string }[] | null
+    { id: string; ok: boolean; issues: string[]; messages_digest?: string | undefined }[] | null
   >(null);
   const set = (next: AssemblyFixture[]) => {
     setResults(null);
@@ -204,16 +222,30 @@ export function AuthorTestsEditor({
   const change = (index: number, patch: Partial<AssemblyFixture>) =>
     set(fixtures.map((f, i) => (i === index ? { ...f, ...patch } : f)));
   const run = async () => {
+    if (!ns || !name || !save) return;
     const snapshot = working;
     const sequence = ++request.current;
-    const valid = () => current.current === snapshot && request.current === sequence;
+    abort.current?.abort();
+    const controller = new AbortController();
+    abort.current = controller;
+    const valid = () =>
+      current.current === snapshot &&
+      request.current === sequence &&
+      !controller.signal.aborted &&
+      queryClient.getQueryData<Me | null>(keys.me)?.id === actor;
     setBusy(true);
     setError(null);
     setResults(null);
     try {
-      const input = await loadAssemblyInput(client, working);
-      const result = await runAssemblyTests(input);
-      if (valid()) setResults(result.results);
+      const { receipt } = await buildSavedDraft({
+        client,
+        ns,
+        name,
+        save,
+        signal: controller.signal,
+        isCurrent: valid,
+      });
+      if (valid()) setResults(authorTestResults(receipt));
     } catch (e) {
       if (valid()) setError(e instanceof Error ? e.message : "Could not execute the tests");
     } finally {
@@ -224,8 +256,8 @@ export function AuthorTestsEditor({
     <section id="edit-tests" className="space-y-4 rounded-xl border bg-surface p-5">
       <h2 className="text-xl font-bold">Author assembly tests</h2>
       <p className="text-sm text-text-2">
-        Write synthetic examples that may be published with this creation. Tests assemble messages
-        locally and never call a model. Do not paste private conversations.
+        Write synthetic examples that may be published with this creation. Tests run against a saved
+        private build and never call a model. Do not paste private conversations.
       </p>
       {fixtures.map((fixture, i) => (
         <fieldset key={i} className="space-y-3 rounded-lg border p-4">
@@ -245,11 +277,26 @@ export function AuthorTestsEditor({
           <ArtifactPicker
             label="Test content"
             types={["character", "scenario"]}
-            onPick={({ artifact }) => change(i, { root: artifact.root })}
+            onPick={({ artifact }) =>
+              change(i, {
+                root: artifact.root,
+                ...(!fixture.preset && artifact.kind === "content" && artifact.assembly
+                  ? {
+                      preset: {
+                        ref: artifact.assembly.preset.ref,
+                        ...publishedIdentity(artifact.assembly.preset),
+                        semantic_digest: artifact.assembly.preset.semantic_digest,
+                      },
+                    }
+                  : {}),
+              })
+            }
           />
           <p className="font-mono text-xs">
             Preset:{" "}
-            {fixture.preset === "self" ? "this preset" : (fixture.preset?.ref ?? "default layout")}
+            {fixture.preset === "self"
+              ? "this preset"
+              : (fixture.preset?.ref ?? "locked default preset")}
           </p>
           <div className="flex gap-2">
             {working.type === "preset" ? (
@@ -260,6 +307,12 @@ export function AuthorTestsEditor({
             <Button
               type="button"
               variant="outline"
+              disabled={fixture.root === "self" && !!lockedPreset}
+              title={
+                fixture.root === "self" && lockedPreset
+                  ? "This work locks a preset. Choose an exact preset for its tests."
+                  : undefined
+              }
               onClick={() =>
                 set(
                   fixtures.map((item, index) => {
@@ -270,7 +323,7 @@ export function AuthorTestsEditor({
                 )
               }
             >
-              Use default layout
+              Use locked default preset
             </Button>
           </div>
           <ArtifactPicker
@@ -426,6 +479,27 @@ export function AuthorTestsEditor({
             <summary className="cursor-pointer text-sm">Advanced synthetic Session JSON</summary>
             <SessionJson value={fixture.session} onChange={(session) => change(i, { session })} />
           </details>
+          {fixture.selection?.length || Object.keys(fixture.source_texts ?? {}).length ? (
+            <details className="space-y-2">
+              <summary className="cursor-pointer text-sm">Saved choices and reference text</summary>
+              <p className="text-xs text-text-2">
+                These fixed choices and complete documents are saved with the test and may be
+                published, including sections that were not selected. Save a new preview to capture
+                different choices.
+              </p>
+              {fixture.selection?.length ? (
+                <pre className="overflow-auto whitespace-pre-wrap text-xs">
+                  {JSON.stringify(fixture.selection, null, 2)}
+                </pre>
+              ) : null}
+              {Object.entries(fixture.source_texts ?? {}).map(([asset, body]) => (
+                <details key={asset} className="rounded border p-2">
+                  <summary className="break-all text-xs">{asset}</summary>
+                  <pre className="max-h-80 overflow-auto whitespace-pre-wrap text-xs">{body}</pre>
+                </details>
+              ))}
+            </details>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -448,7 +522,11 @@ export function AuthorTestsEditor({
                   "example",
                 ),
                 root: "self",
-                ...(working.type === "preset" ? { preset: "self" as const } : {}),
+                ...(working.type === "preset"
+                  ? { preset: "self" as const }
+                  : lockedPreset
+                    ? { preset: lockedPreset }
+                    : {}),
                 profile: DEFAULT_PROFILE,
                 session: {
                   history: [{ role: "user", text: "A synthetic example." }],
@@ -463,10 +541,19 @@ export function AuthorTestsEditor({
         >
           Add author test
         </Button>
-        <Button type="button" disabled={busy || !fixtures.length} onClick={() => void run()}>
+        <Button
+          type="button"
+          disabled={busy || !fixtures.length || !save}
+          onClick={() => void run()}
+        >
           {busy ? "Running…" : "Run author tests"}
         </Button>
       </div>
+      {!save ? (
+        <p className="text-sm text-text-2">
+          Save these changes in a work you can edit to run its author tests.
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="text-sm text-danger">
           {error}

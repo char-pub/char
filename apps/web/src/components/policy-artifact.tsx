@@ -1,4 +1,4 @@
-import { type CreationArtifact, diffPresets } from "@char-pub/core";
+import { buildIdentityKey, type CreationArtifact, diffPresets } from "@char-pub/core";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArtifactPicker } from "@/components/artifact-picker";
@@ -30,12 +30,14 @@ export function PolicyContent({ artifact }: { artifact: CreationArtifact }) {
             <h3 className="font-mono text-sm">{block.id}</h3>
             <p className="text-xs text-text-2">
               {block.enabled === false ? "Disabled" : "Enabled"} ·{" "}
-              {block.position === "main" ? "Before all regions" : "After all regions"}
+              {("position" in block ? block.position : block.default_at) === "main"
+                ? "Before all regions"
+                : "After all regions"}
             </p>
             <p className="whitespace-pre-wrap text-sm">{block.text}</p>
             {block.origin ? (
               <p className="break-all font-mono text-xs text-text-3">
-                {block.origin.ref} · {block.origin.release}
+                {block.origin.ref} · {buildIdentityKey(block.origin)}
               </p>
             ) : null}
           </section>
@@ -127,8 +129,8 @@ function PolicyPreviewSession() {
           />
           {content?.kind === "content" ? (
             <PreviewPanel
-              key={`${content.root.release}:${artifact.root.release}`}
-              ir={content.ir}
+              key={`${buildIdentityKey(content.root)}:${buildIdentityKey(artifact.root)}`}
+              artifact={content}
               preset={artifact.preset}
             />
           ) : (
@@ -261,7 +263,8 @@ export function PolicyVersions() {
                         </p>
                         {block ? (
                           <p className="text-xs">
-                            {block.position} · {block.enabled === false ? "disabled" : "enabled"}
+                            {"position" in block ? block.position : block.default_at} ·{" "}
+                            {block.enabled === false ? "disabled" : "enabled"}
                           </p>
                         ) : null}
                       </div>
@@ -286,7 +289,8 @@ export function PolicyVersions() {
                 <h3 className="font-semibold">Block source changes</h3>
                 {diff.origin_changes.map((change) => (
                   <p key={change.id} className="break-all font-mono text-xs">
-                    {change.id}: {change.from?.release ?? "local"} → {change.to?.release ?? "local"}
+                    {change.id}: {change.from ? buildIdentityKey(change.from) : "local"} →{" "}
+                    {change.to ? buildIdentityKey(change.to) : "local"}
                   </p>
                 ))}
               </section>

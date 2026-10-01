@@ -8,6 +8,7 @@ import { type ReactNode, useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  getFragments,
   getGreeting,
   getMainText,
   getName,
@@ -19,8 +20,9 @@ import {
   setSummary,
   type Working,
 } from "@/lib/draft";
+import { bootstrapGreetingAnchor } from "@/lib/editor-location";
 import { cn } from "@/lib/utils";
-import { ANCHOR } from "./anchors";
+import { ANCHOR, mainFragmentId } from "./anchors";
 import { AvatarField } from "./avatar-field";
 import { DiagnosticList, diagnosticsFor } from "./diagnostics";
 
@@ -39,8 +41,8 @@ export const MAIN_LABEL: Partial<
   },
   lorebook: {
     label: "First entry",
-    placeholder: "A piece of lore. Add entries that switch on with keywords under Passages.",
-    help: "Always sent to the model. Keyword entries go under More options → Passages.",
+    placeholder: "A piece of lore. Add and organize more entries in the reference library.",
+    help: "Always sent to the model. Organize other entries and their activation in the reference library.",
   },
   persona: {
     label: "Persona",
@@ -58,9 +60,9 @@ export const MAIN_LABEL: Partial<
     help: "Describe the relationship, then declare its roles below.",
   },
   scenario: {
-    label: "Starting situation",
-    placeholder: "Where the cast meets and what is happening.",
-    help: "Set the scene. Add the participants in Cast below.",
+    label: "Shared background",
+    placeholder: "Background that applies across the story.",
+    help: "Optional context for every scene. Write scenes and first messages in Story below.",
   },
 };
 
@@ -106,6 +108,34 @@ export function BasicsFields({
   const mainDiagnostics = diagnostics.filter(
     (d) => d.subject === "fragments" || (main && d.subject.startsWith(`fragments[${main.id}]`)),
   );
+  const mainContent = getFragments(working).find(
+    (f) => f.id === mainFragmentId(working, type),
+  )?.content;
+  const mainField =
+    main && mainLabel ? (
+      <div id={ANCHOR.main} className="space-y-1.5">
+        {mainContent && mainContent.type !== "text" ? (
+          <p className="text-sm">
+            This passage uses {mainContent.type} content. Edit it in Passages below.
+          </p>
+        ) : (
+          <>
+            <label htmlFor={ids.main} className="text-sm font-medium">
+              {mainLabel.label}
+            </label>
+            <Textarea
+              id={ids.main}
+              rows={6}
+              value={getMainText(working, type)}
+              placeholder={mainLabel.placeholder}
+              onChange={(e) => update((w) => setMainText(w, type, e.target.value))}
+            />
+            <Help>{mainLabel.help}</Help>
+          </>
+        )}
+        <DiagnosticList items={mainDiagnostics} />
+      </div>
+    ) : null;
   return (
     <div className="space-y-6">
       <div className="grid gap-5 sm:grid-cols-[6.5rem_1fr]">
@@ -155,22 +185,16 @@ export function BasicsFields({
         </div>
       </div>
 
-      {main && mainLabel ? (
-        <div id={ANCHOR.main} className="space-y-1.5">
-          <label htmlFor={ids.main} className="text-sm font-medium">
-            {mainLabel.label}
-          </label>
-          <Textarea
-            id={ids.main}
-            rows={6}
-            value={getMainText(working, type)}
-            placeholder={mainLabel.placeholder}
-            onChange={(e) => update((w) => setMainText(w, type, e.target.value))}
-          />
-          <Help>{mainLabel.help}</Help>
-          <DiagnosticList items={mainDiagnostics} />
-        </div>
-      ) : null}
+      {type === "scenario" ? (
+        <details open={!!getMainText(working, type)}>
+          <summary className="cursor-pointer text-sm font-medium">
+            Shared background (optional)
+          </summary>
+          {mainField}
+        </details>
+      ) : (
+        mainField
+      )}
 
       <div id={ANCHOR.summary} className="space-y-1.5">
         <div className="flex items-baseline justify-between gap-2">
@@ -198,21 +222,58 @@ export function BasicsFields({
         <DiagnosticList items={diagnosticsFor(diagnostics, "summary")} />
       </div>
 
-      {type === "character" ? (
+      {type === "character" || working.bootstrap?.greetings.length ? (
         <div id={ANCHOR.greeting} className="space-y-1.5">
-          <label htmlFor={ids.greeting} className="text-sm font-medium">
-            Greeting
-          </label>
-          <Textarea
-            id={ids.greeting}
-            rows={4}
-            value={getGreeting(working)}
-            placeholder="The first thing your character says."
-            onChange={(e) => update((w) => setGreeting(w, e.target.value))}
-          />
+          <div
+            id={
+              working.bootstrap?.greetings[0]
+                ? bootstrapGreetingAnchor(working.bootstrap.greetings[0].id)
+                : undefined
+            }
+          >
+            <label htmlFor={ids.greeting} className="text-sm font-medium">
+              Greeting
+            </label>
+            <Textarea
+              id={ids.greeting}
+              rows={4}
+              value={getGreeting(working)}
+              placeholder="The first thing your character says."
+              onChange={(e) => update((w) => setGreeting(w, e.target.value))}
+            />
+            <Help>
+              The first message. Use <span className="font-mono">{"{{user}}"}</span> for the
+              reader's name.
+            </Help>
+          </div>
+          {working.bootstrap?.greetings.slice(1).map((greeting) => (
+            <div key={greeting.id} className="space-y-1.5">
+              <label htmlFor={bootstrapGreetingAnchor(greeting.id)}>Greeting {greeting.id}</label>
+              <Textarea
+                id={bootstrapGreetingAnchor(greeting.id)}
+                rows={4}
+                value={greeting.text}
+                onChange={(e) => {
+                  const text = e.target.value;
+                  update((w) =>
+                    w.bootstrap
+                      ? {
+                          ...w,
+                          bootstrap: {
+                            ...w.bootstrap,
+                            greetings: w.bootstrap.greetings.map((g) =>
+                              g.id === greeting.id ? { ...g, text } : g,
+                            ),
+                          },
+                        }
+                      : w,
+                  );
+                }}
+              />
+            </div>
+          ))}
           <Help>
-            The first message. Use <span className="font-mono">{"{{user}}"}</span> for the reader's
-            name.
+            Edits here change the default greeting text and preserve existing translations.
           </Help>
           <DiagnosticList items={diagnosticsFor(diagnostics, "bootstrap")} />
         </div>

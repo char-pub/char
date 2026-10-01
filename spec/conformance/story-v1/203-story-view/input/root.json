@@ -1,0 +1,76 @@
+{
+  "release": "rel_01j00000000000000000000203",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01j00000000000000000000203",
+    "ref": "@portable/door",
+    "type": "scenario",
+    "display_name": "A door with two viewpoints",
+    "meta": {
+      "default_locale": "en",
+      "rating": "general",
+      "rights": "original",
+      "license": "CC0-1.0"
+    },
+    "cast": [
+      {
+        "key": "alice",
+        "who": { "late": "character" },
+        "part": "Host",
+        "goal": "ALICE_PRIVATE_GOAL"
+      },
+      {
+        "key": "bob",
+        "who": { "late": "character" },
+        "part": "Visitor",
+        "goal": "BOB_PRIVATE_GOAL"
+      }
+    ],
+    "fragments": [
+      {
+        "id": "required",
+        "kind": "instruction",
+        "stable": true,
+        "importance": "pinned",
+        "content": { "type": "text", "text": "REQUIRED_VISIBLE_BODY" }
+      },
+      {
+        "id": "public",
+        "kind": "knowledge",
+        "stable": true,
+        "activation": { "mode": "manual" },
+        "content": { "type": "text", "text": "DIRECT_VISIBLE_BODY" }
+      },
+      {
+        "id": "secret",
+        "kind": "knowledge",
+        "stable": true,
+        "activation": { "mode": "semantic" },
+        "description": "SECRET_CANDIDATE_DESCRIPTION",
+        "content": { "type": "text", "text": "SECRET_KNOWN_BODY" }
+      },
+      {
+        "id": "alice-only",
+        "kind": "knowledge",
+        "stable": true,
+        "visibility": { "scope": "private", "to": ["{{cast:alice}}"] },
+        "activation": { "mode": "semantic" },
+        "description": "ALICE_PRIVATE_CANDIDATE",
+        "content": { "type": "text", "text": "ALICE_PRIVATE_BODY" }
+      }
+    ],
+    "story": {
+      "version": 1,
+      "scenes": [
+        { "id": "lobby", "title": "Lobby", "cast": ["alice", "bob"], "lore": ["#public"] },
+        { "id": "back", "title": "Back door", "cast": ["alice"], "lore": ["#public"] }
+      ],
+      "knowing": {
+        "#secret": {
+          "start": { "knows": ["alice"], "not": ["bob"] },
+          "enter": { "back": { "knows": ["bob"] } }
+        }
+      }
+    }
+  }
+}

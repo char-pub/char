@@ -1,20 +1,14 @@
 /**
- * CCv3 导出的按需构建：第一次请求导出时入队，worker 从 Release 的 Context IR 生成 CCv3
+ * CCv3 导出的按需构建：第一次请求导出时入队，worker 从 Release 的完整发布产物 生成 CCv3
  * 卡片（JSON）与 Loss Report，写入对象存储并登记缓存。
  *
- * - 输入是 Release 已经存好的 IR，不重新 resolve：导出结果只取决于 IR 与导出器版本。
+ * - 输入是 Release 锁定的完整产物，含 Story、目录与策略；不读取当前默认配置。
  * - 产物是一个 JSON：`{ card, loss }`。public Release 写入 public 桶，其余写入 private 桶。
  * - 产物登记到 `blob_refs`（role 为 `export`），下架这个 Release 时会被一起删除。
  * - 幂等：缓存 key 已存在时直接跳过。Release 已被下架时不构建。
  */
 import { exportCCv3 } from "@char-pub/ccv3";
-import {
-  ContextIRSchema,
-  type EffectiveMeta,
-  type JSONValue,
-  jcs,
-  type ResolvedPreset,
-} from "@char-pub/core";
+import { type EffectiveMeta, type JSONValue, jcs, type ResolvedPreset } from "@char-pub/core";
 import { eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { blobRefs, buildArtifacts, releases } from "../db/schema/index.js";
@@ -27,6 +21,7 @@ export interface ExportJob {
   cache_key: string;
   preset_release_id?: string;
   private_output?: boolean;
+  locale?: string;
 }
 
 export interface ExportDeps {
@@ -49,8 +44,8 @@ export async function handleExportJob(deps: ExportDeps, job: ExportJob): Promise
     return "skipped";
   }
   const bucket = r.visibility === "public" ? ("public" as const) : ("private" as const);
-  const irBytes = await cas.getBlob(bucket, r.contextIrDigest);
-  const ir = ContextIRSchema.parse(JSON.parse(new TextDecoder().decode(irBytes)));
+  const contentArtifact = await readArtifact(cas, r, "https://assets.char.pub/cas/sha256");
+  if (contentArtifact.kind !== "content") return "skipped";
   let resolvedPreset: ResolvedPreset | undefined;
   let presetMeta: EffectiveMeta | undefined;
   let presetPublic = true;
@@ -67,10 +62,10 @@ export async function handleExportJob(deps: ExportDeps, job: ExportJob): Promise
     presetMeta = artifact.meta;
     presetPublic = p.visibility === "public";
   }
-  const { card, loss } = exportCCv3(
-    ir,
-    resolvedPreset ? { resolvedPreset, ...(presetMeta ? { presetMeta } : {}) } : {},
-  );
+  const { card, loss } = exportCCv3(contentArtifact, {
+    ...(resolvedPreset ? { resolvedPreset, ...(presetMeta ? { presetMeta } : {}) } : {}),
+    ...(job.locale ? { locale: job.locale } : {}),
+  });
   const bytes = new TextEncoder().encode(jcs({ card, loss } as unknown as JSONValue));
   const blob = await cas.putBlob(db, {
     bucket: job.private_output || !presetPublic ? "private" : bucket,

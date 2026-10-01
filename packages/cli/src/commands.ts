@@ -5,22 +5,26 @@
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  assemble,
   assembleArtifact,
   createTokenCounter,
+  prepareContext,
   runAssemblyTests,
-  type SessionInput,
+  startSession,
 } from "@char-pub/assembler";
 import {
+  type BuildCreationInput,
   buildCreation,
   CharError,
   type CheckDiagnostic,
   type CreationType,
   canonicalizeCreation,
   checkCreation,
+  createLocalBuildInput,
+  type ExactRef,
   isCharError,
   PRESET_REGIONS,
   type ReleaseInput,
+  type TurnViewInput,
 } from "@char-pub/core";
 import { stringify } from "yaml";
 import { generateFragmentIds, loadCharYaml, writeIdsIntoDocument } from "./project.js";
@@ -34,8 +38,6 @@ export const consoleOutput: Output = {
   log: (l) => process.stdout.write(`${l}\n`),
   error: (l) => process.stderr.write(`${l}\n`),
 };
-
-const LOCAL_RELEASE = "rel_00000000000000000000000000";
 
 function formatDiagnostic(d: CheckDiagnostic): string {
   const tag = d.severity === "error" ? "error" : d.severity === "warning" ? "warn " : "info ";
@@ -126,8 +128,8 @@ const TEMPLATES: Record<InitOptions["type"], (o: InitOptions) => Record<string, 
   preset: (o) => ({
     ...baseTemplate(o),
     policy: {
-      version: "0-draft",
-      blocks: [{ id: "main", text: "Write the next turn of the story.", position: "main" }],
+      version: "1-draft",
+      blocks: [{ id: "main", text: "Write the next turn of the story.", default_at: "main" }],
       layout: [...PRESET_REGIONS],
       requires: { system_role: true },
     },
@@ -135,8 +137,8 @@ const TEMPLATES: Record<InitOptions["type"], (o: InitOptions) => Record<string, 
   "prompt-module": (o) => ({
     ...baseTemplate(o),
     prompt_module: {
-      version: "0-draft",
-      blocks: [{ id: "main", text: "Use concrete sensory details.", position: "main" }],
+      version: "1-draft",
+      blocks: [{ id: "main", text: "Use concrete sensory details.", default_at: "main" }],
     },
   }),
 };
@@ -217,6 +219,7 @@ export interface BuildOptions {
   /** 依赖 Release 的本地快照（JSON，ReleaseInput 形状），通常由 `char pull` 下载。 */
   deps?: string[];
   outDir: string;
+  defaultPolicy?: string;
 }
 
 async function loadDeps(files: readonly string[]): Promise<ReleaseInput[]> {
@@ -228,17 +231,8 @@ async function loadDeps(files: readonly string[]): Promise<ReleaseInput[]> {
   return deps;
 }
 
-export async function buildLocal(
-  file: string,
-  depFiles: readonly string[] = [],
-): Promise<
-  ReturnType<typeof buildCreation> & {
-    project: Awaited<ReturnType<typeof loadCharYaml>>;
-    creation: ReturnType<typeof canonicalizeCreation>["creation"];
-    root: ReleaseInput;
-    dependencies: ReleaseInput[];
-  }
-> {
+/** Read and validate authored source without constructing a consumption artifact. */
+export async function loadLocalCreation(file: string) {
   const project = await loadCharYaml(file);
   if (project.missingIds.length > 0) {
     throw new CharError({
@@ -247,7 +241,7 @@ export async function buildLocal(
       detail: "run 'char check --fix'",
     });
   }
-  const { creation } = canonicalizeCreation(project.creation);
+  const { creation, semantic_digest } = canonicalizeCreation(project.creation);
   const check = checkCreation(creation);
   const firstError = check.diagnostics.find((d) => d.severity === "error");
   if (firstError) {
@@ -257,15 +251,47 @@ export async function buildLocal(
       ...(firstError.detail ? { detail: firstError.detail } : {}),
     });
   }
+  return { project, creation, semantic_digest };
+}
+
+export async function buildLocal(
+  file: string,
+  depFiles: readonly string[] = [],
+  defaultPolicyFile?: string,
+): Promise<
+  ReturnType<typeof buildCreation> & {
+    project: Awaited<ReturnType<typeof loadCharYaml>>;
+    creation: ReturnType<typeof canonicalizeCreation>["creation"];
+    root: BuildCreationInput["root"];
+    dependencies: ReleaseInput[];
+    default_policy?: ExactRef;
+  }
+> {
+  const { project, creation } = await loadLocalCreation(file);
   const dependencies = await loadDeps(depFiles);
-  const root: ReleaseInput = { release: LOCAL_RELEASE, visibility: "private", creation };
-  const build = buildCreation({ root, dependencies });
-  return { project, creation, root, dependencies, ...build };
+  let default_policy: ExactRef | undefined;
+  if (defaultPolicyFile) {
+    const [snapshot] = await loadDeps([defaultPolicyFile]);
+    if (!snapshot)
+      throw new CharError({ code: "cli.default_policy_missing", subject: defaultPolicyFile });
+    const canonical = canonicalizeCreation(snapshot.creation);
+    default_policy = {
+      ref: canonical.creation.ref,
+      release: snapshot.release,
+      semantic_digest: snapshot.semantic_digest ?? canonical.semantic_digest,
+    };
+    dependencies.push(snapshot);
+  }
+  const config = default_policy ? { default_policy } : {};
+  const input = createLocalBuildInput({ root: { creation }, dependencies, ...config });
+  const root = input.root;
+  const build = buildCreation(input);
+  return { project, creation, root, dependencies: input.dependencies, ...config, ...build };
 }
 
 export async function cmdBuild(o: BuildOptions, out: Output): Promise<number> {
   try {
-    const build = await buildLocal(o.file, o.deps);
+    const build = await buildLocal(o.file, o.deps, o.defaultPolicy);
     const { artifact, creation } = build;
     await mkdir(o.outDir, { recursive: true });
     const irFile = path.join(o.outDir, "artifact.json");
@@ -292,7 +318,7 @@ export async function cmdBuild(o: BuildOptions, out: Output): Promise<number> {
       );
     await writeFile(path.join(o.outDir, "lock.json"), `${JSON.stringify(build.lock, null, 2)}\n`);
     for (const w of build.warnings) out.log(`warn   ${w.code}  ${w.subject}`);
-    out.log(`built  ${creation.ref}  ${build.digest}`);
+    out.log(`built locally  ${creation.ref}  ${build.digest}`);
     out.log(`       ${irFile}`);
     return 0;
   } catch (e) {
@@ -307,6 +333,7 @@ export async function cmdBuild(o: BuildOptions, out: Output): Promise<number> {
 export interface PreviewOptions {
   file: string;
   deps?: string[];
+  defaultPolicy?: string;
   tokenizer: "estimate" | "o200k_base" | "cl100k_base";
   contextWindow: number;
   mode: "narrator" | "per-agent";
@@ -317,30 +344,52 @@ export interface PreviewOptions {
   preset?: string;
   /** Public or private local Session JSON; never written into Creation. */
   session?: string;
+  /** Opening used only when creating a fresh preview session. */
+  start?: string;
+  /** JSON map from IR asset ID to exact UTF-8 source text. */
+  sourceTexts?: string;
 }
 
 export async function cmdPreview(o: PreviewOptions, out: Output): Promise<number> {
   try {
-    const { artifact } = await buildLocal(o.file, o.deps);
+    const { artifact } = await buildLocal(o.file, o.deps, o.defaultPolicy);
     if (artifact.kind !== "content")
       throw new CharError({ code: "cli.content_required", subject: o.file });
     const policy = o.preset ? (await buildLocal(o.preset, o.deps)).artifact : undefined;
     if (policy && policy.kind !== "preset")
       throw new CharError({ code: "cli.preset_required", subject: o.preset ?? "preset" });
     const counter = await createTokenCounter(o.tokenizer);
-    const session: SessionInput = o.session
-      ? (JSON.parse(await readFile(o.session, "utf8")) as SessionInput)
-      : {
-          bindings: { user: { kind: "persona", display_name: o.persona } },
-          history: o.messages.map((text) => ({ role: "user" as const, text })),
-          ...(o.locale ? { locale: o.locale } : {}),
-        };
+    const source_texts = o.sourceTexts
+      ? (JSON.parse(await readFile(o.sourceTexts, "utf8")) as Record<string, string>)
+      : undefined;
+    if (o.session && o.start)
+      throw new CharError({ code: "cli.conflicting_options", subject: "--session/--start" });
+    let session: TurnViewInput;
+    if (o.session) session = JSON.parse(await readFile(o.session, "utf8")) as TurnViewInput;
+    else {
+      const started = startSession({
+        artifact,
+        bindings: { user: { kind: "persona", display_name: o.persona } },
+        ...(o.start ? { start: o.start } : {}),
+        locale:
+          o.locale ??
+          (!policy ? artifact.assembly?.profile.locale : undefined) ??
+          artifact.ir.meta.default_locale,
+      });
+      session = {
+        ...started.turn,
+        history: [
+          ...started.turn.history,
+          ...o.messages.map((text) => ({ role: "user" as const, text })),
+        ],
+      };
+    }
     const result =
       artifact.assembly && !policy
-        ? await assembleArtifact({ artifact, session })
-        : assemble({
-            ir: artifact.ir,
-            ...(policy?.kind === "preset" ? { preset: policy.preset } : {}),
+        ? await assembleArtifact({ artifact, session, ...(source_texts ? { source_texts } : {}) })
+        : prepareContext({
+            artifact,
+            preset: policy?.kind === "preset" ? policy.preset : null,
             profile: {
               runtime: { name: "char-cli", version: "0.0.0" },
               tokenizer: o.tokenizer,
@@ -350,7 +399,9 @@ export async function cmdPreview(o: PreviewOptions, out: Output): Promise<number
               capabilities: { system_role: true, multiple_system_messages: true },
               ...(o.locale ? { locale: o.locale } : {}),
             },
-            session,
+            turn: session,
+            diagnostics: "author",
+            ...(source_texts ? { source_texts } : {}),
             counter,
           });
     const t = result.trace;
@@ -375,10 +426,17 @@ export async function cmdPreview(o: PreviewOptions, out: Output): Promise<number
   }
 }
 
-export async function cmdTest(o: { file: string; deps?: string[] }, out: Output): Promise<number> {
+export async function cmdTest(
+  o: { file: string; deps?: string[]; defaultPolicy?: string },
+  out: Output,
+): Promise<number> {
   try {
-    const build = await buildLocal(o.file, o.deps);
-    const report = await runAssemblyTests({ root: build.root, dependencies: build.dependencies });
+    const build = await buildLocal(o.file, o.deps, o.defaultPolicy);
+    const report = await runAssemblyTests({
+      root: build.root,
+      dependencies: build.dependencies,
+      ...(build.default_policy ? { default_policy: build.default_policy } : {}),
+    });
     for (const result of report.results) {
       out.log(
         `${result.ok ? "PASS" : "FAIL"} ${result.id}${result.messages_digest ? ` ${result.messages_digest}` : ""}`,

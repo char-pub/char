@@ -10,7 +10,7 @@ import {
   type MyCreationsResponseSchema,
   UpdateSettingsRequestSchema,
 } from "@char-pub/contracts";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, or, sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
@@ -18,6 +18,7 @@ import type { Action } from "../../authz/authorize.js";
 import {
   authUser,
   contributions,
+  creationCollaborators,
   creationDrafts,
   creations,
   namespaceMembers,
@@ -75,6 +76,28 @@ async function loadMe(c: AppContext, userId: string): Promise<z.input<typeof MeS
 export function register(app: Hono<Env>): void {
   route(app, {
     method: "get",
+    path: "/v1/profile",
+    authorize: async (c) => self(c, "account.profile"),
+    handler: async (c, { loaded: userId }) => {
+      const [namespace] = await c.var.services.db
+        .select({ slug: namespaces.slug })
+        .from(namespaceMembers)
+        .innerJoin(namespaces, eq(namespaces.id, namespaceMembers.namespaceId))
+        .where(
+          and(
+            eq(namespaceMembers.userId, userId),
+            eq(namespaceMembers.role, "owner"),
+            eq(namespaces.kind, "user"),
+            eq(namespaces.status, "active"),
+          ),
+        )
+        .limit(1);
+      c.header("cache-control", "private, no-store");
+      return c.json({ id: encodeId("user", userId), namespace: namespace?.slug ?? null });
+    },
+  });
+  route(app, {
+    method: "get",
     path: "/v1/me",
     authorize: async (c) => self(c, "account.read"),
     handler: async (c, { loaded: userId }) => {
@@ -89,7 +112,7 @@ export function register(app: Hono<Env>): void {
   route(app, {
     method: "get",
     path: "/v1/me/creations",
-    authorize: async (c) => self(c, "account.read"),
+    authorize: async (c) => self(c, "account.list_creations"),
     handler: async (c, { loaded: userId }) => {
       const rows = await c.var.services.db
         .select({
@@ -107,16 +130,37 @@ export function register(app: Hono<Env>): void {
         })
         .from(creations)
         .innerJoin(namespaces, eq(namespaces.id, creations.namespaceId))
-        .innerJoin(
+        .leftJoin(creationDrafts, eq(creationDrafts.creationId, creations.id))
+        .leftJoin(
           namespaceMembers,
           and(
             eq(namespaceMembers.namespaceId, creations.namespaceId),
             eq(namespaceMembers.userId, userId),
           ),
         )
-        .leftJoin(creationDrafts, eq(creationDrafts.creationId, creations.id))
+        .leftJoin(
+          creationCollaborators,
+          and(
+            eq(creationCollaborators.creationId, creations.id),
+            eq(creationCollaborators.userId, userId),
+            isNotNull(creationCollaborators.acceptedAt),
+            eq(
+              creationCollaborators.license,
+              sql<string>`${creationDrafts.working}->'meta'->>'license'`,
+            ),
+          ),
+        )
         .leftJoin(releases, eq(releases.id, creations.latestReleaseId))
-        .orderBy(desc(creationDrafts.updatedAt), creations.name)
+        // Filter before LIMIT. Composite keys keep both joins one-to-one, even for an owner
+        // who also has an accepted collaboration row; no per-work queries or duplicate entries.
+        .where(
+          or(
+            eq(namespaceMembers.role, "owner"),
+            and(eq(namespaces.kind, "system"), eq(namespaceMembers.role, "maintainer")),
+            isNotNull(creationCollaborators.userId),
+          ),
+        )
+        .orderBy(desc(creationDrafts.updatedAt), creations.name, creations.id)
         .limit(500);
       const body: z.input<typeof MyCreationsResponseSchema> = {
         items: rows.map((r) => {

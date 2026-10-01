@@ -1,28 +1,32 @@
-import { assemble } from "@char-pub/assembler";
+import { assemble, initialStoryTurn } from "@char-pub/assembler";
 import { diffContextIR } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
-import { diffPair, locksOf, resolveSample, samples } from "./samples";
+import { buildSample, diffPair, locksOf, resolveSample, samples } from "./samples";
 
 describe("sample creations", () => {
   it.each(samples.map((s) => [s.id, s] as const))("%s resolves and assembles", (_id, s) => {
-    const out = resolveSample(s);
-    expect(out.ir.fragments.length).toBeGreaterThan(0);
+    const artifact = buildSample(s);
+    expect(artifact.ir.fragments.length).toBeGreaterThan(0);
     const bindings = Object.fromEntries(
-      out.ir.late_slots
+      artifact.ir.late_slots
         .filter((l) => l.required)
         .map((l) => [l.key, { kind: l.accepts[0] ?? "persona", display_name: "Sam" }]),
     );
     const r = assemble({
-      ir: out.ir,
+      artifact,
       profile: {
         runtime: { name: "test", version: "0" },
         tokenizer: "estimate",
         context_window: 8000,
         reserve_for_output: 500,
         mode: "narrator",
-        capabilities: {},
+        capabilities: { system_role: true, multiple_system_messages: true },
       },
-      session: { bindings, history: [{ role: "user", text: "Tell me about Arasaka" }] },
+      turn: {
+        ...initialStoryTurn(artifact),
+        bindings,
+        history: [{ role: "user", text: "Tell me about Arasaka" }],
+      },
     });
     expect(r.trace.entries.length).toBeGreaterThan(0);
   });

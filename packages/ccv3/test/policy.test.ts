@@ -2,7 +2,7 @@ import { canonicalizeCreation, resolvePreset } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
 import { exportCCv3 } from "../src/export.js";
 import { exportPolicyFields, importPolicyPreset } from "../src/policy.js";
-import { singleCreationIR } from "./single-creation-ir.js";
+import { artifactOfIR, singleCreationIR } from "./single-creation-ir.js";
 
 const report = {
   format: "ccv3",
@@ -27,6 +27,28 @@ const options = {
 };
 
 describe("explicit CCv3 policy conversion", () => {
+  it("exports every placement while reporting selection, labels and placement semantics as losses", () => {
+    const creation = importPolicyPreset(report, options);
+    if (!creation.policy) throw new Error("Missing policy");
+    creation.policy.placements = [
+      { block: "system", at: "main", as: "one" },
+      { block: "system", at: "main", as: "two" },
+    ];
+    creation.policy.selection = { catalog_budget: 200 };
+    creation.policy.render = { "sources.notice": "Reference material" };
+    const preset = resolvePreset({
+      creation,
+      release: "rel_01h455vb4pex5vsknk084sn001",
+      semantic_digest: canonicalizeCreation(creation).semantic_digest,
+    });
+    const output = exportPolicyFields(preset);
+    expect(output.fields.system_prompt).toBe(
+      "Stay in {{char}}'s voice.\n\nStay in {{char}}'s voice.",
+    );
+    expect(output.losses.map((loss) => loss.subject)).toEqual(
+      expect.arrayContaining(["policy.selection", "policy.render", "policy.placements"]),
+    );
+  });
   it("creates an independently identified preset, preserving literal text and confirmed rights", () => {
     const creation = importPolicyPreset(report, options);
     expect(creation.type).toBe("preset");
@@ -107,7 +129,7 @@ it("keeps selected policy attribution and exact release identity in exported car
       },
     ],
   });
-  const result = exportCCv3(ir, {
+  const result = exportCCv3(artifactOfIR(ir), {
     resolvedPreset: preset,
     presetMeta: {
       rating: "mature",
@@ -125,7 +147,7 @@ it("keeps selected policy attribution and exact release identity in exported car
   });
   expect(result.loss.other.some((item) => item.subject === "policy.attribution")).toBe(false);
   expect(
-    exportCCv3(ir, { resolvedPreset: preset }).loss.other.some(
+    exportCCv3(artifactOfIR(ir), { resolvedPreset: preset }).loss.other.some(
       (item) => item.subject === "policy.attribution",
     ),
   ).toBe(true);
@@ -154,7 +176,7 @@ it("marks an explicitly selected policy's rating unverified when metadata is abs
       },
     ],
   });
-  const result = exportCCv3(ir, { resolvedPreset: preset });
+  const result = exportCCv3(artifactOfIR(ir), { resolvedPreset: preset });
   expect(result.card.data.creator_notes).toContain("Rating: unverified");
   expect(result.loss.other.some((item) => item.subject === "policy.rating")).toBe(true);
 });

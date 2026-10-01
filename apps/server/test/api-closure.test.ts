@@ -120,7 +120,11 @@ describe("transitive dependencies", () => {
     // effective rating 取闭包最大值：C 是 teen。
     expect(row?.effectiveRating).toBe("teen");
     const locks = await t.app.db.select().from(releaseLocks).where(eq(releaseLocks.releaseId, id));
-    expect(locks.map((l) => l.via).sort()).toEqual([["knows"], ["knows", "setting"]]);
+    expect(locks.map((l) => l.via).sort()).toEqual([
+      ["default_policy"],
+      ["knows"],
+      ["knows", "setting"],
+    ]);
     const frags = await t.app.db
       .select()
       .from(releaseFragments)

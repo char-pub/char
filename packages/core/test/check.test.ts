@@ -263,7 +263,7 @@ describe("checkCreation: type requirements", () => {
         ...base,
         type: "preset",
         policy: {
-          version: "0-draft",
+          version: "1-draft",
           blocks: [],
           layout: [...PRESET_REGIONS],
           requires: { system_role: true },

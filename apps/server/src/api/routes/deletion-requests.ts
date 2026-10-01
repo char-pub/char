@@ -68,7 +68,7 @@ export function register(app: Hono<Env>): void {
         const [ns, name] = body.creation.slice(1).split("/");
         const ctx = await lookupCreation(db, ns ?? "", name ?? "", c.var.principal);
         if (!ctx) return notFound(c);
-        const d = authorize(c.var.principal, "creation.edit", ctx.resource, {
+        const d = authorize(c.var.principal, "creation.delete_request", ctx.resource, {
           disabled: await c.var.services.flags(),
         });
         if (!d.allow) return problem(c, d.status, d.code);

@@ -24,6 +24,9 @@ const retrying = (name: string, extra: Omit<Queue, "name"> = {}): Queue => ({
 
 export const QUEUE_NAMES = {
   publish: "publish",
+  draftBuild: "draft.build",
+  draftBuildRequeue: "draft.requeue",
+  draftBuildExpire: "draft.expire",
   publishRequeue: "publish.requeue",
   uploadProcess: "upload.process",
   importCcv3: "import.ccv3",

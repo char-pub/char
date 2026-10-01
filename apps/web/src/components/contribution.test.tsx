@@ -76,7 +76,14 @@ describe("ContributionReview", () => {
       already_applied: [],
     }));
     renderWithApp(
-      <ContributionReview ns="writer" name="mira" number={1} member meId={ME.id} />,
+      <ContributionReview
+        ns="writer"
+        name="mira"
+        number={1}
+        member
+        canUpdateSensitive
+        meId={ME.id}
+      />,
       fakeClient({ contribution: async () => detail(), acceptContribution }),
     );
     const accept = await screen.findByRole("button", { name: "Accept into the draft" });

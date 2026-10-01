@@ -34,6 +34,7 @@ import {
   type ReferenceEdge,
 } from "./schema/creation.js";
 import type { PresetPolicy, PromptModule } from "./schema/policy.js";
+import { assertStoryLimits } from "./story/limits.js";
 
 export type Digest = `sha256:${string}`;
 
@@ -53,10 +54,49 @@ export function normalizeText(s: string): string {
  * 不接受非纯数据（函数、Date、Map 等）以及非有限数。
  */
 export function normalizeValue(value: unknown, path = "$"): JSONValue {
+  return normalizeValueAt(value, path, "prose");
+}
+
+type NormalizationScope =
+  | "prose"
+  | "creation"
+  | "assembly-tests"
+  | "fixture"
+  | "source-texts"
+  | "source-body"
+  | "turn-snapshot";
+
+/** Creation-only exceptions: fixture source bodies are digest-verified UTF-8;
+ * fixture sessions are exact runtime snapshots (including record keys), not authored prose.
+ * Follow actual object/array structure; diagnostic paths and authored keys cannot opt in.
+ */
+function normalizeCreationValue(value: unknown): JSONValue {
+  return normalizeValueAt(value, "$", "creation");
+}
+
+/** The same fixture semantics for configuration contributions and their comparison digests. */
+export function normalizeConfigurationValue(field: string, value: unknown, path = "$"): JSONValue {
+  return normalizeValueAt(value, path, field === "assembly_tests" ? "assembly-tests" : "prose");
+}
+
+export function configurationDigest(field: string, value: unknown): Digest {
+  return digestJson(normalizeConfigurationValue(field, value));
+}
+
+function childScope(scope: NormalizationScope, key: string): NormalizationScope {
+  if (scope === "turn-snapshot") return "turn-snapshot";
+  if (scope === "creation" && key === "assembly_tests") return "assembly-tests";
+  if (scope === "fixture" && key === "source_texts") return "source-texts";
+  if (scope === "fixture" && key === "session") return "turn-snapshot";
+  if (scope === "source-texts") return "source-body";
+  return "prose";
+}
+
+function normalizeValueAt(value: unknown, path: string, scope: NormalizationScope): JSONValue {
   if (value === null) return null;
   switch (typeof value) {
     case "string":
-      return normalizeText(value);
+      return scope === "source-body" || scope === "turn-snapshot" ? value : normalizeText(value);
     case "boolean":
       return value;
     case "number":
@@ -70,7 +110,15 @@ export function normalizeValue(value: unknown, path = "$"): JSONValue {
           if (v === undefined) {
             throw new CharError({ code: "canonical.undefined_in_array", subject: `${path}[${i}]` });
           }
-          return normalizeValue(v, `${path}[${i}]`);
+          return normalizeValueAt(
+            v,
+            `${path}[${i}]`,
+            scope === "assembly-tests"
+              ? "fixture"
+              : scope === "turn-snapshot"
+                ? "turn-snapshot"
+                : "prose",
+          );
         });
       }
       const proto = Object.getPrototypeOf(value);
@@ -80,7 +128,7 @@ export function normalizeValue(value: unknown, path = "$"): JSONValue {
       const out: Record<string, JSONValue> = {};
       for (const [k, v] of Object.entries(value)) {
         if (v === undefined) continue;
-        const key = k.normalize("NFC");
+        const key = scope === "turn-snapshot" ? k : k.normalize("NFC");
         if (Object.hasOwn(out, key)) {
           throw new CharError({
             code: "canonical.duplicate_key",
@@ -88,7 +136,15 @@ export function normalizeValue(value: unknown, path = "$"): JSONValue {
             detail: "two keys collapse to the same NFC form",
           });
         }
-        out[key] = normalizeValue(v, `${path}.${key}`);
+        const normalized = normalizeValueAt(v, `${path}.${key}`, childScope(scope, key));
+        if (scope === "turn-snapshot")
+          Object.defineProperty(out, key, {
+            value: normalized,
+            enumerable: true,
+            configurable: true,
+            writable: true,
+          });
+        else out[key] = normalized;
       }
       return out;
     }
@@ -182,7 +238,10 @@ export function canonicalFragmentBody(f: Omit<Fragment, "digest">): Omit<Fragmen
   let out: Omit<Fragment, "digest"> = { ...f, content: canonicalContent(f.content) };
   if (out.locale) out.locale = canonicalLocaleMap(out.locale);
   if (out.activation) out.activation = canonicalActivation(out.activation);
-  out = compact(out, ["locale", "asset_refs"]);
+  out = compact(out, ["locale", "asset_refs", "about"]);
+  out = omitIf(out, "outward", (v) => v === false);
+  out = omitIf(out, "selectable", (v) => v === false);
+  out = omitIf(out, "perspective", (v) => v === "canon");
   out = omitIf(out, "activation", (a) => a.mode === "always");
   out = omitIf(out, "visibility", (v) => v.scope === "shared");
   out = omitIf(out, "importance", (v) => v === "normal");
@@ -243,12 +302,23 @@ function canonicalGreeting(g: Greeting): Greeting {
 
 /** 已校验的 Policy 剥离默认值；数组声明顺序具有语义。 */
 export function canonicalPolicy(policy: PresetPolicy): PresetPolicy {
+  const selection = { ...policy.selection };
+  if (selection.max_depth === 4) delete selection.max_depth;
+  if (selection.on_unavailable === "skip") delete selection.on_unavailable;
   return compact(
     {
       ...policy,
       blocks: policy.blocks.map((block) => omitIf({ ...block }, "enabled", (value) => value)),
+      ...(policy.placements
+        ? {
+            placements: policy.placements.map((placement) =>
+              omitIf({ ...placement }, "as", (alias) => alias === placement.at),
+            ),
+          }
+        : {}),
+      ...(policy.selection ? { selection } : {}),
     },
-    ["region_budgets", "imports"],
+    ["region_budgets", "imports", "placements", "selection", "render"],
   );
 }
 
@@ -313,8 +383,10 @@ function stripCreationDefaults(c: CanonicalCreation): JSONValue {
     "cast",
     "provenance",
     "assembly_tests",
+    "groups",
+    "sources",
   ]);
-  return normalizeValue(out);
+  return normalizeCreationValue(out);
 }
 
 function formatIssues(err: z.ZodError): string {
@@ -329,7 +401,8 @@ function formatIssues(err: z.ZodError): string {
  * 校验失败抛出 `schema.invalid`；fragment ID 重复抛出 `canonical.duplicate_fragment`。
  */
 export function canonicalizeCreation(input: CreationInput | unknown): CanonicalResult {
-  const normalized = normalizeValue(input);
+  if (input && typeof input === "object" && "story" in input) assertStoryLimits(input.story);
+  const normalized = normalizeCreationValue(input);
   const parsed = CreationSchema.safeParse(normalized);
   if (!parsed.success) {
     throw new CharError({
@@ -362,10 +435,21 @@ export function canonicalizeCreation(input: CreationInput | unknown): CanonicalR
   }
   if (c.policy) creation.policy = canonicalPolicy(c.policy);
   if (c.prompt_module) creation.prompt_module = canonicalPromptModule(c.prompt_module);
+  if (c.cast) {
+    creation.cast = c.cast.map((member) =>
+      compact(
+        {
+          ...member,
+          ...(member.override ? { override: member.override.map(canonicalOverride) } : {}),
+        },
+        ["override"],
+      ),
+    );
+  }
 
   const json = stripCreationDefaults(creation);
   const { fragments: _f, ...rest } = json as Obj;
-  const manifest = normalizeValue({
+  const manifest = normalizeCreationValue({
     ...rest,
     fragment_digests: creation.fragments.map((f) => [f.id, f.digest]),
   });
@@ -378,4 +462,14 @@ export function canonicalizeCreation(input: CreationInput | unknown): CanonicalR
  */
 export function digestOf(value: unknown): Digest {
   return digestJson(normalizeValue(value));
+}
+
+/**
+ * Hash a Runtime snapshot as JCS without normalizing string values or dictionary keys.
+ * Object key order is immaterial; undefined object properties are omitted, while undefined
+ * array elements, non-finite numbers and non-JSON objects are rejected as in normalizeValue.
+ * Use digestOf for authored prose semantics; this identity binds exact observed JSON data.
+ */
+export function digestExactJSON(value: unknown): Digest {
+  return digestJson(normalizeValueAt(value, "$", "turn-snapshot"));
 }

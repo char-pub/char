@@ -100,8 +100,9 @@ export interface CreationState {
   name: string;
   detail: CreationDetail;
   me: Me | null;
-  /** 当前用户是这个 namespace 的成员（可以编辑、yank、改设置）。 */
+  /** 服务端确认当前用户拥有作品的敏感设置权限。 */
   isOwner: boolean;
+  canEdit: boolean;
   allowMature: boolean;
   /** URL 里的 `v`；标签页之间切换时原样带上。 */
   v: string | undefined;
@@ -114,11 +115,13 @@ export interface CreationState {
   tombstoned: { reason: string } | null;
   artifact?: CreationArtifact | undefined;
   artifactError?: unknown;
+  /** Full dependency metadata exists only in the matching selected Release artifact. */
+  metadataState: "loading" | "ready" | "error" | "unavailable" | "none";
   ir: ContextIR | undefined;
   irState: "loading" | "ready" | "error" | "none";
   /** IR 加载失败后重试。 */
   retryIr: () => void;
-  /** 所选版本的 effective rating：artifact 的聚合评级优先，其次 IR、Release 与作品详情。 */
+  /** Aggregate artifact or Release rating takes priority over the partial Creative IR. */
   rating: Rating;
   /** 所选版本被 yank 时的公开理由（作者填写，可能没有）。 */
   yanked: { reason: string | undefined } | null;
@@ -183,6 +186,30 @@ export function useCreationLoad(ns: string, name: string, v: string | undefined)
   }
   const dd = detail.data;
   const rel = release.data;
+  const matched =
+    artifact.data &&
+    selected &&
+    !tombstoned &&
+    "release" in artifact.data.root &&
+    artifact.data.root.release === selected.id &&
+    artifact.data.root.semantic_digest === selected.semantic_digest
+      ? artifact.data
+      : undefined;
+  const artifactError =
+    artifact.error ||
+    (artifact.data && !matched && !tombstoned
+      ? new Error("The artifact does not match the selected release.")
+      : undefined);
+  const metadataState: CreationState["metadataState"] =
+    !selected || tombstoned
+      ? "none"
+      : matched
+        ? "ready"
+        : artifactError || release.isError
+          ? "error"
+          : rel && !rel.artifact_digest && dd.type !== "preset" && dd.type !== "prompt-module"
+            ? "unavailable"
+            : "loading";
   return {
     status: "ready",
     state: {
@@ -190,34 +217,37 @@ export function useCreationLoad(ns: string, name: string, v: string | undefined)
       name,
       detail: dd,
       me: me.data ?? null,
-      isOwner: !!me.data?.namespace && me.data.namespace === ns,
+      isOwner: dd.permissions?.update_sensitive === true,
+      canEdit: dd.permissions?.edit === true,
       allowMature: allowsMature(me.data),
       v,
       label,
       selected,
       release: rel,
       tombstoned,
-      artifact: artifact.data,
-      artifactError: artifact.error,
-      ir: artifact.data?.kind === "content" ? artifact.data.ir : ir.data,
+      artifact: matched,
+      artifactError,
+      metadataState,
+      ir: matched?.kind === "content" ? matched.ir : ir.data,
       irState:
         !selected || tombstoned
           ? "none"
-          : artifact.data?.kind === "content" || ir.data
+          : matched?.kind === "content" || ir.data
             ? "ready"
             : ir.isError
               ? "error"
               : "loading",
       retryIr: () => {
+        void release.refetch();
         void ir.refetch();
         void artifact.refetch();
       },
       rating:
-        artifact.data?.meta.rating ??
-        ir.data?.meta.rating ??
+        matched?.meta.rating ??
         rel?.effective_rating ??
         selected?.effective_rating ??
         dd.effective_rating ??
+        ir.data?.meta.rating ??
         dd.rating,
       yanked: selected?.status === "yanked" ? { reason: selected.status_reason } : null,
     },

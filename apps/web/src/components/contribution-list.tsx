@@ -299,6 +299,7 @@ export function ContributionPolicyNote({
   name,
   policy,
   member,
+  canManage = false,
   canPropose,
 }: {
   ns: string;
@@ -306,12 +307,13 @@ export function ContributionPolicyNote({
   policy: ContributionPolicy;
   member: boolean;
   canPropose: boolean;
+  canManage?: boolean;
 }) {
   const draftNote =
     policy === "closed"
       ? null
       : member
-        ? "Accepted changes go into your draft — nothing is published until you publish."
+        ? "Accepted changes go into your draft — the owner publishes separately."
         : "Accepted changes go into the author's draft — nothing is published until they publish.";
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border bg-surface px-4 py-3 sm:px-5">
@@ -320,7 +322,7 @@ export function ContributionPolicyNote({
         {POLICY_SENTENCE[policy]}
         {draftNote ? ` ${draftNote}` : null}
       </p>
-      {member ? (
+      {canManage ? (
         // 开放度和邀请名单在作品的 Settings 标签里设置，这里只给入口。
         <Link
           to="/c/$ns/$name/settings"
@@ -368,7 +370,7 @@ export function ContributionsTab({ ns, name }: { ns: string; name: string }) {
     );
   }
   const d = detail.data;
-  const member = !!me.data && me.data.namespace === ns;
+  const member = d.permissions?.edit === true;
   const canPropose =
     !member && d.contribution_policy !== "closed" && d.latest_release !== undefined;
 
@@ -379,6 +381,7 @@ export function ContributionsTab({ ns, name }: { ns: string; name: string }) {
         name={name}
         policy={d.contribution_policy}
         member={member}
+        canManage={d.permissions?.update_sensitive === true}
         canPropose={canPropose}
       />
       {me.data ? (

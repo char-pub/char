@@ -9,7 +9,8 @@
     "preview": "vite preview --port 4173 --strictPort",
     "test": "vitest run --project web",
     "e2e": "playwright test",
-    "e2e:fullstack": "E2E_FULLSTACK=1 playwright test -c playwright.fullstack.config.ts"
+    "e2e:fullstack": "E2E_FULLSTACK=1 playwright test -c playwright.fullstack.config.ts",
+    "e2e:harness": "E2E_FULLSTACK=1 playwright test -c playwright.harness.config.ts"
   },
   "dependencies": {
     "@char-pub/assembler": "workspace:*",

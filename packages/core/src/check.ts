@@ -10,6 +10,8 @@
  * 输出按 code、subject 排序，与输入书写顺序无关。
  */
 import type { CanonicalCreation } from "./canonical.js";
+import { checkContentCollections, checkLocalContentReferences } from "./content-check.js";
+import type { CheckDiagnostic, CheckSeverity } from "./diagnostics.js";
 import { sortDiagnostics } from "./errors.js";
 import {
   type AssetSlot,
@@ -24,17 +26,11 @@ import {
   type ScalarValue,
   type SpeakerRef,
 } from "./schema/creation.js";
+import type { LocalizedTemplateText } from "./schema/text.js";
+import { checkStory } from "./story/check.js";
 import { type TemplateIssue, tokenizeTemplate } from "./template.js";
 
-export type CheckSeverity = "error" | "warning" | "info";
-
-export interface CheckDiagnostic {
-  code: string;
-  /** 出问题的位置，例如 `fragments[lore/arasaka].content`、`references[world].override[0]`。 */
-  subject: string;
-  severity: CheckSeverity;
-  detail?: string;
-}
+export type { CheckDiagnostic, CheckSeverity } from "./diagnostics.js";
 
 export interface CheckResult {
   /** 没有任何 error 级诊断。 */
@@ -154,6 +150,8 @@ function checkTemplate(text: string, subject: string, scope: Scope, sink: Sink):
         subject,
         `param '${tok.name}' is not declared in ${scope.label}`,
       );
+    } else if (tok.t === "cast") {
+      checkCastKey(tok.name, subject, scope, sink);
     }
   }
 }
@@ -355,6 +353,20 @@ function overrideTarget(o: FragmentOverride): string {
 
 function checkEdgeLocal(c: CanonicalCreation, edge: ReferenceEdge, scope: Scope, sink: Sink): void {
   const at = `references[${edge.id}]`;
+  if (edge.scope !== undefined && c.type !== "scenario")
+    sink.error("check.style_scope_owner", at, "Explicit Style scope belongs to a Scenario");
+  if (edge.scope && typeof edge.scope === "object") {
+    if ("cast" in edge.scope && !scope.cast.has(edge.scope.cast))
+      sink.error("check.style_cast_missing", `${at}.scope`);
+    if (
+      "scene" in edge.scope &&
+      !c.story?.scenes.some(
+        (scene) =>
+          typeof edge.scope === "object" && "scene" in edge.scope && scene.id === edge.scope.scene,
+      )
+    )
+      sink.error("check.style_scene_missing", `${at}.scope`);
+  }
   for (const [slot, binding] of Object.entries(edge.bind ?? {})) {
     checkBinding(binding, `${at}.bind.${slot}`, scope, sink);
   }
@@ -400,6 +412,42 @@ export function checkCreation(c: CanonicalCreation, opts: CheckOptions = {}): Ch
   const defaultLocale = c.meta.default_locale;
 
   checkTypeRequirements(c, sink);
+  sink.list.push(...checkContentCollections(c), ...checkLocalContentReferences(c));
+  if (c.story) {
+    const checkStoryTemplate = (text: LocalizedTemplateText, subject: string) => {
+      if (typeof text === "string") {
+        checkTemplate(text, subject, scope, sink);
+        return;
+      }
+      if (!Object.hasOwn(text, defaultLocale))
+        sink.error(
+          "check.template_default_locale_missing",
+          subject,
+          `expected '${defaultLocale}' template`,
+        );
+      for (const [locale, value] of Object.entries(text))
+        checkTemplate(value, `${subject}[${locale}]`, scope, sink);
+    };
+    sink.list.push(
+      ...checkStory(
+        c.story,
+        (c.cast ?? []).map((m) => m.key),
+      ),
+    );
+    for (const scene of c.story.scenes) {
+      if (scene.opening !== undefined)
+        checkStoryTemplate(scene.opening, `story.scenes[${scene.id}].opening`);
+    }
+    for (const start of c.story.starts ?? []) {
+      const greeting = start.greeting;
+      if (greeting !== undefined) {
+        if (typeof greeting === "object" && "ref" in greeting) {
+          if (!c.bootstrap?.greetings.some((g) => g.id === greeting.ref))
+            sink.error("story.unknown_greeting", `story.starts[${start.id}].greeting`);
+        } else checkStoryTemplate(greeting, `story.starts[${start.id}].greeting`);
+      }
+    }
+  }
 
   // 重复 ID
   const edgeIds = new Set<string>();
@@ -429,6 +477,24 @@ export function checkCreation(c: CanonicalCreation, opts: CheckOptions = {}): Ch
   // Fragment
   for (const f of c.fragments) {
     const at = `fragments[${f.id}]`;
+    if (f.selectable !== undefined && f.activation?.mode !== "keyword")
+      sink.error("check.selectable_not_keyword", `${at}.selectable`);
+    if (f.selectable && !f.description)
+      sink.error("check.selectable_description", `${at}.description`);
+    if (f.outward !== undefined && !["character", "persona", "examples"].includes(f.kind))
+      sink.error("check.outward_kind", `${at}.outward`);
+    if (f.description) {
+      const values =
+        typeof f.description === "string" ? [f.description] : Object.values(f.description);
+      if (values.some((value) => Array.from(value).length > 200))
+        sink.error("check.description_length", `${at}.description`);
+    }
+    const storyVisibility = f.visibility;
+    if (
+      storyVisibility?.scope === "story-scene" &&
+      !c.story?.scenes.some((s) => s.id === storyVisibility.scene)
+    )
+      sink.error("check.unknown_story_scene", `${at}.visibility.scene`);
     if (!f.stable) {
       sink.info(
         "check.unstable_fragment",
@@ -514,6 +580,12 @@ export function checkCreation(c: CanonicalCreation, opts: CheckOptions = {}): Ch
       if (keys.has(m.key)) sink.error("check.duplicate_cast", at);
       keys.add(m.key);
       checkBinding(m.who, `${at}.who`, scope, sink);
+      if (typeof m.who === "object" && m.override !== undefined)
+        sink.error(
+          "check.late_cast_override",
+          `${at}.override`,
+          "Late-bound participants cannot override unpublished content",
+        );
     }
   }
 
@@ -626,6 +698,8 @@ export function checkEdgeBindings(
 ): CheckResult {
   const sink = new Sink();
   const at = `references[${edge.id}]`;
+  if ((edge.scope !== undefined || edge.combine !== undefined) && target.type !== "style")
+    sink.error("check.style_scope_target", at, "Style scope/combine require a Style dependency");
   const slots = target.slots ?? {};
   const bind = edge.bind ?? {};
   for (const [name, b] of Object.entries(bind)) {

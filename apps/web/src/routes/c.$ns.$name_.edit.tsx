@@ -26,7 +26,9 @@ function EditRoute() {
     enabled: signedIn,
   });
   const draft = useQuery({
-    queryKey: keys.draft(ns, name),
+    // Drafts are private even when the Creation has a public Release. A different
+    // account must fetch its own authorization result instead of reusing this cache.
+    queryKey: [...keys.draft(ns, name), me.data?.id ?? null],
     queryFn: () => client.draft(ns, name),
     enabled: signedIn,
     // 编辑器自己管理草稿状态：不在后台重新读取，避免覆盖正在编辑的内容。
@@ -67,8 +69,8 @@ function EditRoute() {
             title="You can't edit this creation"
             description={
               <>
-                Only members of <span className="font-mono">@{ns}</span> can edit its drafts, or the
-                address is wrong.
+                The owner and accepted collaborators can edit this work. Your access may have
+                changed, or the address is wrong.
               </>
             }
             className="mx-auto max-w-xl"
@@ -100,6 +102,7 @@ function EditRoute() {
       ns={ns}
       name={name}
       type={detail.data.type}
+      permissions={detail.data.permissions}
       draft={draft.data}
       existingLabels={detail.data.releases.map((r) => r.label)}
       releases={detail.data.releases}

@@ -128,7 +128,7 @@ export interface IROpts {
 
 export function buildIR(o: IROpts): ContextIR {
   const ir: ContextIR = {
-    ir_version: "0-draft",
+    ir_version: "1-draft",
     root: { ref: ROOT_REF, release: RELEASE, semantic_digest: DIGEST },
     lock_digest: `sha256:${"b".repeat(64)}`,
     resolver: { name: "test", version: "0.0.0" },
@@ -172,7 +172,7 @@ export function profile(o: Partial<RuntimeProfile> = {}): RuntimeProfile {
     context_window: 100_000,
     reserve_for_output: 0,
     mode: "narrator",
-    capabilities: {},
+    capabilities: { system_role: true, multiple_system_messages: true },
     ...o,
   };
 }

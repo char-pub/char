@@ -1,0 +1,9 @@
+{
+  "id": "202-story-lifecycle",
+  "title": "Explicit confirmations, unknown judgments, bounded effects and stop",
+  "kind": "story",
+  "expect": "story",
+  "spec_refs": ["story-v1 \u00a79.2\u20139.5", "story-v1 \u00a714.2"],
+  "status": "draft",
+  "notes": "Input and semantic assertions authored from specification before execution; expected output awaits separate human review."
+}

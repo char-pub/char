@@ -1,0 +1,57 @@
+{
+  "scenarios": [
+    {
+      "name": "bob-before-entry",
+      "messages_include": ["REQUIRED_VISIBLE_BODY", "DIRECT_VISIBLE_BODY", "BOB_PRIVATE_BINDING"],
+      "messages_exclude": [
+        "SECRET_KNOWN_BODY",
+        "ALICE_PRIVATE_BODY",
+        "ALICE_PRIVATE_BINDING",
+        "ALICE_PRIVATE_GOAL"
+      ],
+      "selector_exclude": [
+        "SECRET_CANDIDATE_DESCRIPTION",
+        "ALICE_PRIVATE_CANDIDATE",
+        "SECRET_KNOWN_BODY"
+      ]
+    },
+    {
+      "name": "bob-follows-alice",
+      "messages_include": [
+        "REQUIRED_VISIBLE_BODY",
+        "DIRECT_VISIBLE_BODY",
+        "SECRET_KNOWN_BODY",
+        "BOB_PRIVATE_BINDING"
+      ],
+      "messages_exclude": ["ALICE_PRIVATE_BODY", "ALICE_PRIVATE_BINDING", "ALICE_PRIVATE_GOAL"],
+      "selector_include": ["SECRET_CANDIDATE_DESCRIPTION"],
+      "selector_exclude": ["ALICE_PRIVATE_CANDIDATE", "SECRET_KNOWN_BODY"]
+    },
+    {
+      "name": "bob-not-present",
+      "messages_include": ["REQUIRED_VISIBLE_BODY", "DIRECT_VISIBLE_BODY"],
+      "messages_exclude": [
+        "BOB_PRIVATE_BINDING",
+        "BOB_PRIVATE_GOAL",
+        "ALICE_PRIVATE_BODY",
+        "ALICE_PRIVATE_BINDING"
+      ],
+      "selector_exclude": ["ALICE_PRIVATE_CANDIDATE", "SECRET_KNOWN_BODY"]
+    },
+    {
+      "name": "bob-skip-discovery",
+      "messages_include": ["REQUIRED_VISIBLE_BODY", "DIRECT_VISIBLE_BODY", "BOB_PRIVATE_BINDING"],
+      "messages_exclude": [
+        "SECRET_KNOWN_BODY",
+        "ALICE_PRIVATE_BODY",
+        "ALICE_PRIVATE_BINDING",
+        "ALICE_PRIVATE_GOAL"
+      ],
+      "selector_exclude": [
+        "SECRET_CANDIDATE_DESCRIPTION",
+        "ALICE_PRIVATE_CANDIDATE",
+        "SECRET_KNOWN_BODY"
+      ]
+    }
+  ]
+}

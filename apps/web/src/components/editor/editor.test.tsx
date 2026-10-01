@@ -1,5 +1,7 @@
+import { ASSEMBLER, TOKENIZER_VERSIONS } from "@char-pub/assembler";
 import type { ReferenceEdge } from "@char-pub/core";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { useRouterState } from "@tanstack/react-router";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { describePath, explainIssue } from "@/components/publish-report";
@@ -9,6 +11,7 @@ import { noteWriteSucceeded, useReadOnly } from "@/lib/read-only";
 import type { SaveState } from "@/lib/use-draft-editor";
 import { fakeClient, ME, renderWithApp } from "@/test/render";
 import { ANCHOR, targetOf } from "./anchors";
+import { DEFAULT_PROFILE } from "./assembly-editor";
 import { buildChecks, checksSummary } from "./checks-panel";
 import { Editor } from "./editor";
 import { SaveStatus } from "./save-status";
@@ -91,7 +94,9 @@ describe("targetOf", () => {
   it("points each subject at its field", () => {
     expect(targetOf("display_name", "character", W)).toEqual({ anchor: ANCHOR.name });
     expect(targetOf("fragments[description].content", "character", W)).toEqual({
-      anchor: ANCHOR.main,
+      anchor: "edit-fragment-description",
+      section: "passages",
+      contentSelection: "all",
     });
     expect(targetOf("fragments[habit]", "character", W)?.section).toBe("passages");
     expect(targetOf("@cyberpunk/corps", "character", W)?.section).toBe("dependencies");
@@ -162,6 +167,129 @@ function ReadOnlyProbe() {
   return <p>{useReadOnly() ? "read-only on" : "read-only off"}</p>;
 }
 
+function EditorLocationProbe() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return <output aria-label="Current editor test path">{pathname}</output>;
+}
+
+function renderStructuredEditor() {
+  const putDraft = vi.fn(async () => {
+    throw new Error("Unapplied data must not save a draft");
+  });
+  const createDraftBuild = vi.fn(async () => {
+    throw new Error("Unapplied data must not build a draft");
+  });
+  renderWithApp(
+    <>
+      <EditorLocationProbe />
+      <Editor
+        ns="writer"
+        name="alice"
+        type="character"
+        permissions={{
+          read_draft: true,
+          edit: true,
+          publish: true,
+          update_sensitive: true,
+          manage_source: true,
+          manage_collaborators: true,
+        }}
+        draft={{
+          ...DRAFT,
+          working: {
+            ...W,
+            fragments: [
+              ...(W.fragments ?? []),
+              {
+                id: "extension",
+                stable: true,
+                kind: "knowledge",
+                content: { type: "structured", schema: "test", data: { saved: true } },
+              },
+            ],
+            assembly_tests: [
+              {
+                id: "example",
+                root: "self",
+                profile: DEFAULT_PROFILE,
+                session: { history: [] },
+                assembler: ASSEMBLER,
+                tokenizer: { name: "estimate", version: TOKENIZER_VERSIONS.estimate },
+                expected: { kind: "success", trace: [] },
+              },
+            ],
+          },
+        }}
+        existingLabels={[]}
+      />
+    </>,
+    fakeClient({ me: async () => ME, putDraft, createDraftBuild }),
+  );
+  return { putDraft, createDraftBuild };
+}
+
+describe("Editor unapplied structured data", () => {
+  it("blocks build and publish and guards author-test saving before JSON is applied", async () => {
+    const { putDraft, createDraftBuild } = renderStructuredEditor();
+    const build = (await screen.findByRole("button", {
+      name: "Build draft preview",
+    })) as HTMLButtonElement;
+    const publish = screen.getByRole("button", { name: "Publish…" }) as HTMLButtonElement;
+    expect(build.disabled).toBe(false);
+    expect(publish.disabled).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "Edit JSON data" }));
+    const raw = '{\n  "local": true,\n';
+    const input = screen.getByRole("textbox", { name: "Structured JSON data" });
+    fireEvent.change(input, { target: { value: raw } });
+    expect(await screen.findByText("Unapplied data edits")).toBeTruthy();
+    expect(build.disabled).toBe(true);
+    expect(publish.disabled).toBe(true);
+
+    const run = screen.getByRole("button", { name: "Run author tests" }) as HTMLButtonElement;
+    expect(run.disabled).toBe(false);
+    await userEvent.click(run);
+    expect(
+      await screen.findByText(
+        "Save the draft successfully before previewing. Your edits are kept in the editor.",
+      ),
+    ).toBeTruthy();
+    expect(putDraft).not.toHaveBeenCalled();
+    expect(createDraftBuild).not.toHaveBeenCalled();
+    expect((input as HTMLTextAreaElement).value).toBe(raw);
+  });
+
+  it("keeps the raw buffer across collapsing More options and staying after SPA navigation", async () => {
+    const { putDraft, createDraftBuild } = renderStructuredEditor();
+    await userEvent.click(await screen.findByRole("button", { name: "Edit JSON data" }));
+    const raw = '{\n  "unfinished": "keep these spaces"  \n';
+    fireEvent.change(screen.getByRole("textbox", { name: "Structured JSON data" }), {
+      target: { value: raw },
+    });
+    const passages = screen.getByRole("button", { name: "Passages" });
+    expect(passages.getAttribute("aria-expanded")).toBe("true");
+    await userEvent.click(passages);
+    expect(passages.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("textbox", { name: "Structured JSON data" })).toBeNull();
+    expect(screen.getByText("Unapplied data edits")).toBeTruthy();
+    await userEvent.click(passages);
+    expect(
+      (screen.getByRole("textbox", { name: "Structured JSON data" }) as HTMLTextAreaElement).value,
+    ).toBe(raw);
+
+    await userEvent.click(screen.getByRole("link", { name: "Back to the creation page" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Leave unapplied data edits?" });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Stay and edit" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(screen.getByLabelText("Current editor test path").textContent).toBe("/");
+    expect(
+      (screen.getByRole("textbox", { name: "Structured JSON data" }) as HTMLTextAreaElement).value,
+    ).toBe(raw);
+    expect(screen.getByText("Unapplied data edits")).toBeTruthy();
+    expect(putDraft).not.toHaveBeenCalled();
+    expect(createDraftBuild).not.toHaveBeenCalled();
+  });
+});
+
 describe("Editor", () => {
   it("reports an autosave that hit read-only mode to the site-wide notice", async () => {
     noteWriteSucceeded();
@@ -194,6 +322,14 @@ describe("Editor", () => {
   it("won't reuse a version label and explains why publishing is blocked", async () => {
     renderWithApp(
       <Editor
+        permissions={{
+          read_draft: true,
+          edit: true,
+          publish: true,
+          update_sensitive: true,
+          manage_source: true,
+          manage_collaborators: true,
+        }}
         ns="writer"
         name="alice"
         type="character"
@@ -217,6 +353,14 @@ describe("Editor", () => {
   it("opens the dependencies section from the checks panel", async () => {
     renderWithApp(
       <Editor
+        permissions={{
+          read_draft: true,
+          edit: true,
+          publish: true,
+          update_sensitive: true,
+          manage_source: true,
+          manage_collaborators: true,
+        }}
         ns="writer"
         name="alice"
         type="character"
@@ -239,4 +383,167 @@ describe("Editor", () => {
     await userEvent.click(screen.getByRole("button", { name: /follows the latest release/ }));
     await waitFor(() => expect(section.getAttribute("aria-expanded")).toBe("true"));
   });
+});
+
+it("gives collaborators editable content and tags without owner publishing or sensitive controls", async () => {
+  renderWithApp(
+    <Editor
+      ns="writer"
+      name="alice"
+      type="character"
+      draft={{ version: 1, working: W, base_revision_id: null, updated_at: "2026-10-01T00:00:00Z" }}
+      existingLabels={[]}
+      permissions={{
+        read_draft: true,
+        edit: true,
+        publish: false,
+        update_sensitive: false,
+        manage_source: false,
+        manage_collaborators: false,
+      }}
+    />,
+    fakeClient({ me: async () => ME }),
+  );
+  await userEvent.click(await screen.findByRole("button", { name: "Rating, license & tags" }));
+  expect(screen.queryByRole("button", { name: "Publish…" })).toBeNull();
+  for (const label of ["Rating", "License", "Rights", "Content warnings"])
+    expect((screen.getByLabelText(label) as HTMLInputElement).disabled).toBe(true);
+  expect((screen.getByLabelText("Tags") as HTMLInputElement).disabled).toBe(false);
+});
+
+describe("agent-assisted draft origin", () => {
+  it.each([undefined, false])(
+    "shows a non-agent derivation's exact source without an agent notice (%s)",
+    async (flag) => {
+      const source = {
+        ref: "@source/story",
+        release: "rel_01j00000000000000000000000",
+        semantic_digest: `sha256:${"a".repeat(64)}`,
+        relation: "remix",
+      };
+      const putDraft = vi.fn();
+      renderWithApp(
+        <Editor
+          ns="writer"
+          name="alice"
+          type="character"
+          draft={{
+            ...DRAFT,
+            working: {
+              ...W,
+              provenance: {
+                derived_from: [source],
+                ...(flag === undefined ? {} : { authored_by_agent: flag }),
+              },
+            },
+          }}
+          existingLabels={[]}
+        />,
+        fakeClient({ me: async () => ME, putDraft }),
+      );
+      const origin = await screen.findByRole("region", { name: "Draft origin" });
+      expect(origin.textContent).toContain(source.ref);
+      expect(origin.textContent).toContain(source.release);
+      expect(origin.textContent).toContain(source.semantic_digest);
+      expect(within(origin).queryByText(/agent-assisted content/)).toBeNull();
+      expect(within(origin).queryByRole("button")).toBeNull();
+      expect(within(origin).queryByRole("checkbox")).toBeNull();
+      expect(putDraft).not.toHaveBeenCalled();
+    },
+  );
+
+  it("shows exact read-only sources and preserves provenance through an ordinary edit without a new publish gate", async () => {
+    const provenance = {
+      authored_by_agent: true,
+      client_id: "CLIENT_METADATA_NOT_FOR_DISPLAY",
+      derived_from: [
+        {
+          ref: "@source/story",
+          release: "rel_01j00000000000000000000000",
+          semantic_digest: `sha256:${"a".repeat(64)}`,
+          relation: "sequel",
+        },
+        { release: "rel_01j00000000000000000000001", relation: "import" },
+      ],
+    };
+    const putDraft = vi.fn(
+      async (_ns: string, _name: string, _version: number, _working: unknown) => ({
+        version: 4,
+        semantic_digest: `sha256:${"b".repeat(64)}`,
+        warnings: [],
+      }),
+    );
+    const createRevision = vi.fn(async () => {
+      throw new Error("Publishing requires the existing explicit action");
+    });
+    renderWithApp(
+      <Editor
+        ns="writer"
+        name="alice"
+        type="character"
+        draft={{ ...DRAFT, working: { ...W, provenance } }}
+        existingLabels={[]}
+        permissions={{
+          read_draft: true,
+          edit: true,
+          publish: true,
+          update_sensitive: true,
+          manage_source: true,
+          manage_collaborators: true,
+        }}
+      />,
+      fakeClient({ me: async () => ME, putDraft, createRevision }),
+    );
+    const origin = await screen.findByRole("region", { name: "Draft origin" });
+    expect(
+      within(origin).getByText(
+        "This draft includes agent-assisted content. Review the opening, initial state and source before publishing.",
+      ),
+    ).toBeTruthy();
+    const sources = within(origin).getByRole("list", { name: "Creation sources" });
+    expect(within(sources).getAllByRole("listitem")).toHaveLength(2);
+    expect(sources.textContent).toContain("@source/story");
+    expect(sources.textContent).toContain(provenance.derived_from[0]?.release);
+    expect(sources.textContent).toContain(`sha256:${"a".repeat(64)}`);
+    expect(sources.textContent).toContain("Historical source");
+    expect(within(origin).queryByRole("checkbox")).toBeNull();
+    expect(within(origin).queryByRole("button")).toBeNull();
+    expect(screen.queryByText("CLIENT_METADATA_NOT_FOR_DISPLAY")).toBeNull();
+    expect(putDraft).not.toHaveBeenCalled();
+    expect(createRevision).not.toHaveBeenCalled();
+
+    await userEvent.type(screen.getByLabelText("Summary"), "An edited summary");
+    await waitFor(() => expect(putDraft).toHaveBeenCalledTimes(1), { timeout: 3000 });
+    expect(putDraft.mock.calls[0]?.[3]).toMatchObject({ provenance });
+    expect(screen.getByRole("region", { name: "Draft origin" })).toBeTruthy();
+    const publish = screen.getByRole("button", { name: "Publish…" }) as HTMLButtonElement;
+    expect(publish.disabled).toBe(false);
+    await userEvent.click(publish);
+    expect(await screen.findByRole("dialog", { name: "Publish Alice" })).toBeTruthy();
+    expect(createRevision).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, false])(
+    "does not label an unmarked draft as agent-assisted (%s)",
+    async (flag) => {
+      renderWithApp(
+        <Editor
+          ns="writer"
+          name="alice"
+          type="character"
+          draft={{
+            ...DRAFT,
+            working: {
+              ...W,
+              ...(flag === undefined ? {} : { provenance: { authored_by_agent: flag } }),
+            },
+          }}
+          existingLabels={[]}
+        />,
+        fakeClient({ me: async () => ME }),
+      );
+      await screen.findByRole("heading", { name: "Editing Alice" });
+      expect(screen.queryByRole("region", { name: "Draft origin" })).toBeNull();
+    },
+  );
 });

@@ -8,8 +8,10 @@
  * - 发布对话框：保存草稿 → 创建 Revision → 发布 → 轮询 Publish Report；成功时显示许可检查
  *   和警告，失败时用人话解释（菱形依赖列出两条来源路径）并能跳到 Dependencies。
  */
+import { buildCreation, sha256Bytes } from "@char-pub/core";
 import { expect, type Page, test } from "@playwright/test";
-import { creationDetail, ME, mockApi } from "./mock-api";
+import { sampleDefaultPolicy } from "../src/fixtures/samples";
+import { creationDetail, ME, mockApi, OWNER_PERMISSIONS } from "./mock-api";
 
 const ORIGIN = "http://127.0.0.1:4173";
 
@@ -61,6 +63,7 @@ async function editorFor(page: Page, type: Kind, extra: Record<string, unknown> 
   api.on("GET /v1/me", { body: ME });
   api.on(`GET ${base}`, {
     body: creationDetail({
+      permissions: OWNER_PERMISSIONS,
       ref: `@writer/${type}-draft`,
       type,
       display_name: `A ${type}`,
@@ -86,7 +89,40 @@ async function editorFor(page: Page, type: Kind, extra: Record<string, unknown> 
   return { api, base };
 }
 
-function mockPublish(api: Awaited<ReturnType<typeof mockApi>>, base: string, report: unknown) {
+function mockPublish(
+  api: Awaited<ReturnType<typeof mockApi>>,
+  base: string,
+  report: unknown,
+  preparationFailure = false,
+) {
+  const origin = {
+    kind: "draft-build" as const,
+    build_id: "dbld_01j00000000000000000000001",
+    revision: "rev_01j00000000000000000000001",
+    expires_at: "2099-01-01T00:00:00.000Z",
+  };
+  const built = buildCreation({
+    root: { origin, visibility: "private", creation: working("character") },
+    dependencies: [sampleDefaultPolicy],
+    default_policy: {
+      ref: "@examples/preview-policy",
+      release: sampleDefaultPolicy.release,
+      semantic_digest: sampleDefaultPolicy.semantic_digest,
+    },
+  });
+  api.on(`POST ${base}/draft-builds`, {
+    status: 202,
+    body: {
+      origin,
+      state: preparationFailure ? "failed" : "ready",
+      draft_version: 3,
+      semantic_digest: built.artifact.root.semantic_digest,
+      lock_digest: built.artifact.lock_digest,
+      artifact_digest: sha256Bytes(new TextEncoder().encode(JSON.stringify(built.artifact))),
+      ...(preparationFailure ? { report: (report as { report: unknown }).report } : {}),
+    },
+  });
+  api.on(`GET /v1/draft-builds/${origin.build_id}/artifact`, { body: built.artifact });
   api.on(`POST ${base}/revisions`, {
     status: 201,
     body: {
@@ -126,9 +162,11 @@ for (const type of ["character", "world", "lorebook"] as const) {
     await expect(page.getByRole("heading", { name: "The basics", exact: true })).toBeVisible();
     await expect(page.getByLabel("Name", { exact: true })).toHaveValue(`A ${type}`);
     await expect(page.getByLabel("Address", { exact: true })).toHaveValue(`@writer/${type}-draft`);
-    await expect(page.getByLabel(MAIN_FIELD[type])).toHaveValue(`Some text about the ${type}.`);
+    await expect(page.getByRole("textbox", { name: MAIN_FIELD[type], exact: true })).toHaveValue(
+      `Some text about the ${type}.`,
+    );
     await expect(page.getByText("Always sent to the model.", { exact: false })).toBeVisible();
-    await expect(page.getByLabel("Summary")).toBeVisible();
+    await expect(page.getByLabel("Summary", { exact: true })).toBeVisible();
     await expect(page.getByText("Not sent to the model.", { exact: false })).toBeVisible();
     await expect(page.getByLabel("Choose an avatar image")).toBeAttached();
     // 只有角色有问候语。
@@ -146,18 +184,24 @@ for (const type of ["character", "world", "lorebook"] as const) {
     const meta = page.getByRole("button", { name: "Rating, license & tags", exact: true });
     await expect(meta).toHaveAttribute("aria-expanded", "false");
     await expect(meta).toContainText("General · All rights reserved");
-    await expect(page.getByLabel("Rating", { exact: true })).toHaveCount(0);
+    await expect(
+      page.locator("#edit-meta").getByLabel("Rating", { exact: true }),
+    ).not.toBeVisible();
 
     await meta.click();
     await expect(meta).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByLabel("Rating", { exact: true })).toBeVisible();
-    await expect(page.getByLabel("License", { exact: true })).toBeVisible();
+    await expect(page.locator("#edit-meta").getByLabel("Rating", { exact: true })).toBeVisible();
+    await expect(page.locator("#edit-meta").getByLabel("License", { exact: true })).toBeVisible();
     // 贡献开放度只在作品设置里改。
     await expect(page.getByText("Who can suggest changes")).toHaveCount(0);
 
-    const passages = page.getByRole("button", { name: "Passages", exact: true });
-    await expect(passages).toHaveAttribute("aria-expanded", "false");
-    await passages.click();
+    if (type === "character") {
+      const passages = page.getByRole("button", { name: "Passages", exact: true });
+      await expect(passages).toHaveAttribute("aria-expanded", "false");
+      await passages.click();
+    } else {
+      await expect(page.getByRole("region", { name: "Content groups", exact: true })).toBeVisible();
+    }
     await expect(page.getByRole("button", { name: "Add passage" })).toBeVisible();
 
     const deps = page.getByRole("button", { name: "Dependencies", exact: true });
@@ -172,7 +216,7 @@ for (const type of ["character", "world", "lorebook"] as const) {
 test("editing keeps the contribution policy that is already in the draft", async ({ page }) => {
   const { api, base } = await editorFor(page, "character");
   await page.goto("/c/writer/character-draft/edit");
-  await page.getByLabel("Summary").fill("A courier.");
+  await page.getByLabel("Summary", { exact: true }).fill("A courier.");
   await expect(page.getByText("All changes saved")).toBeVisible({ timeout: 10_000 });
   const put = api.calls.findLast((c) => c.method === "PUT" && c.path === `${base}/draft`);
   expect(put?.body).toMatchObject({
@@ -377,30 +421,35 @@ test("a diamond dependency lists both paths and leads to Dependencies", async ({
       },
     ],
   });
-  mockPublish(api, base, {
-    release: "rel_01j00000000000000000000003",
-    state: "failed",
-    idempotent: false,
-    label: "1.0.0",
-    report: {
-      license_check: "pass",
-      issues: [
-        {
-          code: "publish.diamond_conflict",
-          subject: "@cyberpunk/night-city",
-          severity: "error",
-          detail: "the same creation appears with two different releases",
-          data: {
-            ref: "@cyberpunk/night-city",
-            releases: [
-              { release: "rel_01j00000000000000000000091", via: ["b-lives"] },
-              { release: "rel_01j00000000000000000000092", via: ["a-knows", "setting"] },
-            ],
+  mockPublish(
+    api,
+    base,
+    {
+      release: "rel_01j00000000000000000000003",
+      state: "failed",
+      idempotent: false,
+      label: "1.0.0",
+      report: {
+        license_check: "pass",
+        issues: [
+          {
+            code: "publish.diamond_conflict",
+            subject: "@cyberpunk/night-city",
+            severity: "error",
+            detail: "the same creation appears with two different releases",
+            data: {
+              ref: "@cyberpunk/night-city",
+              releases: [
+                { release: "rel_01j00000000000000000000091", via: ["b-lives"] },
+                { release: "rel_01j00000000000000000000092", via: ["a-knows", "setting"] },
+              ],
+            },
           },
-        },
-      ],
+        ],
+      },
     },
-  });
+    true,
+  );
 
   await page.goto("/c/writer/character-draft/edit");
   // 已有依赖时 Dependencies 默认展开；先收起，确认失败对话框会把它重新打开。
@@ -409,7 +458,7 @@ test("a diamond dependency lists both paths and leads to Dependencies", async ({
   await deps.click();
   await page.getByRole("button", { name: "Publish…" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("button", { name: "Publish 1.0.0" }).click();
+  await expect(dialog.getByRole("button", { name: "Publish 1.0.0" })).toBeDisabled();
   await expect(dialog.getByText("Two versions of the same dependency")).toBeVisible({
     timeout: 15_000,
   });

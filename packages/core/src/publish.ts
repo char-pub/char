@@ -18,7 +18,7 @@
  * 以纯数据形式传入；core 本身不做 IO。
  */
 
-import { type BuildCreationOutput, buildCreation } from "./build.js";
+import { type BuildCreationInput, type BuildCreationOutput, buildCreation } from "./build.js";
 import {
   type CanonicalCreation,
   canonicalizeCreation,
@@ -38,6 +38,11 @@ import {
 import { resolveUseRef } from "./resolve/graph.js";
 import type { ReleaseInput, ResolveOutput } from "./resolve/index.js";
 import type { CreationArtifact } from "./schema/artifact.js";
+import {
+  type BuildIdentity,
+  type DraftBuildOrigin,
+  DraftBuildOriginSchema,
+} from "./schema/identity.js";
 
 export type PublishSeverity = "error" | "warning";
 
@@ -57,6 +62,7 @@ export interface PublishInput {
   creation: unknown;
   /** 依赖闭包中的 Release，状态为当前 Registry 状态。 */
   dependencies: readonly ReleaseInput[];
+  default_policy?: BuildCreationInput["default_policy"];
   registry: {
     /** 这个 Creation 已经用过的 label → 那个 Release 的 semantic digest。 */
     existingLabels: Readonly<Record<string, string>>;
@@ -69,6 +75,15 @@ export interface PublishInput {
   };
   publicAssetBaseUrl?: string;
 }
+
+export type DraftBuildCheckInput = Omit<
+  PublishInput,
+  "release" | "label" | "visibility" | "registry"
+> & {
+  origin: DraftBuildOrigin;
+  registry: Omit<PublishInput["registry"], "existingLabels">;
+};
+export type DraftBuildCheckReport = Omit<PublishReport, "idempotent">;
 
 export interface PublishReport {
   ok: boolean;
@@ -113,6 +128,41 @@ function namespaceOf(ref: string): string {
 }
 
 export function checkPublish(input: PublishInput): PublishReport {
+  return checkBuild(input, { release: input.release }, input.visibility, {
+    label: input.label,
+    existingLabels: input.registry.existingLabels,
+  });
+}
+
+/** The same content gates without reserving a label or inventing a Release. */
+export function checkDraftBuild(input: DraftBuildCheckInput): DraftBuildCheckReport {
+  if (!DraftBuildOriginSchema.safeParse(input.origin).success)
+    return {
+      ok: false,
+      license_check: "fail",
+      issues: [
+        {
+          code: "schema.invalid",
+          subject: "build.origin",
+          severity: "error",
+          detail: "expected a Registry draft-build origin",
+        },
+      ],
+    };
+  const { idempotent: _idempotent, ...report } = checkBuild(
+    input,
+    { origin: input.origin },
+    "private",
+  );
+  return report;
+}
+
+function checkBuild(
+  input: Omit<DraftBuildCheckInput, "origin">,
+  identity: BuildIdentity,
+  visibility: "public" | "private",
+  publication?: { label: string; existingLabels: Readonly<Record<string, string>> },
+): PublishReport {
   const issues = new Issues();
   const fail = (license: LicenseCheck["verdict"] = "pass"): PublishReport => ({
     ok: false,
@@ -132,14 +182,14 @@ export function checkPublish(input: PublishInput): PublishReport {
   }
 
   // 规则 9：label 占用。相同内容视为幂等成功，其余检查没有必要再做。
-  const existing = input.registry.existingLabels[input.label];
+  const existing = publication?.existingLabels[publication.label];
   if (existing !== undefined) {
     if (existing === semantic_digest) {
       return { ok: true, idempotent: true, issues: [], license_check: "pass", semantic_digest };
     }
     issues.error(
       "publish.label_taken",
-      input.label,
+      publication?.label ?? "label",
       "this label already points to different content; choose a new label",
     );
     return fail();
@@ -218,8 +268,9 @@ export function checkPublish(input: PublishInput): PublishReport {
   let built: BuildCreationOutput;
   try {
     built = buildCreation({
-      root: { release: input.release, visibility: input.visibility, creation },
+      root: { ...identity, visibility, creation },
       dependencies: input.dependencies,
+      ...(input.default_policy ? { default_policy: input.default_policy } : {}),
       ...(input.publicAssetBaseUrl ? { publicAssetBaseUrl: input.publicAssetBaseUrl } : {}),
     });
   } catch (e) {
@@ -243,7 +294,7 @@ export function checkPublish(input: PublishInput): PublishReport {
     .filter((d): d is ReleaseInput => d !== undefined);
 
   // 规则 3：public 只能依赖 public。
-  if (input.visibility === "public") {
+  if (visibility === "public") {
     for (const l of built.lock) {
       const d = byRelease.get(l.release);
       if (d?.visibility !== "public") {
@@ -283,6 +334,10 @@ export function checkPublish(input: PublishInput): PublishReport {
     for (const f of c?.fragments ?? []) {
       if (blocked.has(f.digest)) issues.error("publish.blocked_content", `${c?.ref}#${f.id}`);
     }
+    for (const slot of c?.assets ?? [])
+      for (const variant of slot.variants)
+        if (blocked.has(variant.blob.digest))
+          issues.error("publish.blocked_content", `${c?.ref}#asset/${slot.slot}/${variant.id}`);
   }
 
   // 规则 8：许可。
@@ -291,31 +346,78 @@ export function checkPublish(input: PublishInput): PublishReport {
   const licenseChecks: LicenseCheck[] = [
     isRedistributable(creation.meta.license, { same_owner: sameOwner(creation.ref) }),
   ];
-  const modifiedRefs = new Set<string>();
+  const modifiedReleases = new Set<string>();
   const collectModified = (c: CanonicalCreation) => {
-    for (const e of c.references) {
-      if ((e.override ?? []).some((o) => o.op !== "patch")) {
-        modifiedRefs.add(resolveUseRef(e.use, c.ref));
+    for (const source of c.provenance.derived_from ?? [])
+      if ("ref" in source) modifiedReleases.add(source.release);
+    for (const edge of c.references)
+      if (
+        edge.pin &&
+        "release" in edge.pin &&
+        edge.override?.some((change) => change.op !== "patch")
+      )
+        modifiedReleases.add(edge.pin.release);
+    // Cast overrides refer into this definition's actual content graph, never its
+    // historical source graph. buildCreation has already checked its single version.
+    const content = new Map<string, string>();
+    const seen = new Set<string>();
+    const visit = (creation: CanonicalCreation) => {
+      for (const edge of creation.references) {
+        if (!edge.pin || !("release" in edge.pin) || seen.has(edge.pin.release)) continue;
+        seen.add(edge.pin.release);
+        const target = depCreations.get(edge.pin.release);
+        if (!target) continue;
+        content.set(target.ref, edge.pin.release);
+        visit(target);
       }
-    }
+    };
+    visit(c);
+    for (const member of c.cast ?? [])
+      if (
+        typeof member.who === "string" &&
+        !member.who.startsWith("{{") &&
+        member.override?.some((change) => change.op !== "patch")
+      ) {
+        const release = content.get(resolveUseRef(member.who, c.ref));
+        if (release) modifiedReleases.add(release);
+      }
   };
   collectModified(creation);
-  for (const d of closure) {
-    const c = depCreations.get(d.release);
+  for (const dependency of closure) {
+    const c = depCreations.get(dependency.release);
     if (c) collectModified(c);
   }
-  for (const l of built.artifact.meta.licenses) {
-    if (l.ref === creation.ref && l.asset === undefined) continue;
-    const check =
-      l.ref === creation.ref
-        ? isRedistributable(l.license, { same_owner: sameOwner(l.ref) })
-        : checkDependencyLicense({
-            dependent: creation.meta.license,
-            dependency: l.license,
-            same_owner: sameOwner(l.ref),
-            modified: l.asset === undefined && modifiedRefs.has(l.ref),
-          });
-    licenseChecks.push(check);
+  // Effective metadata can contain several historical declarations for one public
+  // ref. License decisions use the immutable release records, not a ref lookup.
+  const ownAssetLicenses = (c: CanonicalCreation, dependencyRelease?: string) => {
+    for (const slot of c.assets)
+      for (const variant of slot.variants) {
+        if (!variant.license || variant.license === c.meta.license) continue;
+        licenseChecks.push(
+          dependencyRelease === undefined
+            ? isRedistributable(variant.license, { same_owner: sameOwner(c.ref) })
+            : checkDependencyLicense({
+                dependent: creation.meta.license,
+                dependency: variant.license,
+                same_owner: sameOwner(c.ref),
+                modified: false,
+              }),
+        );
+      }
+  };
+  ownAssetLicenses(creation);
+  for (const dependency of closure) {
+    const c = depCreations.get(dependency.release);
+    if (!c) continue;
+    licenseChecks.push(
+      checkDependencyLicense({
+        dependent: creation.meta.license,
+        dependency: c.meta.license,
+        same_owner: sameOwner(c.ref),
+        modified: modifiedReleases.has(dependency.release),
+      }),
+    );
+    ownAssetLicenses(c, dependency.release);
   }
   // A compatible root license must not hide a dependency's own incompatible declaration.
   for (const dependency of closure) {
@@ -332,8 +434,9 @@ export function checkPublish(input: PublishInput): PublishReport {
           dependency: target.meta.license,
           same_owner: sameOwner(target.ref),
           modified:
-            edge.domain === "content" &&
-            (reference?.override ?? []).some((item) => item.op !== "patch"),
+            edge.domain === "derivation" ||
+            (edge.domain === "content" &&
+              (reference?.override ?? []).some((item) => item.op !== "patch")),
         }),
       );
     }

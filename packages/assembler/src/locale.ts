@@ -2,7 +2,7 @@
  * Locale 选择：按 BCP 47 的 lookup 规则逐级截短语言标签来匹配，
  * 例如 `zh-Hant-TW` 依次尝试 `zh-Hant-TW`、`zh-Hant`、`zh`。比较时不区分大小写。
  */
-import { compareStrings, type LocalizedText } from "@char-pub/core";
+import { type CompiledTemplate, compareStrings, type LocalizedText } from "@char-pub/core";
 
 function sameTag(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
@@ -43,4 +43,19 @@ export function localizedString(
   const keys = Object.keys(text).sort(compareStrings);
   const key = matchLocale(keys, locale) ?? matchLocale(keys, defaultLocale) ?? keys[0];
   return key === undefined ? "" : (text[key] ?? "");
+}
+
+/** Published templates carry already-compiled early names plus late placeholders. */
+export function localizedTemplate(
+  template: CompiledTemplate,
+  wanted: string,
+  defaultLocale: string,
+): { text: string; fallback: boolean } {
+  const variants = template.locales ?? {};
+  const pick = matchLocale([defaultLocale, ...Object.keys(variants).sort(compareStrings)], wanted);
+  return {
+    text:
+      pick === null || pick === defaultLocale ? template.text : (variants[pick] ?? template.text),
+    fallback: pick === null,
+  };
 }

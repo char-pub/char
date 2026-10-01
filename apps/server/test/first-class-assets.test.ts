@@ -1,5 +1,6 @@
 import { ASSEMBLER, TOKENIZER_VERSIONS } from "@char-pub/assembler";
 import {
+  buildCreation,
   CreationArtifactSchema,
   type CreationType,
   canonicalizeCreation,
@@ -20,12 +21,14 @@ import {
   reverseEdges,
 } from "../src/db/schema/index.js";
 import { QUEUE_NAMES } from "../src/jobs/definitions.js";
+import { readArtifact } from "../src/registry/artifacts.js";
 import { loadClosure } from "../src/registry/closure.js";
 import { decodeId } from "../src/registry/ids.js";
 import { executeTombstone, type TombstoneCascadeJob } from "../src/registry/tombstone.js";
 import { type ExportJob, handleExportJob } from "../src/worker/export.js";
 import { RecordingPurger, runTombstoneCascade } from "../src/worker/tombstone.js";
 import { type ApiHarness, createHarness } from "./api-harness.js";
+import { grantUploadedAsset } from "./fixtures/asset-upload.js";
 import { createTestDatabase, type TestDatabase, testCas } from "./helpers.js";
 
 let t: TestDatabase;
@@ -104,14 +107,14 @@ async function publish(
   };
 }
 const policy = (imports: unknown[] = []) => ({
-  version: "0-draft",
+  version: "1-draft",
   imports,
-  blocks: [{ id: "main", text: "Literal {{user}} policy.", position: "main" }],
+  blocks: [{ id: "main", text: "Literal {{user}} policy.", default_at: "main" }],
   layout: [...PRESET_REGIONS],
   requires: { system_role: true },
 });
 
-it("publishes every newly opened type with the correct artifact kind and discoverable metadata", async () => {
+it("publishes authored content for every newly opened type with the correct artifact kind and discoverable metadata", async () => {
   for (const type of [
     "persona",
     "style",
@@ -120,7 +123,25 @@ it("publishes every newly opened type with the correct artifact kind and discove
     "preset",
     "prompt-module",
   ] as const) {
-    const p = await publish(`initial-${type}`, type);
+    const authored = {
+      persona: "A visiting doctor.",
+      style: "Use short, concrete sentences.",
+      relationship: "Former companions who no longer trust one another.",
+    };
+    const content =
+      type === "persona" || type === "style" || type === "relationship"
+        ? {
+            fragments: [
+              {
+                id: "description",
+                kind: type,
+                stable: true,
+                content: { type: "text", text: authored[type] },
+              },
+            ],
+          }
+        : {};
+    const p = await publish(`initial-${type}`, type, content);
     expect(p.outcomes).toEqual(["published"]);
     expect(p.row.artifactDigest).toMatch(/^sha256:/);
     if (!p.row.artifactDigest) throw new Error("missing artifact");
@@ -128,7 +149,7 @@ it("publishes every newly opened type with the correct artifact kind and discove
       JSON.parse(new TextDecoder().decode(await cas.getBlob("public", p.row.artifactDigest))),
     );
     expect(artifact.kind).toBe(type === "preset" || type === "prompt-module" ? type : "content");
-    expect(artifact.root.release).toBe(p.publicId);
+    expect(artifact.root).toMatchObject({ release: p.publicId });
     const searched = await h.as(null).get(`/v1/search?type=${type}`);
     expect(searched.status).toBe(200);
     expect(JSON.stringify(await searched.json())).toContain(p.exact.ref);
@@ -144,11 +165,56 @@ it("publishes every newly opened type with the correct artifact kind and discove
   }
 });
 
+it("release readers reject draft provenance and mismatched stored root identities", async () => {
+  const published = await publish("identity-guard", "preset", { policy: policy() }, "private");
+  const draft = (await (await h.as(alice).get(`${published.path}/draft`)).json()) as {
+    working: unknown;
+  };
+  const artifact = buildCreation({
+    root: {
+      creation: draft.working,
+      visibility: "private",
+      origin: {
+        kind: "draft-build",
+        build_id: "dbld_01j00000000000000000000000",
+        revision: published.revision,
+        expires_at: "2026-10-07T00:00:00.000Z",
+      },
+    },
+  }).artifact;
+  const view = (value: unknown) =>
+    new Proxy(cas, {
+      get(target, property) {
+        if (property === "getBlob")
+          return async () => new TextEncoder().encode(JSON.stringify(value));
+        return Reflect.get(target, property, target);
+      },
+    });
+  await expect(
+    readArtifact(view(artifact), published.row, "https://assets.test"),
+  ).rejects.toMatchObject({ code: "build.release_required" });
+  const valid = await readArtifact(cas, published.row, "https://assets.test");
+  await expect(
+    readArtifact(
+      view({ ...valid, root: { ...valid.root, release: "rel_01j00000000000000000000000" } }),
+      published.row,
+      "https://assets.test",
+    ),
+  ).rejects.toMatchObject({ code: "build.release_mismatch" });
+  await expect(
+    readArtifact(
+      view({ ...valid, root: { ...valid.root, semantic_digest: `sha256:${"a".repeat(64)}` } }),
+      published.row,
+      "https://assets.test",
+    ),
+  ).rejects.toMatchObject({ code: "registry.artifact_mismatch" });
+});
+
 it("locks a module import and records a reverse policy dependency without fabricating content IR", async () => {
   const module = await publish("voice", "prompt-module", {
     prompt_module: {
-      version: "0-draft",
-      blocks: [{ id: "voice", text: "Speak calmly.", position: "main" }],
+      version: "1-draft",
+      blocks: [{ id: "voice", text: "Speak calmly.", default_at: "main" }],
     },
   });
   expect(module.outcomes).toEqual(["published"]);
@@ -256,7 +322,10 @@ it("preserves policy configuration contributions and rejects an overlapping auth
     field: "policy",
     op: "set",
     base_digest: digestOf(canonicalizeCreation(initial.working).creation.policy),
-    after: { ...policy(), blocks: [{ id: "main", text: "Contributed policy.", position: "main" }] },
+    after: {
+      ...policy(),
+      blocks: [{ id: "main", text: "Contributed policy.", default_at: "main" }],
+    },
   };
   const submit = await h.as(bob).post(`${p.path}/contributions`, {
     title: "Better policy",
@@ -281,7 +350,7 @@ it("preserves policy configuration contributions and rejects an overlapping auth
         ...proposal,
         after: {
           ...policy(),
-          blocks: [{ id: "main", text: "Competing policy.", position: "main" }],
+          blocks: [{ id: "main", text: "Competing policy.", default_at: "main" }],
         },
       },
     ],
@@ -335,7 +404,7 @@ it("isolates CCv3 export caches and bytes when a public character selects a priv
       expect(out.card.data.system_prompt).toBe("Literal {{user}} policy.");
       expect(out.card.data.creator_notes).toContain("CC-BY-4.0");
       await expect(cas.getBlob("public", cached.blobDigest)).rejects.toThrow();
-    } else expect(out.card.data.system_prompt).toBe("");
+    } else expect(out.card.data.system_prompt).toBe("Respect player agency.");
     await h.queue.boss.complete(QUEUE_NAMES.exportBuild, job.id);
   }
   const selected = await h.as(alice).get(selectedPath);
@@ -409,8 +478,8 @@ it("separates export cache keys for public and private releases of identical con
 it("checks blacklisted policy blocks throughout the dependency closure", async () => {
   const module = await publish("blocked-module", "prompt-module", {
     prompt_module: {
-      version: "0-draft",
-      blocks: [{ id: "blocked", text: "Blocked policy text.", position: "main" }],
+      version: "1-draft",
+      blocks: [{ id: "blocked", text: "Blocked policy text.", default_at: "main" }],
     },
   });
   expect(module.outcomes).toEqual(["published"]);
@@ -446,6 +515,7 @@ it("serves a Preset avatar from the artifact while retaining private authorizati
   await t.app.db
     .insert(assetMeta)
     .values({ digest: blob.digest, width: 64, height: 64, mediaType: "image/webp" });
+  await grantUploadedAsset(t.app.db, alice, blob);
   const p = await publish(
     "avatar-preset",
     "preset",
@@ -479,8 +549,8 @@ it("serves a Preset avatar from the artifact while retaining private authorizati
 it("deletes downstream Preset and Scenario artifacts when their module is tombstoned", async () => {
   const module = await publish("removed-module", "prompt-module", {
     prompt_module: {
-      version: "0-draft",
-      blocks: [{ id: "main", text: "Policy to remove.", position: "main" }],
+      version: "1-draft",
+      blocks: [{ id: "main", text: "Policy to remove.", default_at: "main" }],
     },
   });
   const preset = await publish("removed-preset", "preset", {
@@ -494,7 +564,7 @@ it("deletes downstream Preset and Scenario artifacts when their module is tombst
   });
   const scenario = await publish("removed-scenario", "scenario", {
     assembly: {
-      version: "0-draft",
+      version: "1-draft",
       preset: preset.exact,
       profile: {
         runtime: { name: "test", version: "1" },
@@ -542,7 +612,7 @@ it("rejects a dependency snapshot whose recorded digest disagrees with the immut
   const leaf = await publish("snapshot-leaf", "prompt-module");
   const parent = await publish("snapshot-parent", "prompt-module", {
     prompt_module: {
-      version: "0-draft",
+      version: "1-draft",
       blocks: [],
       imports: [
         {

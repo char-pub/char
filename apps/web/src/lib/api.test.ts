@@ -1,5 +1,6 @@
-import { buildCreation, PRESET_REGIONS } from "@char-pub/core";
+import { PRESET_REGIONS } from "@char-pub/core";
 import { describe, expect, it, vi } from "vitest";
+import { buildTestCreation } from "@/test/build";
 import { ApiError, createRegistryClient, MAX_REPORT_DETAILS, REPORT_CATEGORIES } from "./api";
 import { getMainText, setGreeting, setMainText, setName, type Working } from "./draft";
 import { IdempotencyKeys, suggestLabel } from "./publish";
@@ -63,6 +64,40 @@ describe("registry client", () => {
     expect(await client.exportCcv3("djj", "alice", "1.0.0")).toEqual({
       state: "building",
       retryAfter: 3,
+    });
+  });
+});
+
+describe("reference document client", () => {
+  it("uses an encoded owning release and source ID, without sending session inputs", async () => {
+    const body = {
+      source: "@writer/world~root#guide",
+      asset: "asset:guide",
+      digest: `sha256:${"a".repeat(64)}`,
+      text: "Document text",
+    };
+    const r = recorder([json(body)]);
+    const client = createRegistryClient({ baseUrl: "https://api.test", fetch: r.fetch });
+    expect(await client.sourceText("rel_owner", body.source)).toEqual(body);
+    const call = r.calls[0];
+    expect(call?.url).toBe(
+      `https://api.test/v1/releases/rel_owner/source-text?${new URLSearchParams({ source: body.source })}`,
+    );
+    expect(call?.init).toMatchObject({ method: "GET", credentials: "include" });
+    expect(call?.init.body).toBeUndefined();
+  });
+  it("rejects malformed responses and preserves authorization errors", async () => {
+    const r = recorder([
+      json({ source: "book", text: "missing identity" }),
+      json({ code: "source.forbidden", status: 403 }, 403),
+    ]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    await expect(client.sourceText("rel_owner", "book")).rejects.toMatchObject({
+      code: "response.invalid",
+    });
+    await expect(client.sourceText("rel_owner", "book")).rejects.toMatchObject({
+      status: 403,
+      code: "source.forbidden",
     });
   });
 });
@@ -286,8 +321,39 @@ describe("release maintenance", () => {
 });
 
 describe("policy artifact transport", () => {
+  it("rejects draft origins returned by a published artifact endpoint", async () => {
+    const artifact = buildTestCreation({
+      root: {
+        origin: {
+          kind: "draft-build",
+          build_id: "dbld_01j00000000000000000000000",
+          revision: "rev_01j00000000000000000000000",
+          expires_at: "2026-10-07T00:00:00.000Z",
+        },
+        visibility: "private",
+        creation: {
+          id: "cr_01j00000000000000000000000",
+          ref: "@writer/policy",
+          type: "preset",
+          display_name: "Policy",
+          meta: { default_locale: "en", rating: "general", rights: "original", license: "CC0-1.0" },
+          policy: {
+            version: "1-draft",
+            blocks: [],
+            layout: [...PRESET_REGIONS],
+            requires: { system_role: true },
+          },
+        },
+      },
+    }).artifact;
+    const r = recorder([json(artifact)]);
+    const client = createRegistryClient({ baseUrl: "", fetch: r.fetch });
+    await expect(client.getArtifact("writer", "policy", "v1")).rejects.toMatchObject({
+      code: "response.invalid",
+    });
+  });
   it("validates artifact responses and includes cookies only for private snapshots", async () => {
-    const artifact = buildCreation({
+    const artifact = buildTestCreation({
       root: {
         release: "rel_01j00000000000000000000000",
         visibility: "public",
@@ -297,7 +363,7 @@ describe("policy artifact transport", () => {
           type: "preset",
           display_name: "Policy",
           policy: {
-            version: "0-draft",
+            version: "1-draft",
             blocks: [],
             layout: [...PRESET_REGIONS],
             requires: { system_role: true },

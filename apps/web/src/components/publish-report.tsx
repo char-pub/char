@@ -9,6 +9,8 @@ import type { ReferenceEdge } from "@char-pub/core";
 import { CircleX } from "lucide-react";
 import type { ReactNode } from "react";
 import type { PublishReportResponse } from "@/lib/api";
+import type { Working } from "@/lib/draft";
+import { describeEditorSubject, type EditorLocation, editorLocation } from "@/lib/editor-location";
 import { cn } from "@/lib/utils";
 
 export const LICENSE_TEXT = {
@@ -26,6 +28,9 @@ export interface IssueContext {
   references: readonly ReferenceEdge[];
   /** 把 Release ID 换成版本号（编辑器已经读过依赖的 Release 列表）；不知道时返回 undefined。 */
   releaseLabel?: ((ref: string, release: string) => string | undefined) | undefined;
+  /** Optional live editor context; historical/public reports do not guess current author labels. */
+  working?: Working;
+  onLocate?: (target: EditorLocation) => void;
 }
 
 export interface Explanation {
@@ -201,6 +206,26 @@ function Row({ label, children, tone }: { label: string; children: ReactNode; to
   );
 }
 
+export function IssueLocation({ subject, context }: { subject: string; context: IssueContext }) {
+  if (!context.working) return null;
+  const description = describeEditorSubject(context.working, subject);
+  const target = editorLocation(context.working, subject);
+  return (
+    <>
+      {description ? <p>{description.objectLabel}</p> : null}
+      {target && context.onLocate ? (
+        <button
+          type="button"
+          className="text-left font-medium underline underline-offset-2"
+          onClick={() => context.onLocate?.(target)}
+        >
+          Open {description?.objectLabel ?? "in editor"}
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 export function PublishReport({
   report,
   context,
@@ -222,7 +247,12 @@ export function PublishReport({
           <IssueBox
             key={`${i.code}:${i.subject}:${n}`}
             title={e.title}
-            body={e.body}
+            body={
+              <>
+                {e.body}
+                <IssueLocation subject={i.subject} context={context} />
+              </>
+            }
             code={i.code}
             subject={i.subject}
           />
@@ -253,6 +283,8 @@ export function PublishReport({
                   <li key={`${w.code}:${w.subject}:${n}`} data-severity="warning">
                     {w.detail ? `${w.detail.charAt(0).toUpperCase()}${w.detail.slice(1)} ` : ""}
                     <span className="font-mono text-xs text-text-2">{w.code}</span>
+                    <p className="font-mono text-xs text-text-2">{w.subject}</p>
+                    <IssueLocation subject={w.subject} context={context} />
                   </li>
                 ))}
               </ul>

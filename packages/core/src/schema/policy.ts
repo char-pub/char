@@ -10,6 +10,9 @@ export const PRESET_REGIONS = [
   "system:persona",
   "system:world",
   "system:scenario",
+  "system:scene",
+  "system:story",
+  "system:sources",
   "system:relationship",
   "system:knowledge",
   "system:style",
@@ -29,6 +32,9 @@ export const CREATIVE_REGIONS = [
   "system:persona",
   "system:world",
   "system:scenario",
+  "system:scene",
+  "system:story",
+  "system:sources",
   "system:relationship",
   "system:knowledge",
   "system:style",
@@ -37,6 +43,11 @@ export const CREATIVE_REGIONS = [
 ] as const;
 export type CreativeRegion = (typeof CREATIVE_REGIONS)[number];
 
+const nonblank = z
+  .string()
+  .min(1)
+  .refine((text) => text.trim().length > 0, "expected nonblank text");
+export const PolicyPositionSchema = z.enum(["main", "after-history"]);
 export const PresetBlockSchema = z.strictObject({
   id: z.string().regex(SEGMENT_RE),
   /** 字面文本：不解释模板、脚本或变量。 */
@@ -44,17 +55,43 @@ export const PresetBlockSchema = z.strictObject({
     .string()
     .min(1)
     .refine((text) => text.trim().length > 0, "expected nonblank text"),
-  position: z.enum(["main", "after-history"]),
+  default_at: PolicyPositionSchema,
+  purpose: nonblank.optional(),
   /** 缺省为 true；canonical 形式省略显式 true。 */
   enabled: z.boolean().optional(),
 });
 export type PresetBlock = z.infer<typeof PresetBlockSchema>;
 
+export const PolicyPlacementSchema = z.strictObject({
+  block: z
+    .string()
+    .regex(
+      new RegExp(`^${SEGMENT_RE.source.slice(1, -1)}(?:/${SEGMENT_RE.source.slice(1, -1)})*$`),
+    ),
+  at: PolicyPositionSchema,
+  as: z.string().regex(SEGMENT_RE).optional(),
+});
+export const PolicySelectionSchema = z.strictObject({
+  catalog_budget: z.number().int().nonnegative().safe().optional(),
+  max_depth: z.number().int().min(1).max(32).optional(),
+  on_unavailable: z.literal("skip").optional(),
+});
+export const PolicyRenderSchema = z.strictObject({
+  "perspective.rumor": nonblank.optional(),
+  "perspective.claim": nonblank.optional(),
+  "perspective.belief": nonblank.optional(),
+  "knowing.narrator": nonblank.optional(),
+  "sources.notice": nonblank.optional(),
+});
+
 export const PresetPolicySchema = z
   .strictObject({
-    version: z.literal("0-draft"),
+    version: z.literal("1-draft"),
     blocks: z.array(PresetBlockSchema),
     imports: z.array(PolicyImportSchema).optional(),
+    placements: z.array(PolicyPlacementSchema).optional(),
+    selection: PolicySelectionSchema.optional(),
+    render: PolicyRenderSchema.optional(),
     layout: z.array(z.enum(PRESET_REGIONS)).length(PRESET_REGIONS.length),
     region_budgets: z
       .partialRecord(z.enum(CREATIVE_REGIONS), z.number().int().nonnegative().safe())
@@ -65,6 +102,13 @@ export const PresetPolicySchema = z
     }),
   })
   .superRefine((policy, ctx) => {
+    const placements = new Set<string>();
+    policy.placements?.forEach((item, i) => {
+      const key = JSON.stringify([item.block, item.at, item.as ?? item.at]);
+      if (placements.has(key))
+        ctx.addIssue({ code: "custom", path: ["placements", i], message: "duplicate placement" });
+      placements.add(key);
+    });
     const imports = new Set<string>();
     policy.imports?.forEach((item, i) => {
       if (imports.has(item.id))
@@ -94,7 +138,7 @@ export type PresetPolicy = z.infer<typeof PresetPolicySchema>;
 
 export const PromptModuleSchema = z
   .strictObject({
-    version: z.literal("0-draft"),
+    version: z.literal("1-draft"),
     blocks: z.array(PresetBlockSchema),
     imports: z.array(PolicyImportSchema).optional(),
   })

@@ -37,7 +37,7 @@ const TYPES: Record<
     icon: Globe,
   },
   lorebook: {
-    body: "Entries that switch on when a keyword comes up in the chat.",
+    body: "Reusable knowledge with descriptions, groups and reference documents.",
     example: "e.g. Corps of Night City",
     placeholder: "e.g. Corps of Night City",
     icon: BookOpen,
@@ -61,7 +61,7 @@ const TYPES: Record<
     icon: UserRound,
   },
   scenario: {
-    body: "A cast, a starting situation and an optional reproducible assembly setup.",
+    body: "Characters, scenes and an opening, with optional choices and endings.",
     example: "e.g. Snowbound inn",
     placeholder: "e.g. Rain at midnight",
     icon: Globe,

@@ -53,12 +53,21 @@ program
 
 program
   .command("build")
-  .description("build a creation artifact and exact dependency lock")
+  .description("build a local creation artifact and exact published dependency lock")
   .option("-f, --file <file>", "path to char.yaml", "char.yaml")
   .option("--dep <file>", "dependency release snapshot (repeatable)", collect, [])
+  .option("--default-policy <file>", "exact public default Preset release snapshot")
   .option("-o, --out <dir>", "output directory", "dist")
   .action(async (o) => {
-    process.exitCode = await cmdBuild({ file: o.file, deps: o.dep, outDir: o.out }, consoleOutput);
+    process.exitCode = await cmdBuild(
+      {
+        file: o.file,
+        deps: o.dep,
+        outDir: o.out,
+        ...(o.defaultPolicy ? { defaultPolicy: o.defaultPolicy } : {}),
+      },
+      consoleOutput,
+    );
   });
 
 program
@@ -66,6 +75,7 @@ program
   .description("assemble the context for a sample session and print the trace")
   .option("-f, --file <file>", "path to char.yaml", "char.yaml")
   .option("--dep <file>", "dependency release snapshot (repeatable)", collect, [])
+  .option("--default-policy <file>", "exact public default Preset release snapshot")
   .addOption(
     new Option("--tokenizer <name>", "tokenizer")
       .choices(["estimate", "o200k_base", "cl100k_base"])
@@ -79,7 +89,9 @@ program
   )
   .option("--locale <locale>", "session locale")
   .option("--preset <file>", "explicit Preset char.yaml")
-  .option("--session <file>", "Session JSON with individual slot bindings")
+  .option("--session <file>", "Complete TurnView JSON, including Story state and role bindings")
+  .option("--start <id>", "Story opening for a new preview (cannot combine with --session)")
+  .option("--source-texts <file>", "JSON map of IR asset IDs to exact source text for preview")
   .option("--persona <name>", "name of the user persona", "User")
   .option("-m, --message <text>", "chat message (repeatable)", collect, [])
   .action(async (o) => {
@@ -87,6 +99,7 @@ program
       {
         file: o.file,
         deps: o.dep,
+        ...(o.defaultPolicy ? { defaultPolicy: o.defaultPolicy } : {}),
         tokenizer: o.tokenizer,
         contextWindow: o.contextWindow,
         mode: o.mode,
@@ -94,6 +107,8 @@ program
         messages: o.message,
         ...(o.preset ? { preset: o.preset } : {}),
         ...(o.session ? { session: o.session } : {}),
+        ...(o.start ? { start: o.start } : {}),
+        ...(o.sourceTexts ? { sourceTexts: o.sourceTexts } : {}),
         ...(o.locale ? { locale: o.locale } : {}),
       },
       consoleOutput,
@@ -102,11 +117,15 @@ program
 
 program
   .command("test")
-  .description("run published deterministic assembly fixtures without calling a model")
+  .description("run authored assembly fixtures locally without calling a model")
   .option("-f, --file <file>", "path to char.yaml", "char.yaml")
   .option("--dep <file>", "dependency release snapshot (repeatable)", collect, [])
+  .option("--default-policy <file>", "exact public default Preset release snapshot")
   .action(async (o) => {
-    process.exitCode = await cmdTest({ file: o.file, deps: o.dep }, consoleOutput);
+    process.exitCode = await cmdTest(
+      { file: o.file, deps: o.dep, ...(o.defaultPolicy ? { defaultPolicy: o.defaultPolicy } : {}) },
+      consoleOutput,
+    );
   });
 
 program
@@ -125,16 +144,23 @@ program
 
 program
   .command("publish")
-  .description("check, build and publish char.yaml as a release")
+  .description("check authored source and request a registry release build")
   .requiredOption("--label <label>", "release label, e.g. 1.0.0")
   .option("-f, --file <file>", "path to char.yaml", "char.yaml")
   .option("--dep <file>", "dependency release snapshot (repeatable)", collect, [])
+  .option("--default-policy <file>", "exact default Preset snapshot for local author tests")
   .addOption(
     new Option("--visibility <v>", "visibility").choices(["public", "private"]).default("public"),
   )
   .action(async (o) => {
     process.exitCode = await cmdPublish(
-      { file: o.file, label: o.label, visibility: o.visibility, deps: o.dep },
+      {
+        file: o.file,
+        label: o.label,
+        visibility: o.visibility,
+        deps: o.dep,
+        ...(o.defaultPolicy ? { defaultPolicy: o.defaultPolicy } : {}),
+      },
       consoleOutput,
     );
   });

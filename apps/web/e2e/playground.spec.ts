@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import { mockApi, problem } from "./mock-api";
 
 /** 生产构建默认连接的 API；冒烟测试里没有它。 */
 const API = "https://api.char.pub";
@@ -11,7 +12,8 @@ test("playground shows the assembly trace for a sample creation", async ({ page 
     // 冒烟测试不启动 API：顶栏读取登录状态的请求失败是预期的。
     if (m.type() === "error" && !m.location().url.startsWith(API)) errors.push(m.text());
   });
-  await page.route(`${API}/**`, (route) => route.abort());
+  const api = await mockApi(page, "http://127.0.0.1:4173");
+  api.on("GET /v1/me", problem(401, "auth.required"));
 
   await page.goto("/playground");
   await expect(page.getByRole("heading", { name: "Context playground" })).toBeVisible();
@@ -22,7 +24,9 @@ test("playground shows the assembly trace for a sample creation", async ({ page 
   await expect(page.getByTestId("trace-summary")).toContainText("tokenizer: estimate");
 
   await page.getByText("Character + world + lorebook").click();
-  await expect(table.getByText("The chat mentions “Arasaka”.")).toBeVisible();
+  await expect(table.locator('[data-id*="#lore/arasaka"]')).toContainText(
+    "Included by the current scene or an activation rule.",
+  );
 
   expect(errors).toEqual([]);
 });
@@ -42,8 +46,10 @@ test("the production CSP from _headers is not violated", async ({ page }) => {
   const headers = readFileSync(new URL("../public/_headers", import.meta.url), "utf8");
   const csp = /Content-Security-Policy:\s*(.+)/.exec(headers)?.[1]?.trim();
   expect(csp).toBeTruthy();
+  const api = await mockApi(page, "http://127.0.0.1:4173");
+  api.on("GET /v1/me", problem(401, "auth.required"));
   await page.route("**/*", async (route) => {
-    if (route.request().url().startsWith(API)) return route.abort();
+    if (route.request().url().startsWith(API)) return route.fallback();
     // CSP 只注入文档；静态资源直接放行，避免页面关闭时仍有 fetch/fulfill 未完成。
     if (route.request().resourceType() !== "document") return route.continue();
     const response = await route.fetch();

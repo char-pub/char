@@ -1,0 +1,44 @@
+{
+  "release": "rel_01h455vb4pex5vsknk084sn0df",
+  "visibility": "public",
+  "creation": {
+    "id": "cr_01h455vb4pex5vsknk084sn0df",
+    "ref": "@conformance/default-policy",
+    "type": "preset",
+    "display_name": "Conformance explicit empty policy",
+    "policy": {
+      "version": "1-draft",
+      "blocks": [],
+      "layout": [
+        "system:character",
+        "system:cast",
+        "session:bindings",
+        "system:persona",
+        "system:world",
+        "system:scenario",
+        "system:scene",
+        "system:story",
+        "system:sources",
+        "system:relationship",
+        "system:knowledge",
+        "system:style",
+        "system:instruction",
+        "system:examples",
+        "session:memory",
+        "session:state",
+        "session:variants",
+        "history"
+      ],
+      "requires": {
+        "system_role": true
+      }
+    },
+    "meta": {
+      "default_locale": "en",
+      "rating": "general",
+      "rights": "original",
+      "license": "CC0-1.0"
+    }
+  },
+  "semantic_digest": "sha256:3567a707dc92a15aa9e624cd11f58ddfb58b6c46f13f1886c90297eb8f8e1205"
+}

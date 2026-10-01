@@ -200,11 +200,15 @@ function CreateTokenDialog({
               <Checkbox
                 id={`${ids.name}-agent`}
                 checked={agent}
-                onCheckedChange={(v) => setAgent(v === true)}
+                onCheckedChange={(v) => {
+                  setAgent(v === true);
+                  if (v === true)
+                    setScopes((current) => current.filter((scope) => scope !== "releases:publish"));
+                }}
               />
               <label htmlFor={`${ids.name}-agent`} className="text-sm">
                 For an agent — contributions made with this token are always marked as
-                agent-written.
+                agent-written. Agent tokens cannot publish releases.
               </label>
             </div>
             <fieldset className="space-y-2">
@@ -216,6 +220,7 @@ function CreateTokenDialog({
                     <Checkbox
                       id={id}
                       checked={scopes.includes(s.id)}
+                      disabled={agent && s.id === "releases:publish"}
                       onCheckedChange={(v) =>
                         setScopes((prev) =>
                           v === true ? [...prev, s.id] : prev.filter((x) => x !== s.id),

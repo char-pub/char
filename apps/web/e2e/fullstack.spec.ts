@@ -38,7 +38,7 @@ test("UC-1: create, publish and download a character in the browser", async ({
   await page
     .getByLabel("Description")
     .fill("{{self}} is a cheerful courier who knows every alley of the old town.");
-  await page.getByLabel("Summary").fill("A courier who never misses a delivery.");
+  await page.getByLabel("Summary", { exact: true }).fill("A courier who never misses a delivery.");
   await page.getByLabel("Greeting").fill("Package for {{user}}! Sign here, please.");
   await page.getByLabel("Choose an avatar image").setInputFiles({
     name: "avatar.png",

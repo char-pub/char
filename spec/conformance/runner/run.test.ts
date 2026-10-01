@@ -121,18 +121,34 @@ describe("helpers", () => {
 
 const trace = (reason: string): TraceExpectation => ({
   scenarios: [
-    { name: "a", entries: [{ id: "@x/y#f~root", decision: "included", reason }] },
+    {
+      name: "a",
+      messages_digest: "sha256:messages",
+      entries: [{ id: "@x/y#f~root", decision: "included", reason }],
+    },
     { name: "b", error: { code: "assemble.pinned_over_budget" } },
   ],
 });
 
 describe("assembler traces", () => {
-  it("compare only id, decision and reason per scenario", () => {
+  it("compares final messages and trace decisions per scenario", () => {
     const c = mk({ kind: "assembler", expect: "trace" }, { trace: trace("always") });
     expect(judge(c, { kind: "trace", trace: trace("always"), violations: [] }).status).toBe("pass");
     const bad = judge(c, { kind: "trace", trace: trace("pinned"), violations: [] });
     expect(bad.status).toBe("fail");
     expect(bad.message).toContain("always");
+  });
+
+  it("rejects changed or missing message digests even when trace decisions match", () => {
+    const expected = trace("always");
+    const actual = trace("always");
+    const scenario = actual.scenarios[0];
+    if (!scenario || "error" in scenario) throw new Error("expected successful scenario");
+    scenario.messages_digest = "sha256:different-messages";
+    expect(compareTraces(expected, actual)).toContain("messages digest differs");
+    const withoutDigest = trace("always");
+    Reflect.deleteProperty(withoutDigest.scenarios[0] as object, "messages_digest");
+    expect(compareTraces(withoutDigest, trace("always"))).toContain("expected missing");
   });
 
   it("detect scenario count, name, error and entry count differences", () => {
@@ -149,7 +165,12 @@ describe("assembler traces", () => {
       }),
     ).toContain("other");
     expect(
-      compareTraces(t, { scenarios: [{ name: "a", entries: [] }, t.scenarios[1] as never] }),
+      compareTraces(t, {
+        scenarios: [
+          { name: "a", messages_digest: "sha256:messages", entries: [] },
+          t.scenarios[1] as never,
+        ],
+      }),
     ).toContain("got 0");
   });
 

@@ -39,6 +39,7 @@ export function register(app: Hono<Env>): void {
           id: r.id,
           creation_id: f.creation.id,
           ns: f.ns,
+          collaborator: f.collaborator === true,
           visibility: r.visibility,
           status: r.status,
           creation_status: f.creation.status,

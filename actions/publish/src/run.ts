@@ -1,5 +1,5 @@
 /**
- * `char-pub/publish` Action：在 CI 中检查并构建 char.yaml，然后用 GitHub OIDC token 向
+ * `char-pub/publish` Action：在 CI 中校验 char.yaml 并运行声明的作者测试，然后用 GitHub OIDC token 向
  * Registry 发布。仓库不需要保存任何长期密钥。
  *
  * 信任模型：OIDC token 只能证明“绑定的仓库在允许的 ref 和事件上运行了某个 workflow”，
@@ -7,7 +7,7 @@
  * 在 `GITHUB_SHA` 对应的 commit 上重新读取源文件并重新计算，不一致就拒绝。
  */
 import * as core from "@actions/core";
-import { buildLocal, cmdTest } from "@char-pub/cli";
+import { cmdTest, loadLocalCreation } from "@char-pub/cli";
 import { type OidcPublishRequest, ProblemSchema, PublishResponseSchema } from "@char-pub/contracts";
 import { CharError, isCharError, isLabel } from "@char-pub/core";
 import { setOutput } from "./output.js";
@@ -28,6 +28,7 @@ export interface ActionInputs {
   registry: string;
   dryRun: boolean;
   dependencies?: string[];
+  defaultPolicy?: string;
 }
 
 export interface ActionDeps {
@@ -74,16 +75,21 @@ export async function run(inputs: ActionInputs, env: ActionEnv, deps: ActionDeps
     throw new CharError({ code: "action.invalid_visibility", subject: inputs.visibility });
   }
 
-  const { creation, artifact, warnings } = await buildLocal(inputs.path, inputs.dependencies);
-  const testStatus = await cmdTest(
-    { file: inputs.path, ...(inputs.dependencies ? { deps: inputs.dependencies } : {}) },
-    { log: deps.log, error: deps.log },
-  );
+  const { creation, semantic_digest } = await loadLocalCreation(inputs.path);
+  const testStatus = creation.assembly_tests?.length
+    ? await cmdTest(
+        {
+          file: inputs.path,
+          ...(inputs.dependencies ? { deps: inputs.dependencies } : {}),
+          ...(inputs.defaultPolicy ? { defaultPolicy: inputs.defaultPolicy } : {}),
+        },
+        { log: deps.log, error: deps.log },
+      )
+    : 0;
   if (testStatus !== 0)
     throw new CharError({ code: "action.assembly_tests_failed", subject: inputs.path });
-  deps.log(`built ${creation.ref}@${label}  ${artifact.root.semantic_digest}`);
-  for (const w of warnings) deps.log(`warning: ${w.code} ${w.subject}`);
-  deps.setOutput("semantic-digest", artifact.root.semantic_digest);
+  deps.log(`checked ${creation.ref}@${label}  ${semantic_digest}`);
+  deps.setOutput("semantic-digest", semantic_digest);
   if (inputs.dryRun) {
     deps.log("dry run: not publishing");
     return;
@@ -97,7 +103,7 @@ export async function run(inputs: ActionInputs, env: ActionEnv, deps: ActionDeps
     visibility: inputs.visibility,
     commit,
     path: inputs.path,
-    semantic_digest: artifact.root.semantic_digest,
+    semantic_digest: semantic_digest,
   };
   const res = await deps.fetch(`${registry}/v1/publish/oidc`, {
     method: "POST",
@@ -140,6 +146,9 @@ export async function main(): Promise<void> {
         registry: core.getInput("registry") || "https://api.char.pub",
         dryRun: core.getBooleanInput("dry-run"),
         dependencies: core.getMultilineInput("dependencies"),
+        ...(core.getInput("default-policy")
+          ? { defaultPolicy: core.getInput("default-policy") }
+          : {}),
       },
       env,
       {

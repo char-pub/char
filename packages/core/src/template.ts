@@ -12,13 +12,14 @@
  * 这样 `{` 紧挨着占位符（`{{{self}}`）也没有歧义。单独出现的 `}}` 就是普通文本。
  */
 import { CharError } from "./errors.js";
-import { PARAM_NAME_RE, SLOT_NAME_RE } from "./ids.js";
+import { CAST_KEY_RE, PARAM_NAME_RE, SLOT_NAME_RE } from "./ids.js";
 
 export type TemplateToken =
   | { t: "text"; v: string }
   | { t: "self" }
   | { t: "user" }
   | { t: "slot"; name: string }
+  | { t: "cast"; name: string }
   | { t: "param"; name: string }
   | { t: "late"; key: string };
 
@@ -98,6 +99,7 @@ function parsePlaceholder(inner: string, mode: TemplateMode): TemplateToken | "u
   const kind = inner.slice(0, colon);
   const name = inner.slice(colon + 1);
   if (mode === "creation") {
+    if (kind === "cast") return CAST_KEY_RE.test(name) ? { t: "cast", name } : "name";
     if (kind === "slot") return SLOT_NAME_RE.test(name) ? { t: "slot", name } : "name";
     if (kind === "param") return PARAM_NAME_RE.test(name) ? { t: "param", name } : "name";
     return "unknown";
@@ -160,6 +162,8 @@ export function placeholderText(tok: Exclude<TemplateToken, { t: "text" }>): str
       return "{{user}}";
     case "slot":
       return `{{slot:${tok.name}}}`;
+    case "cast":
+      return `{{cast:${tok.name}}}`;
     case "param":
       return `{{param:${tok.name}}}`;
     case "late":

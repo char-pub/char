@@ -36,13 +36,18 @@ import {
   changeKey,
   computeSensitive,
   isCharError,
-  normalizeValue,
+  normalizeContributionChange,
 } from "@char-pub/core";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Hono } from "hono";
 import type { z } from "zod";
 import { appendAudit } from "../../audit/audit.js";
-import type { Principal, Resource } from "../../authz/authorize.js";
+import {
+  authorize,
+  isNamespaceOwner,
+  type Principal,
+  type Resource,
+} from "../../authz/authorize.js";
 import {
   authUser,
   contributionChanges,
@@ -77,6 +82,7 @@ import {
   userDisplaysOf,
   withContributor,
 } from "../../registry/contributions.js";
+import { lockDraftBuildCreation } from "../../registry/draft-builds.js";
 import { decodeId, encodeId } from "../../registry/ids.js";
 import { type CreationContext, lookupCreation, lookupNamespace } from "../../registry/lookup.js";
 import { type AppContext, type Env, notFound, route } from "../app.js";
@@ -104,6 +110,7 @@ function contributionResource(ctx: CreationContext, row: ContributionRow): Resou
     type: "contribution",
     id: row.id,
     ns: ctx.resource.ns,
+    collaborator: ctx.resource.collaborator ?? false,
     author: {
       ...(row.authorUserId ? { user_id: row.authorUserId } : {}),
       ...(row.authorGuestId ? { guest_id: row.authorGuestId } : {}),
@@ -126,7 +133,7 @@ async function loadItem(c: AppContext) {
 }
 
 function isMember(ctx: CreationContext): boolean {
-  return ctx.resource.ns.role === "owner" || ctx.resource.ns.role === "maintainer";
+  return isNamespaceOwner(ctx.resource.ns) || !!ctx.resource.collaborator;
 }
 
 function limited(c: AppContext, retryAfter: number): Response {
@@ -263,7 +270,7 @@ export function register(app: Hono<Env>): void {
       // 解析每个变更，服务端重新计算 sensitive；与基线试合并，变更不合法时直接拒绝。
       const parsed: { raw: unknown; change: Change; key: string; sensitive: boolean }[] = [];
       for (const [i, raw] of body.changes.entries()) {
-        const r = ChangeSchema.safeParse(normalizeValue(raw, `changes[${i}]`));
+        const r = ChangeSchema.safeParse(normalizeContributionChange(raw, `changes[${i}]`));
         if (!r.success) {
           return problem(c, 422, "contribution.invalid_change", r.error.issues[0]?.message, {
             subject: `changes[${i}]`,
@@ -276,9 +283,29 @@ export function register(app: Hono<Env>): void {
           sensitive: computeSensitive(r.data),
         });
       }
+      if (
+        parsed.some((x) =>
+          ["story", "story-order", "cast", "group", "source"].includes(x.change.on),
+        ) &&
+        body.changes_version !== 1
+      )
+        return problem(
+          c,
+          422,
+          "contribution.unsupported_version",
+          "Structured story changes require changes_version: 1.",
+        );
       const baseContent = await revisionContent(cas, base.semanticDigest);
-      const attempt = tryMerge(baseContent, body.changes);
+      const attempt = tryMerge(baseContent, body.changes, baseContent);
       if (attempt.error) return charProblem(c, 422, attempt.error);
+      if (!attempt.merge?.result)
+        return problem(
+          c,
+          422,
+          "contribution.invalid_result",
+          "The proposed changes are invalid against their base.",
+          { conflicts: attempt.merge?.conflicts ?? [] },
+        );
 
       const agent = body.agent === true || (p.kind === "user" && p.agent === true);
       const id = ids.uuid();
@@ -287,6 +314,7 @@ export function register(app: Hono<Env>): void {
         await tx.insert(contributions).values({
           id,
           targetCreationId: ctx.creation.id,
+          ...(p.kind === "user" && p.oauth ? { clientId: p.oauth.client_id } : {}),
           number: n,
           ...author,
           agent,
@@ -354,6 +382,8 @@ export function register(app: Hono<Env>): void {
       );
       if (!q.success) return problem(c, 422, "request.invalid", q.error.issues[0]?.message);
       const p = c.var.principal;
+      if (p.kind === "user" && p.scopes && !p.scopes.includes("creations:read"))
+        return problem(c, 403, "token.insufficient_scope");
       const member = isMember(ctx) && p.kind === "user";
       if (!member && p.kind !== "user" && p.kind !== "guest") {
         return c.json({ items: [], next_cursor: null });
@@ -397,18 +427,32 @@ export function register(app: Hono<Env>): void {
       c.header("cache-control", "private, no-store");
       const last = rows.at(-1);
       const names = await authorNamesOf(c.var.services.db, rows);
-      return c.json({
-        counts,
-        items: rows.map((r) => {
+      const bases = new Map<string, Promise<unknown>>();
+      const original = (digest: string) => {
+        let value = bases.get(digest);
+        if (!value) {
+          value = revisionContent(c.var.services.cas, digest);
+          bases.set(digest, value);
+        }
+        return value;
+      };
+      const items = await Promise.all(
+        rows.map(async (r) => {
           const changes = grouped.get(r.id) ?? [];
           const preview =
-            member && r.status === "open" ? previewJson(tryMerge(draft?.working, changes)) : null;
+            member && r.status === "open"
+              ? previewJson(tryMerge(draft?.working, changes, await original(r.baseSemanticDigest)))
+              : null;
           return {
             ...summaryJson(r, names),
             change_count: changes.length,
             ...(preview ? { has_conflicts: !preview.mergeable } : {}),
           };
         }),
+      );
+      return c.json({
+        counts,
+        items,
         next_cursor: rows.length === q.data.limit && last ? String(last.number) : null,
       });
     },
@@ -430,10 +474,20 @@ export function register(app: Hono<Env>): void {
       const { db } = c.var.services;
       const changes = item.changes.map(changeOf);
       let preview = null;
-      if (item.row.status === "open") {
+      if (item.row.status === "open" && isMember(item.ctx)) {
         const draft = await loadDraft(db, item.ctx.creation.id);
-        preview = previewJson(tryMerge(draft?.working, changes));
+        preview = {
+          ...previewJson(
+            tryMerge(
+              draft?.working,
+              changes,
+              await revisionContent(c.var.services.cas, item.row.baseSemanticDigest),
+            ),
+          ),
+          ...(draft ? { current: draft.working, draft_version: draft.version } : {}),
+        };
       }
+      c.header("cache-control", "private, no-store");
       return c.json({
         ...summaryJson(item.row, await authorNamesOf(db, [item.row])),
         ...(item.row.description ? { description: item.row.description } : {}),
@@ -479,7 +533,11 @@ export function register(app: Hono<Env>): void {
       }
       const draft = await loadDraft(db, item.ctx.creation.id);
       if (!draft) return notFound(c);
-      const attempt = tryMerge(draft.working, item.changes.map(changeOf));
+      const attempt = tryMerge(
+        draft.working,
+        item.changes.map(changeOf),
+        await revisionContent(cas, item.row.baseSemanticDigest),
+      );
       if (attempt.error) return charProblem(c, 422, attempt.error);
       const merge = attempt.merge;
       if (!merge?.result) {
@@ -507,8 +565,13 @@ export function register(app: Hono<Env>): void {
       const contributor = {
         author: "user" in author ? author.user : author,
         contribution: encodeId("contribution", item.row.id),
+        ...(item.row.clientId ? { client_id: item.row.clientId } : {}),
       };
-      const merged = withContributor(merge.result.json as Record<string, unknown>, contributor);
+      const merged = withContributor(
+        merge.result.json as Record<string, unknown>,
+        contributor,
+        item.row.agent,
+      );
       let out: Awaited<ReturnType<typeof acceptContribution>>;
       try {
         out = await acceptContribution(db, cas, {
@@ -519,13 +582,25 @@ export function register(app: Hono<Env>): void {
           mergeResult: merge,
           draftVersion: draft.version,
           deciderUserId: p.user_id,
+          principal: p,
           actor: auditActor(p),
           requestId: requestIdOf(c),
           now: clock.now(),
           newId: () => ids.uuid(),
         });
       } catch (e) {
-        if (isCharError(e) && e.code === "contribution.not_open") return charProblem(c, 409, e);
+        if (isCharError(e)) {
+          if (e.code === "contribution.not_open") return charProblem(c, 409, e);
+          if (e.code === "not_found" || e.code === "draft_build.not_found")
+            return charProblem(c, 404, e);
+          if (
+            e.code === "collaboration.owner_fields" ||
+            e.code === "forbidden" ||
+            e.code.startsWith("token.") ||
+            e.code === "account.banned"
+          )
+            return charProblem(c, 403, e);
+        }
         throw e;
       }
       if (!out) {
@@ -570,6 +645,13 @@ export function register(app: Hono<Env>): void {
         const p = c.var.principal;
         const now = clock.now();
         const changed = await db.transaction(async (tx) => {
+          await lockDraftBuildCreation(tx, item.ctx.creation.id);
+          const fresh = await lookupCreation(tx, item.ctx.ns.slug, item.ctx.creation.name, p);
+          if (!fresh) return notFound(c);
+          const decision = authorize(p, action, contributionResource(fresh, item.row), {
+            disabled: await c.var.services.flags(),
+          });
+          if (!decision.allow) return problem(c, decision.status, decision.code);
           const rows = await tx
             .update(contributions)
             .set({
@@ -592,6 +674,7 @@ export function register(app: Hono<Env>): void {
           });
           return true;
         });
+        if (changed instanceof Response) return changed;
         if (!changed) return problem(c, 409, "contribution.not_open");
         return c.json({ status });
       },

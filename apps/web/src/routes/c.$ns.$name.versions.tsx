@@ -1,5 +1,5 @@
 import { estimateCounter } from "@char-pub/assembler";
-import { type ContextIR, diffContextIR, type LockLabel } from "@char-pub/core";
+import { type ContextIR, diffContextIR, type LockLabel, publishedIdentity } from "@char-pub/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useId, useMemo, useState } from "react";
@@ -34,8 +34,9 @@ function locksOf(ir: ContextIR, labels: ReadonlyMap<string, string>): LockLabel[
   return ir.graph.nodes
     .filter((n) => n.ref !== ir.root.ref)
     .map((n) => {
-      const label = labels.get(n.release);
-      return label ? { ref: n.ref, release: n.release, label } : { ref: n.ref, release: n.release };
+      const { release } = publishedIdentity(n);
+      const label = labels.get(release);
+      return label ? { ref: n.ref, release, label } : { ref: n.ref, release };
     });
 }
 
@@ -139,7 +140,11 @@ function ContentVersionsTab() {
         rating={worst?.effective_rating ?? "general"}
         allowed={c.allowMature}
         remember={c.detail.ref}
-        reason={adultIR ? matureReason(adultIR) : undefined}
+        reason={
+          adultIR && adultIR.meta.rating === worst?.effective_rating
+            ? matureReason(adultIR, adultIR)
+            : undefined
+        }
         signedIn={!!c.me}
       >
         <DiffView diff={diff} from={fromIR.data} to={toIR.data} showTokens={false} />

@@ -431,16 +431,21 @@ Resolver 对 rating 取依赖闭包中 Creation 与所纳入 Asset 的最大值�
 
 ```ts
 interface Provenance {
-  derived_from?: { release: ReleaseId; relation: "fork" | "remix" | "import" }[]
+  client_id?: string                  // Registry记录本次创建的OAuth应用，不是访问凭证
+  derived_from?: (
+    | { release: ReleaseId; relation: "fork" | "remix" | "import" } // 仅来源备注
+    | { ref: string; release: ReleaseId; semantic_digest: Digest;
+        relation: "fork" | "remix" | "import" | "sequel" }         // 精确来源依赖
+  )[]
   imported_from?: { format: "ccv3" | "ccv2" | "charx" | string; source_digest: Digest;
                     omitted_policy_fields?: string[] } // 仅记录字段名，原值留在导入源与 Import Report
   au?: boolean                        // 含 intrinsic force override
-  contributors?: { author: UserId | { guest_id: string; display_name: string }; contribution?: ContributionId }[]
+  contributors?: { author: UserId | { guest_id: string; display_name: string }; contribution?: ContributionId; client_id?: string }[]
   authored_by_agent?: boolean
 }
 ```
 
-`derived_from` 不参与 Resolve（D-024）。
+`derived_from` 不展开进 Creative IR 的内容图；完整精确来源会参与聚合构建锁、许可、评级、署名及发布的可见性/下架检查（D-209 部分取代 D-024）。只有 release 的来源备注仍仅展示，不能提供授权。来源历史可以保留同一作品的旧版本，新作品实际内容/策略/测试图仍各自满足单版本约束。Registry发布索引按精确Release保留锁，并保留同一片段在历史与当前的各个摘要，用于下架追踪。
 
 ---
 
@@ -584,7 +589,7 @@ add 必须无 `base_digest` 且有 `after`；modify / remove 必须有 `base_dig
 
 v0-draft 方案（待冻结）：
 
-1. 所有文本 Unicode NFC；行尾统一为 `\n`；去除行尾空白以外不改动内容。
+1. 作者正文 Unicode NFC；行尾统一为 `\n`；去除行尾空白以外不改动内容。Story v1 作者测试的 `assembly_tests[*].session` 完整快照（含字典键）与 `source_texts` 正文是精确输入，保留原 Unicode、换行与尾空白；否则可能改变关键词匹配或资料摘要。这个例外只由 Creation 的真实结构路径进入，普通 JSON 正文与通用 `normalizeValue` 不受影响。配置投稿和冲突摘要沿用相同规则。
 2. 对象序列化为 JSON，按 RFC 8785（JCS）规范化。
 3. 省略值等于默认值的字段（如 `importance: "normal"`），保证“写与不写默认值”digest 相同。
 4. `fragment.digest = sha256(JCS(fragment 去掉 digest 字段))`。

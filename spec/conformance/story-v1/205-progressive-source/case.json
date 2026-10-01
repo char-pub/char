@@ -1,0 +1,9 @@
+{
+  "id": "205-progressive-source",
+  "title": "Progressive group discovery and exact source section loading",
+  "kind": "story",
+  "expect": "story",
+  "spec_refs": ["story-v1 \u00a73.2", "story-v1 \u00a713\u201314.2", "Story goal U2/U5/U7"],
+  "status": "draft",
+  "notes": "Groups contain fragments; Source sections are a separate work-level branch. Handwritten semantic assertions, no accepted expected output."
+}

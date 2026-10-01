@@ -5,11 +5,11 @@
  * 文本、参与者、late slot、汇总的 rating / license、错误码或发布结论），以及机器预检结果。
  * 输出写到 `spec/conformance/REVIEW.md`（不提交），审阅人对照规范逐条确认后再运行 accept。
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ContextIRSchema, displayFragmentId } from "@char-pub/core";
 import type { CaseMeta, LossSummary, TraceExpectation } from "../runner/types.js";
-import { CASES_DIR } from "./cases.js";
+import { CASES_DIR, caseDirectory, listCaseDirs } from "./cases.js";
 import { precheck } from "./precheck-lib.js";
 
 const OUT = join(CASES_DIR, "..", "REVIEW.md");
@@ -97,8 +97,8 @@ const out: string[] = [
   "the specification and the case notes, then run `pnpm conformance:accept <case> --reviewer <name>`.",
   "",
 ];
-for (const dir of readdirSync(CASES_DIR).sort()) {
-  const meta = JSON.parse(readFileSync(join(CASES_DIR, dir, "case.json"), "utf8")) as CaseMeta;
+for (const dir of listCaseDirs()) {
+  const meta = JSON.parse(readFileSync(join(caseDirectory(dir), "case.json"), "utf8")) as CaseMeta;
   out.push(
     `## ${dir}`,
     "",
@@ -106,7 +106,7 @@ for (const dir of readdirSync(CASES_DIR).sort()) {
     "",
   );
   if (meta.notes) out.push(`Check: ${meta.notes}`, "");
-  const draft = join(CASES_DIR, dir, "draft");
+  const draft = join(caseDirectory(dir), "draft");
   if (existsSync(join(draft, "context-ir.json"))) {
     const text = readFileSync(join(draft, "context-ir.json"), "utf8");
     const issues = precheck(text);
@@ -122,6 +122,7 @@ for (const dir of readdirSync(CASES_DIR).sort()) {
         out.push(`- fails with \`${sc.error.code}\``, "");
         continue;
       }
+      out.push(`Messages digest: \`${sc.messages_digest}\``, "");
       out.push("| id | decision | reason |", "|---|---|---|");
       for (const e of sc.entries)
         out.push(`| \`${displayFragmentId(e.id)}\` | ${e.decision} | ${e.reason} |`);
@@ -134,6 +135,19 @@ for (const dir of readdirSync(CASES_DIR).sort()) {
       `- lorebook: ${l.import.lorebook.map((e) => `#${e.index} (source id ${e.source_id ?? "none"}) → ${e.fragment_id ?? "dropped"} [${e.activation}]`).join("; ") || "(none)"}`,
       `- loss: policy fields ${l.loss.policy_fields.map((p) => `${p.ref}: ${p.fields.join(", ")} restored=${p.restored}`).join("; ") || "(none)"}; flattened ${l.loss.flattened_dependencies.map((d) => d.ref).join(", ") || "(none)"}; activation downgrades ${l.loss.activation_downgrades.length}; visibility ${l.loss.visibility.length}; participants ${l.loss.participants.length}; context assets ${l.loss.context_assets.length}; dropped locales ${l.loss.locales.dropped.join(", ") || "(none)"}; other ${l.loss.other.join(", ") || "(none)"}`,
       `- exported card: system_prompt empty=${l.export.system_prompt_empty}, post_history_instructions empty=${l.export.post_history_instructions_empty}`,
+      "",
+    );
+  } else if (existsSync(join(draft, "story.json"))) {
+    const text = readFileSync(join(draft, "story.json"), "utf8");
+    const fence = "`".repeat(
+      Math.max(3, ...[...text.matchAll(/`+/g)].map((match) => match[0].length + 1)),
+    );
+    out.push(
+      "Full step states, filtering reasons, Catalog/Plan and model messages (candidate only):",
+      "",
+      `${fence}json`,
+      text.trimEnd(),
+      fence,
       "",
     );
   } else if (existsSync(join(draft, "publish.json"))) {

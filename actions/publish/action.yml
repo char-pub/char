@@ -1,11 +1,14 @@
 name: char.pub publish
-description: Check, build and publish a char.pub creation from this repository using GitHub OIDC (no long-lived secrets).
+description: Check authored source, run declared author tests and request publication using GitHub OIDC (no long-lived secrets).
 author: char-pub
 branding:
   icon: upload-cloud
   color: purple
 
 inputs:
+  default-policy:
+    description: Exact public default Preset release snapshot used by local author tests
+    required: false
   path:
     description: Path to char.yaml inside the repository.
     required: false

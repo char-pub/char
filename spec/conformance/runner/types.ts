@@ -2,15 +2,33 @@
  * 一致性测试集的数据格式。用例在仓库里是一个个目录，`conformance:bundle` 把它们打包成
  * 一个 JSON 文件，这样没有文件系统的运行时（浏览器、workerd）也能加载全部用例。
  */
-import type { ReleaseInput, resolvePreset } from "@char-pub/core";
 
-export type CaseKind = "resolver" | "assembler" | "publish" | "ccv3";
+import type {
+  AssembleResult,
+  ContextCatalog,
+  selectorView,
+  sourceRequests,
+  ViewResult,
+} from "@char-pub/assembler";
+import type {
+  CatalogRef,
+  ExactRef,
+  ReleaseInput,
+  resolvePreset,
+  SelectionPlan,
+  Story,
+  StoryCondition,
+  StoryJudgment,
+  StoryState,
+} from "@char-pub/core";
+
+export type CaseKind = "resolver" | "assembler" | "publish" | "ccv3" | "story";
 
 /**
  * 用例期望的结果形态：一份 Context IR、一个错误、一份发布检查报告、Assembler 各场景的
  * Trace 决策，或 CCv3 往返的 Loss Report 摘要。
  */
-export type ExpectKind = "context-ir" | "error" | "publish" | "trace" | "loss-report";
+export type ExpectKind = "context-ir" | "error" | "publish" | "trace" | "loss-report" | "story";
 
 export type CaseStatus = "draft" | "reviewed";
 
@@ -41,13 +59,16 @@ export interface RegistryInput {
 }
 
 export interface CaseInput {
+  story?: StoryFixtureInput;
+  /** Handwritten independent semantic assertions; never an accepted expected baseline. */
+  assertions?: unknown;
   /** 根 Release。ccv3 用例没有根 Release，输入是一张卡片。 */
   root?: ReleaseInput;
   /** 依赖闭包，按文件名排序。 */
   deps: ReleaseInput[];
   registry?: RegistryInput;
-  options?: { publicAssetBaseUrl?: string };
-  /** assembler 用例：命名的 Runtime Profile + Session 场景。 */
+  options?: { publicAssetBaseUrl?: string; default_policy?: ExactRef };
+  /** assembler 用例：命名的 Runtime Profile + TurnView 场景。 */
   assemble?: AssembleInput;
   /** ccv3 用例：输入卡片。 */
   card?: unknown;
@@ -66,11 +87,14 @@ export interface PublishSummary {
   warnings: string[];
 }
 
-/** 一个 Assembler 场景：用这个 Profile 和 Session 组装一次。 */
+/** 一个 Assembler 场景：用这个 Profile、TurnView 和固定选材组装一次。 */
 export interface AssembleScenario {
   name: string;
   profile: unknown;
-  session: unknown;
+  turn: unknown;
+  /** Fixed choices; the runner constructs the exact Plan from the current catalog. */
+  selection?: CatalogRef[];
+  source_texts?: Record<string, string>;
   /** 完整策略快照，由真实解析器验证摘要后使用，不信任手写 ResolvedPreset。 */
   preset?: Parameters<typeof resolvePreset>[0];
 }
@@ -86,9 +110,9 @@ export interface TraceDecision {
   reason: string;
 }
 
-/** 一个场景的结果：要么是 Trace 决策列表，要么是组装失败的错误。 */
+/** 一个场景的结果：要么是消息摘要和 Trace 决策列表，要么是组装失败的错误。 */
 export type ScenarioResult =
-  | { name: string; entries: TraceDecision[] }
+  | { name: string; entries: TraceDecision[]; messages_digest: string }
   | { name: string; error: ErrorExpectation };
 
 export interface TraceExpectation {
@@ -124,6 +148,7 @@ export interface LossSummary {
 }
 
 export interface ExpectedOutput {
+  story?: StoryExpectation;
   /** 按 JCS 序列化的 Context IR，逐字节比较。 */
   "context-ir"?: string;
   error?: ErrorExpectation;
@@ -147,9 +172,90 @@ export interface Bundle {
 
 /** 每种期望形态在 `expected/` 与 `draft/` 目录里对应的文件名。 */
 export const EXPECTED_FILES: Record<ExpectKind, string> = {
+  story: "story.json",
   "context-ir": "context-ir.json",
   error: "error.json",
   publish: "publish.json",
   trace: "trace.json",
   "loss-report": "loss-report.json",
 };
+
+export type StoryOperation =
+  | { op: "input"; text: string }
+  | {
+      op: "condition";
+      condition: StoryCondition;
+      target?: string;
+      path?: string;
+      judgments?: StoryJudgment[];
+    }
+  | { op: "confirm"; target: string; judgments?: StoryJudgment[] }
+  | { op: "enter"; scene: string; judgments?: StoryJudgment[] }
+  | { op: "present"; present: string[] }
+  | { op: "available"; judgments?: StoryJudgment[] }
+  | { op: "validate"; state: StoryState };
+export interface StoryEvaluationInput {
+  kind: "evaluation";
+  story: Story;
+  cast: string[];
+  start?: string;
+  judgments?: StoryJudgment[];
+  operations: StoryOperation[];
+}
+export interface StoryContextScenario extends AssembleScenario {
+  plan?: SelectionPlan;
+  /** Reuse the unchanged Plan from an earlier successfully completed context scenario. */
+  plan_from?: string;
+  discovery?: boolean;
+  fallback?: "skip";
+}
+export type StoryFixtureInput =
+  | StoryEvaluationInput
+  | { kind: "view" | "context"; scenarios: StoryContextScenario[] };
+export type StoryStepOutcome =
+  | { truth: boolean | "unknown" }
+  | { targets: string[]; choices: string[] }
+  | { input_ignored: true }
+  | { valid: true };
+export interface StoryStepResult {
+  index: number;
+  op: StoryOperation["op"];
+  state: StoryState;
+  outcome?: StoryStepOutcome;
+  error?: ErrorExpectation;
+  input_unchanged: boolean;
+}
+export interface StoryEvaluationExpectation {
+  kind: "evaluation";
+  initial: { state: StoryState } | { error: ErrorExpectation };
+  steps: StoryStepResult[];
+  input_unchanged: boolean;
+}
+export interface StoryContextResult {
+  stage: "view" | "catalog" | "plan" | "source" | "prepare" | "complete";
+  name: string;
+  input_unchanged: boolean;
+  items?: { ref: CatalogRef; result: ViewResult }[];
+  catalog?: ContextCatalog;
+  catalog_digest?: string;
+  selector_view?: ReturnType<typeof selectorView>;
+  plan?: SelectionPlan;
+  plan_digest?: string;
+  plan_valid?: boolean;
+  source_requests?: ReturnType<typeof sourceRequests>;
+  messages?: AssembleResult["messages"];
+  messages_digest?: string;
+  trace?: AssembleResult["trace"];
+  error?: ErrorExpectation;
+}
+export type StoryExpectation =
+  | StoryEvaluationExpectation
+  | {
+      kind: "view" | "context";
+      scenarios: StoryContextResult[];
+      input_unchanged: boolean;
+    };
+export interface StoryFixtureOutcome {
+  expectation: StoryExpectation;
+  violations: string[];
+}

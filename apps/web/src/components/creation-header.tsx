@@ -31,9 +31,11 @@ import { cn } from "@/lib/utils";
 import { StatusBadge, TYPE_STYLE, TypeBadge } from "./badges";
 import { CopyButton } from "./copy-button";
 import { useCreation } from "./creation-context";
+import { DeriveCreation } from "./derive-creation";
 import { DownloadMenu } from "./downloads";
 import { isAdultRating, RatingBadge } from "./rating";
 import { ReportDialog } from "./report-dialog";
+import { RuntimeLaunch } from "./runtime-launch";
 import { UserText } from "./user-content";
 import { YankDialog } from "./yank-dialog";
 
@@ -126,18 +128,28 @@ function Identity() {
 }
 
 function Facts() {
-  const { detail, ir, rating, selected, tombstoned } = useCreation();
-  const license = ir ? ownLicense(ir) : undefined;
+  const { detail, rating, selected, tombstoned, artifact } = useCreation();
+  const license = artifact ? ownLicense(artifact) : undefined;
   return (
     <div className="flex flex-wrap items-center gap-2">
       <TypeBadge type={detail.type} />
       <RatingBadge rating={rating} />
+      {artifact &&
+      "release" in artifact.root &&
+      artifact.root.release === selected?.id &&
+      artifact.root.semantic_digest === selected.semantic_digest &&
+      artifact.capabilities.some((capability) => capability.experimental) ? (
+        <Badge variant="neutral">
+          <TriangleAlert aria-hidden />
+          Experimental capabilities
+        </Badge>
+      ) : null}
       {license ? (
         <Badge variant="neutral" className="font-mono font-medium">
           {license}
         </Badge>
       ) : null}
-      {ir?.meta.content_warnings.map((w) => (
+      {artifact?.meta.content_warnings.map((w) => (
         <Badge key={w} variant="neutral" className="font-medium">
           <TriangleAlert aria-hidden />
           <UserText text={w} />
@@ -162,7 +174,7 @@ function Actions() {
   const keepV = c.v ? { v: c.v } : {};
   return (
     <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-      {isOwner ? (
+      {c.canEdit ? (
         <Link
           to="/c/$ns/$name/edit"
           params={{ ns, name }}
@@ -184,6 +196,7 @@ function Actions() {
           <ScanEye aria-hidden /> Preview context
         </Link>
       ) : null}
+      {usable && c.artifact?.kind === "content" ? <RuntimeLaunch artifact={c.artifact} /> : null}
       <DownloadMenu
         key={String(c.me?.id) + label}
         ns={ns}
@@ -199,6 +212,15 @@ function Actions() {
         }
         className="order-first flex-1 sm:flex-none lg:order-none"
       />
+      {usable ? (
+        <DeriveCreation
+          artifact={c.artifact}
+          release={selected}
+          sourceName={localized(detail.display_name)}
+          sourceType={detail.type}
+          allowMature={c.allowMature}
+        />
+      ) : null}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button

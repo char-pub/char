@@ -32,6 +32,7 @@ import type {
   Selector,
   Visibility,
 } from "../schema/creation.js";
+import { buildIdentity } from "../schema/identity.js";
 import type { IRContent, IRFragment, IRVisibility, Origin } from "../schema/ir.js";
 import { type RawTemplate, renderTemplate, tokenizeTemplate } from "../template.js";
 import { type Environment, type InstanceEnv, pickLocalized } from "./env.js";
@@ -39,7 +40,7 @@ import type { GraphInstance } from "./graph.js";
 
 export interface RemovedFragment {
   id: string;
-  by: { creation: string; edge?: string; reason: "select" | "override" };
+  by: { creation: string; edge?: string; cast?: string; reason: "select" | "override" };
 }
 
 export interface RenderResult {
@@ -87,7 +88,6 @@ export function renderInstance(
   const c = inst.release.creation;
   const edge = inst.parent?.edge;
   const parentRef = inst.parent?.instance.release.ref;
-  const parentType = inst.parent?.instance.release.creation.type;
   const removed: RemovedFragment[] = [];
   let forcedIntrinsic = false;
 
@@ -107,79 +107,99 @@ export function renderInstance(
     order.push(f.id);
   }
 
-  const overrides = edge?.override ?? [];
-  const seenTargets = new Set<string>();
-  for (const o of overrides) {
-    const target = overrideTarget(o);
-    const subject = `${parentRef}/${edge?.id}/override/${target ?? (o.op === "add" ? o.fragment.id : "")}`;
-    if (target !== null) {
-      if (seenTargets.has(target)) {
-        throw new CharError({ code: "resolve.override_duplicate_target", subject });
-      }
-      seenTargets.add(target);
-      const orig = byId.get(target);
-      if (!orig) throw new CharError({ code: "resolve.override_target_missing", subject });
-      if (!orig.stable) {
-        throw new CharError({
-          code: "resolve.override_unstable_target",
-          subject,
-          detail: "only fragments with stable: true can be overridden",
-        });
-      }
-      const w = working.get(target);
-      if (!w) throw new CharError({ code: "resolve.override_target_excluded", subject });
-      if (
-        (o.op === "replace" || o.op === "remove") &&
-        edge?.mode === "intrinsic" &&
-        (orig.kind === "world" || orig.kind === "character")
-      ) {
-        if (parentType !== "scenario" || o.force !== true) {
+  const layers = [
+    { overrides: edge?.override ?? [], declaredBy: inst.parent?.instance, edge, cast: undefined },
+    {
+      overrides: inst.cast?.member.override ?? [],
+      declaredBy: inst.cast?.owner,
+      edge: undefined,
+      cast: inst.cast?.member,
+    },
+  ];
+  for (const layer of layers) {
+    const { overrides, declaredBy } = layer;
+    const by = {
+      creation: declaredBy?.release.ref ?? c.ref,
+      ...(layer.edge ? { edge: layer.edge.id } : {}),
+      ...(layer.cast ? { cast: layer.cast.key } : {}),
+    };
+    const seenTargets = new Set<string>();
+    for (const o of overrides) {
+      const target = overrideTarget(o);
+      const subject = `${by.creation}/${layer.cast ? `cast/${layer.cast.key}` : edge?.id}/override/${target ?? (o.op === "add" ? o.fragment.id : "")}`;
+      if (target !== null) {
+        if (seenTargets.has(target)) {
+          throw new CharError({ code: "resolve.override_duplicate_target", subject });
+        }
+        seenTargets.add(target);
+        const orig = working.get(target)?.fragment ?? byId.get(target);
+        if (!orig) throw new CharError({ code: "resolve.override_target_missing", subject });
+        if (!orig.stable) {
           throw new CharError({
-            code: "resolve.intrinsic_override_forbidden",
+            code: "resolve.override_unstable_target",
             subject,
-            detail: "replacing core world/character content needs a scenario and force: true",
+            detail: "only fragments with stable: true can be overridden",
           });
         }
-        forcedIntrinsic = true;
+        const w = working.get(target);
+        if (!w) throw new CharError({ code: "resolve.override_target_excluded", subject });
+        if (
+          (o.op === "replace" || o.op === "remove") &&
+          edge?.mode === "intrinsic" &&
+          (orig.kind === "world" || orig.kind === "character")
+        ) {
+          if (declaredBy?.release.creation.type !== "scenario" || o.force !== true) {
+            throw new CharError({
+              code: "resolve.intrinsic_override_forbidden",
+              subject,
+              detail: "replacing core world/character content needs a scenario and force: true",
+            });
+          }
+          forcedIntrinsic = true;
+        }
+        if (o.op === "remove") {
+          working.delete(target);
+          order.splice(order.indexOf(target), 1);
+          removed.push({
+            id: irFragmentId(c.ref, target, inst.key),
+            by: { ...by, reason: "override" },
+          });
+        } else if (o.op === "replace") {
+          w.fragment = { ...w.fragment, content: o.content };
+          w.overridden_by.push({ ...by, op: "replace" });
+        } else if (o.op === "patch") {
+          const set = o.set;
+          const next = { ...w.fragment };
+          if (set.description !== undefined) next.description = set.description;
+          if (set.outward !== undefined) next.outward = set.outward;
+          if (set.selectable !== undefined) next.selectable = set.selectable;
+          if (set.activation !== undefined) next.activation = set.activation;
+          if (set.visibility !== undefined) next.visibility = set.visibility;
+          if (set.importance !== undefined) next.importance = set.importance;
+          if (set.placement_hint !== undefined) next.placement_hint = set.placement_hint;
+          w.fragment = next;
+          w.overridden_by.push({ ...by, op: "patch" });
+        }
+        continue;
       }
-      const by = { creation: parentRef ?? c.ref, ...(edge ? { edge: edge.id } : {}) };
-      if (o.op === "remove") {
-        working.delete(target);
-        order.splice(order.indexOf(target), 1);
-        removed.push({
-          id: irFragmentId(c.ref, target, inst.key),
-          by: { ...by, reason: "override" },
-        });
-      } else if (o.op === "replace") {
-        w.fragment = { ...w.fragment, content: o.content };
-        w.overridden_by.push({ ...by, op: "replace" });
-      } else if (o.op === "patch") {
-        const set = o.set;
-        const next = { ...w.fragment };
-        if (set.activation !== undefined) next.activation = set.activation;
-        if (set.visibility !== undefined) next.visibility = set.visibility;
-        if (set.importance !== undefined) next.importance = set.importance;
-        if (set.placement_hint !== undefined) next.placement_hint = set.placement_hint;
-        w.fragment = next;
-        w.overridden_by.push({ ...by, op: "patch" });
+      if (o.op !== "add") continue;
+      const id = o.fragment.id;
+      if (byId.has(id) || working.has(id)) {
+        throw new CharError({ code: "resolve.override_add_collision", subject });
       }
-      continue;
+      const { digest: _d, ...body } = o.fragment;
+      working.set(id, {
+        fragment: body,
+        overridden_by: [
+          {
+            ...by,
+            op: "add",
+          },
+        ],
+      });
+      order.push(id);
     }
-    if (o.op !== "add") continue;
-    const id = o.fragment.id;
-    if (byId.has(id) || working.has(id)) {
-      throw new CharError({ code: "resolve.override_add_collision", subject });
-    }
-    const { digest: _d, ...body } = o.fragment;
-    working.set(id, {
-      fragment: body,
-      overridden_by: [
-        { creation: parentRef ?? c.ref, ...(edge ? { edge: edge.id } : {}), op: "add" },
-      ],
-    });
-    order.push(id);
   }
-
   const fragments: IRFragment[] = [];
   for (const id of order) {
     const w = working.get(id);
@@ -223,10 +243,62 @@ function renderFragment(
       ? ienv.participant
       : undefined;
   const asset_refs = f.asset_refs?.map((r) => renderAssetRef(r, ctx, true));
+  const perspective =
+    typeof f.perspective === "object"
+      ? "claim" in f.perspective
+        ? { claim: participantRef(speakerKey(f.perspective.claim, ctx)) }
+        : { belief: participantRef(speakerKey(f.perspective.belief, ctx)) }
+      : f.perspective;
+  let style_scope: IRFragment["style_scope"];
+  let style_use: IRFragment["style_use"];
+  if (c.type === "style") {
+    let outer = inst;
+    const path: NonNullable<IRFragment["style_use"]>["path"] = [];
+    while (outer.parent?.instance.release.creation.type === "style") {
+      const { instance: owner, edge } = outer.parent;
+      path.unshift({
+        owner: owner.key,
+        order: owner.release.creation.references.findIndex((r) => r.id === edge.id),
+        combine: edge.combine ?? "add",
+      });
+      outer = owner;
+    }
+    const parent = outer.parent?.instance;
+    const edge = outer.parent?.edge;
+    const scope = edge?.scope;
+    const parentEnv = parent ? env.envs.get(parent) : undefined;
+    style_scope = "narration";
+    if (scope && typeof scope === "object") {
+      if ("scene" in scope) style_scope = { scene: scope.scene, owner: parent?.key ?? "root" };
+      else {
+        const participant = parentEnv?.cast.get(scope.cast)?.participant;
+        if (!participant)
+          throw new CharError({ code: "resolve.style_cast_missing", subject: scope.cast });
+        style_scope = { participant };
+      }
+    } else if (parentEnv?.participant) style_scope = { participant: parentEnv.participant };
+    style_use = {
+      owner: parent?.key ?? "root",
+      order: Math.max(
+        0,
+        parent?.release.creation.references.findIndex((r) => r.id === edge?.id) ?? 0,
+      ),
+      combine: edge?.combine ?? "add",
+      ...(path.length ? { path } : {}),
+    };
+  }
 
   const semantic = {
     kind: f.kind,
     content,
+    ...(f.description !== undefined ? { description: f.description } : {}),
+    ...(f.selectable !== undefined ? { selectable: f.selectable } : {}),
+    ...(f.outward !== undefined ? { outward: f.outward } : {}),
+    ...(perspective !== undefined ? { perspective } : {}),
+    ...(f.about !== undefined ? { about: f.about } : {}),
+    ...(f.source !== undefined ? { source: f.source } : {}),
+    ...(inst.cast ? { instance: inst.cast.member.key } : {}),
+    ...(style_scope ? { style_scope, style_use } : {}),
     ...(locales ? { locales } : {}),
     activation,
     visibility,
@@ -238,7 +310,7 @@ function renderFragment(
 
   const origin: Origin = {
     creation: c.ref,
-    release: inst.release.release,
+    ...buildIdentity(inst.release.identity),
     fragment: f.id,
     via: inst.via,
     instance_key: inst.key,
@@ -312,6 +384,13 @@ function renderText0(
         return pickLocalized(c.display_name, locale, c.meta.default_locale);
       case "user":
         return markLate(ctx, USER_LATE_SLOT);
+      case "cast": {
+        const value = ctx.ienv.cast.get(tok.name);
+        if (!value) throw new CharError({ code: "resolve.unknown_cast", subject: tok.name });
+        return value.kind === "late"
+          ? markLate(ctx, value.late)
+          : pickLocalized(value.display_name, locale, c.meta.default_locale);
+      }
       case "slot": {
         const v = ctx.ienv.slots.get(tok.name);
         if (!v) {
@@ -408,12 +487,18 @@ export function speakerKey(speaker: string, ctx: RenderCtx): string {
     return v.participant;
   }
   if (speaker === c.ref && ienv.participant) return ienv.participant;
+  const candidates = new Set<string>();
   for (const v of [...ienv.slots.values(), ...ienv.cast.values()]) {
-    if (v.kind === "early" && v.ref === speaker && v.participant) return v.participant;
+    if (v.kind === "early" && v.ref === speaker && v.participant) candidates.add(v.participant);
   }
-  for (const p of env.participants.values()) {
-    if (p.ref === speaker) return p.key;
-  }
+  for (const key of env.participantsFor(ienv.inst, speaker)) candidates.add(key);
+  if (candidates.size > 1)
+    throw new CharError({
+      code: "resolve.ambiguous_participant",
+      subject: ctx.fragmentId,
+      detail: `${speaker} names multiple participants; use an explicit cast or slot reference`,
+    });
+  for (const key of candidates) return key;
   throw new CharError({
     code: "resolve.speaker_unknown",
     subject: ctx.fragmentId,
@@ -423,6 +508,7 @@ export function speakerKey(speaker: string, ctx: RenderCtx): string {
 
 function renderVisibility(v: Visibility, ctx: RenderCtx): IRVisibility {
   if (v.scope === "shared") return { scope: "shared" };
+  if (v.scope === "story-scene") return { scope: "story-scene", scene: v.scene };
   if (v.scope === "private") {
     const keys = [...new Set(v.to.map((s) => participantRef(speakerKey(s, ctx))))].sort(
       compareStrings,

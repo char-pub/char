@@ -6,7 +6,10 @@ import type { Hono } from "hono";
 import type { Env } from "../app.js";
 import { register as creations } from "./creations.js";
 import { register as deletionRequests } from "./deletion-requests.js";
+import { register as derivations } from "./derivations.js";
+import { register as draftBuilds } from "./draft-builds.js";
 import { register as drafts } from "./drafts.js";
+import { register as favorites } from "./favorites.js";
 import { register as guests } from "./guests.js";
 import { register as imports } from "./imports.js";
 import { register as me } from "./me.js";
@@ -17,11 +20,14 @@ import { register as tokens } from "./tokens.js";
 export const REGISTRY_WRITE_MODULES: readonly ((app: Hono<Env>) => void)[] = [
   namespaces,
   creations,
+  derivations,
   drafts,
+  draftBuilds,
   publish,
   tokens,
   guests,
   imports,
   me,
+  favorites,
   deletionRequests,
 ];

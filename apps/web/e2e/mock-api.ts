@@ -150,3 +150,12 @@ export function creationDetail(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
+
+export const OWNER_PERMISSIONS = {
+  read_draft: true,
+  edit: true,
+  publish: true,
+  update_sensitive: true,
+  manage_source: true,
+  manage_collaborators: true,
+};

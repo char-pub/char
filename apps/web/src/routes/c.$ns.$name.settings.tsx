@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CreationCollaborators } from "@/components/collaboration";
 import { useCreation } from "@/components/creation-context";
 import { FactCard } from "@/components/creation-facts";
 import { ContributionPolicySettings } from "@/components/creation-settings";
@@ -22,6 +23,9 @@ function SettingsTab() {
       {/* 不按 policy 重新挂载：保存后刷新作品数据时，正在输入的邀请不能被清空。 */}
       <ContributionPolicySettings ns={c.ns} name={c.name} policy={c.detail.contribution_policy} />
       <SourceBindingSettings ns={c.ns} name={c.name} />
+      {c.detail.permissions?.manage_collaborators ? (
+        <CreationCollaborators ns={c.ns} name={c.name} />
+      ) : null}
       <FactCard id="settings-danger" title="Danger zone" className="space-y-3 px-6 py-5">
         <p className="-mt-2 text-sm text-text-2">
           Releases are permanent. You can yank a version from the Versions tab, or ask us to remove

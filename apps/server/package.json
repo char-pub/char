@@ -9,9 +9,10 @@
     "db:migrate": "node dist/db/migrate.js"
   },
   "dependencies": {
-    "@char-pub/assembler": "workspace:*",
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/s3-request-presigner": "catalog:",
+    "@better-auth/oauth-provider": "1.7.5",
+    "@char-pub/assembler": "workspace:*",
     "@char-pub/ccv3": "workspace:*",
     "@char-pub/cli": "workspace:*",
     "@char-pub/contracts": "workspace:*",

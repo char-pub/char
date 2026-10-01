@@ -36,6 +36,7 @@ const CONTENT = path.join(ROOT, "content", "commons");
 const LABEL = "1.0.0";
 const LICENSE = "CC0-1.0";
 const AUTHOR = "char.pub commons";
+const DEFAULT_POLICY = "@commons/default-preset";
 /** 正文中不应出现的内容：链接与邮箱地址。 */
 const FORBIDDEN_TEXT = [/https?:\/\//i, /\bwww\./i, /[\w.+-]+@[\w-]+\.[\w.]+/];
 
@@ -104,6 +105,8 @@ function policyIssues(c: CanonicalCreation): string[] {
   if (!(c.authors ?? []).some((a) => a.name === AUTHOR))
     out.push(`policy authors must include ${AUTHOR}`);
   const texts: [string, string][] = [];
+  for (const block of c.policy?.blocks ?? c.prompt_module?.blocks ?? [])
+    texts.push([`block ${block.id}`, block.text]);
   for (const f of c.fragments) {
     if (f.content.type === "text") texts.push([f.id, f.content.text]);
     if (f.content.type === "dialogue") for (const t of f.content.turns) texts.push([f.id, t.text]);
@@ -126,6 +129,15 @@ function topoSort(entries: Map<string, Entry>): string[] {
       throw new Error(`dependency cycle: ${[...trail, ref].join(" → ")}`);
     state.set(ref, "visiting");
     const e = entries.get(ref);
+    if (
+      e &&
+      e.creation.type !== "preset" &&
+      e.creation.type !== "prompt-module" &&
+      !e.creation.assembly
+    ) {
+      if (!entries.has(DEFAULT_POLICY)) throw new Error("Missing Commons default preset");
+      visit(DEFAULT_POLICY, [...trail, ref]);
+    }
     for (const edge of e?.creation.references ?? []) {
       const dep = refOf(edge.use, ref);
       if (!entries.has(dep))
@@ -166,12 +178,22 @@ export async function checkCommons(): Promise<Result[]> {
       if (dep) edge.pin = { release: dep.release, semantic_digest: dep.semantic_digest };
     }
     const release = localReleaseId(ref);
+    const defaultPolicy = published.get(DEFAULT_POLICY);
     const report = checkPublish({
       release,
       label: LABEL,
       visibility: "public",
       creation: raw,
       dependencies: [...published.values()],
+      ...(defaultPolicy
+        ? {
+            default_policy: {
+              ref: DEFAULT_POLICY,
+              release: defaultPolicy.release,
+              semantic_digest: defaultPolicy.semantic_digest,
+            },
+          }
+        : {}),
       registry: {
         existingLabels: {},
         assetStatus: {},

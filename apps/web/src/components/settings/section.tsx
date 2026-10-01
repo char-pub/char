@@ -2,7 +2,7 @@
  * 设置页的分区：左侧导航（锚点）和右侧一块块分区卡片。
  */
 import { useRouterState } from "@tanstack/react-router";
-import { AtSign, Database, Eye, KeyRound, LogIn } from "lucide-react";
+import { AtSign, Blocks, Database, Eye, KeyRound, LogIn, Plug } from "lucide-react";
 import type * as React from "react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,8 @@ export const SETTINGS_SECTIONS = [
   { id: "profile", label: "Profile", icon: AtSign },
   { id: "content", label: "Content", icon: Eye },
   { id: "tokens", label: "API tokens", icon: KeyRound },
+  { id: "connected-apps", label: "Connected apps", icon: Plug },
+  { id: "developer-clients", label: "Developer clients", icon: Blocks },
   { id: "sign-in", label: "Sign-in methods", icon: LogIn },
   { id: "data", label: "Your data", icon: Database },
 ] as const;

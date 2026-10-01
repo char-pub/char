@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://char.pub/schema/v1-draft/catalog-index.schema.json",
+  "title": "char.pub Published Catalog Index",
+  "type": "object",
+  "properties": {
+    "about": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "work": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "work"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "fragment": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "fragment"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "participant": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "participant"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "from",
+          "ref",
+          "target"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "works": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instance": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "fragments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "ref",
+          "instance",
+          "title",
+          "fragments",
+          "groups",
+          "sources"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "local_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "owner",
+          "local_id",
+          "title",
+          "entries",
+          "groups"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "local_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "description": {
+            "$ref": "#/$defs/LocalizedText"
+          },
+          "asset": {
+            "type": "string",
+            "minLength": 1
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "markdown",
+              "text"
+            ]
+          },
+          "shared": {
+            "type": "boolean"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "$ref": "#/$defs/LocalizedText"
+                },
+                "description": {
+                  "$ref": "#/$defs/LocalizedText"
+                },
+                "anchor": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "anchor"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "owner",
+          "local_id",
+          "title",
+          "asset",
+          "format",
+          "shared",
+          "sections"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "works",
+    "groups",
+    "sources"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "LocalizedText": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Locale"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ]
+    },
+    "Locale": {
+      "type": "string",
+      "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$"
+    }
+  }
+}

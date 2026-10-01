@@ -14,6 +14,8 @@ import {
   releases,
 } from "../db/schema/index.js";
 
+import { collaborationAccess } from "./collaboration-access.js";
+
 export type NamespaceRow = typeof namespaces.$inferSelect;
 export type CreationRow = typeof creations.$inferSelect;
 
@@ -42,7 +44,7 @@ export function namespaceContext(
   ns: NamespaceRow,
   role: NamespaceContext["role"],
 ): NamespaceContext {
-  return { namespace_id: ns.id, status: ns.status, role };
+  return { namespace_id: ns.id, kind: ns.kind, status: ns.status, role };
 }
 
 export async function lookupNamespace(
@@ -105,6 +107,7 @@ export async function lookupCreation(
     resource: {
       type: "creation",
       id: creation.id,
+      collaborator: await collaborationAccess(db, creation.id, principal),
       ns: lookup.ctx,
       has_public_release: pub !== undefined,
       status: creation.status,

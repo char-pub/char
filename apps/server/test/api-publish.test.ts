@@ -21,6 +21,7 @@ import {
 } from "../src/db/schema/index.js";
 import { casKey } from "../src/storage/cas.js";
 import { type ApiHarness, createHarness } from "./api-harness.js";
+import { grantUploadedAsset } from "./fixtures/asset-upload.js";
 import { BUCKETS } from "./global-setup.js";
 import { createTestDatabase, type TestDatabase, testCas, testStorageEnv } from "./helpers.js";
 
@@ -42,6 +43,7 @@ async function readyAvatar(seed: string) {
     .insert(assetMeta)
     .values({ digest: put.digest, width: 256, height: 256, mediaType: "image/webp" })
     .onConflictDoNothing();
+  await grantUploadedAsset(t.app.db, alice, put);
   return { digest: put.digest, size: bytes.length };
 }
 
@@ -342,13 +344,21 @@ describe("dependencies", () => {
       .select()
       .from(releaseLocks)
       .where(eq(releaseLocks.releaseId, bobRel.releases.id));
-    expect(locks).toHaveLength(1);
-    expect(locks[0]?.via).toEqual(["lives-in"]);
+    expect(locks).toHaveLength(2);
+    expect(locks.map((lock) => lock.via)).toEqual(
+      expect.arrayContaining([["lives-in"], ["default_policy"]]),
+    );
     const rev = await t.app.db
       .select()
       .from(reverseEdges)
       .where(eq(reverseEdges.dependentReleaseId, bobRel.releases.id));
-    expect(rev.map((r) => [r.mode, r.rel])).toEqual([["intrinsic", null]]);
+    expect(rev.map((r) => [r.mode, r.rel])).toEqual(
+      expect.arrayContaining([
+        ["intrinsic", null],
+        ["intrinsic", "default_policy"],
+      ]),
+    );
+    expect(rev).toHaveLength(2);
     const frags = await t.app.db
       .select()
       .from(releaseFragments)

@@ -5,6 +5,8 @@
  * 都在发布时物化，这样"谁依赖了它"和"下架某个 fragment 会影响哪些 Release"
  * 都能直接查表回答，不需要递归解析。
  */
+
+import type { ExactRef } from "@char-pub/core";
 import { sql } from "drizzle-orm";
 import {
   bigint,
@@ -61,8 +63,10 @@ export const releases = app.table(
     lockDigest: text("lock_digest"),
     snapshotDigest: text("snapshot_digest"),
     contextIrDigest: text("context_ir_digest"),
-    /** 统一内容或策略产物；旧 Release 可按快照按需重建。 */
+    /** Unified artifact; rebuilding requires a complete fixed snapshot, including policy. */
     artifactDigest: text("artifact_digest"),
+    /** Fixed when the publish request is created; retries never select a newer policy. */
+    defaultPolicy: jsonb("default_policy").$type<ExactRef>(),
     availability: releaseAvailabilityEnum("availability"),
     effectiveRating: ratingEnum("effective_rating"),
     licenseCheck: licenseCheckEnum("license_check"),
@@ -100,7 +104,7 @@ export const releaseLocks = app.table(
     semanticDigest: text("semantic_digest").notNull(),
     via: jsonb("via").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.releaseId, t.depCreationId] })],
+  (t) => [primaryKey({ columns: [t.releaseId, t.depReleaseId] })],
 );
 
 /** 反向依赖：发布时写入，用来回答"谁用了这个 Creation"。 */
@@ -141,7 +145,7 @@ export const releaseFragments = app.table(
     digest: text("digest").notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.releaseId, t.ownerRef, t.fragmentId] }),
+    primaryKey({ columns: [t.releaseId, t.ownerRef, t.fragmentId, t.digest] }),
     index("release_fragments_digest_idx").on(t.digest),
   ],
 );
@@ -226,8 +230,8 @@ export const uploads = app.table(
 
 export const assetMeta = app.table("asset_meta", {
   digest: text("digest").primaryKey(),
-  width: integer("width").notNull(),
-  height: integer("height").notNull(),
+  width: integer("width"),
+  height: integer("height"),
   mediaType: text("media_type").notNull(),
   scanStatus: scanStatusEnum("scan_status").notNull().default("not_scanned"),
   scanProvider: text("scan_provider"),

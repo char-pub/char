@@ -66,6 +66,15 @@ export type IRFragmentSemantic = Pick<
   | "placement_hint"
   | "subject"
   | "asset_refs"
+  | "description"
+  | "selectable"
+  | "outward"
+  | "perspective"
+  | "about"
+  | "source"
+  | "instance"
+  | "style_scope"
+  | "style_use"
 >;
 
 /**
@@ -84,5 +93,19 @@ export function irFragmentDigest(f: IRFragmentSemantic): Digest {
   if (f.locales !== undefined) body.locales = f.locales as JSONValue;
   if (f.subject !== undefined) body.subject = f.subject;
   if (f.asset_refs !== undefined) body.asset_refs = f.asset_refs;
+  for (const key of [
+    "description",
+    "selectable",
+    "outward",
+    "perspective",
+    "about",
+    "source",
+    "instance",
+    "style_scope",
+    "style_use",
+  ] as const) {
+    const value = f[key];
+    if (value !== undefined) body[key] = value as JSONValue;
+  }
   return digestJson(body);
 }

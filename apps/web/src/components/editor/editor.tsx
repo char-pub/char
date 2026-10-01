@@ -7,85 +7,57 @@
  *   折叠区；
  * - 右侧常驻检查栏 “Before you publish” 和 “Next release”，窄屏时排到表单下方。
  *
- * 修改会自动保存；草稿在别处被改过时停止自动保存，提示重新加载或复制自己的版本。
+ * 修改会自动保存；草稿在别处被改过时停止自动保存，按对象比较并重新应用本地修改。
  */
-import type { ReleaseSummary } from "@char-pub/contracts";
+import type { CreationPermissions, ReleaseSummary } from "@char-pub/contracts";
 import type { CreationType } from "@char-pub/core";
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft, GitCompareArrows, Rocket, ScanEye } from "lucide-react";
-import { type ComponentProps, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useBlocker } from "@tanstack/react-router";
+import { ArrowLeft, Rocket, ScanEye } from "lucide-react";
+import { type ComponentProps, useCallback, useEffect, useRef, useState } from "react";
 import { Container } from "@/components/layout";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
-import type { Draft } from "@/lib/api";
+import type { Draft, Me } from "@/lib/api";
 import { getFragments, getName, getReferences, type Working } from "@/lib/draft";
 import { suggestLabel } from "@/lib/publish";
-import { useMe, useRegistry } from "@/lib/registry";
+import { keys, useMe, useRegistry } from "@/lib/registry";
 import { useDraftEditor } from "@/lib/use-draft-editor";
-import { ANCHOR, mainFragmentId, type SectionKey, scrollToAnchor, type Target } from "./anchors";
+import {
+  ANCHOR,
+  type EditorNavigation,
+  mainFragmentId,
+  type SectionKey,
+  scrollToAnchor,
+  type Target,
+  targetOf,
+} from "./anchors";
 import { AssemblyEditor, AuthorTestsEditor } from "./assembly-editor";
+import { AuthorAssistance } from "./author-assistance";
 import { BasicsFields } from "./basics-fields";
 import { buildChecks, ChecksPanel, NextRelease } from "./checks-panel";
 import { CompositionEditor } from "./composition-editor";
+import { ContentGroups } from "./content-groups";
 import { DiagnosticList } from "./diagnostics";
+import { ConflictNotice } from "./draft-conflict";
+import { DraftOrigin } from "./draft-origin";
 import { DraftPreview } from "./draft-preview";
+import { FragmentsEditor } from "./fragments-editor";
 import { MoreOptions } from "./more-options";
 import { PolicyEditor } from "./policy-editor";
 import { PublishDialog } from "./publish-panel";
 import { SaveStatus } from "./save-status";
-
-export function ConflictNotice({
-  onReload,
-  working,
-}: {
-  onReload: () => Promise<void>;
-  working: Working;
-}) {
-  const [busy, setBusy] = useState(false);
-  return (
-    <div
-      role="alertdialog"
-      aria-labelledby="conflict-h"
-      aria-describedby="conflict-d"
-      className="space-y-3 rounded-xl border border-danger/40 bg-danger-soft p-5"
-    >
-      <h2 id="conflict-h" className="flex items-center gap-2 font-bold text-danger">
-        <GitCompareArrows aria-hidden className="size-4" />
-        This draft was changed somewhere else
-      </h2>
-      <p id="conflict-d" className="text-sm text-text">
-        Someone — maybe you, in another tab — saved a newer version. Your latest edits here were not
-        saved, and saving is paused. Reload to continue from the newer version; copy your version
-        first if you want to keep it.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          disabled={busy}
-          onClick={() => {
-            setBusy(true);
-            void onReload().finally(() => setBusy(false));
-          }}
-        >
-          Reload the latest draft
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            const text = JSON.stringify(working, null, 2);
-            void navigator.clipboard
-              ?.writeText(text)
-              .then(() => toast.success("Copied your version to the clipboard."))
-              .catch(() =>
-                toast.error("Couldn't copy. Select the text in another editor instead."),
-              );
-          }}
-        >
-          Copy my version
-        </Button>
-      </div>
-    </div>
-  );
-}
+import { SourcesEditor } from "./sources-editor";
+import { StoryWorkspace } from "./story-workspace";
 
 /**
  * 草稿里是否已经用到了第一层之外的内容：除第一层的正文之外还有其他 fragment，或者有依赖。
@@ -126,6 +98,7 @@ function EditorSession({
   existingLabels,
   releases = [],
   latestPublicLabel,
+  permissions,
 }: {
   ns: string;
   name: string;
@@ -135,10 +108,42 @@ function EditorSession({
   releases?: readonly ReleaseSummary[];
   /** 最新的 public 版本：Preview context 和已发布头像的预览用它。 */
   latestPublicLabel?: string | undefined;
+  permissions?: CreationPermissions | undefined;
 }) {
   const client = useRegistry();
-  const ed = useDraftEditor(client, ns, name, draft);
+  const queryClient = useQueryClient();
+  const actor = useMe().data?.id;
+  const ed = useDraftEditor(client, ns, name, draft, {
+    isCurrent: () => queryClient.getQueryData<Me | null>(keys.me)?.id === actor,
+  });
   const [open, setOpen] = useState(() => initialSections(draft.working as Working, type));
+  const [navigation, setNavigation] = useState<EditorNavigation>();
+  const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const pendingRef = useRef(pendingKeys);
+  pendingRef.current = pendingKeys;
+  const onPendingChange = useCallback((key: string, pending: boolean) => {
+    setPendingKeys((previous) => {
+      if (previous.has(key) === pending) return previous;
+      const next = new Set(previous);
+      if (pending) next.add(key);
+      else next.delete(key);
+      pendingRef.current = next;
+      return next;
+    });
+  }, []);
+  const pendingReason = pendingKeys.size
+    ? "Apply or discard structured-data edits before building, testing or publishing."
+    : undefined;
+  const saveSnapshot = () => (pendingRef.current.size ? Promise.resolve(null) : ed.flushSnapshot());
+  const blocker = useBlocker({
+    shouldBlockFn: () => pendingRef.current.size > 0,
+    enableBeforeUnload: pendingKeys.size > 0,
+    withResolver: true,
+  });
+  useEffect(() => {
+    if (navigation && !navigation.storyView && !navigation.contentSelection)
+      scrollToAnchor(navigation.anchor);
+  }, [navigation]);
   const [publishOpen, setPublishOpen] = useState(false);
   const errors = ed.state.kind === "invalid" ? ed.state.diagnostics : [];
   const diagnostics = [...errors, ...ed.warnings];
@@ -146,13 +151,16 @@ function EditorSession({
   const displayName = getName(ed.working).trim();
   const newest = newestRelease(releases);
   const blocked =
-    ed.state.kind === "conflict"
-      ? "Reload the draft before publishing."
-      : ed.state.kind === "invalid"
-        ? "Fix the errors in the draft before publishing."
-        : displayName === ""
-          ? "Give it a name before publishing."
-          : null;
+    pendingReason ??
+    (ed.state.kind === "denied"
+      ? "Your access changed. Copy your edits before leaving."
+      : ed.state.kind === "conflict"
+        ? "Resolve the draft changes before publishing."
+        : ed.state.kind === "invalid"
+          ? "Fix the errors in the draft before publishing."
+          : displayName === ""
+            ? "Give it a name before publishing."
+            : null);
   const checks = buildChecks({
     type,
     working: ed.working,
@@ -171,11 +179,26 @@ function EditorSession({
   const locate = (t: Target) => {
     const section = t.section;
     if (section) setOpen((s) => new Set(s).add(section));
-    scrollToAnchor(t.anchor);
+    setNavigation((previous) => ({ ...t, request: (previous?.request ?? 0) + 1 }));
   };
 
   return (
     <div className="flex flex-1 flex-col">
+      <AlertDialog open={blocker.status === "blocked"}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Leave unapplied data edits?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Your JSON buffer has not been applied to the draft. Leaving discards that buffer.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => blocker.reset?.()}>Stay and edit</AlertDialogCancel>
+            <AlertDialogAction variant="destructive-solid" onClick={() => blocker.proceed?.()}>
+              Discard buffer and leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {draft.unconfirmed_import ? (
         <Container className="py-4">
           <div role="status" className="rounded-lg bg-warning-soft p-4 text-sm">
@@ -209,6 +232,11 @@ function EditorSession({
             </p>
           </div>
           <SaveStatus state={ed.state} />
+          {pendingReason ? (
+            <p role="status" className="text-xs text-warning">
+              Unapplied data edits
+            </p>
+          ) : null}
           <div className="flex items-center gap-2">
             {latestPublicLabel ? (
               <Link
@@ -220,18 +248,38 @@ function EditorSession({
                 <ScanEye aria-hidden /> Preview context
               </Link>
             ) : null}
-            <Button onClick={() => setPublishOpen(true)}>
-              <Rocket aria-hidden /> Publish…
-            </Button>
+            {permissions?.publish ? (
+              <Button disabled={!!pendingReason} onClick={() => setPublishOpen(true)}>
+                <Rocket aria-hidden /> Publish…
+              </Button>
+            ) : null}
           </div>
         </Container>
       </div>
 
       <Container className="grid flex-1 gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8 lg:py-8">
         <div className="min-w-0 space-y-6">
-          {ed.state.kind === "conflict" ? (
-            <ConflictNotice onReload={ed.reload} working={ed.working} />
+          <DraftOrigin working={ed.working} />
+          {ed.state.kind === "denied" ? (
+            <div role="alert" className="space-y-3 rounded-xl bg-danger-soft p-5">
+              <p>
+                Saving has stopped because your access changed. Your unsaved edits are kept here.
+                Copy them before leaving, then ask the owner to review your access.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  void navigator.clipboard
+                    ?.writeText(JSON.stringify(ed.working, null, 2))
+                    .then(() => toast.success("Copied your version."))
+                    .catch(() => toast.error("Could not copy your version."))
+                }
+              >
+                Copy my version
+              </Button>
+            </div>
           ) : null}
+          {ed.state.kind === "conflict" ? <ConflictNotice editor={ed} /> : null}
           {ed.state.kind === "invalid" ? (
             <div role="alert" className="space-y-2 rounded-xl bg-warning-soft p-4">
               <p className="text-sm font-medium text-warning">
@@ -263,23 +311,88 @@ function EditorSession({
             />
           </section>
 
+          <AuthorAssistance
+            working={ed.working}
+            update={ed.update}
+            blockedReason={
+              pendingReason ??
+              (ed.state.kind === "denied"
+                ? "Your access changed. Keep a copy of your edits before leaving."
+                : ed.state.kind === "conflict"
+                  ? "Resolve the draft conflict before applying assisted content."
+                  : undefined)
+            }
+          />
+          {type === "scenario" ? (
+            <StoryWorkspace working={ed.working} update={ed.update} navigation={navigation} />
+          ) : null}
           {type === "preset" || type === "prompt-module" ? (
             <PolicyEditor
               working={ed.working}
               update={ed.update}
               module={type === "prompt-module"}
             />
+          ) : type === "scenario" ? (
+            <details className="rounded-xl border bg-surface p-5">
+              <summary className="cursor-pointer text-lg font-semibold">
+                Story settings: cast, bindings and presets
+              </summary>
+              <CompositionEditor type={type} working={ed.working} update={ed.update} />
+              <AssemblyEditor working={ed.working} update={ed.update} />
+            </details>
           ) : (
             <CompositionEditor type={type} working={ed.working} update={ed.update} />
           )}
-          {type === "scenario" ? <AssemblyEditor working={ed.working} update={ed.update} /> : null}
-          {type === "scenario" || type === "preset" ? (
-            <AuthorTestsEditor working={ed.working} update={ed.update} />
+          {type !== "prompt-module" ? (
+            <AuthorTestsEditor
+              ns={ns}
+              name={name}
+              save={saveSnapshot}
+              working={ed.working}
+              update={ed.update}
+            />
           ) : null}
 
-          <DraftPreview working={ed.working} />
+          {type === "world" || type === "lorebook" ? (
+            <div id={ANCHOR.passages}>
+              <ContentGroups
+                navigation={navigation}
+                working={ed.working}
+                update={ed.update}
+                renderEntries={(ids, onNavigate) => (
+                  <FragmentsEditor
+                    onPendingChange={onPendingChange}
+                    type={type}
+                    working={ed.working}
+                    update={ed.update}
+                    diagnostics={diagnostics}
+                    visibleIds={ids}
+                    onNavigate={onNavigate}
+                  />
+                )}
+              />
+            </div>
+          ) : null}
+          <SourcesEditor working={ed.working} update={ed.update} />
+
+          {pendingReason ? <p role="status">{pendingReason}</p> : null}
+          <DraftPreview
+            blockedReason={pendingReason}
+            onLocateSource={(subject) => {
+              const target = targetOf(subject, type, ed.working);
+              if (target) locate(target);
+            }}
+            ns={ns}
+            name={name}
+            working={ed.working}
+            update={ed.update}
+            save={saveSnapshot}
+          />
 
           <MoreOptions
+            navigation={navigation}
+            onPendingChange={onPendingChange}
+            canUpdateSensitive={permissions?.update_sensitive === true}
             self={`@${ns}/${name}`}
             type={type}
             working={ed.working}
@@ -291,30 +404,47 @@ function EditorSession({
         </div>
 
         <aside aria-label="Checks" className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <ChecksPanel items={checks} onLocate={locate} />
-          <NextRelease
-            ns={ns}
-            name={name}
-            suggested={suggestLabel(existingLabels)}
-            latest={newest}
+          <ChecksPanel
+            items={checks}
+            onLocate={locate}
+            canPublish={permissions?.publish === true}
           />
+          {permissions?.publish ? (
+            <NextRelease
+              ns={ns}
+              name={name}
+              suggested={suggestLabel(existingLabels)}
+              latest={newest}
+            />
+          ) : null}
         </aside>
       </Container>
 
-      <PublishDialog
-        open={publishOpen}
-        onOpenChange={setPublishOpen}
-        ns={ns}
-        name={name}
-        displayName={displayName}
-        existingLabels={existingLabels}
-        basedOn={newest?.label}
-        flush={ed.flush}
-        blocked={blocked}
-        warnings={ed.warnings}
-        references={references}
-        onOpenDependencies={() => locate({ anchor: ANCHOR.dependencies, section: "dependencies" })}
-      />
+      {permissions?.publish ? (
+        <PublishDialog
+          open={publishOpen}
+          onOpenChange={setPublishOpen}
+          ns={ns}
+          name={name}
+          displayName={displayName}
+          existingLabels={existingLabels}
+          basedOn={newest?.label}
+          releases={releases}
+          save={saveSnapshot}
+          working={ed.working}
+          update={ed.update}
+          onLocate={(target) => {
+            setPublishOpen(false);
+            locate(target);
+          }}
+          blocked={blocked}
+          warnings={ed.warnings}
+          references={references}
+          onOpenDependencies={() =>
+            locate({ anchor: ANCHOR.dependencies, section: "dependencies" })
+          }
+        />
+      ) : null}
     </div>
   );
 }

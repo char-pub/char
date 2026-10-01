@@ -2,13 +2,20 @@
  * Overview 标签右侧的事实栏：评级从哪里来、依赖（Built on）、被谁依赖（Used by）、署名与许可、
  * 当前版本的发布信息。页面必须能解释 effective rating 由哪个依赖决定，并列出依赖与署名。
  */
-import type { ContextIR, CreationType } from "@char-pub/core";
+import type { ContextIR, CreationArtifact, CreationType } from "@char-pub/core";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Dependent, ReleaseDetail, ReleaseSummary } from "@/lib/api";
-import { dependenciesOf, MODE_LABEL, nodeOf, ratingReason, relPhrase } from "@/lib/creation-graph";
+import {
+  dependenciesOf,
+  type MetadataSource,
+  MODE_LABEL,
+  nodeOf,
+  ratingReason,
+  relPhrase,
+} from "@/lib/creation-graph";
 import { formatDate, localized, parseRef } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { TYPE_STYLE } from "./badges";
@@ -56,42 +63,53 @@ function ModeBadge({ mode }: { mode: "intrinsic" | "default" }) {
 }
 
 /** 一句话说明评级来源，例如“Mature, because a dependency is rated Mature.” */
-export function ratingSentence(ir: ContextIR, name: string): string {
+export function ratingSentence(ir: MetadataSource, name: string): string {
   const r = ratingReason(ir);
   const label = RATING_LABEL[r.rating];
   const own = r.own && r.own !== r.rating ? ` ${name} on its own is ${RATING_LABEL[r.own]}.` : "";
   if (r.by === "self") return `${label}, as rated by its author.`;
   if (r.by === "dependency") return `${label}, because a dependency is rated ${label}.${own}`;
-  return `${label}, because an image in it is rated ${label}.${own}`;
+  return `${label}, because an asset in it is rated ${label}.${own}`;
 }
 
 /** 遮挡卡片上的一句话：评级由谁决定，例如“Rated Mature because of @vee/afterlife (World).” */
-export function matureReason(ir: ContextIR): string {
-  const r = ratingReason(ir);
+export function matureReason(source: MetadataSource, ir?: ContextIR): string {
+  const r = ratingReason(source);
   const label = RATING_LABEL[r.rating];
   if (r.by === "self") return `Its author rated it ${label}.`;
-  const dep = r.decisive.find((s) => !s.asset && s.ref !== ir.root.ref);
+  const dep = r.decisive.find((s) => !s.asset && s.ref !== source.root.ref);
   if (dep) {
-    const node = nodeOf(ir, dep.ref);
+    const node = ir ? nodeOf(ir, dep.ref) : undefined;
     return `Rated ${label} because of ${dep.ref}${node ? ` (${TYPE_STYLE[node.type].label})` : ""}.`;
   }
-  return `Rated ${label} because of an image in it.`;
+  return `Rated ${label} because of an asset in it.`;
 }
 
-export function WhyThisRating({ ir, name }: { ir: ContextIR; name: string }) {
-  const r = ratingReason(ir);
-  const deps = new Map(dependenciesOf(ir).map((d) => [d.ref, d]));
+export function WhyThisRating({
+  source,
+  ir,
+  name,
+}: {
+  source: MetadataSource;
+  ir?: ContextIR | undefined;
+  name: string;
+}) {
+  const r = ratingReason(source);
+  const deps = new Map((ir ? dependenciesOf(ir) : []).map((d) => [d.ref, d]));
   return (
     <FactCard id="c-rating" title="Why this rating">
-      <p className="text-sm text-text-2">{ratingSentence(ir, name)}</p>
+      <p className="text-sm text-text-2">{ratingSentence(source, name)}</p>
       <ul className="space-y-3">
-        {ir.meta.rating_sources.map((s) => {
-          const node = nodeOf(ir, s.ref);
+        {source.meta.rating_sources.map((s, index) => {
+          const node = ir ? nodeOf(ir, s.ref) : undefined;
           const dep = deps.get(s.ref);
-          const self = s.ref === ir.root.ref;
+          const self = s.ref === source.root.ref;
           const decisive = s.rating === r.rating;
           return (
-            <li key={`${s.ref}:${s.asset ?? ""}`} className="flex items-start gap-2.5 text-sm">
+            <li
+              key={`${s.ref}:${s.asset ?? ""}:${index}`}
+              className="flex items-start gap-2.5 text-sm"
+            >
               {node ? (
                 <span className="mt-1.5">
                   <Dot type={node.type} />
@@ -101,11 +119,11 @@ export function WhyThisRating({ ir, name }: { ir: ContextIR; name: string }) {
                 <span className="block font-mono text-xs break-all">{s.ref}</span>
                 <span className="block text-xs text-text-3">
                   {s.asset
-                    ? `Image · ${s.asset}`
+                    ? `Asset · ${s.asset}`
                     : self
                       ? "This creation"
                       : [
-                          node ? TYPE_STYLE[node.type].label : null,
+                          node ? TYPE_STYLE[node.type].label : "Dependency or source",
                           dep?.mode ? MODE_LABEL[dep.mode] : dep && !dep.direct ? "Indirect" : null,
                         ]
                           .filter(Boolean)
@@ -129,13 +147,19 @@ export function WhyThisRating({ ir, name }: { ir: ContextIR; name: string }) {
 
 /** 依赖闭包里的其他作品；`labels` 把锁定的 Release ID 换成版本号（查不到时显示 ID）。 */
 export function BuiltOn({
+  source,
   ir,
   labels,
 }: {
-  ir: ContextIR;
+  source: Pick<CreationArtifact, "lock">;
+  ir?: ContextIR | undefined;
   labels?: ReadonlyMap<string, string> | undefined;
 }) {
-  const deps = dependenciesOf(ir);
+  const creative = ir ? dependenciesOf(ir) : [];
+  const deps = source.lock.map((lock) => ({
+    ...creative.find((dep) => dep.ref === lock.ref && dep.release === lock.release),
+    ...lock,
+  }));
   return (
     <FactCard id="c-deps" title="Built on">
       {deps.length === 0 ? (
@@ -145,16 +169,23 @@ export function BuiltOn({
           {deps.map((d) => {
             const label = labels?.get(d.release);
             const r = parseRef(d.ref);
-            const name = relPhrase(d.rel, d.name);
+            const name = relPhrase(d.rel, d.name ?? d.ref);
             return (
-              <li key={d.ref} className="flex items-start gap-2.5 text-sm">
-                <span className="mt-1.5">
-                  <Dot type={d.type} />
-                </span>
+              <li key={`${d.ref}:${d.release}`} className="flex items-start gap-2.5 text-sm">
+                {d.type ? (
+                  <span className="mt-1.5">
+                    <Dot type={d.type} />
+                  </span>
+                ) : null}
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium">
-                    {r ? (
-                      <Link to="/c/$ns/$name" params={r} className="hover:underline">
+                    {r && label ? (
+                      <Link
+                        to="/c/$ns/$name"
+                        params={r}
+                        search={label ? { v: label } : {}}
+                        className="hover:underline"
+                      >
                         <UserText text={name} />
                       </Link>
                     ) : (
@@ -177,8 +208,15 @@ export function BuiltOn({
                 {d.mode ? (
                   <ModeBadge mode={d.mode} />
                 ) : (
-                  <Badge variant="outline" title="Pulled in by another dependency">
-                    Indirect
+                  <Badge
+                    variant="outline"
+                    title={
+                      d.direct === false
+                        ? "Pulled in by another dependency"
+                        : "Included in the complete build lock"
+                    }
+                  >
+                    {d.direct === false ? "Indirect" : "Build dependency"}
                   </Badge>
                 )}
               </li>
@@ -279,29 +317,38 @@ function contributorName(c: ContextIR["meta"]["contributors"][number]): string {
 }
 
 /** 署名与许可：自身和每个依赖分开列，贡献者与原作者分开。 */
-export function Credits({ ir }: { ir: ContextIR }) {
-  const assets = ir.meta.licenses.filter((l) => l.asset);
+export function Credits({ source, ir }: { source: MetadataSource; ir?: ContextIR | undefined }) {
+  const assets = source.meta.licenses.filter((l) => l.asset);
   return (
     <FactCard id="c-attr" title="Credits & licenses">
       <ul className="space-y-3">
-        {ir.meta.attribution.map((a) => {
-          const license = ir.meta.licenses.find((l) => l.ref === a.ref && !l.asset);
-          const node = nodeOf(ir, a.ref);
+        {source.meta.attribution.map((a, index) => {
+          const licenses = [
+            ...new Set(
+              source.meta.licenses.filter((l) => l.ref === a.ref && !l.asset).map((l) => l.license),
+            ),
+          ];
+          const node = ir ? nodeOf(ir, a.ref) : undefined;
           const authors =
             a.authors.length > 0 ? a.authors.map((x) => x.name).join(", ") : publisherOf(a.ref);
           return (
-            <li key={a.ref} className="flex items-start justify-between gap-3 text-sm">
+            <li
+              key={`${a.ref}:${index}`}
+              className="flex items-start justify-between gap-3 text-sm"
+            >
               <span className="min-w-0">
                 <span className="block font-medium">
                   <UserText text={authors} />
                 </span>
                 <span className="block text-xs text-text-3">
-                  {a.ref === ir.root.ref ? "Author" : "Author of"}{" "}
+                  {a.ref === source.root.ref ? "Author" : "Author of"}{" "}
                   <UserText text={node?.name ?? a.ref} />
                 </span>
               </span>
-              {license ? (
-                <span className="shrink-0 font-mono text-xs text-text-2">{license.license}</span>
+              {licenses.length ? (
+                <span className="shrink-0 font-mono text-xs text-text-2">
+                  {licenses.join(" · ")}
+                </span>
               ) : null}
             </li>
           );
@@ -309,22 +356,24 @@ export function Credits({ ir }: { ir: ContextIR }) {
       </ul>
       {assets.length > 0 ? (
         <div className="space-y-1 border-t pt-3">
-          <h3 className="text-xs font-semibold text-text-2">Images with their own license</h3>
+          <h3 className="text-xs font-semibold text-text-2">Assets with their own license</h3>
           <ul className="space-y-1 text-xs">
-            {assets.map((l) => (
-              <li key={`${l.ref}:${l.asset}`} className="flex justify-between gap-3">
-                <span className="min-w-0 truncate font-mono text-text-3">{l.asset}</span>
+            {assets.map((l, index) => (
+              <li key={`${l.ref}:${l.asset}:${index}`} className="flex justify-between gap-3">
+                <span className="min-w-0 break-all font-mono text-text-3">
+                  {l.ref} · {l.asset}
+                </span>
                 <span className="shrink-0 font-mono text-text-2">{l.license}</span>
               </li>
             ))}
           </ul>
         </div>
       ) : null}
-      {ir.meta.contributors.length > 0 ? (
+      {source.meta.contributors.length > 0 ? (
         <div className="space-y-1 border-t pt-3">
           <h3 className="text-xs font-semibold text-text-2">Contributors</h3>
           <ul className="space-y-1 text-xs">
-            {ir.meta.contributors.map((c) => (
+            {source.meta.contributors.map((c) => (
               <li
                 key={`${c.ref}:${typeof c.author === "string" ? c.author : c.author.guest_id}:${c.contribution ?? ""}`}
                 className="flex justify-between gap-3"
@@ -338,10 +387,10 @@ export function Credits({ ir }: { ir: ContextIR }) {
           </ul>
         </div>
       ) : null}
-      {ir.meta.import_omissions.length > 0 ? (
+      {source.meta.import_omissions.length > 0 ? (
         <p className="border-t pt-3 text-xs text-text-3">
           Imported from a character card; these fields were left out:{" "}
-          {ir.meta.import_omissions.flatMap((o) => o.fields).join(", ")}.
+          {source.meta.import_omissions.flatMap((o) => o.fields).join(", ")}.
         </p>
       ) : null}
     </FactCard>

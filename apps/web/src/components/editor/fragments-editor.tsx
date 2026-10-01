@@ -1,10 +1,9 @@
 /**
  * Passages（fragment）编辑：每一段是进入模型上下文的文本，带类型、激活方式和是否稳定。
  * 关键词激活的段落只在最近的对话提到关键词时才加入上下文（世界书条目就是这样）。
- * 非文本内容（对话示例、媒体、结构化数据）这里只读显示，保留原样。
+ * 对话、媒体、结构化数据与翻译由独立正文编辑器维护，未应用JSON保留在当前卡片。
  *
- * 第一层的正文也是一个 fragment：它的文字在 The basics 里编辑，这里只显示一行精简的设置
- * （类型、激活方式、是否稳定），不能改 ID 或删除。
+ * 第一层的默认文本在 The basics 里编辑；其他正文类型和翻译在这里编辑，主条目不能改ID或删除。
  */
 import {
   type Activation,
@@ -15,15 +14,19 @@ import {
   type FragmentKind,
 } from "@char-pub/core";
 import { Plus, Trash2 } from "lucide-react";
-import { useId } from "react";
+import { useCallback, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Textarea } from "@/components/ui/textarea";
+
+import { contentReferences, contentRestoreError } from "@/lib/content-references";
 import { getFragments, newFragment, nextId, setFragments, type Working } from "@/lib/draft";
-import { mainFragmentId } from "./anchors";
+import { fragmentAnchor, mainFragmentId } from "./anchors";
 import { DiagnosticList, diagnosticsFor } from "./diagnostics";
+import { type AboutNavigate, FragmentAbout } from "./fragment-about";
+import { FragmentContentEditor } from "./fragment-content-editor";
+import { FragmentMetadata } from "./fragment-metadata";
 import { ListInput } from "./list-input";
 
 const DEFAULT_KIND: Record<string, FragmentKind> = {
@@ -53,30 +56,46 @@ export function passagesSummary(w: Working, type: CreationType): string {
 
 function FragmentRow({
   fragment,
+  working,
+  onNavigate,
   index,
   main,
+  references,
   onChange,
   onRemove,
   diagnostics,
+  hidden,
+  onPendingChange,
 }: {
   fragment: Fragment;
+  hidden?: boolean;
+  onPendingChange?: ((key: string, pending: boolean) => void) | undefined;
+  working: Working;
+  onNavigate?: AboutNavigate | undefined;
   index: number;
   /** 第一层的正文：文字在 The basics 里编辑，这里只调整类型、激活方式和是否稳定。 */
   main: boolean;
+  references: string[];
   onChange: (next: Fragment) => void;
   onRemove: () => void;
   diagnostics: readonly CheckDiagnostic[];
 }) {
+  const [pending, setPending] = useState(false);
+  const pendingChange = useCallback(
+    (key: string, value: boolean) => {
+      setPending(value);
+      onPendingChange?.(key, value);
+    },
+    [onPendingChange],
+  );
   const ids = {
     id: useId(),
     kind: useId(),
-    text: useId(),
     mode: useId(),
     keys: useId(),
     stable: useId(),
   };
   const mode = activationMode(fragment);
-  const content = fragment.content;
   const keys = fragment.activation?.mode === "keyword" ? fragment.activation.keys : [];
   const setActivation = (m: Activation["mode"]) => {
     const { activation: _, ...rest } = fragment;
@@ -87,7 +106,12 @@ function FragmentRow({
   };
 
   return (
-    <li className="space-y-3 rounded-lg border bg-surface p-4" aria-label={`Passage ${index + 1}`}>
+    <li
+      id={fragmentAnchor(fragment.id)}
+      hidden={hidden}
+      className="space-y-3 rounded-lg border bg-surface p-4"
+      aria-label={`Passage ${index + 1}`}
+    >
       <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
         <div className="space-y-1">
           <label htmlFor={ids.id} className="text-xs font-medium">
@@ -98,7 +122,7 @@ function FragmentRow({
             className="font-mono"
             value={fragment.id}
             maxLength={255}
-            readOnly={main}
+            readOnly={main || pending || references.length > 0}
             onChange={(e) => onChange({ ...fragment, id: e.target.value.toLowerCase() })}
           />
         </div>
@@ -112,7 +136,11 @@ function FragmentRow({
             onChange={(e) => onChange({ ...fragment, kind: e.target.value as FragmentKind })}
           >
             {FRAGMENT_KINDS.map((k) => (
-              <option key={k} value={k}>
+              <option
+                key={k}
+                value={k}
+                disabled={!!fragment.outward && !["character", "persona", "examples"].includes(k)}
+              >
                 {k}
               </option>
             ))}
@@ -121,33 +149,25 @@ function FragmentRow({
         {main ? (
           <span className="pb-2 text-xs text-text-3">From The basics</span>
         ) : (
-          <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
+          <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={onRemove}>
             <Trash2 aria-hidden /> Remove
           </Button>
         )}
       </div>
 
-      {main ? (
-        <p className="text-xs text-text-2">The text is edited in The basics above.</p>
-      ) : content.type === "text" ? (
-        <div className="space-y-1">
-          <label htmlFor={ids.text} className="text-xs font-medium">
-            Text
-          </label>
-          <Textarea
-            id={ids.text}
-            rows={4}
-            value={content.text}
-            onChange={(e) =>
-              onChange({ ...fragment, content: { ...content, text: e.target.value } })
-            }
-          />
-        </div>
-      ) : (
+      {references.length ? (
         <p className="text-xs text-text-2">
-          {content.type} content — edit it in the source file or the CLI.
+          Referenced by {references.join("; ")}. Remove these links before changing the ID or
+          removing this passage.
         </p>
-      )}
+      ) : null}
+      <FragmentContentEditor
+        working={working}
+        fragment={fragment}
+        onChange={onChange}
+        textInBasics={main}
+        onPendingChange={pendingChange}
+      />
 
       <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
         <div className="space-y-1">
@@ -159,10 +179,16 @@ function FragmentRow({
             value={mode}
             onChange={(e) => setActivation(e.target.value as Activation["mode"])}
           >
-            <option value="always">always</option>
+            <option value="always" disabled={!!fragment.selectable}>
+              always
+            </option>
             <option value="keyword">on keywords</option>
-            <option value="manual">when enabled by hand</option>
-            <option value="semantic">by relevance</option>
+            <option value="manual" disabled={!!fragment.selectable}>
+              when enabled by hand
+            </option>
+            <option value="semantic" disabled={!!fragment.selectable}>
+              by relevance
+            </option>
           </NativeSelect>
         </div>
         {mode === "keyword" ? (
@@ -203,6 +229,21 @@ function FragmentRow({
           Stable — other creations may build on (override) this passage
         </label>
       </div>
+      {fragment.selectable ? (
+        <p className="text-xs">Turn off AI selection before changing to another inclusion mode.</p>
+      ) : null}
+      {fragment.outward ? (
+        <p className="text-xs">
+          Turn off outward visibility before changing to a non-personal kind.
+        </p>
+      ) : null}
+      <FragmentMetadata working={working} fragment={fragment} onChange={onChange} />
+      <FragmentAbout
+        working={working}
+        fragment={fragment}
+        onChange={onChange}
+        {...(onNavigate ? { onNavigate } : {})}
+      />
       <DiagnosticList items={diagnostics} />
     </li>
   );
@@ -213,20 +254,48 @@ export function FragmentsEditor({
   working,
   update,
   diagnostics,
+  visibleIds,
+  onNavigate,
+  onPendingChange,
 }: {
   type: CreationType;
   working: Working;
   update: (fn: (w: Working) => Working) => void;
   diagnostics: readonly CheckDiagnostic[];
+  visibleIds?: readonly string[];
+  onNavigate?: AboutNavigate;
+  onPendingChange?: ((key: string, pending: boolean) => void) | undefined;
 }) {
+  const [removed, setRemoved] = useState<{
+    fragment: Fragment;
+    index: number;
+    baseline: Working;
+  } | null>(null);
+  const [error, setError] = useState("");
   const fragments = getFragments(working);
   const main = mainFragmentId(working, type);
   const kind = DEFAULT_KIND[type] ?? "knowledge";
   const replace = (i: number, next: Fragment | null) =>
     update((w) => {
       const list = [...getFragments(w)];
-      if (next) list[i] = next;
-      else list.splice(i, 1);
+      const baseline = fragments[i];
+      const actual = baseline ? list.findIndex((f) => f.id === baseline.id) : -1;
+      if (actual < 0 || !baseline) return w;
+      if (!next && contentReferences(w, "fragment", baseline.id).length) return w;
+      if (next && next.id !== baseline.id && contentReferences(w, "fragment", baseline.id).length)
+        return w;
+      if (next) {
+        const current = list[actual];
+        if (!current) return w;
+        const patched = { ...current };
+        for (const key of new Set([...Object.keys(baseline), ...Object.keys(next)])) {
+          const field = key as keyof Fragment;
+          if (JSON.stringify(baseline[field]) === JSON.stringify(next[field])) continue;
+          if (Object.hasOwn(next, field)) Object.assign(patched, { [field]: next[field] });
+          else delete patched[field];
+        }
+        list[actual] = patched;
+      } else list.splice(actual, 1);
       return setFragments(w, list);
     });
 
@@ -240,17 +309,74 @@ export function FragmentsEditor({
       <ul className="space-y-3">
         {fragments.map((f, i) => (
           <FragmentRow
-            // 下标作为 key：ID 本身可以被编辑，不能用来当 key。
-            key={i}
+            // 未应用的编辑禁止改ID；其他条目移除不应卸载本条编辑缓冲。
+            key={f.id}
+            hidden={!!visibleIds && !visibleIds.includes(f.id)}
             index={i}
             fragment={f}
+            working={working}
+            onNavigate={onNavigate}
+            onPendingChange={onPendingChange}
             main={f.id === main}
+            references={contentReferences(working, "fragment", f.id)}
             onChange={(next) => replace(i, next)}
-            onRemove={() => replace(i, null)}
+            onRemove={() => {
+              const refs = contentReferences(working, "fragment", f.id);
+              if (refs.length) {
+                setError(`Remove references first: ${refs.join("; ")}`);
+                return;
+              }
+              setRemoved({ fragment: f, index: i, baseline: structuredClone(working) });
+              setError("");
+              replace(i, null);
+            }}
             diagnostics={diagnosticsFor(diagnostics, `fragments[${f.id}]`)}
           />
         ))}
       </ul>
+      {error ? <p role="alert">{error}</p> : null}
+      {removed ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (getFragments(working).some((f) => f.id === removed.fragment.id)) {
+              setError("This passage ID is already in use. Undo cannot overwrite it.");
+              return;
+            }
+            const restore = (w: Working) => {
+              const list = [...getFragments(w)];
+              list.splice(Math.min(removed.index, list.length), 0, removed.fragment);
+              return setFragments(w, list);
+            };
+            const problem = contentRestoreError(working, restore(working), removed.baseline);
+            if (problem) {
+              setError(problem);
+              return;
+            }
+            if (
+              JSON.stringify(working.references) !== JSON.stringify(removed.baseline.references) &&
+              (removed.fragment.about?.some((r) => !r.startsWith("#")) ||
+                (removed.fragment.source?.use && !removed.fragment.source.use.startsWith("#")))
+            ) {
+              setError(
+                "Dependencies changed. Restore their previous versions before undoing this passage.",
+              );
+              return;
+            }
+            update(restore);
+            setRemoved(null);
+            setError("");
+          }}
+        >
+          Undo passage removal
+        </Button>
+      ) : null}
+      {visibleIds ? (
+        <p className="text-xs text-text-2">
+          New passages appear under Ungrouped. Add them to any group when ready.
+        </p>
+      ) : null}
       <Button
         type="button"
         variant="outline"

@@ -2,7 +2,8 @@
  * 从 Context IR 的依赖图里取作品页要展示的事实：直接依赖和它们的关系、每个作品的类型、
  * 决定 effective rating 的来源。只做数据整理，文案由组件决定。
  */
-import type { ContextIR, CreationType, Rating } from "@char-pub/core";
+import type { ContextIR, CreationArtifact, CreationType, Rating } from "@char-pub/core";
+import { type BuildIdentity, buildIdentity, publishedIdentity } from "@char-pub/core";
 
 /** 根实例在 IR 里的 key 固定是 `root`。 */
 const ROOT_INSTANCE = "root";
@@ -34,7 +35,7 @@ export function dependenciesOf(ir: ContextIR): Dependency[] {
       const e = edges.get(n.ref);
       return {
         ref: n.ref,
-        release: n.release,
+        ...publishedIdentity(n),
         type: n.type,
         name: n.display_name,
         rel: e?.rel,
@@ -49,9 +50,9 @@ export function dependenciesOf(ir: ContextIR): Dependency[] {
 export function nodeOf(
   ir: ContextIR,
   ref: string,
-): { type: CreationType; name: string; release: string } | undefined {
+): ({ type: CreationType; name: string } & BuildIdentity) | undefined {
   const n = ir.graph.nodes.find((x) => x.ref === ref);
-  return n ? { type: n.type, name: n.display_name, release: n.release } : undefined;
+  return n ? { type: n.type, name: n.display_name, ...buildIdentity(n) } : undefined;
 }
 
 /** 常见关系的动词；其他关系把下划线换成空格。 */
@@ -86,7 +87,9 @@ export interface RatingReason {
   decisive: RatingSource[];
 }
 
-export function ratingReason(ir: ContextIR): RatingReason {
+export type MetadataSource = Pick<CreationArtifact, "root" | "meta">;
+
+export function ratingReason(ir: MetadataSource): RatingReason {
   const { rating, rating_sources } = ir.meta;
   const own = rating_sources.find((s) => s.ref === ir.root.ref && !s.asset)?.rating;
   const decisive = rating_sources.filter((s) => s.rating === rating);
@@ -99,6 +102,6 @@ export function ratingReason(ir: ContextIR): RatingReason {
 }
 
 /** 作品自己的许可（不含 asset 的单独许可）。 */
-export function ownLicense(ir: ContextIR): string | undefined {
+export function ownLicense(ir: MetadataSource): string | undefined {
   return ir.meta.licenses.find((l) => l.ref === ir.root.ref && !l.asset)?.license;
 }

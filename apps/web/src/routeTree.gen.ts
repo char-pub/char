@@ -17,6 +17,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CreateIndexRouteImport } from './routes/create.index'
 import { Route as CreateImportRouteImport } from './routes/create.import'
 import { Route as GuestVerifyRouteImport } from './routes/guest.verify'
+import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
 import { Route as PlaygroundIndexRouteImport } from './routes/playground.index'
 import { Route as PlaygroundDiffRouteImport } from './routes/playground.diff'
 import { Route as CNsIndexRouteImport } from './routes/c.$ns.index'
@@ -69,6 +70,11 @@ const CreateImportRoute = CreateImportRouteImport.update({
 const GuestVerifyRoute = GuestVerifyRouteImport.update({
   id: '/guest/verify',
   path: '/guest/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthConsentRoute = OauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlaygroundIndexRoute = PlaygroundIndexRouteImport.update({
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/playground/diff': typeof PlaygroundDiffRoute
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/playground/diff': typeof PlaygroundDiffRoute
   '/create': typeof CreateIndexRoute
   '/playground': typeof PlaygroundIndexRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/create/import': typeof CreateImportRoute
   '/guest/verify': typeof GuestVerifyRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/playground/diff': typeof PlaygroundDiffRoute
   '/create/': typeof CreateIndexRoute
   '/playground/': typeof PlaygroundIndexRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/create/import'
     | '/guest/verify'
+    | '/oauth/consent'
     | '/playground/diff'
     | '/create/'
     | '/playground/'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/create/import'
     | '/guest/verify'
+    | '/oauth/consent'
     | '/playground/diff'
     | '/create'
     | '/playground'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/create/import'
     | '/guest/verify'
+    | '/oauth/consent'
     | '/playground/diff'
     | '/create/'
     | '/playground/'
@@ -287,6 +299,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   CreateImportRoute: typeof CreateImportRoute
   GuestVerifyRoute: typeof GuestVerifyRoute
+  OauthConsentRoute: typeof OauthConsentRoute
   PlaygroundDiffRoute: typeof PlaygroundDiffRoute
   CreateIndexRoute: typeof CreateIndexRoute
   PlaygroundIndexRoute: typeof PlaygroundIndexRoute
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       path: '/guest/verify'
       fullPath: '/guest/verify'
       preLoaderRoute: typeof GuestVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/consent': {
+      id: '/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof OauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/playground/': {
@@ -479,6 +499,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   CreateImportRoute: CreateImportRoute,
   GuestVerifyRoute: GuestVerifyRoute,
+  OauthConsentRoute: OauthConsentRoute,
   PlaygroundDiffRoute: PlaygroundDiffRoute,
   CreateIndexRoute: CreateIndexRoute,
   PlaygroundIndexRoute: PlaygroundIndexRoute,

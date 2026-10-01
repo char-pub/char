@@ -20,8 +20,15 @@ export const Route = createFileRoute("/c/$ns/$name/preview")({
 function PreviewTab() {
   const c = useCreation();
   if (c.detail.type === "preset" || c.detail.type === "prompt-module") return <PolicyPreview />;
-  if (!c.ir) {
-    return c.irState === "error" ? (
+  if (c.metadataState === "unavailable")
+    return (
+      <ErrorState
+        title="This release has no complete artifact"
+        description="Context preview requires the complete release artifact, including its locked prompt policy."
+      />
+    );
+  if (!c.ir || c.artifact?.kind !== "content") {
+    return c.irState === "error" || c.artifactError ? (
       <ErrorState
         title="The context for this version could not be loaded"
         description="Try loading it again."
@@ -47,15 +54,14 @@ function PreviewTab() {
       rating={c.rating}
       allowed={c.allowMature}
       remember={c.detail.ref}
-      reason={matureReason(c.ir)}
+      reason={matureReason(c.artifact, c.ir)}
       signedIn={!!c.me}
     >
       {/* 换版本时重新挂载，Session 设置回到默认值。 */}
       <PreviewPanel
         key={c.label}
-        ir={c.ir}
         artifact={c.artifact}
-        note={`Nothing here is sent anywhere — the context is assembled in your browser from ${c.selected?.visibility === "private" ? "this private" : "the public"} release.`}
+        note={`Context is assembled in your browser from ${c.selected?.visibility === "private" ? "this private" : "the public"} release. Selected reference documents are fetched from the registry; role bindings and sample messages stay local.`}
       />
     </MatureGate>
   );
