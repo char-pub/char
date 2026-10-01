@@ -1,8 +1,9 @@
 # char.pub Conformance Suite
 
-This directory is the public conformance suite for the char.pub Canonical Model and Context IR
-(1-draft). Any implementation of the Resolver, the publish checks, an Assembler or a CCv3
-converter can run these cases and compare its output.
+This directory is the public conformance suite for the char.pub Canonical Model, Context IR
+(1-draft) and Story consumption contracts. Implementations of the Resolver, publish checks,
+Story evaluator, viewpoint or context consumer, Assembler and CCv3 converter can run their
+corresponding cases and compare outputs.
 
 Licensed under [CC-BY-4.0](../LICENSE), like the specification.
 
@@ -26,12 +27,22 @@ spec/conformance/
 │   │   ├── publish.json     publish cases: { "ok", "errors": [codes], "warnings": [codes] }
 │   │   ├── trace.json       assembler cases: per scenario, messages_digest and trace decisions, or an error code
 │   │   └── loss-report.json ccv3 cases: the comparable part of the round trip (see below)
-│   └── draft/               current implementation output awaiting review (never committed)
+│   └── draft/               current output and review.json receipt, never committed
+├── story-v1/                 Story evaluation, viewpoint and context cases (see its README)
+│   └── <NNN-slug>/
+│       ├── case.json
+│       ├── input/story.json  operations or named view/context scenarios
+│       ├── input/assertions.json  independently authored semantic assertions
+│       ├── input/...         view/context roots, dependencies and exact policy options
+│       ├── expected/story.json    complete human-reviewed output, when accepted
+│       └── draft/            current output and review.json receipt, never committed
 ├── runner/
 │   ├── types.ts             data format
 │   ├── run.ts               pure runner: run a case and judge the result (no file system, no Node APIs)
 │   ├── assemble.ts          assembler scenarios and trace comparison
 │   ├── ccv3.ts              CCv3 round trip and loss summary comparison
+│   ├── story.ts             Story evaluation, view and context execution
+│   ├── review.ts            exact input/output receipts and acceptance preflight
 │   ├── cases.gen.json       all cases bundled into one file (generated, committed)
 │   └── conformance.test.ts  the test, run in Node, Chromium and workerd
 └── scripts/                 Node-only tooling: bundle, draft, accept
@@ -40,6 +51,9 @@ spec/conformance/
 Case IDs: `001`–`013` follow the first batch listed in the Context IR specification
 (section “Conformance tests”); a letter suffix splits one listed case into several focused cases.
 `101`–`109` are one counter-example for each of the nine publish rules.
+`201`–`206` live under [story-v1](story-v1/README.md), whose README describes their independently
+authored semantic assertions. Both directories share the same loader, runner, bundle and
+draft/accept commands; case IDs must be unique across them.
 
 ### `case.json`
 
@@ -47,8 +61,8 @@ Case IDs: `001`–`013` follow the first batch listed in the Context IR specific
 |---|---|
 | `id` | Equal to the directory name. |
 | `title` | What the case demonstrates. |
-| `kind` | `resolver`, `publish`, `assembler` or `ccv3`. |
-| `expect` | Result shape: `context-ir`, `error`, `publish`, `trace` or `loss-report`. |
+| `kind` | `resolver`, `publish`, `assembler`, `ccv3` or `story`. |
+| `expect` | Result shape: `context-ir`, `error`, `publish`, `trace`, `loss-report` or `story`. |
 | `spec_refs` | Clauses of the specification or decisions the case verifies. |
 | `status` | `draft` (inputs exist, expected output not reviewed) or `reviewed`. |
 | `reviewed_by`, `reviewed_at` | Who approved the expected output, and when (`YYYY-MM-DD`). |
@@ -93,26 +107,49 @@ Case IDs: `001`–`013` follow the first batch listed in the Context IR specific
   Token estimates and human-readable details are never compared. The summary is compared as
   RFC 8785 canonical JSON.
 
-Cases with `status: "draft"` are executed (they must not crash) but not compared.
+- **Story results** — `input/story.json` selects one of three families: evaluation,
+  viewpoint filtering, or Catalog/context preparation. `expected/story.json` contains the complete
+  result, compared as canonical JSON. Evaluation records each operation's resulting state,
+  errors and whether inputs remained unchanged. View cases record actual `viewOf` decisions;
+  context cases record the projected selector view, Catalog, Plan validation, requested Source
+  identities, ordered messages and Trace, or the failed stage and error. The separate handwritten
+  `input/assertions.json` exercises selected semantic claims; passing those assertions does not
+  approve the complete output. See [the Story fixture guide](story-v1/README.md) for operations,
+  exact Source bytes and unchanged-Plan replay.
+
+Cases with `status: "draft"` are executed and checked for invalid input, unsupported execution
+and hard invariants, but their complete output is not compared with an accepted baseline.
+They remain pending conformance expectations in each runtime.
 
 ## Expected output must be reviewed by a human
 
 Expected output is the specification. It is never produced by copying whatever the current
 implementation emits, because that would freeze bugs into the spec.
 
-1. Write or change the case inputs under `cases/<case>/input/` and `case.json`
+1. Write or change the case inputs under `cases/<case>/input/` or `story-v1/<case>/input/`, and `case.json`
    (`status: "draft"`, with `notes` describing what the output must show).
 2. `pnpm conformance:draft <case>` runs the current implementation and writes the output to
-   `cases/<case>/draft/`. This directory is git-ignored.
+   the case's `draft/` directory together with `review.json`. This directory is git-ignored.
+   The receipt binds the exact input and relevant metadata to the rendered output with hashes;
+   it is machine freshness evidence, not approval. Source and runtime strings retain their bytes.
 3. A reviewer reads the draft against the specification and the case notes. If it is wrong, fix
    the implementation (or the case) and draft again.
    `pnpm conformance:precheck` checks drafted Context IR for mechanical invariants, and
    `pnpm conformance:review` writes `REVIEW.md` (not committed) with a readable summary of every
    draft — including a table of trace decisions per assembler scenario — to review against.
+   This summary is not a complete semantic review: inspect full IR text and each successful
+   assembler scenario's ordered final messages from the same public build/assemble chain, checking
+   their `digestAssemblyMessages` value against the candidate. A hash or truncated excerpt alone
+   does not show what the model will receive. Story drafts already contain full steps and messages;
+   read those alongside the original inputs, notes and specification.
 4. When the output is correct:
    `pnpm conformance:accept <case> --reviewer <name>`
    moves the draft to `expected/`, sets `status: "reviewed"`, records reviewer, date and the
-   expected digest, and regenerates `runner/cases.gen.json`.
+   expected digest, and regenerates `runner/cases.gen.json`. Before changing any files, acceptance
+   requires `draft/review.json`, validates the input/output kind and hard invariants, reruns the
+   current implementation, and rejects stale input bindings or different output. Old candidates
+   without a receipt must be regenerated and reviewed again. Neither preflight nor regeneration
+   supplies a human reviewer identity or automatically accepts output.
 5. After editing any case by hand, run `pnpm conformance:bundle`. A test fails when the bundle
    is out of date.
 

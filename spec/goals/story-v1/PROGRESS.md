@@ -1075,3 +1075,14 @@ recorder完成`.llmdoc-tmp/investigations/story-v1-runtime-continuation-dry-run.
 - `pnpm ci:all`新单次**exit0**，日志`/tmp/story-user-readiness-ci.log`：unit93/1781、Web/Admin81/630、conformance28/316+105todo、integration87/1560、WebE2E62+27skip、Admin107、types/deps/build/Actioncheck/secrets均过。todo/skip仍单独待验；未降低门禁。README双语补真实本地Preset初始化规则。
 - 主仓新增3文件启动初始化切片真DB3/3、错误提示13、同tab入口9定向通过；Harness欢迎/HTTP/HTML交互6与contrast测试/lint/compiledbuild通过。关键日志和报告见实际浏览器README；代码改动不会靠旧f6d8471的CI结果冒称验证。
 - 当前char.pub服务句柄65379，Harness句柄62110，均保留运行；原67681/87825仅为根先前启动的进程，重启确认端口释放后再启动，没有杀其他服务。旧Session日志保留，重启后明确创建新合成开局。
+
+## 2026-10-01 — Harness 交付后的主目标收尾审计
+
+- 上一 goal turn 为 progress：完成独立 Harness 最新上游同步、React 游玩 UI、char-pub/char-harness 首推与 51 篇 llmdoc；真实远端无密钥 CI 成功，交付 main 与本地一致。该仓后续状态由其 `spec/goals/roleplay/` 持有；不把外仓 UI 完成当作主仓 G1 的人工接受。
+- 重新读取 VISION/DOD、规范审阅规则及实际 Git/llmdoc 状态。主仓 M0–M6 的工程结果保持有效；最新产品变更后整次 CI 为 `/tmp/story-user-readiness-ci.log`。正式知识更新已实际完成，DOR 的 dry_run/未提交与进行中片段已整理为当前状态，历史过程保留在本 PROGRESS。
+- 规范材料当前性复核：35 个 case 仍为 draft；逐个执行真实 `validateDraftForAcceptance`，核原输入与完整输出 SHA 同既有人审包一致，结果 35 current、0 accepted。没有重生成 expected、代填 reviewer 或变更 case status。
+- Commons 审校仍为未完成的发布前门槛。当前目标明示不授权公开发布，G2 要求示例与契约一致，不能把更大的 v0 正式开放清单自动扩为 Story 改造条件；同时不因此宣布 Commons 已人工认可或可发布。
+- 本轮发现并修复一个实际文档缺口：conformance 主 README 没有列出已经实现的 Story 用例目录、kind/expect 与精确 review receipt 接受规则。修正文档以反映真实 runner 和脚本，不修改验收门槛或输入/输出。
+- 当前待用户输入为规范 expected 的人工接受。此前启动与浏览器操作授权不等于此签字；此轮仍有文档一致性修复可推进，整体 goal 保持 active，未标 complete 或 blocked。
+
+- 独立 completion audit 完成：`.llmdoc-tmp/investigations/story-v1-completion-audit-final.md` 按 S1–S7/U1–U9 和 G1/G2 复核，未发现新增实现缺口。规范主入口文档与 DOR 已修正，G2 按现有正式知识/生成 schema/示例证据关闭；G1 保持未完成。此结论不表示 35 个 expected 已被认可，不要求重跑未改变的产品测试来制造新进度。
