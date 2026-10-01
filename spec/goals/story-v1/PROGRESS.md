@@ -1086,3 +1086,12 @@ recorder完成`.llmdoc-tmp/investigations/story-v1-runtime-continuation-dry-run.
 - 当前待用户输入为规范 expected 的人工接受。此前启动与浏览器操作授权不等于此签字；此轮仍有文档一致性修复可推进，整体 goal 保持 active，未标 complete 或 blocked。
 
 - 独立 completion audit 完成：`.llmdoc-tmp/investigations/story-v1-completion-audit-final.md` 按 S1–S7/U1–U9 和 G1/G2 复核，未发现新增实现缺口。规范主入口文档与 DOR 已修正，G2 按现有正式知识/生成 schema/示例证据关闭；G1 保持未完成。此结论不表示 35 个 expected 已被认可，不要求重跑未改变的产品测试来制造新进度。
+
+## 2026-10-01 — PR #11 安全扫描与 Hook 路由修复
+
+- 用户指出 Hook 仍提示 444 unmapped 与 PR CodeQL 失败。此前以 0 impacted/0 needs-review 表示已映射文档新鲜，不能据此声称整体路由完整；本轮重新审计全部路径和 33 个 owner，确认原 72 处真实 missing mapping，363 处 intentional no-doc，以及 9 处本地改动。另补本轮 CCv3 解析器路由，共拟补 73 条精确映射，不用宽泛 glob 掩盖缺口。全量语义和路由核验后才通过 CLI 全量提交推进基线。
+- 原 PR 的 ci/check、dev-env、CodeQL 分析任务和依赖审查均已实际通过，但 Code scanning results 单独失败：4 个新高危告警，位于 E2E 的两处 URL 前缀检查、CLI 尾斜杠正则及 accept 脚本检查/使用竞态。还有 2 个既有 CCv3 正则告警。本轮全部按实现修复，不 dismiss 或排除扫描。
+- E2E 改为解析后精确 origin 比较；CLI 用末端线性扫描保留原字符串处理语义；accept 只写入已通过校验的同一份文本，拒绝用之后被替换的文件路径重新决定接受内容；CCv3 decorator、START 分段及示例空白处理改为同语义线性扫描。
+- 定向验证：CLI 7 项、隔离真实 accept 命令的竞态/失效回执测试 1 项、Playwright 4 项通过；CCv3 全包 108 项、6 万组旧新随机差分一致、独立测试类型检查通过。完整类型检查、范围 Biome、Action 重建及分发一致性检查通过；三个运行时 conformance 仍为 316 通过/105 todo。日志在 `/tmp/story-codeql-*` 与 `/tmp/char-ccv3-redos-*`，真实规范案例未被接受。
+- 用户明确选择 `apps/admin/src/lib/mock-api.ts` 的既有示例标签修改保留本地，禁止提交或还原。8 张 Vitest 自动失败截图保留原磁盘字节，两个确定的生成目录加入精确 gitignore；不忽略源码或规范 expected。完整更新后预计仅剩这 1 个有意保留的本地修改提示。
+- 本段记录源码修复和本地证据，远端 CodeQL 结论须以更新 PR 后的新分析为准；不会用旧绿检查或本地测试冒称告警已在 GitHub 消失。

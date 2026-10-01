@@ -42,6 +42,22 @@ function fakeRegistry(
 }
 
 describe("char login", () => {
+  it.each(["/".repeat(100_000), `${"/".repeat(100_000)}kept`])(
+    "removes only trailing slashes from long registry inputs",
+    async (suffix) => {
+      const registry = `https://api.example${suffix}`;
+      const expected = suffix.endsWith("kept") ? registry : "https://api.example";
+      let requested: unknown;
+      const f: typeof fetch = async (url) => {
+        requested = url;
+        return new Response("{}", { status: 403 });
+      };
+      expect(await cmdLogin({ registry, token: TOKEN, env, fetch: f }, capture())).toBe(0);
+      expect(requested).toBe(`${expected}/v1/me/tokens`);
+      expect(await loadCredentials(env)).toEqual({ registry: expected, token: TOKEN });
+    },
+  );
+
   it("validates the token with the registry and stores it with 0600 permissions", async () => {
     const { f } = fakeRegistry({ "GET /v1/me/tokens": () => ({ status: 403, body: {} }) });
     const o = capture();
