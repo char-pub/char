@@ -1,5 +1,5 @@
 ---
-description: "GitHub 关联身份、App 安装、仓库写权限 lookup/bind/rebind、转移冻结、webhook、Action OIDC 发布与 GITHUB_OUTPUT 文件协议"
+description: "GitHub数字身份与可信commit重读；Action定义摘要、严格作者测试、OIDC授权和分发bundle一致性"
 kind: architecture
 code:
   paths:
@@ -37,6 +37,6 @@ Publish Action 在允许的 push、workflow_dispatch 或 release 工作流中计
 
 来源验证成功后进入普通 Revision 与异步发布流程，仍接受 Registry 的权限、依赖、资产和黑名单检查。修改 Action 与服务端任一侧算法时需共同验证 digest 一致和失败重试。
 
-Action 与 Server 源重读都经统一 artifact 构建，比较 artifact.root.semantic_digest 而非产物 digest。技术作者提供明确的依赖快照，Action dry-run 也执行确定性作者测试；此成功只证明受给定输入约束的本地结果，Server 仍从可信 commit 重读并在普通发布流程中检查当前依赖授权、许可及状态；重读作品类型必须与已绑定的 Registry Creation 一致，不能借更新源文件静默更换身份类型。
+Action 与 Server 源重读先加载并规范化作者定义取得 semantic_digest，不要求为获取身份伪造本地 Release 或策略；需要执行作者测试时再提供完整依赖与实际策略走统一构建。比较作品 semantic_digest 而非产物 digest。技术作者提供明确的依赖快照，Action dry-run 也执行确定性作者测试；此成功只证明受给定输入约束的本地结果，Server 仍从可信 commit 重读并在普通发布流程中检查当前依赖授权、许可及状态；重读作品类型必须与已绑定的 Registry Creation 一致，不能借更新源文件静默更换身份类型。
 
 Action 输出使用 runner 提供的既有 `GITHUB_OUTPUT` 普通文件：打开后在同一文件描述符上校验并追加，拒绝目标文件符号链接，避免先检查路径再重新打开的竞争。输出名与多行分隔符须验证，值保持字面数据；缺少合法输出文件时失败，不退回把值作为工作流命令输出。

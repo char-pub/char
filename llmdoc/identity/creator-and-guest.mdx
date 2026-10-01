@@ -1,8 +1,14 @@
 ---
-description: "Better Auth OAuth 创作者会话、个人 Token、访客邮箱 HMAC、Turnstile 和可选配置的身份边界"
+description: "创作者Cookie/PAT与本Registry OAuth public client、签名Consent、PKCE/refresh/revoke；访客验证保持独立"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/routes/oauth.consent.tsx"
+    - "apps/web/src/components/oauth.tsx"
+    - "apps/server/src/db/schema/oauth.ts"
+    - "apps/server/src/api/routes/oauth.ts"
+    - "apps/server/src/auth/oauth.ts"
+    - "apps/server/src/auth/oauth-provider.ts"
     - "apps/web/src/components/token-manager.tsx"
     - "apps/server/src/auth/better-auth.ts"
     - "apps/server/src/auth/guest.ts"
@@ -17,12 +23,16 @@ relations:
     - "identity/public-authorization.mdx"
 ---
 
-# 创作者与访客身份
+# 创作者、委托客户端与访客
 
-创作者通过 API 域名上的 HttpOnly 会话 cookie 或受限个人 Token 访问能力；封禁与权限变更要在请求时生效，不能依赖前端缓存。OAuth 的同邮箱账户不自动合并，身份关联须由明确操作完成，避免把可变邮箱当作账户所有权证明。
+创作者以 API 域名的 HttpOnly 会话或受限PAT访问。封禁与撤销以服务端当前状态为准；第三方登录同邮箱不自动合并账户，显式关联才产生信任。GitHub来源连接还需单独验证仓库能力。PAT可标agent，服务端强制保留该来源，客户端不能取消。
 
-GitHub 来源连接先显式关联登录身份，再验证仓库能力；已安装 App 不等于已关联创作者。个人 Token 可声明用于 agent，前端负责收集和展示标记，后续操作的 agent 来源由服务端主体强制确定，不能靠客户端取消标签。
+agent PAT在中央授权处禁止发布，不能由releases:publish scope豁免；Token创建界面同步去掉并禁用该scope，已有令牌也在服务端受约束。此来源标记不是模型身份认证，也不限制未标agent且获正常发布权的技术作者流程。
 
-访客验证与创作者登录是不同能力。访客用邮件验证和 HMAC 保护的凭据建立有限会话，不能据此获得创作者 Token、namespace 或管理权限。Turnstile 按表单 action 和允许的 hostname 校验，token 不能在访客验证与匿名举报之间复用。没有完整配置访客服务时，相关接口显式返回 503；已登录用户和有效访客可使用各自允许的举报路径。
+本Registry同时提供受限OAuth授权服务器能力，与用于登录的GitHub等上游OAuth不同。登录设置可注册public client精确redirect URI、审阅并撤销grants；不发client secret。重定向为精确HTTPS或HTTP loopback，不允许wildcard/fragment/userinfo，注册管理只接受用户会话。
 
-浏览器可以呈现登录和验证状态，但真实主体和能力必须由服务端重新解析。修改身份实现时复核 public API 路由、Token scope 与资源级授权。
+授权使用PKCE S256与服务端签名oauth_query。Consent从验签后的状态显示真实client、redirect和scopes，接受/拒绝都由服务器生成正确redirect；不信浏览器query里未核对的名称或跳转。code/refresh/revoke在数据库事务及client锁中处理，避免并发兑换或撤销竞争；refresh不扩大原scope。账号切换或新grant使消费者未确认候选失效，不能只比可变client容器中的数字epoch。
+
+scope是最小委托，不是用户会话替身；profile只给必要id/namespace，不提供email/name/userinfo。具体读写白名单由中央授权维护，认证成功不能推导发布或既有稿编辑权。client_id标来源，与authored_by_agent分开；来源标记须贯通接受后的作品、Revision、IR与发布元数据。
+
+访客邮件验证/HMAC会话与创作者身份独立，不产生Token、namespace或管理权。Turnstile按action/hostname校验，不在验证与举报间复用。缺配置显式503。修改身份、Token、provider或客户端管理时须同时核对公共路由注册、缓存和当前资源授权。

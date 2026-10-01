@@ -1,8 +1,12 @@
 ---
-description: "Contribution三方合并与配置协作：policy/module/assembly/tests整字段原子冲突、敏感字段与私有草稿审阅"
+description: "不可变base的对象级Story/cast/group/source投稿、字段合并与审阅快照；许可敏感字段和agent来源连续保留"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/lib/proposal-preview.ts"
+    - "apps/web/src/components/proposal-preview.tsx"
+    - "apps/server/src/registry/collaboration-policy.ts"
+    - "packages/core/src/reference-impact.ts"
     - "apps/web/src/components/contribution-form.tsx"
     - "apps/web/src/components/contribution-list.tsx"
     - "packages/core/src/merge.ts"
@@ -19,14 +23,16 @@ relations:
     - "registry/publishing.mdx"
 ---
 
-# Contribution 的合并与接受
+# 投稿、合并与接受
 
-Contribution 是针对基线 Release 的变更提案，不等于独立 remix。Core 按对象键和字段路径比较 base、current、after 的稳定 digest，不做文本级三方合并；任一真正冲突都返回冲突而没有部分合并产物。空的默认值形式 `set` 不是有效变更。Context Diff 另外比较内容、origin、锁定图和元数据；token delta 由调用方提供计数器。
+Contribution 是对精确发布基线的提案，Remix 则创建独立作品，二者不能混同。对象级协议声明changes_version；Story场次/节拍/结局/选项/变量/事件/开局等、cast/group/source及顺序变化从不可变canonical base与编辑稿生成。Core merge必须取得可信原始base，不能只信客户端base digest来恢复缺失对象。
 
-Registry 持有提案来源、作者权限和接受事务。接受时重新读取当前状态并运行合并，成功才生成新 Revision、更新草稿；不能修改既有 Release。评级、许可、内容警告和资产的敏感字段须逐项确认，前端传来的确认状态或 sensitive 标记只是请求信息，服务端要重新计算并校验。访客和受邀者的操作边界也由服务端身份与授权决定。
+字段级非冲突编辑保留双方改动；同字段冲突、被引用对象删除、失效顺序或引用结构错误必须拒绝，不产生部分可接受结果。configuration中的policy/module/assembly/tests仍按整字段原子比较；精确session/source_texts使用configurationDigest，不得用prose归一化吞掉真实冲突。合并后重新验证完整Creation，不能只逐change合法就接受。
 
-列表状态总数保持作者、访客与 agent 的可见范围，但独立于当前页和状态筛选。变更数来自提案本身；与当前私有草稿比较的冲突标记只对 namespace 成员的未关闭提案返回，不能借摘要泄露草稿状态。列表预览不锁定合并结果，接受时仍须重算。
+Registry接受在作品锁中重读当前draft、权限、许可与敏感字段，成功原子写Revision和工作稿，不改变既有Release。协作者的编辑权不扩大为许可/评级/资产等一般敏感修改权；接受grant/许可变化仍走服务器规则。根原有或可信agent提案引入的authored_by_agent不能因人工接受或后续保存而清除；OAuth client_id独立保留到最终发布来源。
 
-浏览器呈现差异与冲突供作者决策，不是合并权威。修改 merge 算法时应同时检查 API 接受语义和审阅 UI 是否仍准确表达失败与敏感变更。
+审阅Before/After必须来自同一次服务端merge的current/merged与draft_version；原始after提议不能伪装成最终Will apply，独立GET另一当前稿也不能拼接。原始提案仅在冲突/请求说明中展示。提交者不因拥有提案而取得目标private merged内容；列表scope与读取权独立于公开父作品，并先授权后分页。
 
-configuration 变更按 policy、prompt_module、assembly、assembly_tests 整字段原子 set/unset，使用该字段规范化 base digest 三方比较。同字段并发不同修改产生冲突，不尝试块级自动合并；必需的策略字段不可 unset，空作者测试集应移除可选字段。合并后必须重新校验整份 Creation，服务端重新计算可接受结果，不能信任 UI 的 configuration 或 sensitive 声明。
+Web结构化投稿复用作者工作区，未支持编辑字段不能静默丢弃。Source本地预览只读作者主动提供且digest相符的文件，不上传或获取未知私有正文。异步编辑回调从最新working应用局部变更，不把捕获的旧ContributionEdit整块覆盖后续输入。
+
+Runtime可把明确审阅的新Ending作为普通提案提交：候选绑定精确旧来源、固定client授权、Session committed head及完整请求摘要，最终确认前再验证；POST只包含公开投稿字段，不外传history、state/head、Source或凭据。模型整理质量与用户确认是不同事项，提案成功仍不等于作者接受或发布。

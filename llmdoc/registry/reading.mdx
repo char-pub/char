@@ -1,8 +1,13 @@
 ---
-description: "Release artifact/IR读取兼容、私有授权、聚合评级与头像；CCv3精确Preset缓存隔离和card/loss下载"
+description: "精确Release/dbld授权读取、完整Artifact与固定重建、Source文本、聚合元数据和导出缓存身份"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/components/required-capabilities.tsx"
+    - "apps/web/src/components/creation-facts.tsx"
+    - "apps/server/src/api/routes/favorites.ts"
+    - "apps/server/src/registry/asset-ownership.ts"
+    - "apps/server/src/registry/source-text.ts"
     - "apps/server/src/worker/export.ts"
     - "apps/server/src/registry/artifacts.ts"
     - "apps/web/src/routes/me.tsx"
@@ -25,18 +30,18 @@ relations:
     - "operations/takedown-and-evidence.mdx"
 ---
 
-# Release 读取与发现
+# 读取、分发与发现
 
-读取层从持久 Release 状态构造对外表示。公开和私有资源的可见性由服务端身份与授权决定；私有内容不能通过搜索结果、错误差异或资产 URL 被猜出。tombstoned 内容不得继续分发，yanked 保留明确状态与警告语义，不等于删除。
+读取按持久状态与中央授权判断；知道精确 Release ID、ref 或 digest 不是权限。精确 ID 路由与 label 路由共用读取规则，私有不可见对象统一 404。tombstone 不再分发，yanked 保留状态语义。列表必须先授权再分页，不能让未授权行挤占结果或泄露隐藏数量。
 
-搜索同时处理常见词与短中文查询，使用数据库索引策略而不是单靠前端筛选。内容分级必须在服务端查询与返回边界实施，页面上的筛选参数只改善展示，不能承担权限。公开资产通过受控 CDN 路径提供，私有资产使用短期签名 URL；URL 的生成和跳转不能泄露原始私有存储键。
+Artifact CAS 命中以存储摘要为字节权威，并经 PublishedArtifact guard 核根 Release/semantic 与所有嵌套来源；不得将 draft/local origin 混进发布接口。需要重建时只使用该 Release 的固定 snapshot、默认策略和依赖；row/snapshot default pin 不一致拒绝，不能用当前环境默认补旧版。内容与策略产物严格分型，策略不伪造 IR。
 
-搜索和个人作品列表返回受控头像入口。草稿头像签名除草稿读取权限外，还要求当前用户本人拥有对应的 ready 上传，并检查 digest 黑名单；持有或粘贴 digest 不能证明私有对象读取权，因此另一维护者上传的未发布头像不会仅凭成员身份开放。Release 头像从统一 artifact 选择本作 mirrored avatar，再按 Release 可见性跳转公共 URL 或私有签名，tombstone 与黑名单仍阻止分发。
+展示评级、警告、许可、署名与能力使用当前精确 Artifact 的聚合 meta；IR 根元数据可能遗漏策略或历史来源。加载、失败与 legacy 不能伪装成已验证聚合结论。公开分发与私有短期签名不同，后者不暴露存储内部键；已签字节受 TTL 限制，撤权阻止后续获取而不宣称撤回已下载内容。
 
-Release 的来源和发布者摘要只挑选公开契约需要的字段，不直接返回原始 OIDC 声明或内部身份载荷。
+草稿头像与 Source 正文同时要求作品读取权和实际资产来源授权。作品 grant 可让已确认协作者使用该作品资料，不能由 namespace 维护者身份推导其它私有字节权利。Source endpoint 只收 full Catalog Source ID，先授权根 Release/dbld，再绑定其实际 Artifact与asset/digest读取，no-store；不提供通用 digest 下载或外链抓取。
 
-修改发布状态或资产存储时，核对读取、搜索和缓存是否仍遵守同一可见性；下架的事务状态与公网副本实际清除之间还存在异步清理边界。
+搜索使用数据库索引处理词与短中文，服务端承担分级和可见性，客户端筛选仅用于呈现。Favorites 保存作品身份，展示时重新按当前可读作品/Release过滤；收藏不是草稿、私有内容或固定版本授权。
 
-Release 详情以 artifact_digest 指向统一产物，`/artifact` 按可见性跳转公共 CAS 或私有签名读取；无该字段的旧内容 Release 可包装原已存 Context IR，不能用当前编译器重新生成正文悄悄改变旧发布。`/ir` 保持内容兼容接口，对策略作品明确不适用。读取方必须按 artifact.kind 分型，并以聚合 meta 解释评级与许可。
+CCv3 导出先授权角色和精确策略，缓存键结构化绑定 Release ID、可见桶、semantic/lock、compiler、locale 与可选精确 preset。同Revision的两个Release也不能共享可错归属的身份缓存。所有路径使用同一键，命中仍重验权限；未完成202，card/loss分别交付并明确有损。
 
-CCv3 导出显式选择精确 Preset Release 时，角色和策略都须通过读取授权；输出桶和缓存键同时区分策略身份及可见性，缓存命中也不省略授权。缺省导出保留 card/loss 包装兼容，part=card 与 part=loss 分别交付可导入卡片和真实损失报告，按 private/no-store 读取，未构建完成仍为 202。
+下架事务禁止新访问与异步清除分发副本是不同状态；修改存储、缓存或源身份时，必须核对精确路由、搜索、头像、Source、导出都遵守同一边界。

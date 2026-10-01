@@ -1,11 +1,13 @@
 ---
-description: "九类Creation的身份与语义摘要：Canonical、fragment顺序、Preset policy、Prompt Module和Scenario配置的规范化边界"
+description: "Creation规范化与精确字符串域；Release、dbld、local-build严格身份及semantic、artifact、运行输入摘要的区别"
 kind: architecture
 code:
   paths:
+    - "packages/core/src/schema/artifact.ts"
+    - "packages/core/src/build.ts"
+    - "packages/core/src/local-build.ts"
     - "packages/core/src/schema/identity.ts"
     - "spec/canonical-model.md"
-    - "spec/preset-v0.md"
     - "packages/core/src/schema/policy.ts"
     - "packages/core/src/schema/creation.ts"
     - "packages/core/src/schema/release.ts"
@@ -14,14 +16,18 @@ code:
     - "packages/core/src/json-schema.ts"
 ---
 
-# Creation 的规范化与身份
+# 规范化、身份与摘要
 
-Creation 是可编辑的语义内容，Release 是一次不可变发布，label 是人在同一 Creation 下选择的名称，不承担 SemVer 的范围解析。引用发布内容必须锁定精确 Release；`@namespace/name` 表示作品身份，而内容 digest 表示字节级可核对的语义快照。公开规范仍处草案状态，修改规范契约须同时核对可执行 schema 和兼容性影响。
+Creation 是可编辑定义，Revision 是不可变内容快照，Release 是已发布身份；label 是同一作品下的人类标记，不执行 SemVer 范围解析。依赖 ExactRef 只能指向发布版。构建根严格二选一携带 release 或 origin；origin 再区分 Registry 的 draft-build（build/revision/expiry）与离线 local-build（input_digest）。根、IR 节点/片段/资产、策略来源与 Trace 需一致保留身份，不允许混合身份或用假 Release 表示草稿。
 
-规范化先把字符串变成 Unicode NFC、统一换行、去掉行尾空格，再严格校验 schema；未知字段和非纯 JSON 值应失败。等于默认值的字段和空的可选集合被省略，随后用 JCS 序列化并计算 SHA-256。fragment digest 不含自身 digest 字段；semantic digest 基于把 fragments 转成 `(id,digest)` 列表后的 manifest。这个列表保留声明顺序，因为顺序会改变最终 Context IR；对象键顺序和格式空白则不应改变 digest。
+普通作者正文按 NFC、统一换行、行尾空白等规则规范化，严格 schema 拒绝未知字段和非纯 JSON；JCS 与 SHA-256 产生稳定摘要。fragment digest 排除自身字段，作品 manifest 用有声明顺序的 fragment identity/digest 表示内容；对象键顺序不影响身份，有语义的数组顺序不能排序。
 
-九类 Creation 共享身份与发布契约。Preset 必须声明 `policy`，Prompt Module 必须声明 `prompt_module`；两者与 Creative Truth 分开，不能包含 Creative fragments、内容依赖、绑定槽、参数、cast、开场或 context assets，展示资源不成为模型输入。Creative `instruction` 仍是作者的扮演说明。策略块使用稳定 ID 和字面文本，不执行变量或脚本；复用通过精确锁定的 Module 导入表达，块本身没有独立 Release。
+精确域是显式结构契约：assembly_tests 中完整 session 与 source_texts 保留原字符串和 record keys，不做 prose 归一化；仍要求纯 JSON 与有限数。该例外由实际结构上下文定位，不是可伪造的路径字符串匹配。snapshot、merge/configurationDigest、重复输入判等与实际编译都必须保留同一契约。公开 normalizeValue 仍是通用正文规范化，不可随意用于 runtime 输入。
 
-规范化 policy、prompt_module、Scenario assembly 与作者 assembly_tests 都参与作品 semantic digest；块、导入、布局和测试的声明顺序有语义，不能排序后计算。省略启用默认值与空预算集合，不省略禁用值；没有新增配置的旧作品摘要保持兼容。Preset 布局必须完整且不重复；Module 不拥有布局、预算或运行能力。结构校验不能替代块 ID 等语义约束。
+digestExactJSON 用于原字符串敏感的运行输入、目录/Plan 绑定与审阅回执；JSON 键序等价不等于 CRLF/NFD/尾空白等价。local-build 摘要包含 domain、实现版本、完整规范化依赖集合与配置；创建 receipt 和执行构建共同使用规范化、去重集合，同一发布身份的真实内容冲突必须拒绝。
 
-Canonicalizer 是身份判定的单一实现。签名、发布、锁定图和 Diff 必须使用同一套规范化结果；如果源码和公开规范不同步，先判断该修复实现还是修订规范，不能把偶然的当前行为直接宣布为标准。
+semantic_digest 标识作者定义；artifact digest 标识完整构建字节；lock digest 标识依赖集合；运行输入摘要标识当轮上下文。签名、缓存、来源和选择重放必须使用对应层级，不能互换。源地址改名也不能替换历史 Release 内的原始 ref。
+
+Preset/Module 与 Creative Truth 分开，策略块是字面文本而非可执行宏。Preset 定义块/导入与其 placement 实例分开，实例有独立身份、排序与覆盖语义；规范默认值归一化必须保留显式 false。严格 1-draft 迁移不承诺旧 v0 字节不变。
+
+Published 产物校验覆盖所有可分发来源，包含嵌套 block origin、assembly preset 与 default_policy 两条分支；当前执行只选一条策略不构成跳过备用来源校验的理由。

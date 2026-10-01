@@ -1,13 +1,20 @@
 ---
-description: "CreationArtifact统一构建、聚合依赖锁与内容IR的分工；buildCreation、精确pin、菱形冲突、bindings与策略根拒绝"
+description: "精确依赖分域、cast实例物化、词法作用域、资料目录/about及嵌套Style来源；完整CreationArtifact构建"
 kind: architecture
 code:
   paths:
+    - "packages/core/src/derive.ts"
+    - "packages/core/src/content-check.ts"
+    - "packages/core/src/story/resolve.ts"
+    - "packages/core/src/story/evaluate.ts"
+    - "packages/core/src/story/check.ts"
+    - "packages/core/src/schema/story.ts"
+    - "packages/core/src/schema/catalog.ts"
+    - "packages/core/src/catalog-index.ts"
     - "spec/assembly-assets-v0.md"
     - "packages/core/src/build.ts"
     - "packages/core/src/dependencies.ts"
     - "packages/core/src/schema/artifact.ts"
-    - "spec/context-ir-v0.md"
     - "packages/core/src/schema/ir.ts"
     - "packages/core/src/resolve/index.ts"
     - "packages/core/src/resolve/graph.ts"
@@ -23,12 +30,16 @@ relations:
 
 # 统一产物与内容解析
 
-Resolver 从根 Release 和精确锁定的依赖快照构造 Context IR。第一阶段沿 Reference Edge 建立引用实例：同一 Release 可以从不同路径引入，但同一 Creation 在整张图中只能对应一个 Release。冲突报告两条路径；环、超深图和过多实例会失败。pin 的 semantic digest 必须与重新计算的内容一致。tombstone 直接失败，yank 保留警告。
+buildCreation 从严格根身份与精确发布依赖快照生成完整 content/preset/prompt-module 产物，只有 content 带 IR。pin 摘要必须与完整规范化定义匹配；环、深度、实例数量和真实菱形版本冲突失败。依赖数据与可见性由调用方提供，纯解析器不授予读取权。
 
-`buildCreation` 是统一构建入口，返回 content、preset 或 prompt-module 三种 CreationArtifact；只在内容分支携带 Context IR。产物摘要标识完整构建结果，`artifact.root.semantic_digest` 才是作品语义摘要，签名或发布核对不能混用。内容 Resolver 拒绝 Preset/Module 根及实际加载的策略依赖，避免输出丢失策略语义的空内容 IR。
+版本冲突按实际组装图与每个历史 derived_from 图分别检查，不能要求聚合分发闭包中每个 ref 永远只有一个版本。历史来源可保留旧版本、当前内容可升级同 ref；聚合锁保留精确 Release，fragment 索引还区分 digest，不能按 ref/Creation 键覆盖其中一个。历史来源参与许可、分级、授权和黑名单，但不再次注入上下文。
 
-统一产物的聚合 lock 覆盖 Creative、Module、Scenario 搭配和作者测试的全部精确依赖；同一 ref 跨这些领域也只能选择一个 Release。聚合 meta/assets 供许可、评级、资产状态、授权和分发检查使用；禁用块或空模块不使依赖从生命周期中消失。Context IR 的锁仍只描述 Creative 图，选择或切换 Preset 不改变内容锁。Scenario 是创作组合入口，不另建 Composition 或 Experience 一等对象。
+角色解析先验证作者模板图，再物化独立 cast 实例。词法 parent、reference children 与 cast ownership 是不同关系；cast_edges 和 introduced_by 保留实际归属。每个角色实例的 override、模板、头像与权限来源独立。公共 slot/speaker/ref 只能从声明实例的实际可达闭包解析：唯一实例可复用，多实例必须显式 cast，不得 first-match 或制造第二个角色。late 角色的 accepts 必须被目标 slot 完整接受。
 
-第二阶段处理 bindings、params、fragment override、模板和渲染顺序。Creation 的 Creative Truth 不能被运行时 Preset 或 Session 改写。early slot 在解析时固定；late slot 留待会话组装，不能在发布前假装已得到具体值。IR 同时保留 origin 和锁定信息，使下游 Diff、导出和审计能够解释内容来源。
+CatalogIndex 从真实 reference 与 cast 边建立作用域，兄弟实例不能靠同名公共 ref 越界。fragments/groups/sources/sections 是定义与目录层，about 编译为带 from/ref/target 的导航链接；about 不意味着 include、激活或选择。完整性检查验证目标，运行展示还须经视角过滤，不能把 trusted index 直接给模型。
 
-给定同一组规范化输入与明确的依赖快照，输出应确定；任何通过“latest”漂移的解析都不能作为 Release 的构建依据。规范描述公共语义，`resolve` 是当前执行实现；改变其排序、错误或 provenance 时应审阅跨运行时 conformance。
+Story 的作者级 cast key 与编译后的 participant identity 分开。Story 纯求值按声明条件、三值判定、显式确认和场次进入更新状态；失败不推进，离开/重进、stop/continue、typed vars 和 clamp 遵循定义。自由输入不会自行确认目标；Jev 等外部判断只是可替换输入，不获得修改静态定义的权力。
+
+Style 的最终放置顺序与候选选择/预算顺序分离。嵌套 Style 继承最近非 Style owner 的范围与顶层使用，再用内部 path 保留声明层级；replace 只在同 owner、层级与 scope 内比较，不误删其它 owner。root Style 的伪 scope 也保持显式身份。引用文本、Story 开场与 cast 文本模板使用同一编译管线，locale 和原始来源可追溯。
+
+聚合 meta/assets/lock 表示所有随产物分发的内容，IR 是内容图；Preset、默认策略、模块、作者测试与历史来源不能因当前未选中而从生命周期消失。确定性重建必须用固定输入，不能解析 latest 或在旧产物缺配置时偷偷套当前默认。

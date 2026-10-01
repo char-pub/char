@@ -1,8 +1,10 @@
 ---
-description: "pg-boss 队列迁移、singleton、重试死信、admin 重投、功能开关缓存与 pending 发布恢复"
+description: "持久队列/重投与运行开关；草稿build/requeue/expire、授权重读和专属payload清理边界"
 kind: architecture
 code:
   paths:
+    - "apps/server/src/storage/draft-payload.ts"
+    - "apps/server/src/worker/draft-build.ts"
     - "apps/server/src/jobs/definitions.ts"
     - "apps/server/src/jobs/queue.ts"
     - "apps/server/src/processes/modules.ts"
@@ -25,3 +27,5 @@ relations:
 功能开关经缓存传播，关闭操作有短暂生效窗口；调用方必须在真正执行前复核。关闭 publish 时 pending 工作应进入可恢复的延迟或重排路径，开关恢复后重新处理，不能宣告成功或丢弃。清理任务也须尊重引用、保留和证据状态。
 
 运维判断应结合队列状态和业务记录：任务完成但状态未提交、状态已提交但后续分发清除未完成，都需要不同恢复动作。
+
+草稿构建有独立build/requeue/expire任务：请求与入队原子，丢失任务按pending记录去重重投，过期/已删除记录不重启。worker拿作品授权锁后再锁build，重读发起凭据与当前权限；删除/过期清理只处理build专属payload，不触碰共享CAS。状态标记成功与对象物理删除完成分开报告，失败可周期重试。

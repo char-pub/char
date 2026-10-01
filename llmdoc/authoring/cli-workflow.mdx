@@ -1,8 +1,9 @@
 ---
-description: "九类char.yaml作者流程：统一artifact构建、精确依赖、Preset/Scenario预览、合成作者测试、include安全与条件发布"
+description: "离线local-build与真实发布身份分离；精确依赖/default-policy、开局locale/Source输入、作者测试及If-Match发布"
 kind: guide
 code:
   paths:
+    - "packages/core/src/local-build.ts"
     - "packages/cli/src/bin.ts"
     - "packages/cli/src/project.ts"
     - "packages/cli/src/commands.ts"
@@ -15,14 +16,14 @@ relations:
     - "registry/publishing.mdx"
 ---
 
-# 本地作者与 CLI 发布流程
+# 本地作者与 CLI
 
-`char.yaml` 是作者输入，CLI 将其与 include 文件读成 Creation，再调用 Core 做规范化、静态检查和 digest 计算。include 不能越出项目边界；`check --fix` 写回稳定标识时应保持可重复运行，不让格式整理改变语义身份。CLI 的本地成功只说明输入满足其可见规则，Registry 仍要重验动态状态。
+char.yaml及include文件先加载为Creation并canonicalize；include不能越项目边界，check --fix的稳定标识修改应幂等。loadLocalCreation提供真实作品身份和semantic digest，不需要先伪造Release或默认策略完成Artifact构建。实际build/preview/test另要求完整精确依赖和有效策略。
 
-远端发布先取草稿当前版本，带 `If-Match` 更新，生成 Revision，再以同一幂等键请求发布。冲突意味着远端已有其他编辑，不能直接覆盖；请求超时后应先查结果并沿用原 key。Release 是否 active 由异步 Registry 流程决定，CLI 不应把接受请求当成构建完成。
+离线构建使用local-build origin，输入摘要固定规范化、去重后的依赖和配置；不能伪造Registry dbld或把local结果作为依赖pin。依赖仍只接受ExactRef；内容缺assembly/default-policy明确失败。产物按content/preset/module分型，不为策略生成空IR。
 
-修改项目解析时核对路径安全与规范化 digest；修改远端流程时核对共享 HTTP 契约、并发冲突与重试行为。
+预览经过公开prepareContext与startSession。新Session显式选择多开局；有完整snapshot则不重新初始化。locale优先显式参数，再实际锁定profile，最后作品默认；Source以主动提供的原bytes校验和按需提取。Session是本地合成输入，不复制进静态assembly。实现/tokenizer版本错误不回退成估算。
 
-CLI 初始化覆盖九类作品，build 经统一构建器输出 artifact 与聚合锁，仅内容类型提供 Context IR，不能为策略生成假 IR。预览可显式选择本地 Preset；Scenario 已锁搭配且未被显式覆盖时使用锁定配置。每个外部依赖由精确 Release 快照提供，不隐式跟随 latest；Session 文件是调用时输入，不应复制进静态搭配。
+作者fixture通过同一SDK执行；保留session/source_texts精确字符串，root:self避免循环摘要，不能把错误依赖/配置包装成预期组装错误。观察到的新输出须明确审阅写入expected，CLI不调用模型。
 
-本地 test、预览与 Action 使用同一 SDK 组装/作者测试语义：固定实现身份、精确依赖和合成 Session，不调用模型；观察到的新消息摘要必须由作者明确写入期望。上传策略作品与内容作品走同一条件写入和发布流程，本地产物摘要不能替代作品 semantic digest。
+远端发布按最新draft版本If-Match写入，再取得Revision，以同一幂等键请求发布并观察worker结果。409保留本地输入，不盲目重写；未知结果先查询或重试原请求，不能认为接收即active。本地校验从不替代服务器的动态依赖授权、许可、资产和黑名单检查。

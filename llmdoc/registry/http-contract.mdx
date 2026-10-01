@@ -1,8 +1,12 @@
 ---
-description: "更新草稿为什么需要 If-Match；HTTP Problem 响应、共享请求契约、条件写入、幂等键及客户端与服务端责任"
+description: "请求schema与授权的区别；If-Match、幂等、精确dbld/Release响应、OAuth与无凭据Runtime交接"
 kind: reference
 code:
   paths:
+    - "apps/server/src/api/routes/derivations.ts"
+    - "apps/server/src/api/routes/oauth.ts"
+    - "apps/server/src/api/routes/draft-builds.ts"
+    - "packages/contracts/src/runtime-launch.ts"
     - "packages/contracts/src/index.ts"
     - "apps/server/src/http/middleware.ts"
     - "apps/server/src/api/app.ts"
@@ -13,10 +17,14 @@ relations:
     - "identity/public-authorization.mdx"
 ---
 
-# HTTP 契约与客户端边界
+# HTTP 契约与输入端
 
-共享 contracts 包定义公开 API 的请求、响应和 Problem 形状，供服务端、Web、CLI 和 Action 使用。客户端先按 schema 构造请求；服务端仍须做身份、授权、最新状态和业务校验。Problem 的机器代码供客户端分支使用，显示文字不能代替协议判断。
+共享 contracts 定义严格请求、响应与 Problem 机器形状，服务端仍须核身份、授权、状态与业务约束。客户端以 code 分支，不能以显示文案或 schema 成功证明权限。跨领域字段变更需同时审阅 producer、worker/persistence 与每个消费分支。
 
-草稿更新使用 `If-Match` 防止覆盖并发编辑；冲突须返回可识别的状态，让客户端停止自动保存并呈现恢复选择。发布使用幂等键：同一次重试应复用 key，不同内容或不同请求不能靠重复提交碰运气。OIDC 发布虽有独立请求 schema，但可信提交内容必须由 Registry 重新读取和计算。
+草稿写入和构建请求使用 If-Match；保存返回的内容与版本必须同一快照。409保留本地编辑并重新比较，不能自动覆盖。发布幂等 key 绑定已确认请求；未知网络结果重试同 key、Revision、label、visibility，不用新构建偷换审阅目标。
 
-共享 schema 文件覆盖多个领域；修改字段时应评估具体路由的授权、持久化和客户端分支，而不能把 schema 解析成功当作权限保证。
+Release 读取只接受发布身份；dbld 返回明确 origin/revision/expiry/status，ready响应及载荷也需完整校验和当前授权。精确身份不同于内容摘要：同内容不代表可跨Release、主体、私有桶或cache key共用权限。
+
+OAuth协议端点的标准表单与Cookie业务端点分开处理。Bearer无Cookie消费可来自外部Runtime，仍经中央scope/资源授权；session-only管理接口不接受Token冒充会话。完整签名oauth_query必须原样传给服务端验签，不从URL未验证元数据推导Consent或跳转目标。
+
+RuntimeLaunchRequest只是固定版本的无凭据导航意图，RuntimePreviewInput是明确整理的合成输入；它们的schema和确认语义不能混用。from_play仅描述新续作初始状态，不接受history或任意working。完整初始working仅用于获授权的新稿创建，不能扩为OAuth修改既有稿权限。

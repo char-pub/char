@@ -1,8 +1,11 @@
 ---
-description: "Railway 三进程部署、共享删除加密密钥、生产前端构建、迁移顺序、源站校验与冒烟恢复"
+description: "三进程部署与迁移；精确默认策略、OAuth issuer/浏览器Origin、dbld生命周期配置及生产字节隔离"
 kind: guide
 code:
   paths:
+    - "apps/web/vite.config.ts"
+    - "apps/server/src/processes/modules.ts"
+    - "apps/server/src/env.ts"
     - ".env.example"
     - "infra/DEPLOY.md"
     - ".railway/railway.ts"
@@ -37,3 +40,5 @@ relations:
 放流后按 API、管理入口、worker 健康和关键读写路径做冒烟；失败时先判定是迁移、配置、边缘路由还是业务任务，再按可回滚范围恢复。创建公开资源、变更收费配置或执行实际边缘写入前，应把具体变更与风险交给用户确认。当前资源名和命令以部署配置与脚本为准。
 
 运营只保留一个 production 主站，不设 staging；本地全栈与 CI 承担上线前验证。不要假定提交一定触发 Railway 自动部署，宣布完成前核对三个服务实际源 commit。Access 策略须把组织成员条件作为 Include，并要求 GitHub 身份，不能把任何 GitHub 登录当作员工授权。
+
+内容构建配置DEFAULT_PRESET为已审阅发布的精确Commons策略身份，由API首次请求固定到业务记录；worker不能读取当前环境默认重解释旧请求。缺失或不可读默认时显式不可用，不注入代码fallback。OAUTH_APP_URL必须是可信浏览器Origin，issuer/discovery/Consent/callback链需实际同源配置；开发Vite代理也要覆盖标准well-known路径。dbld配额与专属payload生命周期需要对应schema/队列迁移，迁移未执行不能称服务已具备这些能力。

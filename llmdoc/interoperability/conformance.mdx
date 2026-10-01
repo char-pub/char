@@ -1,8 +1,12 @@
 ---
-description: "一致性 conformance 的 draft、人工接受 expected、Node/浏览器/workerd 字节比对和 IR 冻结边界"
+description: "可移植Story/视角/上下文用例、独立语义断言、精确review receipt与人工接受expected的边界"
 kind: guide
 code:
   paths:
+    - "spec/conformance/runner/story-portability.test.ts"
+    - "spec/conformance/scripts/review.ts"
+    - "spec/conformance/runner/review.ts"
+    - "spec/conformance/runner/story.ts"
     - "spec/conformance/README.md"
     - "spec/conformance/runner/run.ts"
     - "spec/conformance/runner/assemble.ts"
@@ -18,10 +22,14 @@ relations:
     - "interoperability/ccv3.mdx"
 ---
 
-# 一致性用例的生命周期
+# 可移植规范与接受
 
-跨运行时用例把规范输入、操作和期望输出分开管理。新用例先作为 draft 写入并执行，用于发现 runner 或输入错误；draft 不与人工认可的 expected 比对，不能报告为语义一致性已通过。审阅、接受之后才形成可回归的 expected 基线。当前用例全部仍是 draft，尚没有人工接受的 expected；这限制了现阶段对三运行时一致性的结论。
+case输入、独立语义断言、候选输出和人工接受的expected是四种材料。draft执行可证明路径与显式手写不变量；只有审阅接受后才建立完整expected回归基线。todo/skip不算accepted，更不能从自动生成的输出反写同一结果冒充独立真值。用例当前状态以case元数据为准，不在稳定文档固化数量。
 
-修改 Core、Assembler 或 CCv3 语义时，先确认应改变规范还是实现，再加入能区分旧行为与新行为的用例。运行 precheck 和 bundle 后在 Node、浏览器、workerd 中比较被审阅的结果；draft 的运行成功只证明该路径能执行。即便 draft，成功组装仍应检查被渲染的 Creative/Session 来源没有遗留 late 占位符。策略块是字面文本，按来源排除该检查；不能因此跳过含策略的整条合并消息，漏检同消息的内容来源。
+Story runner调用真实Core evaluate/confirm/enter/present/validate及SDK view/catalog/prepare，覆盖三值判定、知情/角色、阶段与预算；input/noop只表示声明求值器不自动推进，不是AI理解自由输入的证据。上下文候选包含有序messages、来源、实际Plan与hash；只看digest或Trace无法判断身份和秘密归属是否正确。
 
-生成的 cases bundle 是可重建产物，权威是 case 输入、runner 和接受流程。接受 expected 是语义审阅动作，不能用自动重录遮盖不兼容变化。
+生成draft时以精确JSON绑定完整输入、影响审阅的meta、目录、预期文件种类与输出摘要。accept在任何写入前检查receipt当前性，重跑实现并核硬约束；输出相同不证明输入未变。拒绝未知/前向plan_from，复用的旧Plan必须来自已成功场景；运行输入原文改变不能用归一化hash蒙混重放。
+
+同一输入在Node、浏览器和workerd执行。语义变更先判断规范与实现哪一方需修，再添加能区分旧行为的输入；最终expected仍由明确人工接受，不由模型或测试自动批准。cases bundle可再生，原输入/runner/接受机制是权威。
+
+跨仓验收使用不可变SDK包及公共compiled入口，旧日志固定捕获版本并保原bytes；新包生成的新日志不证明历史恢复。模型消息应可读且可追到角色实例/内容来源。策略字面块不做late模板检查，但不能因此跳过同消息中的Creative来源。

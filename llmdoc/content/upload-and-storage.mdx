@@ -1,8 +1,14 @@
 ---
-description: "R2 四类桶、内容寻址 CAS、签名上传、图片净化、ready 状态与 CSAM 扫描边界"
+description: "镜像资产授权与作品grant、严格UTF-8 Source原bytes、章节锚点、私有dbld payload和共享CAS边界"
 kind: architecture
 code:
   paths:
+    - "apps/web/src/components/editor/source-replacement.tsx"
+    - "apps/server/src/storage/draft-payload.ts"
+    - "apps/server/src/storage/text.ts"
+    - "apps/server/src/registry/source-text.ts"
+    - "apps/server/src/registry/asset-ownership.ts"
+    - "packages/core/src/source-text.ts"
     - "apps/server/src/storage/cas.ts"
     - "apps/server/src/upload/pipeline.ts"
     - "apps/server/src/upload/image.ts"
@@ -16,14 +22,16 @@ relations:
     - "operations/takedown-and-evidence.mdx"
 ---
 
-# 内容寻址存储与上传
+# 上传、资料正文与存储
 
-存储把公开分发、私有内容、待处理上传和证据分在不同权限边界。客户端只取得短期、受范围限制的上传 URL；获得 URL 或完成 PUT 不代表资产已获准引用。worker 重新读取对象，核对 digest、类型和像素限制，对图片重编码并清除元数据，再把结果写入 CAS。只有 `ready` 资产能进入发布内容，`processing`、`rejected` 和 `quarantined` 都不能被当作可用资源。
+公开分发、私有CAS、上传暂存与证据拥有不同权限。签名PUT成功不等于资产可引用，worker重新读取并校验真实内容；图片按类型/像素边界重编码、去元数据后才ready。CSAM目前noopScanner，不能宣称自动扫描保证；真实扫描器接入另审quarantine/processing恢复，不能失败自动放行。
 
-公开 URL 与私有签名读取具有不同可见性。原始上传、导入原件和隔离证据不能经公共桶暴露；清理和保留周期要在成功迁移、引用关系及审计需求之后执行，不能仅凭上传完成删除原件。
+文本Source上传使用有界严格UTF-8解码，拒绝NUL，不把BOM、CRLF、NFD或尾空白改成另一份资产；digest校验对应原bytes。展示提取才统一BOM/换行并使用Core同一标题/锚点解析器，章节anchor缺失或歧义在构建时拒绝，手动编辑不等于已验证正文。
 
-处理后的上传最初仍在私有 CAS。草稿引用了 digest 或上传达到 ready，并不代表公共对象已经存在；公开发布负责把解析结果实际引用的 mirrored 资产复制到公共存储。linked 资产仍由外部来源提供，不能当作本地 CAS 对象复制。
+ready与digest只说明内容存在，不授予读取/再分发权。作品grant只绑定当前稿实际引用且属于提交者ready上传的字节；合法已发布历史和授权依赖要核实际mirrored来源、状态与权限。linked条目或blob_refs索引不能洗成mirrored grant。同namespace成员也不能获得他人全部私有上传。
 
-当前 worker 组装注入的是 `noopScanner`，因此不能声称上线前自动 CSAM 扫描已经成为发布保证。实际命中、举报或下架由独立处置流程承担；把真实扫描器接入时要重新审阅 quarantine 到 ready 的状态转换。真实 provider 暂不可用时须保持 processing 并重试、告警，不可自动放行；积压危及运行时暂停上传。
+发布worker负责把真实mirrored字节复制到public CAS；生成URL不证明复制完成。Source正文请求先授权根Release/dbld，再按其Catalog ID绑定asset/digest，不允许裸digest下载、外链抓取或跨作品猜测。公开分发与私有短期签名各用正确缓存策略。
 
-HTTP Source 和 linked URL 是声明性来源，不应在 Registry 中无条件主动抓取任意地址；新增抓取能力会引入独立的 SSRF、重定向、大小和内网访问边界，必须重新设计。对上传只信任服务端读取与净化结果，不信任扩展名、客户端 MIME 或请求里自报的 digest。
+dbld payload是构建专属私有对象、no-store、有限TTL；build删除/过期清理不能删共享CAS或其它Release引用字节。证据有独立保留流程，不能随通用回收提前删除。已签URL到期前或用户已加载字节无法承诺即时收回。
+
+作者替换Source只改新载荷对应字段，保留显式license/rating/alt与其它variants，清除旧载荷locator；预检现有章节anchor再上传，失败保留旧稿。前端每个await后和下一网络步骤前核当前actor/work/request，防账号切换认领旧文件；后端仍独立验授权。
