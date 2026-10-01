@@ -54,7 +54,9 @@ export async function cmdLogin(o: LoginOptions, out: Output): Promise<number> {
     out.error("error  cli.invalid_token  expected a token starting with cp_pat_");
     return 1;
   }
-  const registry = o.registry.replace(/\/+$/, "");
+  let end = o.registry.length;
+  while (end > 0 && o.registry.charCodeAt(end - 1) === 47) end--;
+  const registry = o.registry.slice(0, end);
   const res = await (o.fetch ?? fetch)(`${registry}/v1/me/tokens`, {
     headers: { authorization: `Bearer ${token}` },
   }).catch(() => null);

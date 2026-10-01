@@ -19,7 +19,7 @@ import { renderDraft, runCase } from "../runner/run.js";
 import type { BundledCase } from "../runner/types.js";
 import { CONFORMANCE_ROOT } from "./cases.js";
 
-it("refuses changed inputs before touching expected files, case review metadata or the bundle", () => {
+it("refuses stale inputs and persists only the draft bytes validated for acceptance", () => {
   const temporary = mkdtempSync(join(tmpdir(), "conformance-accept-"));
   try {
     const root = join(temporary, "conformance");
@@ -72,10 +72,11 @@ it("refuses changed inputs before touching expected files, case review metadata 
     ];
     expect(renderDraft(runCase(c))?.text).toBe(rendered.text);
     writeFileSync(join(base, "input", "story.json"), JSON.stringify(c.input.story));
-    const command = () =>
+    const command = (preload?: string) =>
       spawnSync(
         process.execPath,
         [
+          ...(preload ? ["--import", preload] : []),
           "--import",
           fileURLToPath(import.meta.resolve("tsx/esm")),
           "--conditions=@char-pub/source",
@@ -98,6 +99,40 @@ it("refuses changed inputs before touching expected files, case review metadata 
     expect(missing.status, missing.stderr).toBe(1);
     expect(missing.stderr).toContain("Missing or invalid review receipt");
     expect(readFileSync(join(base, "expected", "sentinel"), "utf8")).toBe("DO NOT DELETE");
+
+    // Restore a valid candidate, then replace its path after validation but before persistence.
+    // The real command must persist the reviewed snapshot, not the replacement's bytes.
+    writeFileSync(
+      join(base, "draft", "review.json"),
+      JSON.stringify(createDraftReviewReceipt(c, rendered)),
+    );
+    const preload = join(temporary, "replace-draft.mjs");
+    const marker = join(temporary, "replacement-observed");
+    writeFileSync(
+      preload,
+      `import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+const original = fs.rmSync;
+const expected = fs.realpathSync(${JSON.stringify(join(base, "expected"))});
+fs.rmSync = (file, options) => {
+  if (file === expected || file === ${JSON.stringify(join(base, "expected"))}) {
+    fs.writeFileSync(${JSON.stringify(join(base, "draft", "story.json"))}, 'UNREVIEWED REPLACEMENT');
+    fs.writeFileSync(${JSON.stringify(marker)}, 'replaced');
+  }
+  return original(file, options);
+};
+syncBuiltinESMExports();
+`,
+    );
+    const accepted = command(preload);
+    expect(accepted.status, accepted.stderr).toBe(0);
+    expect(readFileSync(marker, "utf8")).toBe("replaced");
+    expect(readFileSync(join(base, "expected", "story.json"), "utf8")).toBe(rendered.text);
+    expect(JSON.parse(readFileSync(join(base, "case.json"), "utf8")).status).toBe("reviewed");
+    expect(existsSync(join(base, "draft"))).toBe(false);
+    expect(readFileSync(join(root, "runner", "cases.gen.json"), "utf8")).not.toContain(
+      "UNREVIEWED REPLACEMENT",
+    );
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }

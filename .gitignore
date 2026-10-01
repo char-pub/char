@@ -23,3 +23,6 @@ playwright-report/
 spec/conformance/cases/*/draft/
 spec/conformance/story-v1/*/draft/
 spec/conformance/REVIEW.md
+# Vitest browser failure screenshots and attachment copies are generated diagnostics.
+/spec/conformance/.vitest-attachments/
+/spec/conformance/runner/__screenshots__/

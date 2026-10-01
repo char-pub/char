@@ -5,15 +5,7 @@
  * 在 case.json 中把 status 改为 reviewed，并记录审阅人、日期和预期 digest，
  * 然后重新生成 bundle。只接受与 case.json 中 `expect` 形态一致的 draft。
  */
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { validateDraftForAcceptance } from "../runner/review.js";
 import { normalizeExpectedText, textDigest } from "../runner/run.js";
@@ -58,24 +50,20 @@ const receiptPath = join(draftDir, "review.json");
 const receipt: unknown = existsSync(receiptPath)
   ? JSON.parse(readFileSync(receiptPath, "utf8"))
   : undefined;
-const problems = validateDraftForAcceptance(
-  loadCase(dir),
-  readFileSync(draftFile, "utf8"),
-  receipt,
-);
+// Persist the same text that passed review, even if the draft path is replaced later.
+const draftText = readFileSync(draftFile, "utf8");
+const problems = validateDraftForAcceptance(loadCase(dir), draftText, receipt);
 if (problems.length) usage(`${dir}: cannot accept stale or invalid draft: ${problems.join("; ")}`);
 
 const expDir = join(base, "expected");
 rmSync(expDir, { recursive: true, force: true });
 mkdirSync(expDir, { recursive: true });
-renameSync(draftFile, join(expDir, file));
+writeFileSync(join(expDir, file), draftText, { flag: "wx" });
 rmSync(draftDir, { recursive: true, force: true });
 
 const next: CaseMeta = { ...meta, status: "reviewed", reviewed_by: reviewer, reviewed_at: date };
 if (meta.expect === "context-ir") {
-  next.expected_digest = textDigest(
-    normalizeExpectedText(readFileSync(join(expDir, file), "utf8")),
-  );
+  next.expected_digest = textDigest(normalizeExpectedText(draftText));
 } else {
   delete next.expected_digest;
 }

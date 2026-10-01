@@ -115,6 +115,32 @@ export interface Decorator {
   fallback: boolean;
 }
 
+/** Match ECMAScript whitespace one character at a time, without scanning a suffix again. */
+function isWhitespace(char: string): boolean {
+  return /\s/.test(char);
+}
+
+function isLineTerminator(char: string): boolean {
+  return char === "\n" || char === "\r" || char === "\u2028" || char === "\u2029";
+}
+
+function decoratorLine(line: string): Decorator | null {
+  if (!line.startsWith("@@")) return null;
+  const start = line.startsWith("@@@") ? 3 : 2;
+  if (!/[A-Za-z_]/.test(line[start] ?? "")) return null;
+  let end = start + 1;
+  while (end < line.length && /[A-Za-z0-9_]/.test(line[end] ?? "")) end++;
+  const name = line.slice(start, end);
+  if (end < line.length && !isWhitespace(line[end] ?? "")) return null;
+  while (end < line.length && isWhitespace(line[end] ?? "")) end++;
+  // The original value's dot accepted no line terminator. CR/LF were already split,
+  // while Unicode separators are allowed only in the preceding whitespace run.
+  for (let i = end; i < line.length; i++) {
+    if (isLineTerminator(line[i] ?? "")) return null;
+  }
+  return { name, value: line.slice(end), fallback: start === 3 };
+}
+
 /** 拆出内容开头连续的 decorator 行，返回剩余正文（去掉开头的空行）。 */
 export function splitDecorators(content: string): { decorators: Decorator[]; body: string } {
   const lines = content.split(/\r\n|\r|\n/);
@@ -122,10 +148,9 @@ export function splitDecorators(content: string): { decorators: Decorator[]; bod
   let i = 0;
   while (i < lines.length && (lines[i] ?? "").trim() === "") i++;
   for (; i < lines.length; i++) {
-    const line = (lines[i] ?? "").trim();
-    const m = /^(@@@?)([A-Za-z_][A-Za-z0-9_]*)(?:\s+(.*))?$/.exec(line);
-    if (!m) break;
-    decorators.push({ name: m[2] ?? "", value: (m[3] ?? "").trim(), fallback: m[1] === "@@@" });
+    const decorator = decoratorLine((lines[i] ?? "").trim());
+    if (!decorator) break;
+    decorators.push(decorator);
   }
   if (decorators.length === 0) return { decorators, body: content };
   while (i < lines.length && (lines[i] ?? "").trim() === "") i++;
@@ -142,15 +167,67 @@ export interface DialogueBlock {
 
 const SPEAKER_PREFIX = /^\s*(\{\{\s*(char|user)\s*\}\}|<(bot|char|user)>)\s*:\s?/i;
 
+/** Preserve multiline START matching, including whitespace that spans blank lines. */
+function splitExampleBlocks(text: string): string[] {
+  const blocks: string[] = [];
+  let boundary = 0;
+  let anchor: number | null = 0;
+  let i = 0;
+  while (i < text.length) {
+    if (anchor === null && isLineTerminator(text[i - 1] ?? "")) anchor = i;
+    const char = text[i] ?? "";
+    if (isWhitespace(char)) {
+      i++;
+      continue;
+    }
+    if (anchor !== null && char === "<" && text.slice(i, i + 7).toLowerCase() === "<start>") {
+      let end = i + 7;
+      let lastBreak = -1;
+      while (end < text.length && isWhitespace(text[end] ?? "")) {
+        if (isLineTerminator(text[end] ?? "")) lastBreak = end;
+        end++;
+      }
+      if (end === text.length || lastBreak >= 0) {
+        // A multiline $ leaves the last line terminator before non-whitespace;
+        // at EOF the greedy whitespace suffix consumes everything instead.
+        const matchEnd = end === text.length ? end : lastBreak;
+        blocks.push(text.slice(boundary, anchor));
+        boundary = matchEnd;
+        i = matchEnd;
+        anchor = i > 0 && isLineTerminator(text[i - 1] ?? "") ? i : null;
+        continue;
+      }
+      i += 7;
+    } else {
+      i++;
+    }
+    anchor = null;
+  }
+  blocks.push(text.slice(boundary));
+  return blocks;
+}
+
+/** Remove only edge whitespace through an LF, retaining indentation and CR-only text. */
+function trimExampleBlock(text: string): string {
+  let start = 0;
+  for (let i = 0; i < text.length && isWhitespace(text[i] ?? ""); i++) {
+    if (text[i] === "\n") start = i + 1;
+  }
+  let end = text.length;
+  for (let i = text.length - 1; i >= start && isWhitespace(text[i] ?? ""); i--) {
+    if (text[i] === "\n") end = i;
+  }
+  return text.slice(start, end);
+}
+
 /**
  * 按 `<START>` 分段并解析说话人。每一轮以 `{{char}}:` 或 `{{user}}:` 开头，后续不带前缀的行
  * 属于同一轮。任何一段在第一个说话人之前有正文、或者没有任何一轮时，返回 null，
  * 调用方应当把整段示例当作普通文本导入。
  */
 export function parseExampleDialogue(text: string): DialogueBlock[] | null {
-  const blocks = text
-    .split(/^\s*<start>\s*$/im)
-    .map((b) => b.replace(/^\s*\n|\n\s*$/g, ""))
+  const blocks = splitExampleBlocks(text)
+    .map(trimExampleBlock)
     .filter((b) => b.trim() !== "");
   if (blocks.length === 0) return null;
   const out: DialogueBlock[] = [];
@@ -173,7 +250,7 @@ export function parseExampleDialogue(text: string): DialogueBlock[] | null {
       }
       last.text += `\n${line}`;
     }
-    for (const t of turns) t.text = t.text.replace(/\s+$/, "");
+    for (const t of turns) t.text = t.text.trimEnd();
     if (turns.length === 0) return null;
     out.push({ turns });
   }
