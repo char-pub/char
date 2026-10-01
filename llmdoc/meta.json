@@ -18,7 +18,7 @@
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
     },
     "engineering/verification.mdx": {
-      "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
+      "validatedRevision": "0a3cbace122f84fa4d5aa4016367c6db44d1b0eb"
     },
     "execution-model.mdx": {
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
@@ -48,7 +48,7 @@
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
     },
     "operations/deploy-and-edge.mdx": {
-      "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
+      "validatedRevision": "0a3cbace122f84fa4d5aa4016367c6db44d1b0eb"
     },
     "operations/jobs-and-controls.mdx": {
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
@@ -75,7 +75,7 @@
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
     },
     "web/creator-experience.mdx": {
-      "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
+      "validatedRevision": "0a3cbace122f84fa4d5aa4016367c6db44d1b0eb"
     },
     "operations/csam-response.mdx": {
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
@@ -84,10 +84,10 @@
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
     },
     "operations/database-recovery.mdx": {
-      "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
+      "validatedRevision": "0a3cbace122f84fa4d5aa4016367c6db44d1b0eb"
     },
     "operations/secret-rotation.mdx": {
-      "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
+      "validatedRevision": "0a3cbace122f84fa4d5aa4016367c6db44d1b0eb"
     },
     "operations/emergency-access.mdx": {
       "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
@@ -99,7 +99,7 @@
       "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
     },
     "engineering/release-readiness.mdx": {
-      "validatedRevision": "8f9c7cf5ceedf0352e798c5d466e133b7ee398c0"
+      "validatedRevision": "0a3cbace122f84fa4d5aa4016367c6db44d1b0eb"
     },
     "engineering/working-agreements.mdx": {
       "validatedRevision": "374384e0bfb0962a09602d945b65fdd39a6043f0"
