@@ -5,7 +5,16 @@
  * 在 case.json 中把 status 改为 reviewed，并记录审阅人、日期和预期 digest，
  * 然后重新生成 bundle。只接受与 case.json 中 `expect` 形态一致的 draft。
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { validateDraftForAcceptance } from "../runner/review.js";
 import { normalizeExpectedText, textDigest } from "../runner/run.js";
@@ -67,6 +76,15 @@ if (meta.expect === "context-ir") {
 } else {
   delete next.expected_digest;
 }
-writeFileSync(metaPath, `${JSON.stringify(next, null, 2)}\n`);
+// Publish metadata by replacing the directory entry, never by following a path that
+// could have been swapped for a symlink after it was read during review.
+const metadataStage = mkdtempSync(join(base, ".accept-"));
+try {
+  const stagedMeta = join(metadataStage, "case.json");
+  writeFileSync(stagedMeta, `${JSON.stringify(next, null, 2)}\n`, { flag: "wx" });
+  renameSync(stagedMeta, metaPath);
+} finally {
+  rmSync(metadataStage, { recursive: true, force: true });
+}
 writeFileSync(BUNDLE_PATH, serializeBundle(buildBundle()));
 console.log(`${dir}: accepted by ${reviewer} on ${date}; bundle regenerated`);
