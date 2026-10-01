@@ -1,108 +1,108 @@
 {
   "schema": "llmdoc.meta/v3",
   "baseline": {
-    "revision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a",
-    "verifiedAt": "2026-10-01T08:50:46.861Z"
+    "revision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63",
+    "verifiedAt": "2026-10-01T09:00:38.659Z"
   },
   "documents": {
     "authoring/cli-workflow.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "collaboration/contributions.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "content/card-import.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "content/upload-and-storage.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "engineering/verification.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "execution-model.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "identity/creator-and-guest.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "identity/public-authorization.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "interoperability/ccv3.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "interoperability/conformance.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "model/canonical-identity.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "model/publish-integrity.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/admin-authority.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/commons-seed.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/deploy-and-edge.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/jobs-and-controls.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/takedown-and-evidence.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "registry/http-contract.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "registry/publishing.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "registry/reading.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "runtime/assembly.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "runtime/resolution.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "source/github-source-and-publish.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "web/creator-experience.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/csam-response.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/legal-response.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/database-recovery.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/secret-rotation.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/emergency-access.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/abuse-response.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/data-breach-response.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "engineering/release-readiness.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "engineering/working-agreements.mdx": {
-      "validatedRevision": "9f2f17bb6fc2ee3f6d3b5ebbf8fad47409056e0a"
+      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     }
   },
   "convergence": {
