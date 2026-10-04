@@ -53,6 +53,8 @@ sourceRequests 列出实际所需资料；调用者只加载这些原 UTF-8 byte
 
 选择与预算顺序不等于最终消息布局。Preset placement 实例、region/layout、历史边界和 Style 内外层顺序决定渲染；replace 遵循实例作用域。最终文本与分隔格式成本纳入预算，Trace 解释实际来源/placement、准入、计数与失败；Trace 行顺序不是 messages 顺序。模型供应商封装与媒体成本仍由 Runtime 预留。
 
+RuntimeProfile 的消息能力必须由调用方按实际 adapter 到 provider 的消费契约声明。Assembler 的多个 system 消息是共同构成上下文的有序片段；若下游把它们解释为完整快照并以后条替换前条，不能声明支持 multiple_system_messages。未声明该能力时 SDK 只合并相邻 system，并拒绝需跨 history 合并或显式要求多 system 的策略；不能靠任意拼接消除布局边界。最终投影必须保留这些片段的内容与顺序，模型成功回复不能反证能力声明正确。
+
 startSession 只初始化新 Session：多开局须明确选择；Story 不接受独立 greeting_id。实际选定 locale 写入 Turn，opening 已进入 history，未提供问候返回 null；重放完整 Turn 不应再初始化或重复插开场。scene.opening 是场景上下文，不能冒充 assistant 问候。
 
 作者 assembly_tests 支持 Creative 与 Preset，使用主动编写或明确保存的合成输入。root:self 避免循环语义摘要，源 raw bytes 与 session 原文必须复现。错误期望只吸收实际组装错误，不能掩盖缺依赖、版本或配置失败；观察结果不能自动更新期望。消息摘要包含附件内容身份而排除部署URL。
