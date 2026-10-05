@@ -198,8 +198,57 @@ const unknown = [
 ] as StoryJudgment[];
 assert.throws(() => confirm(story, cast, initial, "beat/name-priority", unknown));
 assert.deepEqual(initial.vars.outcome, "undecided");
+const acceptance = read("acceptance-24-turns.json");
+assert.equal(acceptance.version, 2);
+assert.equal(acceptance.execution.stage_endings, "explicit-confirmation");
+const confirmationEntries = [
+  ...acceptance.trajectories.flatMap((trajectory: { turns: unknown[] }) => trajectory.turns),
+  ...acceptance.separate_probes,
+];
+for (const entry of confirmationEntries) {
+  const endingOperations = (entry.expected_operations ?? []).filter(
+    (op: { type: string; target?: string }) =>
+      op.type === "confirm" && op.target?.startsWith("ending/"),
+  );
+  if (endingOperations.length === 0) {
+    assert.equal(entry.expected_confirmation_target, undefined);
+    continue;
+  }
+  assert.equal(endingOperations.length, 1);
+  const target = endingOperations[0].target;
+  assert.equal(entry.expected_confirmation_target, target);
+  assert.equal(entry.runtime_text_submission.expected_outcome, "undecided");
+  assert.equal(entry.runtime_text_submission.ending_must_remain_uncommitted, true);
+  const ending = story.endings?.find((item) => `ending/${item.id}` === target);
+  assert.ok(ending);
+  assert.equal(ending.reveal, "listed");
+  const pending = entry.runtime_text_submission.pending_ending;
+  assert.equal(pending.required, true);
+  assert.equal(pending.id_required, true);
+  assert.equal(pending.expected_title, ending.title);
+  assert.equal(pending.expected_description, ending.description);
+  assert.equal(pending.expected_triggering_input, entry.action);
+  const confirmation = entry.runtime_explicit_confirmation;
+  assert.equal(confirmation.request_field, "confirm_ending.proposal_id");
+  assert.equal(confirmation.proposal_id_source, "pending_ending.id");
+  assert.equal(confirmation.proposal_id_must_come_from_actual_runtime_response, true);
+  assert.equal(confirmation.expected_target, target);
+  assert.equal(confirmation.expected_outcome, entry.expected_outcome);
+  assert.equal(confirmation.same_logical_turn, true);
+}
 const trajectoryChecks = [];
-for (const trajectory of read("acceptance-24-turns.json").trajectories) {
+for (const trajectory of acceptance.trajectories) {
+  const confirmations = trajectory.turns.filter(
+    (step: { expected_confirmation_target?: string }) => step.expected_confirmation_target,
+  );
+  if (trajectory.id === "undetermined") {
+    assert.equal(trajectory.runtime_confirmation_policy, "never-click-confirmation");
+    assert.equal(confirmations.length, 0);
+  } else {
+    assert.equal(confirmations.length, 1);
+    assert.equal(confirmations[0].turn, 23);
+  }
+
   let state = initStoryState(story, cast, "after-bankruptcy");
   assert.equal(trajectory.turns.length, 24);
   for (const step of trajectory.turns) {
@@ -279,9 +328,11 @@ const report = {
   player_facing_knowledge_verified: true,
   initial_narrator_catalog: narratorCatalog,
   trajectory_checks: trajectoryChecks,
+  runtime_confirmation_metadata_valid: true,
+  runtime_confirmation_operations_executed: false,
   routes,
   scope:
-    "Deterministic author semantics only: explicit true judgments prove guards/effects, not free-text director accuracy or narrative quality.",
+    "Deterministic Core semantics and authored Runtime confirmation metadata only. The Core trajectory applies expected_operations after each complete logical turn; it does not execute a Runtime proposal or confirmation request, nor prove free-text director accuracy or narrative quality.",
 };
 // Format every output before writing any file, after reconstruction and behavioral checks pass.
 const repository = fileURLToPath(new URL("../../../../../", import.meta.url));
