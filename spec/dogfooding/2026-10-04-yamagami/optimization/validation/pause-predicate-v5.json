@@ -1,0 +1,93 @@
+{
+  "kind": "counterfactual-author-predicate-evaluation",
+  "scope": "Four recorded v4 refusal prefixes with only the v5 beat/consider-pause description and two judge text positions replaced; this is not a complete v5 trajectory.",
+  "model": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-pro",
+    "reasoningEffort": "low",
+    "temperature": 0,
+    "maxTokens": 12288
+  },
+  "minimum_confidence": 0.8,
+  "expected_data_sent": false,
+  "model_calls": 4,
+  "selector_calls": 0,
+  "narration_calls": 0,
+  "story_events_written": 0,
+  "original_session_unchanged": true,
+  "cases": [
+    {
+      "turn": 12,
+      "legal_actions": [
+        {
+          "target": "beat/clarify-support",
+          "confidence": 0.99
+        }
+      ],
+      "pause_judgment": {
+        "result": "not-returned",
+        "effective": "undetermined"
+      },
+      "review_expectation": "do not select pause or return reliable true",
+      "review_pass": true,
+      "elapsed_ms": 11986
+    },
+    {
+      "turn": 13,
+      "legal_actions": [],
+      "pause_judgment": {
+        "result": "false",
+        "confidence": 0.95
+      },
+      "review_expectation": "do not select pause or return reliable true",
+      "review_pass": true,
+      "elapsed_ms": 18512
+    },
+    {
+      "turn": 14,
+      "legal_actions": [],
+      "pause_judgment": {
+        "result": "undetermined",
+        "confidence": 0.3
+      },
+      "review_expectation": "do not select pause or return reliable true",
+      "review_pass": true,
+      "elapsed_ms": 10463
+    },
+    {
+      "turn": 17,
+      "legal_actions": [
+        {
+          "target": "beat/consider-pause",
+          "confidence": 0.95
+        }
+      ],
+      "pause_judgment": {
+        "result": "true",
+        "confidence": 0.95
+      },
+      "review_expectation": "select pause with reliable true",
+      "review_pass": true,
+      "elapsed_ms": 21875
+    }
+  ],
+  "elapsed_ms": 62836,
+  "total_tokens": 27097,
+  "all_review_expectations_met": true,
+  "audit": {
+    "standard_session_events": true,
+    "request_flushed_before_dispatch": true,
+    "requests_and_streams_reconstructed": true
+  },
+  "limitation": "One director call per case. Prior dialogue and state are retained from v4; no fresh v5 full-session or narration quality claim.",
+  "recorded_v4_turn17_baseline": {
+    "actions": [],
+    "pause_judgment": {
+      "result": "undetermined",
+      "confidence": 0.4
+    }
+  },
+  "candidate_artifact_digest": "sha256:a8e05bc72f1c7e84ebbe390b5fba0ac56393b37d520aab1205a8eb7f3af50dbf",
+  "baseline_artifact_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
+  "chapter_commit": "c9a32c1"
+}
