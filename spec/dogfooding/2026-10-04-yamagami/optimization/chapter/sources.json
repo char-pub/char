@@ -1,0 +1,64 @@
+{
+  "accessed_on": "2026-10-04",
+  "policy": "资料用于历史背景；对白、场景摆设和玩家改写后的事件均为模拟。来源之间有争议的日期不作为确定剧情条件。",
+  "sources": [
+    {
+      "id": "S1",
+      "title": "山上徹也 — 维基百科",
+      "url": "https://zh.wikipedia.org/wiki/山上徹也",
+      "use": [
+        "生平时间线索引",
+        "升学受阻与伯父资助",
+        "2002—2005年海上自卫队经历",
+        "2020年京都仓库派遣工作"
+      ],
+      "caution": "维基百科是二手汇编；争议性归因不直接视为确定事实。未使用武器或袭击实施细节。"
+    },
+    {
+      "id": "S2",
+      "title": "Former Japanese PM Shinzo Abe's killer motivated by 'disgust' at links to Unification Church — ABC News",
+      "url": "https://www.abc.net.au/news/2026-01-25/shinzo-abe-killer-tetsuya-yamagami/106254108",
+      "published_on": "2026-01-25",
+      "use": [
+        "父亲早逝、家庭献金与经济崩溃",
+        "伯父的资助角色",
+        "母亲对信仰与家庭关系的解释属于被报道的本人陈述",
+        "2021年视频致辞与山上后来描述的敌意"
+      ],
+      "caution": "对母亲早年参会与入教年份的表述与部分其他来源不同；本作不选定精确入教年，也不替人物断言内心。"
+    },
+    {
+      "id": "S3",
+      "title": "Unification Church confirms mother of Abe suspect is member — Reuters",
+      "url": "https://www.investing.com/news/world-news/mother-of-suspect-in-abe-killing-was-a-member-of-unification-church-church-says-2845813",
+      "published_on": "2022-07-11",
+      "use": ["教会确认母亲成员身份", "母亲破产及献金争议"],
+      "caution": "成员身份确认、警方转述和教会的否认应分别归因，不把所有说法混为事实。"
+    },
+    {
+      "id": "S4",
+      "title": "Man who assassinated former Japanese prime minister gets life in prison — AP",
+      "url": "https://apnews.com/article/925d6cc24e58c50d530736af15fe8c35",
+      "published_on": "2026-01-21",
+      "use": ["2022年安倍遇害", "哥哥2015年去世与辩方叙述的影响", "2026年一审判决"],
+      "retrieval": "使用搜索返回的AP报道正文；直接打开该页本轮失败。"
+    },
+    {
+      "id": "S5",
+      "title": "PM Abe's shooter sentenced to life in prison at Nara District Court — Nippon TV NEWS 24 JAPAN",
+      "url": "https://www.ntv.co.jp/englishnews/articles/202161kzctm50my36g5e.html",
+      "published_on": "2026-01-21",
+      "use": ["2026年1月21日奈良地方法院一审判处无期徒刑"],
+      "caution": "后记只陈述该次一审判决，不推断目前所有上诉程序的终局状态。"
+    }
+  ],
+  "acceptance": [
+    "不能把人物名换成任意陌生人仍得到相同场景。",
+    "2002开局必须具体出现母亲献金、家庭破产、教育机会与入队之间的冲突。",
+    "母亲和伯父承担有背景依据的不同角色，不用陌生同事代替家庭关系。",
+    "玩家可以改变开局之后的选择，不能被模型强迫回到现实犯罪结局。",
+    "当前章只获得本阶段事实；2002年不得主动泄露2015或2022年的未来。",
+    "模型真实输入必须保留全部必要事实、人物与分支规则。"
+  ],
+  "chapter_usage": "本章只概述S1/S2/S3中2002年前背景。S4/S5及其他后期事件仅保留作者侧完整归属记录，不进入Scenario、Catalog或模型上下文。未新增外部事实；私人动机、对话、场景细节和分支为模拟。"
+}

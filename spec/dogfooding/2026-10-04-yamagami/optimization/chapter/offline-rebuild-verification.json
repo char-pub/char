@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "method": "Chapter copied into an isolated temporary repository root with package/workspace and Biome configuration; only repository packages, format rules and installed node_modules linked. No biographical/production directory, .dev, credentials, or LLM logs provided. Installed tsx and Biome executables invoked directly without package-manager setup.",
+  "artifact_digest": "sha256:9bb3fc1c4336c10c8110feb5d79db39d97fccc1950d0ec328262616b632890bd",
+  "rebuild_commands": [
+    "python3 author-chapter.py",
+    "python3 author-acceptance.py",
+    "tsx --conditions=@char-pub/source verify-chapter.ts sha256:9bb3fc1c4336c10c8110feb5d79db39d97fccc1950d0ec328262616b632890bd",
+    "biome check chapter"
+  ],
+  "outputs": {
+    "yamagami-family-2002.json": {
+      "byte_identical": true,
+      "sha256": "f1855dc970b6302f9d8c9ad6e477fca95a7111af0e83547d12c0831eca71fd79"
+    },
+    "chapter.artifact.json": {
+      "byte_identical": true,
+      "sha256": "219dc4094ea570347139ed2f5b83a20e71d78cbaf4ba5cd2ecfe7f1d41187858"
+    },
+    "runtime-input.json": {
+      "byte_identical": true,
+      "sha256": "1aca488001b92d48c90d1c17734bd561873eb431b874ed3488ae845659eb73e2"
+    },
+    "acceptance-24-turns.json": {
+      "byte_identical": true,
+      "sha256": "58bb27924db0b6dc3154fd55d45a5810967e99a68b1e06bc064a14b057c213ed"
+    },
+    "player-view-samples.json": {
+      "byte_identical": true,
+      "sha256": "456ca4d4b10af3e057ed3c3e0924c24c5d32a743493d578296d85838ada3145b"
+    },
+    "sources.json": {
+      "byte_identical": true,
+      "sha256": "c653d587f313ea24dc992fef17150a9a4b0b1a9a1240ad719bfe91a5df8176b5"
+    }
+  },
+  "generated_outputs_use_repository_biome": true,
+  "biome_check_passed": true,
+  "mismatch_guard_kept_final_files": true,
+  "network_required_by_scripts": false,
+  "registry_or_session_changed": false
+}
