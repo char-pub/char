@@ -258,6 +258,7 @@ function sequelStory(
     });
     return {
       version: 1,
+      ...(prior.player !== undefined ? { player: prior.player } : {}),
       scenes: [
         {
           id: scene.id,
@@ -289,6 +290,7 @@ function sequelStory(
   }
   return {
     version: 1,
+    ...(prior?.player !== undefined ? { player: prior.player } : {}),
     scenes: [{ id: sceneId, title: "New scene" }, ...placeholders],
     starts: [
       {

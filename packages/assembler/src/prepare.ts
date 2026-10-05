@@ -12,6 +12,7 @@ import {
   ResolvedPresetSchema,
   type RuntimeProfile,
   RuntimeProfileSchema,
+  resolveStoryPlayer,
   type SelectionPlan,
   type Session,
   type TurnViewInput,
@@ -193,6 +194,16 @@ export function prepareContext(input: ContextAssemblyInput): AssembleResult {
     PreparedAdmission["fragments"] extends ReadonlyMap<string, infer T> ? T : never
   >();
   const extra: PreparedText[] = [];
+  const player = resolveStoryPlayer(artifact);
+  if (player)
+    extra.push({
+      id: "session:player-control",
+      text: `[Player control]\nThe player controls ${JSON.stringify(ctx.participantName(player.participant))}. User messages are this character's contributions. Leave this character's speech, decisions, actions and inner thoughts to the player. Portray the narrator and the other characters; do not play this character for the player.`,
+      region: "session:bindings",
+      required: true,
+      order: -1,
+      reason: "required",
+    });
   const refs = new Map<string, CatalogRef>();
   const fragments = new Map(artifact.ir.fragments.map((fragment) => [fragment.id, fragment]));
   const directOrder = new Map(artifact.ir.fragments.map((fragment, i) => [fragment.id, i]));

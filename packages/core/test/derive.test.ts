@@ -656,6 +656,27 @@ describe("reviewed play situation to sequel", () => {
     opening: { en: "A reviewed new beginning for {{cast:bob}}.", ja: "新しい始まり。" },
   });
 
+  it("preserves explicit player control in both authored and reviewed sequels", () => {
+    const creation = scenario();
+    if (!creation.story) throw new Error("expected Story");
+    creation.story.player = "player";
+    const original = published(2, creation);
+    for (const from_play of [undefined, situation()]) {
+      const result = deriveCreation({
+        kind: "sequel",
+        source: original,
+        target,
+        ...(from_play ? { from_play } : {}),
+      });
+      expect(result.creation.story?.player).toBe("player");
+      expect(result.creation.cast?.find((member) => member.key === "player")?.role).toBe("user");
+      expect(compile(result.creation, original).artifact.capabilities).toContainEqual({
+        id: "story.player-control",
+        experimental: true,
+      });
+    }
+  });
+
   it("creates a clean editable opening without replaying prior starts, gates, or entry knowledge", () => {
     const original = source();
     const before = JSON.stringify(original);

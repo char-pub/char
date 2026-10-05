@@ -155,6 +155,8 @@ export const StoryEventSchema = z.strictObject({
 const audience = z.union([z.array(castKey), z.literal("*")]);
 export const StorySchema = z.strictObject({
   version: z.literal(1),
+  /** Explicit single-player control of a declared cast member; never inferred from role or name. */
+  player: castKey.optional(),
   scenes: z.array(StorySceneSchema).min(1),
   beats: z.array(StoryBeatSchema).optional(),
   endings: z.array(StoryEndingSchema).optional(),

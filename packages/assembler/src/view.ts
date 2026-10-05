@@ -6,6 +6,7 @@ import {
   type CreationArtifact,
   type IRFragment,
   participantKey,
+  resolveStoryPlayer,
   type TurnView,
   type TurnViewInput,
   TurnViewSchema,
@@ -46,6 +47,14 @@ export function createViewContext(
 ): ViewContext {
   const turn = parseOrThrow(TurnViewSchema, input, "turn", "catalog.invalid_input");
   const view = parseOrThrow(ContextViewSchema, rawView, "view", "catalog.invalid_input");
+  const player = resolveStoryPlayer(artifact);
+  if (player)
+    for (const [index, message] of turn.history.entries())
+      if (message.role === "user" && message.speaker !== player.participant)
+        throw new CharError({
+          code: "story.player_speaker_mismatch",
+          subject: `history[${index}].speaker`,
+        });
   const participants =
     artifact.story_refs?.participants ??
     Object.fromEntries(artifact.ir.participants.map((p) => [p.key, p.key]));

@@ -9,6 +9,7 @@ export {
 export * from "./catalog.js";
 export * from "./fixtures.js";
 export * from "./locale.js";
+export * from "./player.js";
 export type { ContextAssemblyInput as AssembleInput } from "./prepare.js";
 export * from "./prepare.js";
 export { prepareContext as assemble } from "./prepare.js";

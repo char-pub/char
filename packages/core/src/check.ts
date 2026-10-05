@@ -414,6 +414,21 @@ export function checkCreation(c: CanonicalCreation, opts: CheckOptions = {}): Ch
   checkTypeRequirements(c, sink);
   sink.list.push(...checkContentCollections(c), ...checkLocalContentReferences(c));
   if (c.story) {
+    if (c.story.player !== undefined) {
+      const controlled = c.cast?.find((member) => member.key === c.story?.player);
+      if (controlled && controlled.role !== "user")
+        sink.error(
+          "story.player_role",
+          "story.player",
+          "The controlled cast member must have role: user.",
+        );
+      if ((c.cast ?? []).filter((member) => member.role === "user").length > 1)
+        sink.error(
+          "story.player_ambiguous",
+          "story.player",
+          "Explicit single-player control permits only one user-controlled cast member.",
+        );
+    }
     const checkStoryTemplate = (text: LocalizedTemplateText, subject: string) => {
       if (typeof text === "string") {
         checkTemplate(text, subject, scope, sink);

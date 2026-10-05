@@ -36,6 +36,7 @@ export { type LocalizedTemplateText, LocalizedTemplateTextSchema } from "./schem
 export * from "./source-text.js";
 export * from "./story/check.js";
 export * from "./story/evaluate.js";
+export * from "./story/player.js";
 export * from "./story/resolve.js";
 export {
   type CompositionAddress,

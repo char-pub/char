@@ -5,6 +5,7 @@ import {
   type CreationArtifact,
   CreationArtifactSchema,
   initStoryState,
+  resolveStoryPlayer,
   type Session,
   SessionSchema,
   type StoryJudgment,
@@ -34,6 +35,9 @@ export function initialStoryTurn(
   }
   if (!artifact.story_refs)
     throw new CharError({ code: "catalog.story_state_required", subject: "story_refs" });
+  resolveStoryPlayer(artifact);
+  if ((artifact.story.starts?.length ?? 0) > 1 && start === undefined)
+    throw new CharError({ code: "story.start_required", subject: artifact.root.ref });
   const state = initStoryState(
     artifact.story,
     Object.keys(artifact.story_refs.participants),

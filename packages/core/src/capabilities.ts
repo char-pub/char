@@ -43,6 +43,7 @@ export function deriveCapabilities(artifact: CreationArtifact): Capability[] {
     add("cast.override");
   if (story) {
     add("story.v1");
+    if (story.player !== undefined) add("story.player-control", true);
     if (
       Object.keys(story.vars ?? {}).length ||
       story.starts?.some((start) => start.reached?.length)
