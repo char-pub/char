@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import { buildTestCreation } from "../../core/test/build.js";
 import { D, level0Character, tid } from "../../core/test/fixtures.js";
 import { buildContextCatalog, catalogKey, selectorCatalog } from "../src/catalog.js";
+import { DEFAULT_LABELS, RenderContext } from "../src/render.js";
 import { fixedSelection, noneSelection, validateSelectionPlan } from "../src/selection.js";
 import { estimateCounter } from "../src/tokens.js";
 import { selectorView, viewOf } from "../src/view.js";
@@ -190,6 +191,28 @@ function fixture(withStyles = false, edit?: (creation: CreationInput) => void) {
 }
 
 describe("view-scoped context discovery", () => {
+  it.each(["ja-JP", "JA-jp", "fr-CA"])(
+    "estimates the same localized fragment body that %s renders",
+    (locale) => {
+      const japanese = "あ".repeat(500);
+      const { input, artifact, turn } = fixture(false, (creation) => {
+        const door = creation.fragments?.find((fragment) => fragment.id === "door");
+        if (!door) throw new Error("Missing door");
+        door.content = { type: "text", text: "x" };
+        door.locale = { ja: { content: { type: "text", text: japanese } } };
+      });
+      const counter = { tokenizer: "characters", estimated: true, count: (s: string) => s.length };
+      const localizedTurn = { ...turn, locale, bindings: {} };
+      const build = buildContextCatalog({ ...input, turn: localizedTurn, counter });
+      const door = artifact.ir.fragments.find((fragment) => fragment.origin.fragment === "door");
+      if (!door) throw new Error("Missing resolved door");
+      const expected = locale.toLowerCase().startsWith("ja") ? japanese : "x";
+      const renderer = new RenderContext(artifact.ir, localizedTurn, locale, false, DEFAULT_LABELS);
+      expect(renderer.render(door).text).toBe(expected);
+      expect(build.nodes.get(catalogKey({ fragment: door.id }))?.est_tokens).toBe(expected.length);
+    },
+  );
+
   it("preserves cast/scene Style scopes and applies replace in authored order", () => {
     const { input, artifact } = fixture(true);
     const bob = buildContextCatalog(input);
