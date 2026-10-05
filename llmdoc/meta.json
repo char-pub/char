@@ -18,7 +18,7 @@
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "engineering/verification.mdx": {
-      "validatedRevision": "6faa8c9974f0703cf17bba77daeeef20ea8ba96b"
+      "validatedRevision": "aa67141c819ffe2c987f3c4b14c675aa19409c39"
     },
     "execution-model.mdx": {
       "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
@@ -66,10 +66,10 @@
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "runtime/assembly.mdx": {
-      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
+      "validatedRevision": "aa67141c819ffe2c987f3c4b14c675aa19409c39"
     },
     "runtime/resolution.mdx": {
-      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
+      "validatedRevision": "aa67141c819ffe2c987f3c4b14c675aa19409c39"
     },
     "source/github-source-and-publish.mdx": {
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
