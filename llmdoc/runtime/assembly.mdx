@@ -45,7 +45,7 @@ relations:
 
 viewOf 先按当前场次、人物、知情关系和 visibility 投影，再供目录/选择使用。每个 late slot 独立绑定；per-agent 的发言对象必须是实际参与者。narrator 的知情标注不提供同一模型内的秘密隔离。离场人物的 late description 不能通过其它渲染阶段重新进入消息；公开 outward 与私人描述分开。
 
-渐进暴露先给可见定义的 description 与元数据，展开 group/source/section 受深度、目录与请求预算限制。about、perspective、activation_hint 同样进入 DTO/预算/hash，不能作为正文或隐藏身份旁路。目录可发现不等于被选中；required/direct 与 selector 的可选候选分别处理，选择失败的 skip/unknown 不得自动扩大读取范围。
+渐进暴露先给可见定义的 description 与元数据，展开 group/source/section 受深度、目录与请求预算限制。about、perspective、activation_hint 同样进入 DTO/预算/hash，不能作为正文或隐藏身份旁路。目录可发现不等于被选中；required/direct 与 selector 的可选候选分别处理，选择失败的 skip/unknown 不得自动扩大读取范围。目录正文估算与渲染共用同一 fragment 语言变体选择：BCP 47 lookup 逐级截短、不区分大小写，默认正文优先级与未命中回退一致，不能拿默认文本成本估算已选中的译文。
 
 SelectionPlan 绑定精确 artifact/lock、当前输入、可见目录、发现过程与预算。history、focus、overlay 等原字符串变化使旧 Plan 无效，键序等价 JSON 可重放。Plan 不能通过重复ID、越界引用、伪身份或客户端超额预算绕过策略。提供方只提出选择，真正准入与排序仍由确定性 SDK 校验。
 
