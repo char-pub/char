@@ -21,7 +21,7 @@
       "validatedRevision": "6faa8c9974f0703cf17bba77daeeef20ea8ba96b"
     },
     "execution-model.mdx": {
-      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "identity/creator-and-guest.mdx": {
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
@@ -33,25 +33,25 @@
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "interoperability/conformance.mdx": {
-      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "model/canonical-identity.mdx": {
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "model/publish-integrity.mdx": {
-      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "operations/admin-authority.mdx": {
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "operations/commons-seed.mdx": {
-      "validatedRevision": "721d451c0c3ac47f5d58a54fc1525756a71d38b4"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "operations/deploy-and-edge.mdx": {
-      "validatedRevision": "721d451c0c3ac47f5d58a54fc1525756a71d38b4"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "operations/jobs-and-controls.mdx": {
-      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "operations/takedown-and-evidence.mdx": {
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
@@ -60,16 +60,16 @@
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "registry/publishing.mdx": {
-      "validatedRevision": "6faa8c9974f0703cf17bba77daeeef20ea8ba96b"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "registry/reading.mdx": {
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
     },
     "runtime/assembly.mdx": {
-      "validatedRevision": "6faa8c9974f0703cf17bba77daeeef20ea8ba96b"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "runtime/resolution.mdx": {
-      "validatedRevision": "721d451c0c3ac47f5d58a54fc1525756a71d38b4"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     },
     "source/github-source-and-publish.mdx": {
       "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
@@ -102,7 +102,7 @@
       "validatedRevision": "721d451c0c3ac47f5d58a54fc1525756a71d38b4"
     },
     "engineering/working-agreements.mdx": {
-      "validatedRevision": "fec87b2cff13a2345b4890eabb76e1c7c804dd63"
+      "validatedRevision": "bc094abd3cb1d306fd8b00290dcfbd25835a60e1"
     }
   },
   "convergence": {
