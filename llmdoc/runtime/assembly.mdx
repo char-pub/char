@@ -1,5 +1,5 @@
 ---
-description: "公开prepare/assemble的安全视角、渐进目录、精确SelectionPlan、Source正文、预算和最终消息；startSession与合成预览"
+description: "公开prepare/assemble的安全视角、玩家公开视图、渐进目录、精确SelectionPlan、Source正文、预算和最终消息；startSession与合成预览"
 kind: architecture
 code:
   paths:
@@ -15,6 +15,7 @@ code:
     - "packages/assembler/src/selection.ts"
     - "packages/assembler/src/catalog.ts"
     - "packages/assembler/src/view.ts"
+    - "packages/assembler/src/player.ts"
     - "packages/assembler/src/prepare.ts"
     - "spec/assembly-assets-v0.md"
     - "packages/core/src/schema/assembly.ts"
@@ -45,9 +46,11 @@ relations:
 
 viewOf 先按当前场次、人物、知情关系和 visibility 投影，再供目录/选择使用。每个 late slot 独立绑定；per-agent 的发言对象必须是实际参与者。narrator 的知情标注不提供同一模型内的秘密隔离。离场人物的 late description 不能通过其它渲染阶段重新进入消息；公开 outward 与私人描述分开。
 
+projectPlayerView 独立于 narrator 模型上下文，从受控人物自己的 per-agent 视角给出当前场次、在场 NPC 的 outward 画像、显式 knowing 且当前可见的知识、可用 Choice 与已达成公开里程碑；不暴露 NPC 私目标、原始变量/条件、判定提示或未来人物，也不加载 Source 或把可检索当作已知。旧作品保守使用隐式 user，在场状态未知、known 为空。显式玩家控制还进入必需且计预算的 session:player-control 上下文，不能被可选选择或预算截断移除。
+
 渐进暴露先给可见定义的 description 与元数据，展开 group/source/section 受深度、目录与请求预算限制。about、perspective、activation_hint 同样进入 DTO/预算/hash，不能作为正文或隐藏身份旁路。目录可发现不等于被选中；required/direct 与 selector 的可选候选分别处理，选择失败的 skip/unknown 不得自动扩大读取范围。目录正文估算与渲染共用同一 fragment 语言变体选择：BCP 47 lookup 逐级截短、不区分大小写，默认正文优先级与未命中回退一致，不能拿默认文本成本估算已选中的译文。
 
-SelectionPlan 绑定精确 artifact/lock、当前输入、可见目录、发现过程与预算。history、focus、overlay 等原字符串变化使旧 Plan 无效，键序等价 JSON 可重放。Plan 不能通过重复ID、越界引用、伪身份或客户端超额预算绕过策略。提供方只提出选择，真正准入与排序仍由确定性 SDK 校验。
+SelectionPlan 绑定精确 artifact/lock、当前输入、可见目录、发现过程与预算。history、focus、overlay 等原字符串变化使旧 Plan 无效，键序等价 JSON 可重放。Plan 不能通过重复ID、越界引用、伪身份或客户端超额预算绕过策略。提供方只提出选择，真正准入与排序仍由确定性 SDK 校验。selected 是最终正文清单，同一 ref 的最后显式 reject 不得与入选矛盾；缺少终局决定的旧 Plan、尚未入选的 select 和增量/skip 记录仍可成立，不能把决策日志误当正文清单。
 
 sourceRequests 列出实际所需资料；调用者只加载这些原 UTF-8 bytes 并验证 digest，Core 再按统一 BOM/换行/Markdown 锚点语义取正文。Locator、origin、source、data、pin、about 不是正文 include 展开入口；不抓外链、不把未选章节自动给模型。固定策略块、历史、required/direct 内容和选中内容都受最终消息成本约束；溢出不能静默截断必需内容。
 
