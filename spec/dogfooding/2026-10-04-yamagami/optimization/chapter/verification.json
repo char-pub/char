@@ -1,0 +1,247 @@
+{
+  "schema_valid": true,
+  "local_build": true,
+  "semantic_digest": "sha256:bbb16f9f6c9e6613246d986cabd023e7433c31a551832ca4b0bfded8fca6f9c4",
+  "artifact_digest": "sha256:9bb3fc1c4336c10c8110feb5d79db39d97fccc1950d0ec328262616b632890bd",
+  "counts": {
+    "scenes": 4,
+    "beats": 8,
+    "choices": 12,
+    "endings": 3,
+    "vars": 6,
+    "semantic_fragments": 12
+  },
+  "future_source_bodies_excluded": true,
+  "initial_player_catalog": {
+    "view": { "mode": "per-agent", "for": "yamagami", "scene": "family-table" },
+    "required": [
+      { "story": "scene", "id": "family-table" },
+      { "story": "part", "id": "yamagami" },
+      { "story": "part", "id": "mother" },
+      { "story": "part", "id": "uncle" },
+      { "fragment": "@djj/yamagami-family-2002#play-contract~root" },
+      { "fragment": "@djj/yamagami-family-2002#player-identity~root" },
+      { "fragment": "@djj/yamagami-family-2002#core-family-table~root" },
+      {
+        "fragment": "@djj/yamagami-mother#outward-portrait~8c5eed3773f146bf1772f17a422a48335193f60e1ac8caa83fe9458024c24cc0"
+      },
+      {
+        "fragment": "@djj/yamagami-uncle#outward-portrait~dde8df0aa3437ff6fd3356554f50985cb8ffe72979ebd36037309aefd2b9611f"
+      },
+      {
+        "fragment": "@djj/yamagami-tetsuya#portrait~d87386e4b59ff9a6e3d800d68d08b02515ea28d83b5b8146aee90a57b492e0f6"
+      }
+    ],
+    "direct": [],
+    "candidates": [
+      {
+        "ref": { "work": "@djj/yamagami-family-2002~root" },
+        "kind": "work",
+        "title": "山上徹也：2002，下一步由你决定",
+        "description": "玩家扮演山上徹也。以2002年之前的公开背景为起点，在四个可回访场次中同母亲、伯父协商。私人对白、心理、具体安排与分支全部是明确的叙事模拟；不知道的真实数字不补造，开局后的走向可以改变。作者出处与来源限制见同目录 sources.json、AUTHOR-NOTES.md。",
+        "child_count": 1,
+        "est_tokens": 0,
+        "importance": "normal",
+        "children": [
+          {
+            "ref": { "group": "@djj/yamagami-family-2002#group/practical~root" },
+            "kind": "group",
+            "title": "把生活的问题问具体",
+            "description": "按当前场次和已知信息核对家庭、教育、收入及照料。",
+            "child_count": 1,
+            "est_tokens": 0,
+            "importance": "normal"
+          }
+        ]
+      }
+    ],
+    "withheld": 5
+  },
+  "outward_portraits_verified": true,
+  "player_facing_knowledge_verified": true,
+  "initial_narrator_catalog": {
+    "view": { "mode": "narrator", "scene": "family-table" },
+    "required": [
+      { "story": "scene", "id": "family-table" },
+      { "story": "part", "id": "yamagami" },
+      { "story": "part", "id": "mother" },
+      { "story": "goal", "id": "mother" },
+      { "story": "part", "id": "uncle" },
+      { "story": "goal", "id": "uncle" },
+      { "fragment": "@djj/yamagami-family-2002#play-contract~root" },
+      { "fragment": "@djj/yamagami-family-2002#player-identity~root" },
+      { "fragment": "@djj/yamagami-family-2002#core-family-table~root" },
+      {
+        "fragment": "@djj/yamagami-mother#portrait~8c5eed3773f146bf1772f17a422a48335193f60e1ac8caa83fe9458024c24cc0"
+      },
+      {
+        "fragment": "@djj/yamagami-mother#outward-portrait~8c5eed3773f146bf1772f17a422a48335193f60e1ac8caa83fe9458024c24cc0"
+      },
+      {
+        "fragment": "@djj/yamagami-uncle#portrait~dde8df0aa3437ff6fd3356554f50985cb8ffe72979ebd36037309aefd2b9611f"
+      },
+      {
+        "fragment": "@djj/yamagami-uncle#outward-portrait~dde8df0aa3437ff6fd3356554f50985cb8ffe72979ebd36037309aefd2b9611f"
+      },
+      {
+        "fragment": "@djj/yamagami-tetsuya#portrait~d87386e4b59ff9a6e3d800d68d08b02515ea28d83b5b8146aee90a57b492e0f6"
+      }
+    ],
+    "direct": [],
+    "candidates": [
+      {
+        "ref": { "work": "@djj/yamagami-family-2002~root" },
+        "kind": "work",
+        "title": "山上徹也：2002，下一步由你决定",
+        "description": "玩家扮演山上徹也。以2002年之前的公开背景为起点，在四个可回访场次中同母亲、伯父协商。私人对白、心理、具体安排与分支全部是明确的叙事模拟；不知道的真实数字不补造，开局后的走向可以改变。作者出处与来源限制见同目录 sources.json、AUTHOR-NOTES.md。",
+        "child_count": 3,
+        "est_tokens": 0,
+        "importance": "normal",
+        "children": [
+          {
+            "ref": { "group": "@djj/yamagami-family-2002#group/people~root" },
+            "kind": "group",
+            "title": "怎样与这两个人谈",
+            "description": "母亲与伯父的模拟表达和边界；供叙事者扮演，不把私人动机直接发给玩家。",
+            "child_count": 2,
+            "est_tokens": 0,
+            "importance": "normal"
+          },
+          {
+            "ref": { "group": "@djj/yamagami-family-2002#group/practical~root" },
+            "kind": "group",
+            "title": "把生活的问题问具体",
+            "description": "按当前场次和已知信息核对家庭、教育、收入及照料。",
+            "child_count": 1,
+            "est_tokens": 0,
+            "importance": "normal"
+          },
+          {
+            "ref": { "group": "@djj/yamagami-family-2002#group/next-step~root" },
+            "kind": "group",
+            "title": "只落实眼前一步",
+            "description": "已讨论的方向才成为玩家可知的首步资料；记录具体约定。",
+            "child_count": 3,
+            "est_tokens": 0,
+            "importance": "normal"
+          }
+        ]
+      }
+    ],
+    "withheld": 0
+  },
+  "trajectory_checks": [
+    { "id": "agreement", "turns": 24, "final_outcome": "study", "roundtrip_after_turn12": true },
+    {
+      "id": "refusal",
+      "turns": 24,
+      "final_outcome": "independent",
+      "roundtrip_after_turn12": true
+    },
+    {
+      "id": "undetermined",
+      "turns": 24,
+      "final_outcome": "undecided",
+      "roundtrip_after_turn12": true
+    }
+  ],
+  "routes": [
+    {
+      "route": "study",
+      "ending": "study-inquiry",
+      "reached": [
+        "name-priority",
+        "check-education",
+        "clarify-support",
+        "consider-study",
+        "prepare-first-step"
+      ],
+      "knowing": {
+        "#care-and-contact": ["yamagami", "mother", "uncle"],
+        "#family-accounts": ["yamagami", "mother", "uncle"],
+        "#education-questions": ["uncle", "yamagami", "mother"],
+        "#income-and-housing": ["uncle"],
+        "#support-terms": ["uncle", "yamagami", "mother"],
+        "#refusal-and-alternatives": ["uncle", "mother", "yamagami"],
+        "#study-first-step": ["uncle", "yamagami", "mother"],
+        "#independent-first-step": ["uncle"],
+        "#pause-first-step": ["uncle"],
+        "#commitment-ledger": ["yamagami", "mother", "uncle"]
+      },
+      "vars": {
+        "priority_named": true,
+        "facts_checked": true,
+        "terms_discussed": true,
+        "considered": ["study"],
+        "step_prepared": true,
+        "outcome": "study"
+      },
+      "revisit_without_repeated_effects": true
+    },
+    {
+      "route": "independent",
+      "ending": "independent-check",
+      "reached": [
+        "name-priority",
+        "check-living",
+        "clarify-support",
+        "consider-independent",
+        "prepare-first-step"
+      ],
+      "knowing": {
+        "#care-and-contact": ["yamagami", "mother", "uncle"],
+        "#family-accounts": ["yamagami", "mother", "uncle"],
+        "#education-questions": ["uncle"],
+        "#income-and-housing": ["uncle", "yamagami", "mother"],
+        "#support-terms": ["uncle", "yamagami", "mother"],
+        "#refusal-and-alternatives": ["uncle", "mother", "yamagami"],
+        "#study-first-step": ["uncle"],
+        "#independent-first-step": ["uncle", "yamagami", "mother"],
+        "#pause-first-step": ["uncle"],
+        "#commitment-ledger": ["yamagami", "mother", "uncle"]
+      },
+      "vars": {
+        "priority_named": true,
+        "facts_checked": true,
+        "terms_discussed": true,
+        "considered": ["independent"],
+        "step_prepared": true,
+        "outcome": "independent"
+      },
+      "revisit_without_repeated_effects": true
+    },
+    {
+      "route": "pause",
+      "ending": "pause-agreement",
+      "reached": [
+        "name-priority",
+        "check-living",
+        "clarify-support",
+        "consider-pause",
+        "prepare-first-step"
+      ],
+      "knowing": {
+        "#care-and-contact": ["yamagami", "mother", "uncle"],
+        "#family-accounts": ["yamagami", "mother", "uncle"],
+        "#education-questions": ["uncle"],
+        "#income-and-housing": ["uncle", "yamagami", "mother"],
+        "#support-terms": ["uncle", "yamagami", "mother"],
+        "#refusal-and-alternatives": ["uncle", "mother", "yamagami"],
+        "#study-first-step": ["uncle"],
+        "#independent-first-step": ["uncle"],
+        "#pause-first-step": ["uncle", "yamagami", "mother"],
+        "#commitment-ledger": ["yamagami", "mother", "uncle"]
+      },
+      "vars": {
+        "priority_named": true,
+        "facts_checked": true,
+        "terms_discussed": true,
+        "considered": ["pause"],
+        "step_prepared": true,
+        "outcome": "pause"
+      },
+      "revisit_without_repeated_effects": true
+    }
+  ],
+  "scope": "Deterministic author semantics only: explicit true judgments prove guards/effects, not free-text director accuracy or narrative quality."
+}
