@@ -136,6 +136,12 @@ export function checkStory(
     choice: new Set((story.choices ?? []).map((x) => x.id)),
   };
   const members = new Set(cast);
+  if (story.player !== undefined && !members.has(story.player))
+    error(
+      "story.player",
+      "The controlled player must name a declared cast member.",
+      "story.player_missing",
+    );
   const controlled = controlledInformation(story);
   const missing = (kind: string, value: string, available: Iterable<string>) => {
     const options = alternatives(available);

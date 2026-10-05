@@ -315844,6 +315844,8 @@ var StoryEventSchema = z4.strictObject({
 var audience = z4.union([z4.array(castKey), z4.literal("*")]);
 var StorySchema = z4.strictObject({
   version: z4.literal(1),
+  /** Explicit single-player control of a declared cast member; never inferred from role or name. */
+  player: castKey.optional(),
   scenes: z4.array(StorySceneSchema).min(1),
   beats: z4.array(StoryBeatSchema).optional(),
   endings: z4.array(StoryEndingSchema).optional(),
@@ -317028,6 +317030,7 @@ function deriveCapabilities(artifact) {
     add("cast.override");
   if (story) {
     add("story.v1");
+    if (story.player !== void 0) add("story.player-control", true);
     if (Object.keys(story.vars ?? {}).length || story.starts?.some((start) => start.reached?.length))
       add("story.conditions", true);
     if (Object.keys(story.knowing ?? {}).length) add("story.knowing", true);
@@ -317571,6 +317574,12 @@ function checkStory(story, cast, information) {
     choice: new Set((story.choices ?? []).map((x) => x.id))
   };
   const members = new Set(cast);
+  if (story.player !== void 0 && !members.has(story.player))
+    error(
+      "story.player",
+      "The controlled player must name a declared cast member.",
+      "story.player_missing"
+    );
   const controlled = controlledInformation(story);
   const missing = (kind, value, available) => {
     const options = alternatives(available);
@@ -318266,6 +318275,21 @@ function checkCreation(c, opts = {}) {
   checkTypeRequirements(c, sink);
   sink.list.push(...checkContentCollections(c), ...checkLocalContentReferences(c));
   if (c.story) {
+    if (c.story.player !== void 0) {
+      const controlled = c.cast?.find((member) => member.key === c.story?.player);
+      if (controlled && controlled.role !== "user")
+        sink.error(
+          "story.player_role",
+          "story.player",
+          "The controlled cast member must have role: user."
+        );
+      if ((c.cast ?? []).filter((member) => member.role === "user").length > 1)
+        sink.error(
+          "story.player_ambiguous",
+          "story.player",
+          "Explicit single-player control permits only one user-controlled cast member."
+        );
+    }
     const checkStoryTemplate = (text2, subject) => {
       if (typeof text2 === "string") {
         checkTemplate(text2, subject, scope, sink);
@@ -321589,6 +321613,25 @@ function sourceSections(source, text2) {
   return { source: source.id, body, sections };
 }
 
+// ../../packages/core/src/story/player.ts
+function resolveStoryPlayer(artifact) {
+  if (artifact.kind !== "content" || artifact.story?.player === void 0) return null;
+  const cast = artifact.story.player;
+  const participant = artifact.story_refs?.participants[cast];
+  const member = artifact.ir.participants.find((entry) => entry.key === participant);
+  if (!participant || participant !== participantKey(ROOT_INSTANCE, cast) || !member || member.cast_key !== cast || member.cast_scope !== ROOT_INSTANCE)
+    throw new CharError({ code: "story.player_missing", subject: "story.player" });
+  if (member.role !== "user")
+    throw new CharError({ code: "story.player_role", subject: "story.player" });
+  if (artifact.ir.participants.filter(
+    (entry) => entry.cast_scope === ROOT_INSTANCE && entry.role === "user"
+  ).length !== 1)
+    throw new CharError({ code: "story.player_ambiguous", subject: "story.player" });
+  if (!artifact.capabilities.some((capability) => capability.id === "story.player-control"))
+    throw new CharError({ code: "story.player_capability_missing", subject: "capabilities" });
+  return { cast_key: cast, participant };
+}
+
 // ../../packages/assembler/src/locale.ts
 function sameTag(a, b) {
   return a.toLowerCase() === b.toLowerCase();
@@ -321614,6 +321657,14 @@ function localizedString(text2, locale, defaultLocale) {
   const keys = Object.keys(text2).sort(compareStrings);
   const key = matchLocale(keys, locale) ?? matchLocale(keys, defaultLocale) ?? keys[0];
   return key === void 0 ? "" : text2[key] ?? "";
+}
+function localizedContent(fragment2, wanted, defaultLocale) {
+  const variants = fragment2.locales ?? {};
+  const pick = matchLocale([defaultLocale, ...Object.keys(variants).sort(compareStrings)], wanted);
+  return {
+    content: pick === null || pick === defaultLocale ? fragment2.content : variants[pick] ?? fragment2.content,
+    fallback: pick === null
+  };
 }
 function localizedTemplate(template, wanted, defaultLocale) {
   const variants = template.locales ?? {};
@@ -321702,12 +321753,7 @@ var RenderContext = class {
    * 匹配，越具体的标签越优先。都匹配不上时回退到默认内容。
    */
   pickContent(f) {
-    const def = this.ir.meta.default_locale;
-    const variants = f.locales ?? {};
-    const hit = matchLocale([def, ...Object.keys(variants).sort(compareStrings)], this.locale);
-    if (hit === null) return { content: f.content, fallback: true };
-    if (hit === def) return { content: f.content, fallback: false };
-    return { content: variants[hit] ?? f.content, fallback: false };
+    return localizedContent(f, this.locale, this.ir.meta.default_locale);
   }
   render(f) {
     const { content, fallback } = this.pickContent(f);
@@ -322341,6 +322387,15 @@ function mergeMessages(list, role) {
 function createViewContext(artifact, input, rawView) {
   const turn = parseOrThrow(TurnViewSchema, input, "turn", "catalog.invalid_input");
   const view = parseOrThrow(ContextViewSchema, rawView, "view", "catalog.invalid_input");
+  const player = resolveStoryPlayer(artifact);
+  if (player) {
+    for (const [index, message] of turn.history.entries())
+      if (message.role === "user" && message.speaker !== player.participant)
+        throw new CharError({
+          code: "story.player_speaker_mismatch",
+          subject: `history[${index}].speaker`
+        });
+  }
   const participants = artifact.story_refs?.participants ?? Object.fromEntries(artifact.ir.participants.map((p) => [p.key, p.key]));
   const participant = view.for ? participants[view.for] ?? view.for : void 0;
   if (view.mode === "per-agent" && (!participant || !artifact.ir.participants.some((p) => p.key === participant)))
@@ -322521,7 +322576,7 @@ function buildContextCatalog(input) {
     }
   }
   const contentText = (fragment2) => {
-    const value = fragment2.locales?.[locale] ?? fragment2.content;
+    const { content: value } = localizedContent(fragment2, locale, artifact.ir.meta.default_locale);
     return value.type === "text" ? value.text : value.type === "dialogue" ? value.turns.map((t) => t.text).join("\n") : value.type === "media" ? value.caption ?? "" : JSON.stringify(value.data);
   };
   for (const fragment2 of artifact.ir.fragments) {
@@ -322770,6 +322825,9 @@ function validateSelectionPlan(build, input) {
       });
   }
   const selected2 = /* @__PURE__ */ new Set();
+  const finalDecisions = /* @__PURE__ */ new Map();
+  for (const decision of plan.decisions)
+    if (decision.action !== "expand") finalDecisions.set(catalogKey(decision.ref), decision.action);
   const wholeSources = /* @__PURE__ */ new Set();
   const sectionSources = /* @__PURE__ */ new Set();
   for (const ref of build.catalog.direct) {
@@ -322780,6 +322838,8 @@ function validateSelectionPlan(build, input) {
     const node = exposed.get(key)?.node;
     if (!node || selected2.has(key))
       throw new CharError({ code: "selection.invalid_reference", subject: key });
+    if (finalDecisions.get(key) === "reject")
+      throw new CharError({ code: "selection.decision_mismatch", subject: key });
     selected2.add(key);
     if ("fragment" in item.ref) {
       if (item.form !== "body")
@@ -322932,6 +322992,17 @@ function prepareContext(input) {
   );
   const admissions = /* @__PURE__ */ new Map();
   const extra = [];
+  const player = resolveStoryPlayer(artifact);
+  if (player)
+    extra.push({
+      id: "session:player-control",
+      text: `[Player control]
+The player controls ${JSON.stringify(ctx.participantName(player.participant))}. User messages are this character's contributions. Leave this character's speech, decisions, actions and inner thoughts to the player. Portray the narrator and the other characters; do not play this character for the player.`,
+      region: "session:bindings",
+      required: true,
+      order: -1,
+      reason: "required"
+    });
   const refs = /* @__PURE__ */ new Map();
   const fragments = new Map(artifact.ir.fragments.map((fragment2) => [fragment2.id, fragment2]));
   const directOrder = new Map(artifact.ir.fragments.map((fragment2, i) => [fragment2.id, i]));

@@ -66,6 +66,9 @@ export function validateSelectionPlan(build: CatalogBuild, input: unknown): Sele
       });
   }
   const selected = new Set<string>();
+  const finalDecisions = new Map<string, "select" | "reject">();
+  for (const decision of plan.decisions)
+    if (decision.action !== "expand") finalDecisions.set(catalogKey(decision.ref), decision.action);
   const wholeSources = new Set<string>();
   const sectionSources = new Set<string>();
   for (const ref of build.catalog.direct) {
@@ -76,6 +79,10 @@ export function validateSelectionPlan(build: CatalogBuild, input: unknown): Sele
     const node = exposed.get(key)?.node;
     if (!node || selected.has(key))
       throw new CharError({ code: "selection.invalid_reference", subject: key });
+    // selected is authoritative; an explicit final rejection cannot explain an admitted body.
+    // A select may remain unadmitted while expanding or after skip, and legacy Plans may omit it.
+    if (finalDecisions.get(key) === "reject")
+      throw new CharError({ code: "selection.decision_mismatch", subject: key });
     selected.add(key);
     if ("fragment" in item.ref) {
       if (item.form !== "body")

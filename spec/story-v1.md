@@ -311,6 +311,10 @@ assets:
 
 在现有 `CastMember { key, who, role? }` 上增加三个字段。`role`（`lead` / `support` / `user`）表示控制分工，不表示故事身份。
 
+单玩家作品可显式声明 `story.player: <cast key>`（experimental），指定玩家控制的真实参与者。该 key 必须是根作品的 cast，角色必须为 `role: user`，且声明此能力的根 cast 必须恰有一个 `role: user`；不根据姓名、persona 正文或唯一 user 提示猜测映射。构建增加 `story.player-control` 能力，消费端必须明确支持。没有声明的旧作品保持原语义，不把已有 `role: user` 自动绑定到 Session 玩家。
+
+`story.player` 引用原有 cast identity，不创建第二个人物，也不合并或删除 IR 中独立的隐式 `user`、其 Persona late slot 或 `{{user}}` 模板含义。玩家控制哪个故事角色与提供何种运行时 Persona 是两个显式概念。`resolveStoryPlayer(artifact)` 返回 `{ cast_key, participant }` 或旧作品的 `null`；`playerInputMessage(artifact, text)` 为新声明的玩家输入写入该 participant 的 `speaker`，旧作品保留无 speaker 的输入形状。带声明作品的 user history 必须使用这一 speaker，否则准备/投影拒绝 `story.player_speaker_mismatch`；不改写历史。Assembler 把控制归属加入必需且计入预算的 `session:player-control`，模型应把该人物的发言、决定、行动和内心活动留给玩家。Remix/Sequel 保留此声明与 cast 关系。
+
 ```yaml
 cast:
   - key: alice
@@ -604,7 +608,7 @@ story:
 
 参考 SDK 提供 `startSession({ artifact, bindings, start?, locale?, judgments?, greeting_id? })`，返回 `{ turn, opening }`。多个开局时必须给出 start；单一或隐式开局可省略。有 Story 时禁止独立选择 greeting_id，必须从开局解析实际问候语；没有 Story 的作品可用 greeting_id 选择 bootstrap 备选。
 
-它先执行初始 set/reached/知情与场次进入条件，再创建首条消息。实际选用语言写入 turn.locale，保证后续组装不会被另一个Profile缺省语言改变；锁定搭配的调用方先按有效Profile选定语言再启动。`opening` 为 null 表示没有问候语；旁白消息没有 speaker，不伪造不存在的 self。实际首条消息已经放入 turn.history，Runtime 不应重复追加。该接口只接受新会话输入，不接受已有 history/story 状态来自动补全；继续会话必须直接使用完整 TurnView。`initialStoryTurn` 则仅初始化状态，不生成或追加消息。
+它先执行初始 set/reached/知情与场次进入条件，再创建首条消息。实际选用语言写入 turn.locale，保证后续组装不会被另一个Profile缺省语言改变；锁定搭配的调用方先按有效Profile选定语言再启动。`opening` 为 null 表示没有问候语；旁白消息没有 speaker，不伪造不存在的 self。实际首条消息已经放入 turn.history，Runtime 不应重复追加。该接口只接受新会话输入，不接受已有 history/story 状态来自动补全；继续会话必须直接使用完整 TurnView。`initialStoryTurn` 则仅初始化状态，不生成或追加消息；它与 `startSession` 一样，多开局缺少显式 start 时拒绝 `story.start_required`。
 
 CLI 新预览使用这个入口，多开局需 `--start`；Web 开局选择器默认显示并显式选择第一项。预览中的样例消息排在实际开局消息后，传入完整快照时保持原历史，不重新初始化。
 
@@ -1233,6 +1237,10 @@ interface JudgmentRecord {
 - **绑定描述分视角。** `LateBindingValue.description` 是完整描述，`outward_description` 是可对其他角色公开的描述。per-agent只接收自身完整描述与其他在场角色的公开描述；离场角色保留模板所需身份，但不自动注入绑定描述。narrator使用在场角色完整描述与全局overlay。
 - **开场初始化是显式操作。** `initialStoryTurn(artifact, start?)` 供新会话和作者预览构造初始快照；消费已有快照的Engine不得用它补全缺失状态。网页可选开场，CLI用`--start`；CLI `--session`传入完整TurnView，与`--start`互斥。
 
+参考 Assembler 的 `projectPlayerView({ artifact, turn })` 提供玩家界面投影，独立于 narrator 的模型上下文。返回 `player`（key、可选 cast_key、name、present、可选 part）、当前 `scene`（id/title 及公开 description/time/where）、当前在场的其他 `participants`（key、可选 cast_key、name、present、可选 part/portrait）、`known`（id/title/text）、当前可用 `choices`（id/label）与已达成公开 `milestones`（kind/id/title）。它只读取当前快照与已有 judgments，不调用模型、加载 Source 或推断事实。
+
+人物 portrait 仅含作者显式 `outward: true` 且通过玩家 per-agent 视角的 character/persona 文本，late 人物只使用 `outward_description`；没有公开画像时省略。线索只来自显式 knowing 已含受控 cast、通过当前场次/私有/知情过滤的 knowledge 文本，不把可检索、pinned 或旁白可见当作玩家已知。里程碑只显示已达成且 reveal 非 hidden 的 Beat/Ending；不提前暴露 listed 结局。私有 goal、场次 goal、变量、条件、判定提示、未来人物或未获知资料不进入 DTO。无 `story.player` 的旧作品保守使用隐式 user 视角，`player.present` 为 null、known 为空，不凭角色名制造身份。作者应把公开画像与线索写成玩家可读资料，把模型扮演指令放在相应私有设置中。
+
 ### 13.5 SelectionPlan
 
 ```ts
@@ -1264,6 +1272,7 @@ Assembler 接收前必须校验，任何一条不满足都拒绝整个 Plan：
 2. 按 `decisions` 中的 `expand` 顺序重放展开，展开次数与成本不超过 Preset 限制；
 3. 每个 `selected[].ref` 都在重放后的 `candidates` 中；不能选中 `withheld`、`required`、`direct`、不存在或越界的内容；
 4. work/group 是容器，只可 expand 不可选正文；fragment 只能选 body，source 可选 body，含 section 的 source 只能选 section；分节必须存在。重复叶子拒绝，rank 为有限非负整数，按升序及完整 ref 字典序打破同分；v1 不支持简版正文。
+5. `selected` 是最终正文清单；若同 ref 存在 select/reject 决策，以最后一项为准，最终 reject 的 ref 不得进入 selected，否则拒绝 `selection.decision_mismatch`。未记录终局决定的旧 Plan 仍可选择；select 暂未进入 selected 的增量展开或 skip 日志也合法，不把决策日志误当最终正文清单。
 
 Plan 的产物、TurnView、Catalog、策略输入摘要，以及 Trace 的 `plan_digest`，使用精确 JSON 快照摘要：对象键按 JCS 排序，但字符串值与字典键不做 NFC、换行或尾空白归一。运行时的 history、focus、overlay、bindings 与判定记录必须绑定实际观测到的内容；即使这些变化没有改变目录，也不能复用旧Plan。仅JSON键序变化、对象中省略未定义的可选属性仍等价。SDK的`digestExactJSON`用于此类快照，`digestOf`继续用于作者正文的规范化语义，不全局更改后者。
 
@@ -1368,6 +1377,7 @@ Registry提供`GET /v1/releases/:release/source-text?source=<完整Source ID>`�
 | `sources.v1` | 存在 `sources` | 否 |
 | `perspective.v1` | 任一片段写了非 `canon` 的 `perspective` | 否 |
 | `story.v1` | 存在 `story` | 否 |
+| `story.player-control` | 显式声明 `story.player` | 是 |
 | `cast.override` | 任一参与者带 `override` | 否 |
 | `view.outward` | 任一片段标 `outward` | 否 |
 | `style.scope` | 任一 Style 边写了非缺省的 `scope` 或 `combine` | 否 |

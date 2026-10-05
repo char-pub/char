@@ -3,7 +3,9 @@ import {
   createPreparationCatalog,
   fixedSelection,
   prepareContext,
+  projectPlayerView,
   selectorCatalog,
+  startSession,
   TOKENIZER_VERSIONS,
   validateRuntimePreviewInput,
   validateSelectionPlan,
@@ -13,10 +15,14 @@ import {
   buildIdentity,
   CreationSchema,
   checkStory,
+  confirm,
   digestExactJSON,
+  playerInputMessage,
   RuntimePreviewInputSchema,
   RuntimeProfileSchema,
+  resolveStoryPlayer,
   TurnViewSchema,
+  toTurnStory,
 } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
 import bundleJSON from "./cases.gen.json" with { type: "json" };
@@ -52,6 +58,121 @@ const ids = [
   "205-progressive-source",
   "206-exact-plan-replay",
 ];
+
+/** New opt-in behavior is exercised without changing the retained legacy fixture bytes. */
+function controlledPlayerFixture(enabled = true) {
+  const fixture = bundle.cases.find((candidate) => candidate.meta.id === "203-story-view");
+  if (!fixture?.input.root) throw new Error("Portable view fixture required");
+  const creation = CreationSchema.parse(structuredClone(fixture.input.root.creation));
+  if (!creation.story || !creation.cast) throw new Error("Story cast required");
+  if (enabled) creation.story.player = "bob";
+  const bob = creation.cast.find((member) => member.key === "bob");
+  if (!bob) throw new Error("Bob required");
+  bob.role = "user";
+  creation.story.beats = [
+    {
+      id: "shared",
+      title: "Shared",
+      description: "Private director description",
+      reveal: "on-reach",
+      effects: [{ learn: { who: "bob", info: "#secret" } }],
+    },
+  ];
+  const { artifact } = buildCreation({
+    root: { ...fixture.input.root, creation },
+    dependencies: fixture.input.deps,
+    ...fixture.input.options,
+  });
+  if (artifact.kind !== "content" || !artifact.story || !artifact.story_refs)
+    throw new Error("Content required");
+  const bindings = Object.fromEntries(
+    artifact.ir.late_slots.map((slot) => [
+      slot.key,
+      {
+        kind: slot.accepts[0] ?? "persona",
+        display_name:
+          slot.key === "user"
+            ? "Human"
+            : (artifact.ir.participants.find((p) => p.late === slot.key)?.cast_key ?? "Actor"),
+        description: "PRIVATE_BINDING",
+        outward_description: "PUBLIC_BINDING",
+      },
+    ]),
+  );
+  return { artifact, turn: startSession({ artifact, bindings }).turn };
+}
+
+describe("portable explicit player control", () => {
+  it("projects the controlled cast and newly learned information without narrator secrets", () => {
+    const input = controlledPlayerFixture();
+    const player = resolveStoryPlayer(input.artifact);
+    if (
+      !player ||
+      !input.turn.story ||
+      !input.turn.scene ||
+      !input.turn.present ||
+      !input.artifact.story ||
+      !input.artifact.story_refs
+    )
+      throw new Error("Player state required");
+    expect(player.cast_key).toBe("bob");
+    expect(player.participant).not.toBe("user");
+    expect(input.artifact.capabilities).toContainEqual({
+      id: "story.player-control",
+      experimental: true,
+    });
+    const before = projectPlayerView(input);
+    expect(before.player).toMatchObject({
+      key: player.participant,
+      cast_key: "bob",
+      present: true,
+    });
+    expect(before.participants.map((p) => p.cast_key)).toEqual(["alice"]);
+    expect(before.known).toEqual([]);
+    expect(JSON.stringify(before)).not.toMatch(/SECRET_|PRIVATE_|knowing|vars|judgments/);
+    const state = confirm(
+      input.artifact.story,
+      Object.keys(input.artifact.story_refs.participants),
+      { ...input.turn.story, scene: input.turn.scene, present: input.turn.present },
+      "beat/shared",
+    );
+    const text = "Cafe\u0301\r\nkeep  ";
+    const message = playerInputMessage(input.artifact, text);
+    expect(message).toEqual({ role: "user", speaker: player.participant, text });
+    const turn = { ...input.turn, history: [message], story: toTurnStory(state) };
+    const after = projectPlayerView({ artifact: input.artifact, turn });
+    expect(after.known.map((item) => item.text)).toEqual(["SECRET_KNOWN_BODY"]);
+    expect(after.milestones).toEqual([{ kind: "beat", id: "shared", title: "Shared" }]);
+    expect(JSON.stringify(after)).not.toMatch(/ALICE_PRIVATE_|PRIVATE_BINDING|Private director/);
+    const prepared = prepareContext({
+      artifact: input.artifact,
+      turn,
+      profile: RuntimeProfileSchema.parse({
+        runtime: { name: "portable", version: "1" },
+        tokenizer: "estimate",
+        context_window: 8192,
+        reserve_for_output: 256,
+        mode: "narrator",
+        capabilities: { system_role: true, multiple_system_messages: false },
+      }),
+    });
+    expect(
+      prepared.messages.some(
+        (item) =>
+          item.source.includes("session:player-control") &&
+          item.content.includes('The player controls "bob"'),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not infer a controlled player from a legacy role:user", () => {
+    const input = controlledPlayerFixture(false);
+    expect(resolveStoryPlayer(input.artifact)).toBeNull();
+    expect(playerInputMessage(input.artifact, "legacy")).toEqual({ role: "user", text: "legacy" });
+    expect(projectPlayerView(input).player).toEqual({ key: "user", name: "Human", present: null });
+    expect(projectPlayerView(input).known).toEqual([]);
+  });
+});
 
 function runtimePreview() {
   const fixture = bundle.cases.find((candidate) => candidate.meta.id === "206-exact-plan-replay");

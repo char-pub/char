@@ -3517,6 +3517,10 @@
           "type": "number",
           "const": 1
         },
+        "player": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+        },
         "scenes": {
           "minItems": 1,
           "type": "array",

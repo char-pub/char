@@ -2,7 +2,7 @@ import type { CreationInput } from "@char-pub/core";
 import { describe, expect, it } from "vitest";
 import { buildTestCreation } from "../../core/test/build.js";
 import { tid } from "../../core/test/fixtures.js";
-import { assemble, startSession } from "../src/index.js";
+import { assemble, initialStoryTurn, startSession } from "../src/index.js";
 import { profile } from "./fixtures/ir.js";
 
 function fixture() {
@@ -142,6 +142,10 @@ describe("Story session initialization", () => {
     expect(() => startSession(input)).toThrowError(
       expect.objectContaining({ code: "story.start_required" }),
     );
+    expect(() => initialStoryTurn(input.artifact)).toThrowError(
+      expect.objectContaining({ code: "story.start_required" }),
+    );
+    expect(initialStoryTurn(input.artifact, "guest").story?.start).toBe("guest");
     expect(() => startSession({ ...input, start: "missing" })).toThrowError(
       expect.objectContaining({ code: "story.unknown_start" }),
     );
