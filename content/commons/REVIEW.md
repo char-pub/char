@@ -1,8 +1,20 @@
 # `@commons` 种子内容审阅表
 
-这些 Creation 是 AI 辅助起草的原创内容，许可 CC0-1.0，评级 general，**尚未发布**。每一项都需要人工审阅：确认原创性、适龄与措辞后勾选。全部审阅通过后才会发布到 `@commons`。
+这些 Creation 是 AI 辅助起草的原创内容，许可 CC0-1.0，评级 general。下列世界、资料库及示例角色仍为**未发布候选**；每一项都需要人工确认原创性、适龄与措辞后才能发布。默认策略的独立审阅与发布记录如下，不代表其他候选已获批准。
 
 表中的 semantic digest 由 `pnpm commons:check` 算出。修改内容后 digest 会变化，请重新运行并更新本表（`pnpm commons:check --json` 输出完整结果）。
+
+## 已审阅并发布：默认策略
+
+- 候选文件：`content/commons/default-preset/char.yaml`。
+- 审阅日期：2026-10-05；用户在部署会话中确认审阅，批准发布并设为全站默认。
+- 审阅内容：保留玩家发言、选择与内心的决定权；区分人物认知、传闻、参考资料与作者设定。CC0-1.0、general；保留 `authored_by_agent: true`。
+- 本地候选检查：通过，semantic digest 为 `sha256:a165ce7beb62f27c939c0df5b871c46382038bdf9cb07dedbbc1683993ecf571`。
+- 正式 Release：`@commons/default-preset@1.0.0`，`rel_01m450x7txe5jt1ktx1hej165m`。
+- 正式 semantic digest：`sha256:b3cf92905d28e65279eb99ccbd51603281a54e4c130536c59945c66ea8a1356b`。Registry 分配真实 Creation 身份，故与本地候选摘要不同。
+- 已通过普通 Registry API 发布；状态 active、public，source 与 artifact 均匿名可读。API `DEFAULT_PRESET` 已固定到上述真实 Release。
+
+后续正文或依赖变化仍需重新审阅，不沿用本次签名。
 
 ## 总表
 
