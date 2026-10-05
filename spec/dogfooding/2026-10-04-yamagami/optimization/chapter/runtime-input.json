@@ -14,10 +14,10 @@
     ],
     "root": {
       "ref": "@djj/yamagami-family-2002",
-      "semantic_digest": "sha256:c976a22d74a9afc551b53fc182164b8e10577109e3037b733d6bc63ad1dde751",
+      "semantic_digest": "sha256:cb83fe6ac6f61d4145b408bce33a614c4cba52ef812290fa7bf000dcf2c307be",
       "origin": {
         "kind": "local-build",
-        "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+        "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
       }
     },
     "lock": [
@@ -96,10 +96,10 @@
       "ir_version": "1-draft",
       "root": {
         "ref": "@djj/yamagami-family-2002",
-        "semantic_digest": "sha256:c976a22d74a9afc551b53fc182164b8e10577109e3037b733d6bc63ad1dde751",
+        "semantic_digest": "sha256:cb83fe6ac6f61d4145b408bce33a614c4cba52ef812290fa7bf000dcf2c307be",
         "origin": {
           "kind": "local-build",
-          "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+          "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
         }
       },
       "lock_digest": "sha256:9091219d237aedbd0f5805d8584bc6f6a878c5fca1fb88c3787b1e7f116b68f2",
@@ -201,7 +201,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:c94987afd0d6af8adb7fb1a3889e4c88a4e79dfc990f112465069f289a4b51ce"
@@ -226,7 +226,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:4042b5a065cc2d3d41989b3bba7134de143c1ce48da7956dd20eb16d771bfa20"
@@ -251,7 +251,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:06ef3cb34de2f32d01a0feb75378ac009a72bdb606a143047e0b32ca964df83c"
@@ -276,7 +276,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:4d3c5793a05b7df9a0a23a3f67e89588e8efd03dbc3e1479473514628d015e28"
@@ -301,7 +301,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:aaf03c62f1c60ed050c95218ff05f4d4cbb662fbbfa172a27d41a6d3aa83e46a"
@@ -326,7 +326,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:9776d4be499b3a786a145ca321e1702569db58d3d8f577f4f2179b1762bb347c"
@@ -358,7 +358,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:36956ba6ec5aae6eb9769c8d19ab6a2b6bb127d81d635904eb125a0e727dcb4e"
@@ -390,7 +390,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:71acb027def076fa05ec45f53a49b96cb6eec3340d3dd545f5434346599766bf"
@@ -416,7 +416,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:f110be6e877f98f45414aec180dce8a2e960ec46669fd014259ae31c32680bed"
@@ -442,7 +442,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:e2ce90df652237ff320fd2cc0398ff4c43c1d70118fa6cc05bf702cd65990f17"
@@ -468,7 +468,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:d6121f247550e15e8b731b10fa77c7957d8118fa1133b525468f713716e563fa"
@@ -494,7 +494,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:12d1dc288663cee524f6d7cecaff58c77ade41b82f4fbad56f42441e87c278e8"
@@ -523,7 +523,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:63a125e1d697ed44520e606cd98b34c6f2a6831a70a1db808abc5fbc9a47074e"
@@ -549,7 +549,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:a459f430f2cc8daddfcf25cc9553ec668d76f283af2de3c682bd67e819bb3944"
@@ -575,7 +575,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:c56889aab62651fe6ebabac9406a53a47b89e55826b882d6fbfb02056df1e384"
@@ -601,7 +601,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:8ad29d72277a33ab2f5e123e4faa5d42a9768043c55c49f7e2f45dd7d786dbe0"
@@ -627,7 +627,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:0a7437ac95de3d41629ee919ba31feb77d450718a145bcd8abf872583770f959"
@@ -653,7 +653,7 @@
             "stable": true,
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           "digest": "sha256:f119eea1070b9b486656d91ee752908a8a6dcde7061a5337f0b316869442e648"
@@ -797,7 +797,7 @@
             "display_name": "山上徹也：2002，下一步由你决定",
             "origin": {
               "kind": "local-build",
-              "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219"
+              "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a"
             }
           },
           {
@@ -1217,7 +1217,7 @@
         {
           "id": "consider-pause",
           "title": "把暂不决定说清",
-          "description": "明确提出延期或先等一项信息，不等于“随便你们”或没有回答。",
+          "description": "玩家主动研究或比较暂缓方案，询问等待何种信息或在何种条件下复谈；这不等于采用延期。沉默、含糊附和、仅拒绝条件不够。",
           "strength": "possible",
           "reveal": "on-reach",
           "when": {
@@ -1225,7 +1225,7 @@
               { "in": "scene/negotiation" },
               { "reached": "beat/clarify-support" },
               {
-                "judge": "玩家是否明确说现在不作长期决定，并愿意讨论等什么信息或在何种条件下再谈？模糊、沉默和低置信度必须保持未定。"
+                "judge": "玩家是否主动研究或比较暂缓方案，询问等待何种信息或在何种条件下复谈？这不等于采用延期；沉默、含糊附和、仅拒绝条件不够。"
               }
             ]
           },

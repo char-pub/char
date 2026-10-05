@@ -212,7 +212,7 @@
           "fragment": "play-contract",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -237,7 +237,7 @@
           "fragment": "player-identity",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -262,7 +262,7 @@
           "fragment": "core-family-table",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -287,7 +287,7 @@
           "fragment": "core-practical-check",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -312,7 +312,7 @@
           "fragment": "core-negotiation",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -337,7 +337,7 @@
           "fragment": "core-first-step",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -366,7 +366,7 @@
           "fragment": "mother-voice",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -398,7 +398,7 @@
           "fragment": "uncle-voice",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -427,7 +427,7 @@
           "fragment": "family-accounts",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -453,7 +453,7 @@
           "fragment": "care-and-contact",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -479,7 +479,7 @@
           "fragment": "education-questions",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -505,7 +505,7 @@
           "fragment": "income-and-housing",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -534,7 +534,7 @@
           "fragment": "support-terms",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -560,7 +560,7 @@
           "fragment": "refusal-and-alternatives",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -586,7 +586,7 @@
           "fragment": "study-first-step",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -612,7 +612,7 @@
           "fragment": "independent-first-step",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -638,7 +638,7 @@
           "fragment": "pause-first-step",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -664,7 +664,7 @@
           "fragment": "commitment-ledger",
           "instance_key": "root",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "stable": true,
@@ -877,7 +877,7 @@
         {
           "display_name": "山上徹也：2002，下一步由你决定",
           "origin": {
-            "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+            "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
             "kind": "local-build"
           },
           "ref": "@djj/yamagami-family-2002",
@@ -998,11 +998,11 @@
     "resolver": { "name": "@char-pub/core", "version": "0.0.0" },
     "root": {
       "origin": {
-        "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+        "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
         "kind": "local-build"
       },
       "ref": "@djj/yamagami-family-2002",
-      "semantic_digest": "sha256:c976a22d74a9afc551b53fc182164b8e10577109e3037b733d6bc63ad1dde751"
+      "semantic_digest": "sha256:cb83fe6ac6f61d4145b408bce33a614c4cba52ef812290fa7bf000dcf2c307be"
     }
   },
   "kind": "content",
@@ -1078,11 +1078,11 @@
   },
   "root": {
     "origin": {
-      "input_digest": "sha256:4873af3f050fe82b52aab34dc87bd9fcfaf5481a69839d706416ae1f6e312219",
+      "input_digest": "sha256:2fe9ed4e83e39dc243e5f78705679650e62987e19c39e12febd17d2e2739a12a",
       "kind": "local-build"
     },
     "ref": "@djj/yamagami-family-2002",
-    "semantic_digest": "sha256:c976a22d74a9afc551b53fc182164b8e10577109e3037b733d6bc63ad1dde751"
+    "semantic_digest": "sha256:cb83fe6ac6f61d4145b408bce33a614c4cba52ef812290fa7bf000dcf2c307be"
   },
   "story": {
     "beats": [
@@ -1204,7 +1204,7 @@
         }
       },
       {
-        "description": "明确提出延期或先等一项信息，不等于“随便你们”或没有回答。",
+        "description": "玩家主动研究或比较暂缓方案，询问等待何种信息或在何种条件下复谈；这不等于采用延期。沉默、含糊附和、仅拒绝条件不够。",
         "effects": [
           { "put": ["var/considered", "pause"] },
           { "learn": { "info": "#pause-first-step", "who": "*" } }
@@ -1218,7 +1218,7 @@
             { "in": "scene/negotiation" },
             { "reached": "beat/clarify-support" },
             {
-              "judge": "玩家是否明确说现在不作长期决定，并愿意讨论等什么信息或在何种条件下再谈？模糊、沉默和低置信度必须保持未定。"
+              "judge": "玩家是否主动研究或比较暂缓方案，询问等待何种信息或在何种条件下复谈？这不等于采用延期；沉默、含糊附和、仅拒绝条件不够。"
             }
           ]
         }

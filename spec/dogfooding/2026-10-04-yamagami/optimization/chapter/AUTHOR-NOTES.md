@@ -8,6 +8,10 @@
 
 八个 beats 分别记录：表达需要、核对教育、核对生活、问清协助范围、研究求学、研究独立、研究暂缓、把首步说具体。每一个都带场次及先决条件；其中研究方向用集合记录，可同时研究多种，不因询问自动选定路线。
 
+`consider-pause` 的描述与判断已对齐为主动研究或比较暂缓方案，并询问等待的信息或复谈条件。它记录研究行为，不要求玩家已经采用延期；沉默、含糊附和或仅拒绝条件仍然不够。此前的判断要求先声明不作长期决定，比其他研究方向的谓词多了一层承诺含义。
+
+此次校正只改该 beat 的 `description` 和 `/when/all/2/judge`，保留协商场次、`clarify-support` 先决、原有效果，以及延期结局的真实确认守卫。三条原始轨迹共 72 轮的输入、操作预期和确认元数据逐字节不变。它是作者概念对齐；旧 v4 模型失败与统计仍保留，本目录的确定性验证不证明真实模型已修复。
+
 三种 `after: continue` 阶段结果均以 `reveal: listed` 提供可读的模拟安排确认预览；标题与说明只说明确认后会记录什么，不冒充真实未来或已经达成的事实。三个结果是：留住一次教育咨询、自己核对生活、明确等待信息再谈。它们只确认一个小的模拟安排，不保证录取、就业、住房、资助或家庭和解。人物和日常问题仍可继续讨论。
 
 六个变量仅记必要流程状态：需要是否表达、是否核对过一项问题、协助边界是否问清、研究过哪些方向、首步是否具体、已确认哪个阶段结果。没有好感度，也不把家庭困境量化为无来源的金钱数字。
@@ -74,9 +78,9 @@ pnpm exec biome check spec/dogfooding/2026-10-04-yamagami/optimization/chapter
 验证器会逐一核对 snapshot 与 pin 的 ref、Release 和 semantic digest，再由 Core 重建并校验完整依赖。Python 生成器和 TypeScript 验证器都会调用仓库已安装的 Biome 来格式化 JSON，使用仓库配置，不下载工具。验证器在全部语义检查与输出格式化都成功后才写出最终文件；再次运行不会恢复成不符合仓库规范的数组换行。若要确认本次整理没有改变最终内容，可以给验证器传入固定摘要；摘要不符时不覆盖现有最终产物：
 
 ```sh
-pnpm exec tsx --conditions=@char-pub/source spec/dogfooding/2026-10-04-yamagami/optimization/chapter/verify-chapter.ts sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932
+pnpm exec tsx --conditions=@char-pub/source spec/dogfooding/2026-10-04-yamagami/optimization/chapter/verify-chapter.ts sha256:a8e05bc72f1c7e84ebbe390b5fba0ac56393b37d520aab1205a8eb7f3af50dbf
 ```
 
 本次还把章节复制到临时隔离目录，只接入仓库实现与已安装依赖，使用已安装的 `tsx` 直接运行。隔离目录同时包含仓库格式配置。那里没有 `biographical/production`、`.dev`、凭据或模型日志。重建后的候选定义、artifact、runtime input、24 回合轨迹、玩家投影样本与作者来源六个文件均逐字节相同，artifact digest 保持上述值。
 
-文件缩进属于交付格式。`chapter.artifact.json` 的文件字节摘要与 Core 对 canonical artifact 对象计算的 digest 是两个不同数值；格式归一不会改变 `sha256:e3548865…` 对应的内容身份。隔离记录中的文件 hashes 则按最终 Biome 格式重算。
+文件缩进属于交付格式。`chapter.artifact.json` 的文件字节摘要与 Core 对 canonical artifact 对象计算的 digest 是两个不同数值；格式归一不会改变 `sha256:a8e05bc7…` 对应的内容身份。隔离记录中的文件 hashes 则按最终 Biome 格式重算。
