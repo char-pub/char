@@ -1,0 +1,1293 @@
+{
+  "generated_at": "2026-10-05T06:35:15.575Z",
+  "configuration": {
+    "decision_model": "deepseek-v4-pro",
+    "generation_model": "deepseek-flash",
+    "decision_reasoning": "low",
+    "decision_output_tokens": 12288,
+    "decision_turn_budget": 64000,
+    "generation_reasoning": "off",
+    "generation_output_tokens": 1000
+  },
+  "candidate_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
+  "comparison_rules": [
+    "Expected operations were not sent to a model and were never used to synthesize Story state.",
+    "Strict state matching compares the saved scene and reached milestone prefix; earlier semantic timing differences remain failures.",
+    "Confirmation is a separate explicit sub-operation within a logical test turn.",
+    "Raw transcripts, OAuth data, credentials and model reasoning are excluded.",
+    "These are the saved endpoints of the original complete trajectories. Later browser confirmation/undo and guidance-v2 probes are recorded separately."
+  ],
+  "runs": [
+    {
+      "route": "agreement",
+      "completed_logical_turns": 24,
+      "planned_logical_turns": 24,
+      "successful_text_turns": 24,
+      "strict_state_matches": 20,
+      "strict_trajectory_pass": false,
+      "confirmations": 1,
+      "ending_without_explicit_confirmation": false,
+      "restart_at_12_snapshot_equal": true,
+      "history_messages": 51,
+      "final_scene": "first-step",
+      "final_endings": ["study-inquiry"],
+      "elapsed_seconds": {
+        "min": 21.946,
+        "max": 89.918,
+        "mean": 51.081,
+        "total_including_confirmation": 1233.078
+      },
+      "model_calls": {
+        "director": 24,
+        "selector": 48,
+        "narration": 25
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 46357,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "family-table",
+            "missing_milestones": [],
+            "extra_milestones": ["name-priority"]
+          }
+        },
+        {
+          "turn": 2,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 70319,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "family-table",
+            "missing_milestones": [],
+            "extra_milestones": ["name-priority"]
+          }
+        },
+        {
+          "turn": 3,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 85265,
+          "strict_state_match": true
+        },
+        {
+          "turn": 4,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 38893,
+          "strict_state_match": true
+        },
+        {
+          "turn": 5,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 2,
+          "milestones": ["check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 29812,
+          "strict_state_match": true
+        },
+        {
+          "turn": 6,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 35959,
+          "strict_state_match": true
+        },
+        {
+          "turn": 7,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 89918,
+          "strict_state_match": true
+        },
+        {
+          "turn": 8,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 21946,
+          "strict_state_match": true
+        },
+        {
+          "turn": 9,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 0,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 56482,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "family-table",
+            "missing_milestones": [],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 10,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 61381,
+          "strict_state_match": true
+        },
+        {
+          "turn": 11,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 52953,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "negotiation",
+            "missing_milestones": [],
+            "extra_milestones": ["clarify-support"]
+          }
+        },
+        {
+          "turn": 12,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 43253,
+          "strict_state_match": true
+        },
+        {
+          "turn": 13,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 60045,
+          "strict_state_match": true
+        },
+        {
+          "turn": 14,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 37954,
+          "strict_state_match": true
+        },
+        {
+          "turn": 15,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 42480,
+          "strict_state_match": true
+        },
+        {
+          "turn": 16,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 52168,
+          "strict_state_match": true
+        },
+        {
+          "turn": 17,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 5,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 48977,
+          "strict_state_match": true
+        },
+        {
+          "turn": 18,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 6,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 63065,
+          "strict_state_match": true
+        },
+        {
+          "turn": 19,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 5,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 62891,
+          "strict_state_match": true
+        },
+        {
+          "turn": 20,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 37766,
+          "strict_state_match": true
+        },
+        {
+          "turn": 21,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 47022,
+          "strict_state_match": true
+        },
+        {
+          "turn": 22,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": true,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 58073,
+          "strict_state_match": true
+        },
+        {
+          "turn": 23,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step",
+            "study-inquiry"
+          ],
+          "pending_after_text": true,
+          "explicit_confirmation": true,
+          "confirmation_status": "success",
+          "confirmation_elapsed_ms": 7137,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 30471,
+          "strict_state_match": true
+        },
+        {
+          "turn": 24,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step",
+            "study-inquiry"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 52491,
+          "strict_state_match": true
+        }
+      ]
+    },
+    {
+      "route": "refusal",
+      "completed_logical_turns": 24,
+      "planned_logical_turns": 24,
+      "successful_text_turns": 24,
+      "strict_state_matches": 15,
+      "strict_trajectory_pass": false,
+      "confirmations": 1,
+      "ending_without_explicit_confirmation": false,
+      "restart_at_12_snapshot_equal": true,
+      "history_messages": 51,
+      "final_scene": "first-step",
+      "final_endings": ["independent-check"],
+      "elapsed_seconds": {
+        "min": 19.275,
+        "max": 72.244,
+        "mean": 45.245,
+        "total_including_confirmation": 1093.411
+      },
+      "model_calls": {
+        "director": 24,
+        "selector": 48,
+        "narration": 25
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": [],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 19275,
+          "strict_state_match": true
+        },
+        {
+          "turn": 2,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": [],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 32372,
+          "strict_state_match": true
+        },
+        {
+          "turn": 3,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 38322,
+          "strict_state_match": true
+        },
+        {
+          "turn": 4,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 30778,
+          "strict_state_match": true
+        },
+        {
+          "turn": 5,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 2,
+          "milestones": ["check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 57618,
+          "strict_state_match": true
+        },
+        {
+          "turn": 6,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 38413,
+          "strict_state_match": true
+        },
+        {
+          "turn": 7,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 63386,
+          "strict_state_match": true
+        },
+        {
+          "turn": 8,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 31114,
+          "strict_state_match": true
+        },
+        {
+          "turn": 9,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 0,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 55422,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "family-table",
+            "missing_milestones": [],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 10,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 59373,
+          "strict_state_match": true
+        },
+        {
+          "turn": 11,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 0,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 33303,
+          "strict_state_match": true
+        },
+        {
+          "turn": 12,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 31411,
+          "strict_state_match": true
+        },
+        {
+          "turn": 13,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 40019,
+          "strict_state_match": true
+        },
+        {
+          "turn": 14,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 44862,
+          "strict_state_match": true
+        },
+        {
+          "turn": 15,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 44755,
+          "strict_state_match": true
+        },
+        {
+          "turn": 16,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 40541,
+          "strict_state_match": true
+        },
+        {
+          "turn": 17,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 43741,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "negotiation",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 18,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 5,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 52504,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "practical-check",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 19,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 49014,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "negotiation",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 20,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 2,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 46781,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "first-step",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 21,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 72244,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "first-step",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 22,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 53164,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "first-step",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 23,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "independent-check",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": true,
+          "explicit_confirmation": true,
+          "confirmation_status": "success",
+          "confirmation_elapsed_ms": 7536,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 38372,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "first-step",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        },
+        {
+          "turn": 24,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "independent-check",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 69091,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "first-step",
+            "missing_milestones": ["consider-pause"],
+            "extra_milestones": []
+          }
+        }
+      ]
+    },
+    {
+      "route": "undetermined",
+      "completed_logical_turns": 24,
+      "planned_logical_turns": 24,
+      "successful_text_turns": 24,
+      "strict_state_matches": 21,
+      "strict_trajectory_pass": false,
+      "confirmations": 0,
+      "ending_without_explicit_confirmation": false,
+      "restart_at_12_snapshot_equal": true,
+      "history_messages": 49,
+      "final_scene": "first-step",
+      "final_endings": [],
+      "elapsed_seconds": {
+        "min": 26.384,
+        "max": 84.273,
+        "mean": 45.573,
+        "total_including_confirmation": 1093.746
+      },
+      "model_calls": {
+        "director": 24,
+        "selector": 48,
+        "narration": 24
+      },
+      "turns": [
+        {
+          "turn": 1,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 34056,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "family-table",
+            "missing_milestones": [],
+            "extra_milestones": ["name-priority"]
+          }
+        },
+        {
+          "turn": 2,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 84273,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "family-table",
+            "missing_milestones": [],
+            "extra_milestones": ["name-priority"]
+          }
+        },
+        {
+          "turn": 3,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 42315,
+          "strict_state_match": true
+        },
+        {
+          "turn": 4,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 1,
+          "milestones": ["name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 39612,
+          "strict_state_match": true
+        },
+        {
+          "turn": 5,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 2,
+          "milestones": ["check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 27021,
+          "strict_state_match": true
+        },
+        {
+          "turn": 6,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 55552,
+          "strict_state_match": true
+        },
+        {
+          "turn": 7,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 61612,
+          "strict_state_match": true
+        },
+        {
+          "turn": 8,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 26384,
+          "strict_state_match": true
+        },
+        {
+          "turn": 9,
+          "status": "success",
+          "scene": "family-table",
+          "visible_known_count": 1,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 54526,
+          "strict_state_match": true
+        },
+        {
+          "turn": 10,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 3,
+          "milestones": ["check-education", "check-living", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 29116,
+          "strict_state_match": true
+        },
+        {
+          "turn": 11,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 83009,
+          "strict_state_match": false,
+          "difference": {
+            "expected_scene": "negotiation",
+            "missing_milestones": [],
+            "extra_milestones": ["clarify-support"]
+          }
+        },
+        {
+          "turn": 12,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 48808,
+          "strict_state_match": true
+        },
+        {
+          "turn": 13,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 58316,
+          "strict_state_match": true
+        },
+        {
+          "turn": 14,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 2,
+          "milestones": ["check-education", "check-living", "clarify-support", "name-priority"],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 50328,
+          "strict_state_match": true
+        },
+        {
+          "turn": 15,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 35257,
+          "strict_state_match": true
+        },
+        {
+          "turn": 16,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 44120,
+          "strict_state_match": true
+        },
+        {
+          "turn": 17,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 5,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 46738,
+          "strict_state_match": true
+        },
+        {
+          "turn": 18,
+          "status": "success",
+          "scene": "practical-check",
+          "visible_known_count": 6,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 46309,
+          "strict_state_match": true
+        },
+        {
+          "turn": 19,
+          "status": "success",
+          "scene": "negotiation",
+          "visible_known_count": 5,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 51445,
+          "strict_state_match": true
+        },
+        {
+          "turn": 20,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 3,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 34706,
+          "strict_state_match": true
+        },
+        {
+          "turn": 21,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 41868,
+          "strict_state_match": true
+        },
+        {
+          "turn": 22,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 33333,
+          "strict_state_match": true
+        },
+        {
+          "turn": 23,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 31261,
+          "strict_state_match": true
+        },
+        {
+          "turn": 24,
+          "status": "success",
+          "scene": "first-step",
+          "visible_known_count": 4,
+          "milestones": [
+            "check-education",
+            "check-living",
+            "clarify-support",
+            "consider-independent",
+            "consider-pause",
+            "consider-study",
+            "name-priority",
+            "prepare-first-step"
+          ],
+          "pending_after_text": false,
+          "explicit_confirmation": false,
+          "unexpected_ending_without_confirmation": [],
+          "elapsed_ms": 33781,
+          "strict_state_match": true
+        }
+      ]
+    }
+  ],
+  "implementation_revision": "d3449a4641",
+  "proposal_guidance_version": null,
+  "subsequent_targeted_guidance_v2_probe": "ending-delay-v2.json"
+}

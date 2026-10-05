@@ -1,0 +1,77 @@
+{
+  "format": 1,
+  "probe": "explicit-delay-v2",
+  "tested_at": "2026-10-05T06:42:54.433Z",
+  "status": "passed_for_this_live_sample",
+  "runtime_revision": "978e927961d4b70b6ff55c203940dad1a38f50a0",
+  "content": {
+    "kind": "local-draft-build",
+    "chapter": "yamagami-family-2002 v4",
+    "acceptance_version": 2,
+    "probe_definition": "../chapter/acceptance-24-turns.json: separate_probes/explicit-delay"
+  },
+  "models": {
+    "decisions": {
+      "provider": "deepseek-official",
+      "model": "deepseek-v4-pro",
+      "reasoning_effort": "low",
+      "max_tokens": 12288,
+      "temperature": 0
+    },
+    "narration": {
+      "provider": "deepseek-official",
+      "model": "deepseek-flash",
+      "reasoning_effort": "off",
+      "max_tokens": 1000
+    }
+  },
+  "legacy_compatibility": {
+    "old_guidance_field_absent": true,
+    "pending_id_preserved": true,
+    "public_snapshot_equal": true,
+    "core_state_equal": true,
+    "revision_equal": true,
+    "renewed_handle": true,
+    "no_model_calls": true,
+    "session_bytes_unchanged": true
+  },
+  "checks": {
+    "old_v1_proposal_undone_through_runtime": true,
+    "original_probe_input_reused_without_expected_conditions": true,
+    "new_request_identity": true,
+    "private_proposal_guidance_version": 2,
+    "guidance_version_not_exposed_in_player_dto": true,
+    "text_alone_keeps_outcome_undecided": true,
+    "text_alone_commits_no_ending": true,
+    "public_pending_title_matches_pause_ending": true,
+    "explicit_confirmation_uses_returned_proposal_id": true,
+    "confirmed_outcome": "pause",
+    "confirmed_ending": "pause-agreement",
+    "confirmation_invokes_narration_only": true,
+    "undo_confirmation_restores_same_proposal": true,
+    "old_confirmation_status_superseded": true,
+    "undo_and_status_model_calls": 0,
+    "undo_proposal_restores_base24_content": true,
+    "final_state": {
+      "outcome": "undecided",
+      "endings": [],
+      "pending_ending": null,
+      "history_messages": 49,
+      "scene": "first-step"
+    },
+    "base24_and_previous_failed_probe_files_unchanged": true
+  },
+  "narrative_review": {
+    "observed_pass": true,
+    "previous_failure": "The earlier synthetic reply described the pending arrangement as already confirmed. Its original evidence was retained unchanged.",
+    "current_observation": "The new reply restated the proposal and asked for further input without saying the stage result was confirmed or in effect.",
+    "synthetic_short_excerpt": "就这些？",
+    "scope": "One actual pending reply was reviewed. This result does not establish a guarantee over every model generation."
+  },
+  "additional_model_calls": {
+    "decisions": 3,
+    "narration": 2
+  },
+  "evidence_scope": "Real named profile, ordinary local OAuth, live model dispatches, durable JSONL replay, HTTP operations, and current player projection; no expected operation was injected into a model request.",
+  "private_evidence_retained": true
+}
