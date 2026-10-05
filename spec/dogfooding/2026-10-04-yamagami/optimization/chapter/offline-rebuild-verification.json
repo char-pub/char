@@ -1,28 +1,28 @@
 {
   "status": "passed",
   "method": "Chapter copied into an isolated temporary repository root with package/workspace and Biome configuration; only repository packages, format rules and installed node_modules linked. No biographical/production directory, .dev, credentials, or LLM logs provided. Installed tsx and Biome executables invoked directly without package-manager setup.",
-  "artifact_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
+  "artifact_digest": "sha256:a8e05bc72f1c7e84ebbe390b5fba0ac56393b37d520aab1205a8eb7f3af50dbf",
   "acceptance_version": 2,
   "stage_endings": "explicit-confirmation",
   "runtime_confirmation_operations_executed": false,
   "rebuild_commands": [
     "python3 author-chapter.py",
     "python3 author-acceptance.py",
-    "tsx --conditions=@char-pub/source verify-chapter.ts sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
+    "tsx --conditions=@char-pub/source verify-chapter.ts sha256:a8e05bc72f1c7e84ebbe390b5fba0ac56393b37d520aab1205a8eb7f3af50dbf",
     "biome check chapter"
   ],
   "outputs": {
     "yamagami-family-2002.json": {
       "byte_identical": true,
-      "sha256": "4ea6d0b54db89284fcb37f0125d449eb83aa93811c1f96fac167a547b2bf9f89"
+      "sha256": "85517ff5d09b9d5c3f26b80b3d9186f618a6fad0d916c275f9d7f838a4329533"
     },
     "chapter.artifact.json": {
       "byte_identical": true,
-      "sha256": "c550eee97be68ef4e254dbd8806b2f4351276eea38bcc5869eebb01711d29358"
+      "sha256": "13af89be73fa12386c563c526b3d8a3a3b523460cc84e02516d6cadf00117675"
     },
     "runtime-input.json": {
       "byte_identical": true,
-      "sha256": "40175246c9d10118de107d222899a078730921d573a2679c869e2a33a1358334"
+      "sha256": "0b7241c4c9a5456dc0175839e2c8c86ceaa5d057a74899175d5473bbd92a5ba1"
     },
     "acceptance-24-turns.json": {
       "byte_identical": true,
@@ -41,5 +41,18 @@
   "biome_check_passed": true,
   "mismatch_guard_kept_final_files": true,
   "network_required_by_scripts": false,
-  "registry_or_session_changed": false
+  "registry_or_session_changed": false,
+  "research_predicate_alignment": {
+    "changed_fields": [
+      "story.beats[consider-pause].description",
+      "story.beats[consider-pause].when.all[2].judge"
+    ],
+    "scene_and_prior_beat_guards_unchanged": true,
+    "effects_and_ending_guards_unchanged": true,
+    "acceptance_bytes_unchanged_from_previous_candidate": true,
+    "acceptance_sha256": "89d3d6099625f1719feb13c2e13a191c681e25584732f7674acd298d3a38b490",
+    "prior_artifact_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
+    "runtime_model_calls": 0,
+    "scope": "Only deterministic rebuild and structural equivalence. Previous real-model failures and statistics remain evidence for the prior candidate."
+  }
 }

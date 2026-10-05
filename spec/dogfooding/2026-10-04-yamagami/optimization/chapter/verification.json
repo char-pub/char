@@ -1,8 +1,8 @@
 {
   "schema_valid": true,
   "local_build": true,
-  "semantic_digest": "sha256:c976a22d74a9afc551b53fc182164b8e10577109e3037b733d6bc63ad1dde751",
-  "artifact_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
+  "semantic_digest": "sha256:cb83fe6ac6f61d4145b408bce33a614c4cba52ef812290fa7bf000dcf2c307be",
+  "artifact_digest": "sha256:a8e05bc72f1c7e84ebbe390b5fba0ac56393b37d520aab1205a8eb7f3af50dbf",
   "counts": {
     "scenes": 4,
     "beats": 8,
