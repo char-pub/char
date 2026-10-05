@@ -21,7 +21,7 @@ Harness 将输入、受限行动判断、资料选择、叙事与成功结算接
 | Runtime | 完整 test:roleplay-runtime 的 127 项通过，包含真实 Loader、HTTP、JSONL、官方 provider 投影、失败/取消/未知结果、幂等、版本检查、显式确认和撤回。 |
 | Replay 与旧存档 | test:roleplay 通过；实际旧 Session 在新 SDK 下可读、原字节不变。历史 v0–v4 格式与新持久化记录检查通过。 |
 | 界面 | 42 项通过。确认按钮、同文草稿保留、普通文本不能代替按钮、断线后同 ID 核对、私密提案投影等均有行为测试。实际窄屏宽度 390px，待确认卡片与输入框可操作且无横向溢出；宽屏展示玩家、场景、角色和线索。 |
-| 构建与文档 | 不可变 SDK 校验、类型、lint、JSDoc、持久化生成物和双语配对通过。文档检查仍有未修改的根 README 中英文第 9 行既有硬换行，未据此声称整个仓库全绿。 |
+| 构建与文档 | 不可变 SDK 校验、类型、JSDoc、持久化生成物和双语配对通过。PR 准备阶段补齐 API 类型目录、刷新生成文档并修复根 README 锚点换行后，Harness 完整 lint 与 doc-sync 的 43 项检查通过；类型检查暴露的闭包标记与测试标注问题已修复，五个写入屏障的失败回归仍通过。 |
 
 实际浏览器中已观察到待确认提案、一次明确确认、正式阶段结果和草稿保留；该确认只派发一次叙事、没有再调用导演或资料选择。见 [确认回执](validation/confirmation-ui.json) 和 [界面截图](validation/explicit-confirm-keeps-draft.jpg)。这是较早存档升级后的真实事件，不替代新配置的完整长轨迹验收。另在新 v4 同意路线完成后，通过真实浏览器点击确认和撤回，恢复同一提案、保持草稿，旧请求标记 superseded，撤回新增模型调用为零，见 [浏览器操作回执](validation/browser-confirmation.json)。
 
@@ -61,4 +61,4 @@ v5 只对齐 `consider-pause` 的作者描述与判断条件：主动研究暂�
 
 ## 稳定知识维护
 
-两仓已完成 llmdoc 更新。char.pub 最终知识 HEAD 为 08c9a1d，0 impacted / 0 needs-review / 0 dirty；Harness 为 5f7ea712db，本轮 Roleplay 范围已核验，保留范围外四篇历史 impacted，0 needs-review / 0 dirty。未推进全局 baseline；三条工作流反思已吸收。章节和本报告作为验收材料保留，不替代各能力的稳定文档。
+两仓已完成 llmdoc 更新，并在 PR 准备阶段补充核验等价的类型和文档修复。char.pub 为 0 impacted / 0 needs-review / 0 dirty；Harness 本轮 Roleplay 范围已核验，保留范围外四篇历史 impacted，0 needs-review / 0 dirty。未推进全局 baseline；三条工作流反思已吸收。章节和本报告作为验收材料保留，不替代各能力的稳定文档。
