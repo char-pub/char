@@ -1,0 +1,16 @@
+{
+  "kind": "observed-real-browser-confirmation",
+  "source": "earlier-v3-comparison-session-resumed-with-new-protocol",
+  "fresh_final_trajectory": false,
+  "explicit_confirmation_received": true,
+  "narration_requests": 1,
+  "decision_requests": 0,
+  "settlement_status": "success",
+  "visible_ending": "study-inquiry",
+  "unsent_draft_preserved": true,
+  "screenshot": "explicit-confirm-keeps-draft.jpg",
+  "limitations": [
+    "This verifies the observed confirmation event, not a fresh 24-turn trajectory.",
+    "The assistant did not synthesize or inject the final Story state."
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "kind": "real-browser-confirmation-and-undo",
+  "source": "fresh-v4-agreement-session-after-base-24-turn-run",
+  "narration_calls_for_confirmation": 1,
+  "decision_calls_for_confirmation": 0,
+  "additional_model_calls_for_undo": 0,
+  "restored_same_proposal": true,
+  "ending_count_after_undo": 0,
+  "old_confirmation_superseded": true,
+  "draft_preserved": true,
+  "suggestion_appended_without_sending": true,
+  "viewport_check": {
+    "width": 390,
+    "document_scroll_width": 390,
+    "textarea_bottom": 784,
+    "height": 844
+  },
+  "screenshots": [
+    "stage-confirmation-wide.jpg",
+    "stage-confirmation-narrow.jpg",
+    "ending-undo-keeps-draft.jpg"
+  ]
+}

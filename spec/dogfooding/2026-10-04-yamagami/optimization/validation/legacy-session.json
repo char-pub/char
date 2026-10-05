@@ -1,0 +1,11 @@
+{
+  "source": "actual previously saved biographical Session",
+  "bytes": 92603,
+  "sha256": "8d79048ddb5e64a72ec4c3ba447ff0a46ff7ae5b8409b962157e8cda494d7bf8",
+  "replayed_with": "player-control-fda7022059cbb0d2",
+  "events": 5,
+  "history_messages": 3,
+  "scene": "family-2002",
+  "head": "sha256:589f9d3befdbbb669e9878674ae34d9b679a49bc9b034bc4691643e6b3aa02f5",
+  "original_bytes_unchanged": true
+}
