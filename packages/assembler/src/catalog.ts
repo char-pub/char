@@ -9,7 +9,7 @@ import {
   type TurnViewInput,
 } from "@char-pub/core";
 import { evaluateActivation } from "./activation.js";
-import { localizedString } from "./locale.js";
+import { localizedContent, localizedString } from "./locale.js";
 import type { TokenCounter } from "./tokens.js";
 import {
   type ContentArtifact,
@@ -154,7 +154,7 @@ export function buildContextCatalog(input: {
     }
   }
   const contentText = (fragment: IRFragment): string => {
-    const value = fragment.locales?.[locale] ?? fragment.content;
+    const { content: value } = localizedContent(fragment, locale, artifact.ir.meta.default_locale);
     return value.type === "text"
       ? value.text
       : value.type === "dialogue"

@@ -8,7 +8,6 @@
 import {
   CharError,
   type ContextIR,
-  compareStrings,
   finalizeIrText,
   type IRAsset,
   type IRContent,
@@ -17,7 +16,7 @@ import {
   USER_LATE_SLOT,
   USER_PARTICIPANT,
 } from "@char-pub/core";
-import { localizedString, matchLocale } from "./locale.js";
+import { localizedContent, localizedString } from "./locale.js";
 import type { Session } from "./session.js";
 
 /** 固定的提示文字。它们属于排版，不是创作内容；Runtime 可以按需要替换成其他语言。 */
@@ -138,12 +137,7 @@ export class RenderContext {
    * 匹配，越具体的标签越优先。都匹配不上时回退到默认内容。
    */
   pickContent(f: IRFragment): { content: IRContent; fallback: boolean } {
-    const def = this.ir.meta.default_locale;
-    const variants = f.locales ?? {};
-    const hit = matchLocale([def, ...Object.keys(variants).sort(compareStrings)], this.locale);
-    if (hit === null) return { content: f.content, fallback: true };
-    if (hit === def) return { content: f.content, fallback: false };
-    return { content: variants[hit] ?? f.content, fallback: false };
+    return localizedContent(f, this.locale, this.ir.meta.default_locale);
   }
 
   render(f: IRFragment): RenderedFragment {
