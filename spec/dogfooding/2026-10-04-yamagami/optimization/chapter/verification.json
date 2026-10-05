@@ -1,8 +1,8 @@
 {
   "schema_valid": true,
   "local_build": true,
-  "semantic_digest": "sha256:bbb16f9f6c9e6613246d986cabd023e7433c31a551832ca4b0bfded8fca6f9c4",
-  "artifact_digest": "sha256:9bb3fc1c4336c10c8110feb5d79db39d97fccc1950d0ec328262616b632890bd",
+  "semantic_digest": "sha256:c976a22d74a9afc551b53fc182164b8e10577109e3037b733d6bc63ad1dde751",
+  "artifact_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
   "counts": {
     "scenes": 4,
     "beats": 8,
@@ -145,6 +145,8 @@
       "roundtrip_after_turn12": true
     }
   ],
+  "runtime_confirmation_metadata_valid": true,
+  "runtime_confirmation_operations_executed": false,
   "routes": [
     {
       "route": "study",
@@ -243,5 +245,5 @@
       "revisit_without_repeated_effects": true
     }
   ],
-  "scope": "Deterministic author semantics only: explicit true judgments prove guards/effects, not free-text director accuracy or narrative quality."
+  "scope": "Deterministic Core semantics and authored Runtime confirmation metadata only. The Core trajectory applies expected_operations after each complete logical turn; it does not execute a Runtime proposal or confirmation request, nor prove free-text director accuracy or narrative quality."
 }

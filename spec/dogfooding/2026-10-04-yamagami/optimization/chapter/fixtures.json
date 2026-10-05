@@ -4,7 +4,7 @@
   "provenance": {
     "description": "Exact public Registry snapshots retained for offline reconstruction. These are existing published dependencies, not invented local releases.",
     "registry_origin": "https://api.char.pub",
-    "reference_artifact_digest": "sha256:9bb3fc1c4336c10c8110feb5d79db39d97fccc1950d0ec328262616b632890bd",
+    "reference_artifact_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
     "source_endpoints": {
       "yamagami-tetsuya": "https://api.char.pub/v1/creations/@djj/yamagami-tetsuya/releases/1.0.0/source",
       "yamagami-mother": "https://api.char.pub/v1/creations/@djj/yamagami-mother/releases/1.0.0/source",

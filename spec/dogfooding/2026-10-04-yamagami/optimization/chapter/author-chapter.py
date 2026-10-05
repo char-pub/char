@@ -128,10 +128,10 @@ beats=[
 ]
 endings=[]
 for id,title,path,info,question,description in [
- ('study-inquiry','阶段结果 · 留住一次教育咨询','study','study-first-step','玩家是否明确确认完成/采用自己的教育询问单，说明询问事项和负责者，并且没有把未获答复的录取、付款或资助当成已发生？仅想读书或同意听条件不算。','【模拟阶段结果】教育机会仍待查证，但你已经确认了一项具体查询任务。人物只承认已说清的参与范围，没有保证录取或长期资助。可以继续核对，或正式纠正这项安排。'),
- ('independent-check','阶段结果 · 自己核对下一步','independent','independent-first-step','玩家是否明确确认完成/采用独立生活核对清单，说明收入或住处要先查的项目及本次没有承诺的家庭义务？仅拒绝资助、发怒或离开桌边不算。','【模拟阶段结果】你把自己下一步生活所需的条件列清。住处与工作尚待得到真实答复；没有因此默认绝交或上交收入。可以继续询问，或正式纠正这项安排。'),
- ('pause-agreement','阶段结果 · 把决定留到有信息时','pause','pause-first-step','玩家是否明确确认一条延期安排，包含等待的信息或复谈触发条件，并说明期间不代作决定？“再说吧”“随便”或没有答复不能算。','【模拟阶段结果】长期去向保持开放，复谈有了一个明确条件。母亲与伯父不能把期间的沉默当同意；日常生活的未知仍须处理。可以继续交流或重新商量。')]:
-    endings.append({'id':id,'title':title,'description':description,'strength':'possible','reveal':'on-reach','after':'continue','when':all_of(within('first-step'),reached('prepare-first-step'),{'has':['var/considered',path]},{'eq':['var/outcome','undecided']},judge(question)),'effects':[effect('outcome',path),learn(info)]})
+ ('study-inquiry','阶段结果 · 留住一次教育咨询','study','study-first-step','玩家是否明确确认完成/采用自己的教育询问单，说明询问事项和负责者，并且没有把未获答复的录取、付款或资助当成已发生？仅想读书或同意听条件不算。','【模拟安排确认预览】确认后，把这次教育查询任务记为你的阶段安排；询问事项与参与范围以刚才说清的内容为准。学校答复、录取与长期资助仍未确定。这是本次模拟分支的安排，不预告现实中的后来走向。'),
+ ('independent-check','阶段结果 · 自己核对下一步','independent','independent-first-step','玩家是否明确确认完成/采用独立生活核对清单，说明收入或住处要先查的项目及本次没有承诺的家庭义务？仅拒绝资助、发怒或离开桌边不算。','【模拟安排确认预览】确认后，把这张独立生活核对清单记为你的阶段安排。住处与工作仍待答复，未同意的家庭义务不会因此增加；这不表示已经搬家或就业，也不预告现实中的后来走向。'),
+ ('pause-agreement','阶段结果 · 把决定留到有信息时','pause','pause-first-step','玩家是否明确确认一条延期安排，包含等待的信息或复谈触发条件，并说明期间不代作决定？“再说吧”“随便”或没有答复不能算。','【模拟安排确认预览】确认后，记录你提出的等待信息与复谈条件。长期去向仍保持开放，期间的沉默不算同意，日常生活的未知仍须处理。这是本次模拟分支的安排，不预告现实中的后来走向。')]:
+    endings.append({'id':id,'title':title,'description':description,'strength':'possible','reveal':'listed','after':'continue','when':all_of(within('first-step'),reached('prepare-first-step'),{'has':['var/considered',path]},{'eq':['var/outcome','undecided']},judge(question)),'effects':[effect('outcome',path),learn(info)]})
 choices=[
  choice('ask-family','先问母亲和伯父各在担心什么','用自己的问题理解对方；没有自动答应任何方案。','family-table'),
  choice('name-need','说出今天要保住的一件事','可以是学习、住处、收入、个人边界或暂不决定；自由输入同样有效。','family-table'),

@@ -1,6 +1,8 @@
+import json
 from pathlib import Path
 from json_output import write_json
 here=Path(__file__).resolve().parent
+endings={item['id']:item for item in json.loads((here/'yamagami-family-2002.json').read_text())['story']['endings']}
 
 def turn(n,action,operations=None,information=None,expectation='',outcome='undecided'):
  return {'turn':n,'action':action,'expected_operations':operations or [],'expected_new_player_information':information or [],'expected_outcome':outcome,'narrative_assertion':expectation}
@@ -48,21 +50,48 @@ undecided=[
  turn(24,'我还没有答应任何方案。下次我回来，能继续问这些问题吗？',expectation='可继续对话与回访，已经获取的信息保留；没有结局也属于有效体验。')
 ]
 result={
- 'version':1,'scenario':'@djj/yamagami-family-2002','start':'after-bankruptcy',
- 'purpose':'三条各24回合的独立行为验收轨迹。数字只定义样本长度，不是运行推进规则。自然语言意图由director判断；expected_operations是作者事先声明的审阅标准，不能回填模型结果或自动accept。',
- 'execution':{'mode':'independent-fresh-sessions','persist_and_restart_after_turn':12,'compare_saved_state_before_and_after_restart':True,'require_actual_provider_projection':True,'separate_deterministic_core_checks_from_live_narrative_review':True,'unknown_judgment_means_no_mutation':True},
- 'global_assertions':['玩家始终是山上且在场，NPC只有母亲/伯父；不同声线和目标不能被泛泛咨询话术抹平。','2002年角色不能知道未来；作者侧sources.json不进入模型。','正文提到已执行状态必须与正式状态一致；没做的事只写提议或未定。','所有私人对白与具体安排都是模拟；不编真实金额、真实学校/雇主答复或虚假录取。','语义检索按问题读取，目录可发现不等于玩家已知道；未learn的资料不提前进入玩家线索。','已经到达的target不能再次confirm，回访、刷新和重启不能重复effect。','每回合查看候选行动、Core校验、实际上下文与最终提交；模型叙事质量另做人工量表，不能只凭schema通过。'],
+ 'version':2,'scenario':'@djj/yamagami-family-2002','start':'after-bankruptcy',
+ 'purpose':'三条各24逻辑回合的独立行为验收轨迹。数字只定义样本长度，不是运行推进规则。普通对话和场景可自动推进；阶段结局必须显式确认。expected_operations保留纯Core的最终期望，不能作为director输入、回填模型结果或自动accept。',
+ 'execution':{'mode':'independent-fresh-sessions','stage_endings':'explicit-confirmation','expected_operations_scope':'pure-core-and-completed-logical-turn','runtime_stage_ending_substeps':['text-submission-with-pending-proposal','explicit-confirmation'],'confirmation_trigger':'only click when expected_confirmation_target is present in this authored review script; never pass that field or any expected field to the model','ordinary_dialogue_and_scenes':'automatic-subject-to-original-guards','pending_proposal_is_committed_ending':False,'early_milestone_deviations_require_review':True,'persist_and_restart_after_turn':12,'compare_saved_state_before_and_after_restart':True,'require_actual_provider_projection':True,'separate_deterministic_core_checks_from_live_narrative_review':True,'unknown_judgment_means_no_mutation':True},
+ 'global_assertions':['待确认提案不是已完成结局；在显式确认成功前，outcome和ending milestone保持未提交。第21/22轮的草案或修改不能算确认。','所有expected字段和runtime子步骤断言只用于本地审阅，不能发送给director或正文模型。','显式结局确认不放宽前面任何转场、learn或milestone预期；过早判断仍记录为偏差。','玩家始终是山上且在场，NPC只有母亲/伯父；不同声线和目标不能被泛泛咨询话术抹平。','2002年角色不能知道未来；作者侧sources.json不进入模型。','正文提到已执行状态必须与正式状态一致；没做的事只写提议或未定。','所有私人对白与具体安排都是模拟；不编真实金额、真实学校/雇主答复或虚假录取。','语义检索按问题读取，目录可发现不等于玩家已知道；未learn的资料不提前进入玩家线索。','已经到达的target不能再次confirm，回访、刷新和重启不能重复effect。','每回合查看候选行动、Core校验、实际上下文与最终提交；模型叙事质量另做人工量表，不能只凭schema通过。'],
  'trajectories':[
-  {'id':'agreement','title':'有限同意：保留教育查询','turns':common+accept,'final_outcome':'study'},
-  {'id':'refusal','title':'拒绝条件：自己核对生活','turns':common+refuse,'final_outcome':'independent'},
-  {'id':'undetermined','title':'草稿未采用：保持未定','turns':common+undecided,'final_outcome':'undecided'}
+  {'id':'agreement','runtime_confirmation_policy':'only-authored-confirmation-target','title':'有限同意：保留教育查询','turns':common+accept,'final_outcome':'study'},
+  {'id':'refusal','runtime_confirmation_policy':'only-authored-confirmation-target','title':'拒绝条件：自己核对生活','turns':common+refuse,'final_outcome':'independent'},
+  {'id':'undetermined','runtime_confirmation_policy':'never-click-confirmation','title':'草稿未采用：保持未定','turns':common+undecided,'final_outcome':'undecided'}
  ],
  'separate_probes':[
   {'id':'explicit-delay','from':'undetermined/turn24','action':'我现在明确采用延期安排：等课程时间与近期住处有答复后再联系，期间不代我报名、不替我答应费用。','expected_operations':[confirm('ending/pause-agreement')],'expected_outcome':'pause'},
-  {'id':'undo-committed-ending','from':'agreement/turn23','runtime_action':'撤回上一轮并恢复至turn22，再继续另一种具体安排','expected':'必须使用Harness正式撤回；旧ending与outcome均恢复，历史被撤回的正文不再作为新上下文。不能仅靠自然语言声称已取消。'},
+  {'id':'undo-committed-ending','from':'agreement/turn23/explicit-confirmation','runtime_action':'使用Harness正式撤回操作撤销阶段确认，并核对恢复到了哪个已提交状态；再继续另一种具体安排。','expected':'旧ending与outcome均恢复为未提交，撤回的正文不再作为新上下文；确认子操作之前的状态与第22轮不是同一概念，按实际撤回回执核对。不能仅靠自然语言声称已取消。'},
   {'id':'invalid-early-ending','from':'fresh-start','forced_operation':confirm('ending/study-inquiry'),'expected':'Core拒绝，即便提供true judge也不绕过场次/前置guards。'},
   {'id':'unknown-is-not-refusal','from':'negotiation-before-clarify','judgment':'undetermined','expected':'不确认任何路线；没有接受不能推成拒绝。'}
  ]
 }
+def require_explicit_confirmation(item, target):
+ item['expected_confirmation_target']=target
+ item['runtime_text_submission']={
+  'expected_outcome':'undecided',
+  'pending_ending':{'required':True,'id_required':True,'expected_title':endings[target.split('/')[1]]['title'],'expected_description':endings[target.split('/')[1]]['description'],'expected_triggering_input':item['action']},
+  'ending_must_remain_uncommitted':True,
+  'narrative_assertion':'正文只能把阶段结果说成待确认提案，不能宣称已经达成。'
+ }
+ item['runtime_explicit_confirmation']={
+  'action':'submit-normal-turn-with-confirm-ending',
+  'request_field':'confirm_ending.proposal_id',
+  'proposal_id_source':'pending_ending.id',
+  'proposal_id_must_come_from_actual_runtime_response':True,
+  'expected_target':target,
+  'expected_outcome':item['expected_outcome'],
+  'expected_operations_source':'expected_operations',
+  'same_logical_turn':True
+ }
+
+for trajectory in result['trajectories']:
+ if trajectory['id'] in ('agreement','refusal'):
+  step=next(t for t in trajectory['turns'] if t['turn']==23)
+  require_explicit_confirmation(step,step['expected_operations'][0]['target'])
+for probe in result['separate_probes']:
+ if probe['id']=='explicit-delay':
+  require_explicit_confirmation(probe,'ending/pause-agreement')
+
 write_json(here/'acceptance-24-turns.json',result)
 print({x['id']:len(x['turns']) for x in result['trajectories']})

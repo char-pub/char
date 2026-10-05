@@ -1,29 +1,32 @@
 {
   "status": "passed",
   "method": "Chapter copied into an isolated temporary repository root with package/workspace and Biome configuration; only repository packages, format rules and installed node_modules linked. No biographical/production directory, .dev, credentials, or LLM logs provided. Installed tsx and Biome executables invoked directly without package-manager setup.",
-  "artifact_digest": "sha256:9bb3fc1c4336c10c8110feb5d79db39d97fccc1950d0ec328262616b632890bd",
+  "artifact_digest": "sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
+  "acceptance_version": 2,
+  "stage_endings": "explicit-confirmation",
+  "runtime_confirmation_operations_executed": false,
   "rebuild_commands": [
     "python3 author-chapter.py",
     "python3 author-acceptance.py",
-    "tsx --conditions=@char-pub/source verify-chapter.ts sha256:9bb3fc1c4336c10c8110feb5d79db39d97fccc1950d0ec328262616b632890bd",
+    "tsx --conditions=@char-pub/source verify-chapter.ts sha256:e354886534601068a79345e62f835b7bd3b1a88086b6e93a3209dc97e9b51932",
     "biome check chapter"
   ],
   "outputs": {
     "yamagami-family-2002.json": {
       "byte_identical": true,
-      "sha256": "f1855dc970b6302f9d8c9ad6e477fca95a7111af0e83547d12c0831eca71fd79"
+      "sha256": "4ea6d0b54db89284fcb37f0125d449eb83aa93811c1f96fac167a547b2bf9f89"
     },
     "chapter.artifact.json": {
       "byte_identical": true,
-      "sha256": "219dc4094ea570347139ed2f5b83a20e71d78cbaf4ba5cd2ecfe7f1d41187858"
+      "sha256": "c550eee97be68ef4e254dbd8806b2f4351276eea38bcc5869eebb01711d29358"
     },
     "runtime-input.json": {
       "byte_identical": true,
-      "sha256": "1aca488001b92d48c90d1c17734bd561873eb431b874ed3488ae845659eb73e2"
+      "sha256": "40175246c9d10118de107d222899a078730921d573a2679c869e2a33a1358334"
     },
     "acceptance-24-turns.json": {
       "byte_identical": true,
-      "sha256": "58bb27924db0b6dc3154fd55d45a5810967e99a68b1e06bc064a14b057c213ed"
+      "sha256": "89d3d6099625f1719feb13c2e13a191c681e25584732f7674acd298d3a38b490"
     },
     "player-view-samples.json": {
       "byte_identical": true,
